@@ -1,21 +1,48 @@
 import SwiftUI
 
+struct StarryBackground: View {
+    let starCount = 150
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Color.black
+
+                ForEach(0..<starCount, id: \.self) { i in
+                    Circle()
+                        .fill(Color.white.opacity(Double.random(in: 0.3...1.0)))
+                        .frame(width: CGFloat.random(in: 1...3), height: CGFloat.random(in: 1...3))
+                        .position(
+                            x: CGFloat.random(in: 0...geometry.size.width),
+                            y: CGFloat.random(in: 0...geometry.size.height)
+                        )
+                }
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
 struct ContentView: View {
     @StateObject private var globeState = GlobeState()
     @State private var showingInfo = false
 
     var body: some View {
         ZStack {
-            // Background gradient inspired by Claude's warm tones
-            LinearGradient(
-                colors: [
-                    Color(red: 0.98, green: 0.96, blue: 0.93),
-                    Color(red: 0.95, green: 0.91, blue: 0.87)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Background - starry or warm gradient based on dark mode
+            if globeState.isDarkMode {
+                StarryBackground()
+            } else {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.98, green: 0.96, blue: 0.93),
+                        Color(red: 0.95, green: 0.91, blue: 0.87)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            }
 
             VStack(spacing: 0) {
                 // Header
@@ -33,7 +60,7 @@ struct ContentView: View {
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(.white)
                                 .frame(width: 44, height: 44)
-                                .background(Circle().fill(Color(red: 0.85, green: 0.55, blue: 0.35)))
+                                .background(Circle().fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
                                 .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
                         }
 
@@ -42,7 +69,7 @@ struct ContentView: View {
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(.white)
                                 .frame(width: 44, height: 44)
-                                .background(Circle().fill(Color(red: 0.85, green: 0.55, blue: 0.35)))
+                                .background(Circle().fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
                                 .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
                         }
                     }
@@ -54,7 +81,7 @@ struct ContentView: View {
                 bottomPanel
             }
         }
-        .preferredColorScheme(.light)
+        .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
     }
 
     private var header: some View {
@@ -62,14 +89,31 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Globe Explorer")
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
-                    .foregroundColor(Color(red: 0.2, green: 0.15, blue: 0.1))
+                    .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
 
                 Text("Tap any country to highlight it")
                     .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundColor(Color(red: 0.5, green: 0.45, blue: 0.4))
+                    .foregroundColor(globeState.isDarkMode ? Color(red: 0.7, green: 0.7, blue: 0.75) : Color(red: 0.5, green: 0.45, blue: 0.4))
             }
 
             Spacer()
+
+            // Dark mode toggle
+            Button(action: {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    globeState.isDarkMode.toggle()
+                }
+            }) {
+                Image(systemName: globeState.isDarkMode ? "sun.max.fill" : "moon.fill")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35))
+                    )
+                    .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
+            }
 
             // Reset button
             Button(action: {
@@ -83,9 +127,9 @@ struct ContentView: View {
                     .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(Color(red: 0.85, green: 0.55, blue: 0.35))
+                            .fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35))
                     )
-                    .shadow(color: Color(red: 0.85, green: 0.55, blue: 0.35).opacity(0.4), radius: 8, y: 4)
+                    .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
             }
         }
         .padding(.horizontal, 24)
@@ -104,20 +148,20 @@ struct ContentView: View {
 
                         Text(country)
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
-                            .foregroundColor(Color(red: 0.2, green: 0.15, blue: 0.1))
+                            .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
                     .background(
                         Capsule()
-                            .fill(.white)
-                            .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+                            .fill(globeState.isDarkMode ? Color(red: 0.2, green: 0.2, blue: 0.25) : .white)
+                            .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
                     )
                     .transition(.scale.combined(with: .opacity))
                 } else {
                     Text("No country selected")
                         .font(.system(size: 16, weight: .medium, design: .rounded))
-                        .foregroundColor(Color(red: 0.5, green: 0.45, blue: 0.4))
+                        .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.6, blue: 0.65) : Color(red: 0.5, green: 0.45, blue: 0.4))
                         .transition(.opacity)
                 }
             }
@@ -136,7 +180,7 @@ struct ContentView: View {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(.white.opacity(0.7))
+                    .fill(globeState.isDarkMode ? Color(red: 0.15, green: 0.15, blue: 0.2).opacity(0.8) : .white.opacity(0.7))
             )
         }
         .padding(.horizontal, 24)
@@ -147,11 +191,11 @@ struct ContentView: View {
         VStack(spacing: 4) {
             Text("\(count)")
                 .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundColor(Color(red: 0.85, green: 0.55, blue: 0.35))
+                .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.5, blue: 0.8) : Color(red: 0.85, green: 0.55, blue: 0.35))
 
             Text(label)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(Color(red: 0.5, green: 0.45, blue: 0.4))
+                .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.6, blue: 0.65) : Color(red: 0.5, green: 0.45, blue: 0.4))
         }
     }
 }
@@ -160,6 +204,7 @@ class GlobeState: ObservableObject {
     @Published var selectedCountry: String?
     @Published var selectedCountries: Set<String> = []
     @Published var zoomLevel: Float = 4.0
+    @Published var isDarkMode: Bool = false
     let totalCountries = 195
 
     func selectCountry(_ name: String) {
