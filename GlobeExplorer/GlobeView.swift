@@ -31,6 +31,8 @@ struct GlobeView: UIViewRepresentable {
     func updateUIView(_ uiView: SCNView, context: Context) {
         context.coordinator.updateHighlights()
         context.coordinator.updateZoom()
+        context.coordinator.updateAutoRotation()
+        context.coordinator.centerOnSelectedCountry()
     }
 
     func makeCoordinator() -> Coordinator {
@@ -49,6 +51,8 @@ struct GlobeView: UIViewRepresentable {
         private var currentRotationX: Float = 0
         private var currentRotationY: Float = 0
         private var currentScale: Float = 1.0
+        private var lastAutoRotatingState: Bool = true
+        private var hasAnimatedToCountry: Bool = false
 
         init(globeState: GlobeState) {
             self.globeState = globeState
@@ -77,24 +81,118 @@ struct GlobeView: UIViewRepresentable {
             guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
-            cameraNode.position.z = Float(globeState.zoomLevel)
+            let cameraDistance = Float(globeState.zoomLevel)
+            cameraNode.position = SCNVector3(
+                0,
+                cameraDistance * sin(currentRotationX),
+                cameraDistance * cos(currentRotationX)
+            )
+            cameraNode.look(at: SCNVector3(0, 0, 0))
             SCNTransaction.commit()
         }
 
-        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+        func updateAutoRotation() {
             guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+
+            if globeState.isAutoRotating != lastAutoRotatingState {
+                lastAutoRotatingState = globeState.isAutoRotating
+
+                if globeState.isAutoRotating {
+                    // Resume auto-rotation
+                    let rotation = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 60))
+                    globeNode.runAction(rotation, forKey: "autoRotation")
+                    hasAnimatedToCountry = false
+                } else {
+                    // Stop auto-rotation
+                    globeNode.removeAction(forKey: "autoRotation")
+                }
+            }
+        }
+
+        func centerOnSelectedCountry() {
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true),
+                  let center = globeState.targetCountryCenter,
+                  !hasAnimatedToCountry else { return }
+
+            hasAnimatedToCountry = true
+
+            // Convert longitude to globe Y rotation
+            // Camera is at (0,0,z) looking at origin, so country needs to be on +Z side
+            // lon=0 is at +X, lon=90 is at -Z, lon=-90 is at +Z
+            // To center lon L: rotate by -(L + 90) degrees
+            let targetRotationY = Float(-center.lon - 90) * .pi / 180.0
+
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0.8
+            SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+
+            // Rotate globe to center the country horizontally
+            currentRotationY = targetRotationY
+            globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
+
+            // Move camera to appropriate latitude
+            // Positive lat (North) = camera moves up to look down at it
+            let targetCameraX = Float(center.lat) * .pi / 180.0
+            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, targetCameraX))
+
+            // Zoom in closer
+            let zoomDistance: Float = 2.8
+            cameraNode.position = SCNVector3(
+                0,
+                zoomDistance * sin(currentRotationX),
+                zoomDistance * cos(currentRotationX)
+            )
+            cameraNode.look(at: SCNVector3(0, 0, 0))
+
+            SCNTransaction.commit()
+        }
+
+        func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
+            guard let country = cachedCountries.first(where: { $0.name == name }) else { return nil }
+
+            var totalLat = 0.0
+            var totalLon = 0.0
+            var count = 0
+
+            for polygon in country.polygons {
+                for coord in polygon {
+                    if coord.count >= 2 {
+                        totalLon += coord[0]
+                        totalLat += coord[1]
+                        count += 1
+                    }
+                }
+            }
+
+            guard count > 0 else { return nil }
+            return (lat: totalLat / Double(count), lon: totalLon / Double(count))
+        }
+
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
 
             let translation = gesture.translation(in: sceneView)
 
             let rotationSpeed: Float = 0.005
 
+            // Horizontal drag: rotate globe around Y-axis
             currentRotationY += Float(translation.x) * rotationSpeed
+            globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
+
+            // Vertical drag: orbit camera up/down while looking at globe
             currentRotationX += Float(translation.y) * rotationSpeed
+            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX))
 
-            // Clamp vertical rotation
-            currentRotationX = max(-.pi / 2, min(.pi / 2, currentRotationX))
-
-            globeNode.eulerAngles = SCNVector3(currentRotationX, currentRotationY, 0)
+            // Keep camera at fixed distance from globe center
+            let cameraDistance = Float(globeState.zoomLevel)
+            cameraNode.position = SCNVector3(
+                0,
+                cameraDistance * sin(currentRotationX),
+                cameraDistance * cos(currentRotationX)
+            )
+            cameraNode.look(at: SCNVector3(0, 0, 0))
 
             gesture.setTranslation(.zero, in: sceneView)
         }
@@ -104,11 +202,20 @@ struct GlobeView: UIViewRepresentable {
 
             if gesture.state == .changed {
                 let zoomSpeed: Float = 0.5
-                var newZ = cameraNode.position.z - Float(gesture.scale - 1) * zoomSpeed
+                let currentDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
+                                          cameraNode.position.y * cameraNode.position.y +
+                                          cameraNode.position.z * cameraNode.position.z)
+                var newDistance = currentDistance - Float(gesture.scale - 1) * zoomSpeed
 
                 // Clamp zoom level
-                newZ = max(2.5, min(8.0, newZ))
-                cameraNode.position.z = newZ
+                newDistance = max(2.5, min(8.0, newDistance))
+
+                cameraNode.position = SCNVector3(
+                    0,
+                    newDistance * sin(currentRotationX),
+                    newDistance * cos(currentRotationX)
+                )
+                cameraNode.look(at: SCNVector3(0, 0, 0))
 
                 gesture.scale = 1
             }
@@ -146,7 +253,8 @@ struct GlobeView: UIViewRepresentable {
 
                 // Find which country contains this point
                 if let countryName = findCountryAt(lat: lat, lon: lon) {
-                    self.globeState.selectCountry(countryName)
+                    let center = getCountryCenter(name: countryName)
+                    self.globeState.selectCountry(countryName, center: center)
                     self.updateHighlights()
                 }
                 return
@@ -217,16 +325,22 @@ struct GlobeView: UIViewRepresentable {
                 guard let geometry = node.geometry,
                       let material = geometry.firstMaterial else { continue }
 
-                let isSelected = globeState.selectedCountries.contains(name)
+                let isCurrentlySelected = globeState.selectedCountry == name
+                let isVisited = globeState.visitedCountries.contains(name)
 
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.3
 
-                if isSelected {
+                if isCurrentlySelected {
+                    // Lime/light yellow-green for currently focused country
+                    material.diffuse.contents = UIColor(red: 0.7, green: 0.9, blue: 0.4, alpha: 1.0)
+                    material.emission.contents = UIColor(red: 0.7, green: 0.9, blue: 0.4, alpha: 0.3)
+                } else if isVisited {
+                    // Yellow for visited countries
                     material.diffuse.contents = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
-                    material.emission.contents = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 0.3)
+                    material.emission.contents = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 0.15)
                 } else {
-                    // Reset to original color
+                    // Green for unvisited countries
                     if let originalColor = originalColors[name] {
                         material.diffuse.contents = originalColor
                     }

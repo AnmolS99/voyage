@@ -139,9 +139,9 @@ struct ContentView: View {
 
     private var bottomPanel: some View {
         VStack(spacing: 12) {
-            // Selected country display
-            HStack {
-                if let country = globeState.selectedCountry {
+            // Selected country display with Add Visit button
+            if let country = globeState.selectedCountry {
+                VStack(spacing: 12) {
                     HStack(spacing: 10) {
                         Text(globeState.flagForCountry(country))
                             .font(.system(size: 24))
@@ -150,26 +150,70 @@ struct ContentView: View {
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                             .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(
-                        Capsule()
-                            .fill(globeState.isDarkMode ? Color(red: 0.2, green: 0.2, blue: 0.25) : .white)
-                            .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
-                    )
-                    .transition(.scale.combined(with: .opacity))
-                } else {
-                    Text("No country selected")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                        .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.6, blue: 0.65) : Color(red: 0.5, green: 0.45, blue: 0.4))
-                        .transition(.opacity)
+
+                    HStack(spacing: 12) {
+                        // Add/Remove Visit button
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                if globeState.isVisited(country) {
+                                    globeState.removeVisit(country)
+                                } else {
+                                    globeState.addVisit(country)
+                                }
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: globeState.isVisited(country) ? "checkmark.circle.fill" : "plus.circle")
+                                    .font(.system(size: 16, weight: .medium))
+                                Text(globeState.isVisited(country) ? "Visited" : "Add Visit")
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(globeState.isVisited(country) ?
+                                          Color(red: 0.3, green: 0.7, blue: 0.4) :
+                                          (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
+                            )
+                        }
+
+                        // Close button
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                globeState.deselectCountry()
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.3, green: 0.3, blue: 0.3))
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    Circle()
+                                        .fill(globeState.isDarkMode ? Color(red: 0.3, green: 0.3, blue: 0.35) : Color(red: 0.9, green: 0.9, blue: 0.9))
+                                )
+                        }
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(globeState.isDarkMode ? Color(red: 0.2, green: 0.2, blue: 0.25) : .white)
+                        .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
+                )
+                .transition(.scale.combined(with: .opacity))
+            } else {
+                Text("Tap a country to explore")
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.6, blue: 0.65) : Color(red: 0.5, green: 0.45, blue: 0.4))
+                    .transition(.opacity)
             }
-            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: globeState.selectedCountry)
 
             // Stats row
             HStack(spacing: 24) {
-                statItem(count: globeState.selectedCountries.count, label: "Selected")
+                statItem(count: globeState.visitedCountries.count, label: "Visited")
 
                 Divider()
                     .frame(height: 24)
@@ -185,6 +229,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 32)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: globeState.selectedCountry)
     }
 
     private func statItem(count: Int, label: String) -> some View {
@@ -203,18 +248,43 @@ struct ContentView: View {
 class GlobeState: ObservableObject {
     @Published var selectedCountry: String?
     @Published var selectedCountries: Set<String> = []
+    @Published var visitedCountries: Set<String> = []
     @Published var zoomLevel: Float = 4.0
     @Published var isDarkMode: Bool = false
+    @Published var isAutoRotating: Bool = true
+    @Published var targetCountryCenter: (lat: Double, lon: Double)?
     let totalCountries = 195
 
-    func selectCountry(_ name: String) {
+    func selectCountry(_ name: String, center: (lat: Double, lon: Double)? = nil) {
         selectedCountry = name
         selectedCountries.insert(name)
+        isAutoRotating = false
+        targetCountryCenter = center
+    }
+
+    func addVisit(_ name: String) {
+        visitedCountries.insert(name)
+    }
+
+    func removeVisit(_ name: String) {
+        visitedCountries.remove(name)
+    }
+
+    func isVisited(_ name: String) -> Bool {
+        visitedCountries.contains(name)
+    }
+
+    func deselectCountry() {
+        selectedCountry = nil
+        targetCountryCenter = nil
+        isAutoRotating = true
     }
 
     func resetSelection() {
         selectedCountry = nil
         selectedCountries.removeAll()
+        targetCountryCenter = nil
+        isAutoRotating = true
     }
 
     func zoomIn() {

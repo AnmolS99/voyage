@@ -20,7 +20,7 @@ class PolygonTriangulator {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
 
-        let cellSize: Double = 0.15 // degrees per cell (higher resolution)
+        let cellSize: Double = 0.3 // degrees per cell
 
         for polygon in polygons {
             let coords = polygon.filter { $0.count >= 2 }
