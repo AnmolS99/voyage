@@ -48,34 +48,46 @@ struct ContentView: View {
                 // Header
                 header
 
-                // Globe with zoom controls
+                // Globe or Map view with zoom controls - both kept alive for fast switching
                 ZStack {
                     GlobeView(globeState: globeState)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .opacity(globeState.viewMode == .globe ? 1 : 0)
+                        .allowsHitTesting(globeState.viewMode == .globe)
 
-                    // Zoom controls on the right
-                    VStack(spacing: 12) {
-                        Button(action: { globeState.zoomIn() }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                                .background(Circle().fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
-                                .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
-                        }
+                    MapView(globeState: globeState)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .padding(.horizontal, 12)
+                        .opacity(globeState.viewMode == .map ? 1 : 0)
+                        .allowsHitTesting(globeState.viewMode == .map)
 
-                        Button(action: { globeState.zoomOut() }) {
-                            Image(systemName: "minus")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                                .background(Circle().fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
-                                .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
+                    // Zoom controls on the right (only for globe view)
+                    if globeState.viewMode == .globe {
+                        VStack(spacing: 12) {
+                            Button(action: { globeState.zoomIn() }) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Circle().fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
+                                    .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
+                            }
+
+                            Button(action: { globeState.zoomOut() }) {
+                                Image(systemName: "minus")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Circle().fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
+                                    .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
+                            }
                         }
+                        .padding(.trailing, 16)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                     }
-                    .padding(.trailing, 16)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                 }
+                .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
 
                 // Bottom info panel
                 bottomPanel
@@ -87,16 +99,33 @@ struct ContentView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Globe Explorer")
+                Text(globeState.viewMode == .globe ? "Globe Explorer" : "World Map")
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
                     .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
 
-                Text("Tap any country to highlight it")
+                Text("Tap any country to explore")
                     .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundColor(globeState.isDarkMode ? Color(red: 0.7, green: 0.7, blue: 0.75) : Color(red: 0.5, green: 0.45, blue: 0.4))
             }
 
             Spacer()
+
+            // View mode toggle (Globe/Map)
+            Button(action: {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    globeState.viewMode = globeState.viewMode == .globe ? .map : .globe
+                }
+            }) {
+                Image(systemName: globeState.viewMode == .globe ? "map" : "globe.americas")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35))
+                    )
+                    .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
+            }
 
             // Dark mode toggle
             Button(action: {
@@ -245,6 +274,11 @@ struct ContentView: View {
     }
 }
 
+enum ViewMode {
+    case globe
+    case map
+}
+
 class GlobeState: ObservableObject {
     @Published var selectedCountry: String?
     @Published var selectedCountries: Set<String> = []
@@ -253,6 +287,7 @@ class GlobeState: ObservableObject {
     @Published var isDarkMode: Bool = false
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
+    @Published var viewMode: ViewMode = .globe
     let totalCountries = 195
 
     func selectCountry(_ name: String, center: (lat: Double, lon: Double)? = nil) {

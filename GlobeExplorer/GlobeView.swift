@@ -53,6 +53,7 @@ struct GlobeView: UIViewRepresentable {
         private var currentScale: Float = 1.0
         private var lastAutoRotatingState: Bool = true
         private var hasAnimatedToCountry: Bool = false
+        private var lastAnimatedCountry: String?
 
         init(globeState: GlobeState) {
             self.globeState = globeState
@@ -113,9 +114,17 @@ struct GlobeView: UIViewRepresentable {
             guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                   let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true),
                   let center = globeState.targetCountryCenter,
-                  !hasAnimatedToCountry else { return }
+                  let selectedCountry = globeState.selectedCountry else { return }
+
+            // Check if this is a new country selection
+            if selectedCountry != lastAnimatedCountry {
+                hasAnimatedToCountry = false
+            }
+
+            guard !hasAnimatedToCountry else { return }
 
             hasAnimatedToCountry = true
+            lastAnimatedCountry = selectedCountry
 
             // Convert longitude to globe Y rotation
             // Camera is at (0,0,z) looking at origin, so country needs to be on +Z side
