@@ -97,6 +97,18 @@ class GlobeScene {
                 globeNode.addChildNode(node)
                 coordinator.countryNodes[country.name] = node
                 coordinator.originalColors[country.name] = country.color
+
+                // Add black border outline
+                if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) {
+                    let outlineMaterial = SCNMaterial()
+                    outlineMaterial.diffuse.contents = UIColor.black
+                    outlineMaterial.lightingModel = .constant // Make it always visible
+                    outlineGeometry.materials = [outlineMaterial]
+
+                    let outlineNode = SCNNode(geometry: outlineGeometry)
+                    outlineNode.name = "\(country.name)_outline"
+                    globeNode.addChildNode(outlineNode)
+                }
             }
         }
     }

@@ -20,7 +20,7 @@ class PolygonTriangulator {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
 
-        let cellSize: Double = 0.2 // degrees per cell
+        let cellSize: Double = 0.05 // degrees per cell (higher resolution)
 
         for polygon in polygons {
             let coords = polygon.filter { $0.count >= 2 }
@@ -75,6 +75,40 @@ class PolygonTriangulator {
 
         let vertexSource = SCNGeometrySource(vertices: allVertices)
         let element = SCNGeometryElement(indices: allIndices, primitiveType: .triangles)
+
+        return SCNGeometry(sources: [vertexSource], elements: [element])
+    }
+
+    // Create border outline geometry from polygon coordinates
+    static func createBorderOutlineGeometry(polygons: [[[Double]]], radius: Float = 1.005) -> SCNGeometry? {
+        var allVertices: [SCNVector3] = []
+        var allIndices: [Int32] = []
+
+        for polygon in polygons {
+            let coords = polygon.filter { $0.count >= 2 }
+            guard coords.count >= 3 else { continue }
+
+            let startIndex = Int32(allVertices.count)
+
+            // Add vertices for each point in the polygon
+            for coord in coords {
+                let lat = coord[1]
+                let lon = coord[0]
+                let point = latLonToSphere(lat: lat, lon: lon, radius: radius)
+                allVertices.append(point)
+            }
+
+            // Create line indices connecting consecutive points
+            for i in 0..<coords.count {
+                allIndices.append(startIndex + Int32(i))
+                allIndices.append(startIndex + Int32((i + 1) % coords.count))
+            }
+        }
+
+        guard !allVertices.isEmpty && !allIndices.isEmpty else { return nil }
+
+        let vertexSource = SCNGeometrySource(vertices: allVertices)
+        let element = SCNGeometryElement(indices: allIndices, primitiveType: .line)
 
         return SCNGeometry(sources: [vertexSource], elements: [element])
     }
