@@ -99,12 +99,12 @@ struct GlobeView: UIViewRepresentable {
                 lastAutoRotatingState = globeState.isAutoRotating
 
                 if globeState.isAutoRotating {
-                    // Resume auto-rotation
+                    // Resume auto-rotation from current position
                     let rotation = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 60))
                     globeNode.runAction(rotation, forKey: "autoRotation")
                     hasAnimatedToCountry = false
                 } else {
-                    // Stop auto-rotation
+                    // Just stop auto-rotation - rotation capture happens in centerOnSelectedCountry
                     globeNode.removeAction(forKey: "autoRotation")
                 }
             }
@@ -126,11 +126,27 @@ struct GlobeView: UIViewRepresentable {
             hasAnimatedToCountry = true
             lastAnimatedCountry = selectedCountry
 
+            // Capture the current actual rotation from the presentation node
+            let currentActualRotationY = globeNode.presentation.eulerAngles.y
+
+            // Immediately set the model node to match the presentation (freeze current position)
+            globeNode.eulerAngles.y = currentActualRotationY
+
             // Convert longitude to globe Y rotation
             // Camera is at (0,0,z) looking at origin, so country needs to be on +Z side
             // lon=0 is at +X, lon=90 is at -Z, lon=-90 is at +Z
             // To center lon L: rotate by -(L + 90) degrees
-            let targetRotationY = Float(-center.lon - 90) * .pi / 180.0
+            var targetRotationY = Float(-center.lon - 90) * .pi / 180.0
+
+            // Normalize target rotation to take the shortest path from current rotation
+            // Adjust target to be within -π to +π of current rotation
+            let twoPi = Float.pi * 2
+            while targetRotationY - currentActualRotationY > Float.pi {
+                targetRotationY -= twoPi
+            }
+            while targetRotationY - currentActualRotationY < -Float.pi {
+                targetRotationY += twoPi
+            }
 
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.8
