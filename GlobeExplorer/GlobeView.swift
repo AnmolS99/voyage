@@ -66,7 +66,7 @@ struct GlobeView: UIViewRepresentable {
             guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
-            cameraNode.position.z = max(1.5, cameraNode.position.z - 0.5)
+            cameraNode.position.z = max(1.2, cameraNode.position.z - 0.5)
             SCNTransaction.commit()
         }
 
@@ -217,7 +217,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = currentDistance - Float(gesture.scale - 1) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(1.5, min(8.0, newDistance))
+                newDistance = max(1.2, min(8.0, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,

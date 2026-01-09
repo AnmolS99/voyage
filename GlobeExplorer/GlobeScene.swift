@@ -103,6 +103,7 @@ class GlobeScene {
                     let outlineMaterial = SCNMaterial()
                     outlineMaterial.diffuse.contents = UIColor.black
                     outlineMaterial.lightingModel = .constant // Make it always visible
+                    outlineMaterial.isDoubleSided = true
                     outlineGeometry.materials = [outlineMaterial]
 
                     let outlineNode = SCNNode(geometry: outlineGeometry)
