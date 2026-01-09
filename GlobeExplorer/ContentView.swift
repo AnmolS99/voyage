@@ -25,45 +25,49 @@ struct StarryBackground: View {
 
 struct ContentView: View {
     @StateObject private var globeState = GlobeState()
-    @State private var showingInfo = false
+    @State private var showingSettings = false
 
     var body: some View {
         ZStack {
-            // Background - starry or warm gradient based on dark mode
-            if globeState.isDarkMode {
-                StarryBackground()
-            } else {
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.98, green: 0.96, blue: 0.93),
-                        Color(red: 0.95, green: 0.91, blue: 0.87)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+            // Background - starry or warm gradient based on dark mode (only for globe)
+            if globeState.viewMode == .globe {
+                if globeState.isDarkMode {
+                    StarryBackground()
+                } else {
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.98, green: 0.96, blue: 0.93),
+                            Color(red: 0.95, green: 0.91, blue: 0.87)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
+                }
             }
 
-            VStack(spacing: 0) {
-                // Header
+            // Globe or Map view - fullscreen
+            GlobeView(globeState: globeState)
+                .ignoresSafeArea()
+                .opacity(globeState.viewMode == .globe ? 1 : 0)
+                .allowsHitTesting(globeState.viewMode == .globe)
+
+            MapView(globeState: globeState)
+                .ignoresSafeArea()
+                .opacity(globeState.viewMode == .map ? 1 : 0)
+                .allowsHitTesting(globeState.viewMode == .map)
+
+            // UI Overlay
+            VStack {
+                // Header at top
                 header
 
-                // Globe or Map view with zoom controls - both kept alive for fast switching
-                ZStack {
-                    GlobeView(globeState: globeState)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .opacity(globeState.viewMode == .globe ? 1 : 0)
-                        .allowsHitTesting(globeState.viewMode == .globe)
+                Spacer()
 
-                    MapView(globeState: globeState)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .padding(.horizontal, 12)
-                        .opacity(globeState.viewMode == .map ? 1 : 0)
-                        .allowsHitTesting(globeState.viewMode == .map)
-
-                    // Zoom controls on the right (only for globe view)
-                    if globeState.viewMode == .globe {
+                // Zoom controls on the right (only for globe view)
+                if globeState.viewMode == .globe {
+                    HStack {
+                        Spacer()
                         VStack(spacing: 12) {
                             Button(action: { globeState.zoomIn() }) {
                                 Image(systemName: "plus")
@@ -84,16 +88,28 @@ struct ContentView: View {
                             }
                         }
                         .padding(.trailing, 16)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                     }
                 }
-                .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
+
+                Spacer()
 
                 // Bottom info panel
                 bottomPanel
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .onChange(of: globeState.viewMode) { _, newMode in
+            if newMode == .map {
+                OrientationManager.shared.lockToLandscape()
+            } else {
+                OrientationManager.shared.unlock()
+                OrientationManager.shared.setNeedsOrientationUpdate()
+            }
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(globeState: globeState)
+        }
     }
 
     private var header: some View {
@@ -144,13 +160,11 @@ struct ContentView: View {
                     .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
             }
 
-            // Reset button
+            // Settings button
             Button(action: {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    globeState.resetSelection()
-                }
+                showingSettings = true
             }) {
-                Image(systemName: "arrow.counterclockwise")
+                Image(systemName: "gearshape.fill")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
@@ -318,6 +332,14 @@ class GlobeState: ObservableObject {
     func resetSelection() {
         selectedCountry = nil
         selectedCountries.removeAll()
+        targetCountryCenter = nil
+        isAutoRotating = true
+    }
+
+    func resetAllData() {
+        selectedCountry = nil
+        selectedCountries.removeAll()
+        visitedCountries.removeAll()
         targetCountryCenter = nil
         isAutoRotating = true
     }
