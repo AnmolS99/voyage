@@ -247,23 +247,46 @@ struct ContentView: View {
                         .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
                 )
                 .transition(.scale.combined(with: .opacity))
-            } else {
-                Text("Tap a country to explore")
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.6, blue: 0.65) : Color(red: 0.5, green: 0.45, blue: 0.4))
-                    .transition(.opacity)
             }
 
-            // Stats row
-            HStack(spacing: 24) {
-                statItem(count: globeState.visitedCountries.count, label: "Visited")
+            // Progress bar
+            VStack(spacing: 8) {
+                HStack {
+                    Text("\(globeState.visitedCountries.count) of \(globeState.totalCountries) countries")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(globeState.isDarkMode ? Color(red: 0.7, green: 0.7, blue: 0.75) : Color(red: 0.4, green: 0.35, blue: 0.3))
 
-                Divider()
-                    .frame(height: 24)
+                    Spacer()
 
-                statItem(count: globeState.totalCountries, label: "Countries")
+                    Text("\(Int(Double(globeState.visitedCountries.count) / Double(globeState.totalCountries) * 100))%")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.5, blue: 0.8) : Color(red: 0.85, green: 0.55, blue: 0.35))
+                }
+
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // Background track
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(globeState.isDarkMode ? Color(red: 0.25, green: 0.25, blue: 0.3) : Color(red: 0.9, green: 0.88, blue: 0.85))
+
+                        // Progress fill
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(
+                                LinearGradient(
+                                    colors: globeState.isDarkMode ?
+                                        [Color(red: 0.5, green: 0.4, blue: 0.8), Color(red: 0.6, green: 0.5, blue: 0.9)] :
+                                        [Color(red: 0.85, green: 0.5, blue: 0.3), Color(red: 0.95, green: 0.6, blue: 0.4)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: max(0, geometry.size.width * CGFloat(globeState.visitedCountries.count) / CGFloat(globeState.totalCountries)))
+                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: globeState.visitedCountries.count)
+                    }
+                }
+                .frame(height: 12)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 20)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 20)
@@ -275,17 +298,6 @@ struct ContentView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: globeState.selectedCountry)
     }
 
-    private func statItem(count: Int, label: String) -> some View {
-        VStack(spacing: 4) {
-            Text("\(count)")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.5, blue: 0.8) : Color(red: 0.85, green: 0.55, blue: 0.35))
-
-            Text(label)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.6, blue: 0.65) : Color(red: 0.5, green: 0.45, blue: 0.4))
-        }
-    }
 }
 
 enum ViewMode {
