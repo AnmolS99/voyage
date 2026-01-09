@@ -323,7 +323,7 @@ class GlobeState: ObservableObject {
     }
 
     func zoomIn() {
-        zoomLevel = max(2.0, zoomLevel - 0.5)
+        zoomLevel = max(1.5, zoomLevel - 0.5)
     }
 
     func zoomOut() {
