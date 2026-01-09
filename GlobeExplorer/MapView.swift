@@ -77,6 +77,26 @@ struct MapView: View {
                         context.stroke(path, with: .color(borderColor), lineWidth: 0.5)
                     }
                 }
+
+                // Draw capital dot for selected country
+                if let selectedCountry = globeState.selectedCountry,
+                   let capital = CapitalData.getCapital(for: selectedCountry) {
+                    let x = (capital.lon + 180) / 360 * mapWidth
+                    let y = (90 - capital.lat) / 180 * mapHeight + verticalOffset
+                    let center = CGPoint(x: x, y: y).applying(transform)
+
+                    // Draw small blue dot
+                    let dotRadius: CGFloat = 4
+                    let dotPath = Path(ellipseIn: CGRect(
+                        x: center.x - dotRadius,
+                        y: center.y - dotRadius,
+                        width: dotRadius * 2,
+                        height: dotRadius * 2
+                    ))
+
+                    context.fill(dotPath, with: .color(Color(red: 0.2, green: 0.5, blue: 1.0)))
+                    context.stroke(dotPath, with: .color(Color(red: 0.1, green: 0.3, blue: 0.7)), lineWidth: 1)
+                }
             }
             .gesture(
                 MagnificationGesture()
@@ -214,4 +234,5 @@ struct MapView: View {
         guard count > 0 else { return nil }
         return (lat: totalLat / Double(count), lon: totalLon / Double(count))
     }
+
 }

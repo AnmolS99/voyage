@@ -54,6 +54,7 @@ struct GlobeView: UIViewRepresentable {
         private var lastAutoRotatingState: Bool = true
         private var hasAnimatedToCountry: Bool = false
         private var lastAnimatedCountry: String?
+        private var capitalStarNode: SCNNode?
 
         init(globeState: GlobeState) {
             self.globeState = globeState
@@ -374,6 +375,60 @@ struct GlobeView: UIViewRepresentable {
 
                 SCNTransaction.commit()
             }
+
+            // Update capital star
+            updateCapitalStar()
+        }
+
+        func updateCapitalStar() {
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+
+            // Remove existing star
+            capitalStarNode?.removeFromParentNode()
+            capitalStarNode = nil
+
+            // If a country is selected, show star at its capital
+            guard let selectedCountry = globeState.selectedCountry,
+                  let capital = CapitalData.getCapital(for: selectedCountry) else { return }
+
+            // Convert lat/lon to 3D position on sphere (radius slightly above surface)
+            // Must match PolygonTriangulator.latLonToSphere coordinate system
+            let radius: Float = 1.03  // Slightly above globe surface
+            let latRad = Float(capital.lat) * .pi / 180.0
+            let lonRad = Float(-capital.lon) * .pi / 180.0  // Negative lon to match globe
+
+            // Convert spherical to cartesian coordinates (matching globe's coordinate system)
+            let x = radius * cos(latRad) * cos(lonRad)
+            let y = radius * sin(latRad)
+            let z = radius * cos(latRad) * sin(lonRad)
+
+            // Create star geometry
+            let starNode = createStarNode()
+            starNode.position = SCNVector3(x, y, z)
+
+            // Orient star to face outward from globe center using constraints
+            let billboardConstraint = SCNBillboardConstraint()
+            billboardConstraint.freeAxes = .all
+            starNode.constraints = [billboardConstraint]
+
+            globeNode.addChildNode(starNode)
+            capitalStarNode = starNode
+        }
+
+        func createStarNode() -> SCNNode {
+            // Small blue dot for capital
+            let sphere = SCNSphere(radius: 0.012)
+
+            let material = SCNMaterial()
+            material.diffuse.contents = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+            material.emission.contents = UIColor(red: 0.3, green: 0.6, blue: 1.0, alpha: 0.8)
+            material.lightingModel = .constant
+            sphere.materials = [material]
+
+            let node = SCNNode(geometry: sphere)
+            node.name = "capitalMarker"
+
+            return node
         }
     }
 }

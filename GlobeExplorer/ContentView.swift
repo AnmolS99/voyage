@@ -400,8 +400,9 @@ class GlobeState: ObservableObject {
             "Tanzania": "TZ", "Thailand": "TH", "Togo": "TG", "Tonga": "TO",
             "Tunisia": "TN", "Turkey": "TR", "Turkmenistan": "TM", "Tuvalu": "TV",
             "UAE": "AE", "United Arab Emirates": "AE", "Uganda": "UG", "Ukraine": "UA",
-            "United Kingdom": "GB", "United States": "US", "Uruguay": "UY",
+            "United Kingdom": "GB", "United States": "US", "United States of America": "US", "Uruguay": "UY",
             "Uzbekistan": "UZ", "Vanuatu": "VU", "Venezuela": "VE", "Vietnam": "VN",
+            "Palestine": "PS",
             "Yemen": "YE", "Zambia": "ZM", "Zimbabwe": "ZW", "Antarctica": "AQ"
         ]
 
