@@ -23,6 +23,98 @@ struct StarryBackground: View {
     }
 }
 
+struct LoadingView: View {
+    @State private var rotationAngle: Double = 0
+    @State private var pulseScale: CGFloat = 1.0
+    let isDarkMode: Bool
+
+    var body: some View {
+        ZStack {
+            // Background
+            if isDarkMode {
+                StarryBackground()
+            } else {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.98, green: 0.96, blue: 0.93),
+                        Color(red: 0.95, green: 0.91, blue: 0.87)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            }
+
+            VStack(spacing: 24) {
+                // Rotating globe icon with pulse effect
+                ZStack {
+                    // Outer glow ring
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: isDarkMode ?
+                                    [Color(red: 0.5, green: 0.4, blue: 0.8).opacity(0.3),
+                                     Color(red: 0.6, green: 0.5, blue: 0.9).opacity(0.3)] :
+                                    [Color(red: 0.85, green: 0.5, blue: 0.3).opacity(0.3),
+                                     Color(red: 0.95, green: 0.6, blue: 0.4).opacity(0.3)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 3
+                        )
+                        .frame(width: 120, height: 120)
+                        .scaleEffect(pulseScale)
+                        .opacity(2 - pulseScale)
+
+                    // Main globe icon
+                    Image(systemName: "globe.americas.fill")
+                        .font(.system(size: 70, weight: .light))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: isDarkMode ?
+                                    [Color(red: 0.5, green: 0.4, blue: 0.8),
+                                     Color(red: 0.6, green: 0.5, blue: 0.9)] :
+                                    [Color(red: 0.85, green: 0.5, blue: 0.3),
+                                     Color(red: 0.95, green: 0.6, blue: 0.4)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .rotationEffect(.degrees(rotationAngle))
+                        .shadow(
+                            color: (isDarkMode ?
+                                    Color(red: 0.5, green: 0.4, blue: 0.8) :
+                                    Color(red: 0.85, green: 0.5, blue: 0.3)).opacity(0.5),
+                            radius: 20
+                        )
+                }
+
+                VStack(spacing: 8) {
+                    Text("Loading Globe")
+                        .font(.system(size: 24, weight: .semibold, design: .rounded))
+                        .foregroundColor(isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
+
+                    Text("Preparing your world exploration...")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(isDarkMode ? Color(red: 0.7, green: 0.7, blue: 0.75) : Color(red: 0.5, green: 0.45, blue: 0.4))
+                        .multilineTextAlignment(.center)
+                }
+            }
+        }
+        .onAppear {
+            // Continuous rotation animation
+            withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
+                rotationAngle = 360
+            }
+
+            // Pulse animation
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                pulseScale = 1.3
+            }
+        }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var globeState = GlobeState()
     @State private var showingSettings = false
@@ -96,8 +188,15 @@ struct ContentView: View {
                 // Bottom info panel
                 bottomPanel
             }
+
+            // Loading overlay
+            if globeState.isLoading {
+                LoadingView(isDarkMode: globeState.isDarkMode)
+                    .transition(.opacity)
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
+        .animation(.easeInOut(duration: 0.5), value: globeState.isLoading)
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
         .onChange(of: globeState.viewMode) { _, newMode in
             if newMode == .map {
@@ -314,6 +413,7 @@ class GlobeState: ObservableObject {
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
     @Published var viewMode: ViewMode = .globe
+    @Published var isLoading: Bool = true
     let totalCountries = 195
 
     func selectCountry(_ name: String, center: (lat: Double, lon: Double)? = nil) {

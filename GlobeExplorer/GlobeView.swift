@@ -25,6 +25,13 @@ struct GlobeView: UIViewRepresentable {
 
         context.coordinator.sceneView = sceneView
 
+        // Signal that loading is complete after scene is ready
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.5)) {
+                self.globeState.isLoading = false
+            }
+        }
+
         return sceneView
     }
 
