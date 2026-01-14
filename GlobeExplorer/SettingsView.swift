@@ -24,6 +24,28 @@ struct SettingsView: View {
                 } footer: {
                     Text("This will clear all visited countries and selections.")
                 }
+
+                Section {
+                    Link(destination: URL(string: "https://buymeacoffee.com/anmols99")!) {
+                        HStack {
+                            Image(systemName: "cup.and.saucer.fill")
+                                .foregroundColor(.white)
+                                .frame(width: 28, height: 28)
+                                .background(Color(red: 0.37, green: 0.5, blue: 1.0))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                            Text("Buy Me a Coffee")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Support")
+                } footer: {
+                    Text("Thanks for using GlobeExplorer! If you enjoy the app, consider buying me a coffee.")
+                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
