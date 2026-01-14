@@ -6,6 +6,8 @@ An interactive 3D globe iOS app built with SwiftUI and SceneKit. Tap on any coun
 ![Swift](https://img.shields.io/badge/Swift-5.0-orange)
 ![License](https://img.shields.io/badge/License-Private-red)
 
+<a href="https://www.buymeacoffee.com/anmols99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40"></a>
+
 ## Features
 
 - **Interactive 3D Globe** - Rotate the globe by dragging, zoom with pinch or +/- buttons
