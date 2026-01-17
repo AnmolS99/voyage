@@ -199,6 +199,11 @@ struct GlobeView: UIViewRepresentable {
             guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                   let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
 
+            // Stop auto-rotation when user drags
+            if gesture.state == .began {
+                globeState.isAutoRotating = false
+            }
+
             let translation = gesture.translation(in: sceneView)
 
             let rotationSpeed: Float = 0.005
