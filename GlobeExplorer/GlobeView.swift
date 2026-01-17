@@ -417,7 +417,7 @@ struct GlobeView: UIViewRepresentable {
 
         func createStarNode() -> SCNNode {
             // Small blue dot for capital
-            let sphere = SCNSphere(radius: 0.012)
+            let sphere = SCNSphere(radius: 0.006)
 
             let material = SCNMaterial()
             material.diffuse.contents = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
@@ -427,6 +427,14 @@ struct GlobeView: UIViewRepresentable {
 
             let node = SCNNode(geometry: sphere)
             node.name = "capitalMarker"
+
+            // Add pulsating animation
+            let scaleUp = SCNAction.scale(to: 1.5, duration: 0.6)
+            scaleUp.timingMode = .easeInEaseOut
+            let scaleDown = SCNAction.scale(to: 1.0, duration: 0.6)
+            scaleDown.timingMode = .easeInEaseOut
+            let pulse = SCNAction.sequence([scaleUp, scaleDown])
+            node.runAction(SCNAction.repeatForever(pulse))
 
             return node
         }
