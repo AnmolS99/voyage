@@ -10,7 +10,6 @@
 		E81234560001 /* GlobeExplorerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550001 /* GlobeExplorerApp.swift */; };
 		E81234560002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550002 /* ContentView.swift */; };
 		E81234560003 /* GlobeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550003 /* GlobeView.swift */; };
-		E81234560011 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550011 /* MapView.swift */; };
 		E81234560004 /* GlobeScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550004 /* GlobeScene.swift */; };
 		E81234560005 /* CountryData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550005 /* CountryData.swift */; };
 		E81234560006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E81234550006 /* Assets.xcassets */; };
@@ -18,6 +17,7 @@
 		E81234560008 /* GeoJSONParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550008 /* GeoJSONParser.swift */; };
 		E81234560009 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
 		E81234560010 /* world.geojson in Resources */ = {isa = PBXBuildFile; fileRef = E81234550010 /* world.geojson */; };
+		E81234560011 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550011 /* MapView.swift */; };
 		E81234560012 /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550012 /* OrientationManager.swift */; };
 		E81234560013 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550013 /* AppDelegate.swift */; };
 		E81234560014 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550014 /* SettingsView.swift */; };
@@ -27,9 +27,9 @@
 /* Begin PBXFileReference section */
 		E81234540001 /* GlobeExplorer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GlobeExplorer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E81234550001 /* GlobeExplorerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeExplorerApp.swift; sourceTree = "<group>"; };
+		E81234550016 /* GlobeExplorer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GlobeExplorer.entitlements; sourceTree = "<group>"; };
 		E81234550002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E81234550003 /* GlobeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeView.swift; sourceTree = "<group>"; };
-		E81234550011 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		E81234550004 /* GlobeScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeScene.swift; sourceTree = "<group>"; };
 		E81234550005 /* CountryData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryData.swift; sourceTree = "<group>"; };
 		E81234550006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -37,6 +37,7 @@
 		E81234550008 /* GeoJSONParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoJSONParser.swift; sourceTree = "<group>"; };
 		E81234550009 /* PolygonTriangulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonTriangulator.swift; sourceTree = "<group>"; };
 		E81234550010 /* world.geojson */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = world.geojson; sourceTree = "<group>"; };
+		E81234550011 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		E81234550012 /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
 		E81234550013 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E81234550014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -65,6 +66,7 @@
 		E81234520001 /* GlobeExplorer */ = {
 			isa = PBXGroup;
 			children = (
+				E81234550016 /* GlobeExplorer.entitlements */,
 				E81234550001 /* GlobeExplorerApp.swift */,
 				E81234550013 /* AppDelegate.swift */,
 				E81234550012 /* OrientationManager.swift */,
@@ -120,7 +122,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					E81234530002 = {
 						CreatedOnToolsVersion = 15.0;
@@ -216,6 +218,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = LP4YVQGGQL;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -239,6 +242,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -279,6 +283,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = LP4YVQGGQL;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -295,6 +300,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -305,9 +311,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GlobeExplorer/GlobeExplorer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -333,9 +339,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GlobeExplorer/GlobeExplorer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

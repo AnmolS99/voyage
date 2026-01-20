@@ -316,6 +316,49 @@ class GlobeState: ObservableObject {
     @Published var viewMode: ViewMode = .globe
     let totalCountries = 195
 
+    private let iCloudStore = NSUbiquitousKeyValueStore.default
+    private let userDefaults = UserDefaults.standard
+    private let visitedCountriesKey = "visitedCountries"
+
+    init() {
+        loadData()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(iCloudDidChange),
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: iCloudStore
+        )
+
+        iCloudStore.synchronize()
+    }
+
+    private func loadData() {
+        let localCountries = Set(userDefaults.stringArray(forKey: visitedCountriesKey) ?? [])
+        let cloudCountries = Set(iCloudStore.array(forKey: visitedCountriesKey) as? [String] ?? [])
+
+        // Merge both sources - union of local and cloud data
+        visitedCountries = localCountries.union(cloudCountries)
+
+        // Sync merged data back to both stores
+        if visitedCountries != localCountries || visitedCountries != cloudCountries {
+            saveData()
+        }
+    }
+
+    private func saveData() {
+        let array = Array(visitedCountries)
+        userDefaults.set(array, forKey: visitedCountriesKey)
+        iCloudStore.set(array, forKey: visitedCountriesKey)
+        iCloudStore.synchronize()
+    }
+
+    @objc private func iCloudDidChange(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.loadData()
+        }
+    }
+
     func selectCountry(_ name: String, center: (lat: Double, lon: Double)? = nil) {
         selectedCountry = name
         selectedCountries.insert(name)
@@ -325,10 +368,12 @@ class GlobeState: ObservableObject {
 
     func addVisit(_ name: String) {
         visitedCountries.insert(name)
+        saveData()
     }
 
     func removeVisit(_ name: String) {
         visitedCountries.remove(name)
+        saveData()
     }
 
     func isVisited(_ name: String) -> Bool {
@@ -354,6 +399,7 @@ class GlobeState: ObservableObject {
         visitedCountries.removeAll()
         targetCountryCenter = nil
         isAutoRotating = true
+        saveData()
     }
 
     func zoomIn() {
