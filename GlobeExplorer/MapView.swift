@@ -103,18 +103,22 @@ struct MapView: View {
                     .onChanged { value in
                         let newScale = lastScale * value
                         scale = min(max(newScale, 1.0), 5.0)
+                        // Clamp offset when scale changes
+                        offset = clampOffset(offset, scale: scale, viewSize: geometry.size)
                     }
                     .onEnded { _ in
                         lastScale = scale
+                        lastOffset = offset
                     }
             )
             .simultaneousGesture(
                 DragGesture()
                     .onChanged { value in
-                        offset = CGSize(
+                        let newOffset = CGSize(
                             width: lastOffset.width + value.translation.width,
                             height: lastOffset.height + value.translation.height
                         )
+                        offset = clampOffset(newOffset, scale: scale, viewSize: geometry.size)
                     }
                     .onEnded { _ in
                         lastOffset = offset
@@ -233,6 +237,25 @@ struct MapView: View {
 
         guard count > 0 else { return nil }
         return (lat: totalLat / Double(count), lon: totalLon / Double(count))
+    }
+
+    // Clamp offset to prevent dragging outside map bounds
+    private func clampOffset(_ offset: CGSize, scale: CGFloat, viewSize: CGSize) -> CGSize {
+        let mapWidth = viewSize.width
+        let mapHeight = mapWidth / 2
+
+        // Calculate how much the scaled map extends beyond the view
+        let scaledMapWidth = mapWidth * scale
+        let scaledMapHeight = mapHeight * scale
+
+        // Maximum offset is half the difference between scaled map and view
+        let maxOffsetX = max(0, (scaledMapWidth - viewSize.width) / 2)
+        let maxOffsetY = max(0, (scaledMapHeight - viewSize.height) / 2)
+
+        return CGSize(
+            width: min(max(offset.width, -maxOffsetX), maxOffsetX),
+            height: min(max(offset.height, -maxOffsetY), maxOffsetY)
+        )
     }
 
 }
