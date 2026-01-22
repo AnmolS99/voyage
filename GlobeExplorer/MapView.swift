@@ -140,7 +140,7 @@ struct MapView: View {
                 MagnificationGesture()
                     .onChanged { value in
                         let newScale = lastScale * value
-                        scale = min(max(newScale, 1.0), 5.0)
+                        scale = min(max(newScale, 1.0), 10.0)
                         // Clamp offset when scale changes
                         offset = clampOffset(offset, scale: scale, viewSize: geometry.size)
                     }
