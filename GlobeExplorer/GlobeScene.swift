@@ -124,17 +124,40 @@ class GlobeScene {
             // Convert lat/lon to 3D position
             let position = PolygonTriangulator.latLonToSphere(lat: country.lat, lon: country.lon, radius: 1.005)
 
-            // Create a small sphere for the country
-            let sphere = SCNSphere(radius: 0.012)
+            // Create black outline circle (slightly larger, behind)
+            let outlineCircle = SCNCylinder(radius: 0.014, height: 0.0005)
+            let outlineMaterial = SCNMaterial()
+            outlineMaterial.diffuse.contents = UIColor.black
+            outlineMaterial.lightingModel = .constant
+            outlineMaterial.isDoubleSided = true
+            outlineCircle.materials = [outlineMaterial]
+
+            let outlineNode = SCNNode(geometry: outlineCircle)
+            outlineNode.name = "\(country.name)_outline"
+
+            // Create a flat circle (thin cylinder) for the country
+            let circle = SCNCylinder(radius: 0.012, height: 0.001)
             let material = SCNMaterial()
             material.diffuse.contents = landColor
             material.specular.contents = UIColor.white.withAlphaComponent(0.2)
             material.shininess = 0.2
-            sphere.materials = [material]
+            material.isDoubleSided = true
+            circle.materials = [material]
 
-            let node = SCNNode(geometry: sphere)
+            let node = SCNNode(geometry: circle)
             node.name = country.name
             node.position = position
+
+            // Orient the circles to face outward from globe center
+            let direction = SCNVector3(position.x, position.y, position.z)
+            let up = SCNVector3(0, 1, 0)
+            node.look(at: SCNVector3(direction.x * 2, direction.y * 2, direction.z * 2), up: up, localFront: SCNVector3(0, 1, 0))
+
+            // Position outline at same location
+            outlineNode.position = position
+            outlineNode.look(at: SCNVector3(direction.x * 2, direction.y * 2, direction.z * 2), up: up, localFront: SCNVector3(0, 1, 0))
+
+            globeNode.addChildNode(outlineNode)
             globeNode.addChildNode(node)
 
             coordinator.countryNodes[country.name] = node
