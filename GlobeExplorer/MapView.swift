@@ -17,9 +17,10 @@ struct MapView: View {
 
             Canvas { context, size in
                 // Draw ocean background
+                // Blue #2F86A6
                 let oceanColor = globeState.isDarkMode ?
                     Color(red: 0.1, green: 0.15, blue: 0.25) :
-                    Color(red: 0.2, green: 0.4, blue: 0.65)
+                    Color(red: 0.184, green: 0.525, blue: 0.651)
                 context.fill(
                     Path(CGRect(origin: .zero, size: size)),
                     with: .color(oceanColor)
@@ -38,11 +39,14 @@ struct MapView: View {
 
                     let fillColor: Color
                     if isCurrentlySelected {
-                        fillColor = Color(red: 0.7, green: 0.9, blue: 0.4)
+                        // Brighter green for selected
+                        fillColor = Color(red: 0.3, green: 0.85, blue: 0.6)
                     } else if isVisited {
-                        fillColor = Color(red: 1.0, green: 0.85, blue: 0.2)
+                        // Light yellow #F2F013
+                        fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
                     } else {
-                        fillColor = Color(red: 0.3, green: 0.6, blue: 0.35)
+                        // Green #34BE82
+                        fillColor = Color(red: 0.204, green: 0.745, blue: 0.510)
                     }
 
                     for polygon in country.polygons {

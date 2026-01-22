@@ -18,7 +18,7 @@ class GlobeScene {
         let oceanSphere = SCNSphere(radius: 1.0)
         oceanSphere.segmentCount = 64
         let oceanMaterial = SCNMaterial()
-        oceanMaterial.diffuse.contents = UIColor(red: 0.2, green: 0.4, blue: 0.65, alpha: 1.0)
+        oceanMaterial.diffuse.contents = UIColor(red: 0.184, green: 0.525, blue: 0.651, alpha: 1.0)
         oceanMaterial.specular.contents = UIColor.white.withAlphaComponent(0.3)
         oceanMaterial.shininess = 0.3
         oceanSphere.materials = [oceanMaterial]

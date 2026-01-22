@@ -6,15 +6,9 @@ struct GeoJSONCountry {
     let polygons: [[[Double]]] // Array of polygons, each polygon is array of [lon, lat] coordinates
     let color: UIColor
 
-    static func randomLandColor() -> UIColor {
-        let colors: [UIColor] = [
-            UIColor(red: 0.30, green: 0.60, blue: 0.35, alpha: 1.0),
-            UIColor(red: 0.35, green: 0.55, blue: 0.30, alpha: 1.0),
-            UIColor(red: 0.40, green: 0.65, blue: 0.40, alpha: 1.0),
-            UIColor(red: 0.45, green: 0.58, blue: 0.38, alpha: 1.0),
-            UIColor(red: 0.38, green: 0.52, blue: 0.32, alpha: 1.0),
-        ]
-        return colors.randomElement()!
+    static func landColor() -> UIColor {
+        // Green #34BE82
+        return UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0)
     }
 }
 
@@ -63,7 +57,7 @@ class GeoJSONParser {
                 let country = GeoJSONCountry(
                     name: name,
                     polygons: polygons,
-                    color: GeoJSONCountry.randomLandColor()
+                    color: GeoJSONCountry.landColor()
                 )
                 countries.append(country)
             }
