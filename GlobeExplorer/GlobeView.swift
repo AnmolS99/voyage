@@ -30,7 +30,6 @@ struct GlobeView: UIViewRepresentable {
 
     func updateUIView(_ uiView: SCNView, context: Context) {
         context.coordinator.updateHighlights()
-        context.coordinator.updateZoom()
         context.coordinator.updateAutoRotation()
         context.coordinator.centerOnSelectedCountry()
     }
@@ -216,8 +215,10 @@ struct GlobeView: UIViewRepresentable {
             currentRotationX += Float(translation.y) * rotationSpeed
             currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX))
 
-            // Keep camera at fixed distance from globe center
-            let cameraDistance = Float(globeState.zoomLevel)
+            // Keep camera at current distance from globe center
+            let cameraDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
+                                      cameraNode.position.y * cameraNode.position.y +
+                                      cameraNode.position.z * cameraNode.position.z)
             cameraNode.position = SCNVector3(
                 0,
                 cameraDistance * sin(currentRotationX),
