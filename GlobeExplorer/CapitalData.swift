@@ -209,6 +209,21 @@ class CapitalData {
             Capital(countryName: "Nauru", capitalName: "Yaren", lat: -0.5477, lon: 166.9209),
             Capital(countryName: "Tuvalu", capitalName: "Funafuti", lat: -8.5211, lon: 179.1962),
 
+            // European microstates
+            Capital(countryName: "Andorra", capitalName: "Andorra la Vella", lat: 42.5063, lon: 1.5218),
+            Capital(countryName: "Liechtenstein", capitalName: "Vaduz", lat: 47.1410, lon: 9.5209),
+            Capital(countryName: "Monaco", capitalName: "Monaco", lat: 43.7384, lon: 7.4246),
+            Capital(countryName: "San Marino", capitalName: "San Marino", lat: 43.9356, lon: 12.4473),
+
+            // Caribbean small states
+            Capital(countryName: "Antigua and Barbuda", capitalName: "St. John's", lat: 17.1274, lon: -61.8468),
+            Capital(countryName: "Barbados", capitalName: "Bridgetown", lat: 13.0969, lon: -59.6145),
+            Capital(countryName: "Dominica", capitalName: "Roseau", lat: 15.3010, lon: -61.3881),
+            Capital(countryName: "Grenada", capitalName: "St. George's", lat: 12.0561, lon: -61.7486),
+            Capital(countryName: "Saint Kitts and Nevis", capitalName: "Basseterre", lat: 17.2968, lon: -62.7138),
+            Capital(countryName: "Saint Lucia", capitalName: "Castries", lat: 14.0101, lon: -60.9870),
+            Capital(countryName: "Saint Vincent and the Grenadines", capitalName: "Kingstown", lat: 13.1587, lon: -61.2248),
+
             // Territories
             Capital(countryName: "Greenland", capitalName: "Nuuk", lat: 64.1814, lon: -51.6941),
         ]

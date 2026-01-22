@@ -82,6 +82,40 @@ struct MapView: View {
                     }
                 }
 
+                // Draw point countries (small island nations and microstates)
+                for pointCountry in PointCountriesData.countries {
+                    let isCurrentlySelected = globeState.selectedCountry == pointCountry.name
+                    let isVisited = globeState.visitedCountries.contains(pointCountry.name)
+
+                    let fillColor: Color
+                    if isCurrentlySelected {
+                        // Orange #D98C59 (matches button color)
+                        fillColor = Color(red: 0.85, green: 0.55, blue: 0.35)
+                    } else if isVisited {
+                        // Light yellow #F2F013
+                        fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
+                    } else {
+                        // Green #34BE82
+                        fillColor = Color(red: 0.204, green: 0.745, blue: 0.510)
+                    }
+
+                    let x = (pointCountry.lon + 180) / 360 * mapWidth
+                    let y = (90 - pointCountry.lat) / 180 * mapHeight + verticalOffset
+                    let center = CGPoint(x: x, y: y).applying(transform)
+
+                    let dotRadius: CGFloat = 10
+                    let dotPath = Path(ellipseIn: CGRect(
+                        x: center.x - dotRadius,
+                        y: center.y - dotRadius,
+                        width: dotRadius * 2,
+                        height: dotRadius * 2
+                    ))
+
+                    context.fill(dotPath, with: .color(fillColor))
+                    let borderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
+                    context.stroke(dotPath, with: .color(borderColor), lineWidth: 0.5)
+                }
+
                 // Draw capital dot for selected country
                 if let selectedCountry = globeState.selectedCountry,
                    let capital = CapitalData.getCapital(for: selectedCountry) {
@@ -169,6 +203,16 @@ struct MapView: View {
     }
 
     private func findCountryAt(lat: Double, lon: Double) -> String? {
+        // First check point countries (small island nations and microstates)
+        let pointHitRadius: Double = 1.0
+        for pointCountry in PointCountriesData.countries {
+            let distance = sqrt(pow(lat - pointCountry.lat, 2) + pow(lon - pointCountry.lon, 2))
+            if distance < pointHitRadius {
+                return pointCountry.name
+            }
+        }
+
+        // Then check polygon countries
         for country in countries {
             for polygon in country.polygons {
                 if isPointInPolygon(lon: lon, lat: lat, polygon: polygon) {
@@ -223,6 +267,12 @@ struct MapView: View {
     }
 
     private func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
+        // Check point countries first
+        if let pointCountry = PointCountriesData.getCountry(named: name) {
+            return (lat: pointCountry.lat, lon: pointCountry.lon)
+        }
+
+        // Then check polygon countries
         guard let country = countries.first(where: { $0.name == name }) else { return nil }
 
         var totalLat = 0.0

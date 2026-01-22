@@ -112,5 +112,33 @@ class GlobeScene {
                 }
             }
         }
+
+        // Add point countries (small island nations and microstates)
+        addPointCountries(to: globeNode, coordinator: coordinator)
+    }
+
+    static func addPointCountries(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
+        let landColor = UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0) // Green #34BE82
+
+        for country in PointCountriesData.countries {
+            // Convert lat/lon to 3D position
+            let position = PolygonTriangulator.latLonToSphere(lat: country.lat, lon: country.lon, radius: 1.005)
+
+            // Create a small sphere for the country
+            let sphere = SCNSphere(radius: 0.012)
+            let material = SCNMaterial()
+            material.diffuse.contents = landColor
+            material.specular.contents = UIColor.white.withAlphaComponent(0.2)
+            material.shininess = 0.2
+            sphere.materials = [material]
+
+            let node = SCNNode(geometry: sphere)
+            node.name = country.name
+            node.position = position
+            globeNode.addChildNode(node)
+
+            coordinator.countryNodes[country.name] = node
+            coordinator.originalColors[country.name] = landColor
+        }
     }
 }
