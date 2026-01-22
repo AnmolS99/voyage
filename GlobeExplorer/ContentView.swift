@@ -64,35 +64,6 @@ struct ContentView: View {
 
                 Spacer()
 
-                // Zoom controls on the right (only for globe view)
-                if globeState.viewMode == .globe {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            Button(action: { globeState.zoomIn() }) {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(width: 44, height: 44)
-                                    .background(Circle().fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
-                                    .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
-                            }
-
-                            Button(action: { globeState.zoomOut() }) {
-                                Image(systemName: "minus")
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(width: 44, height: 44)
-                                    .background(Circle().fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
-                                    .shadow(color: Color.black.opacity(0.2), radius: 4, y: 2)
-                            }
-                        }
-                        .padding(.trailing, 16)
-                    }
-                }
-
-                Spacer()
-
                 // Bottom info panel
                 bottomPanel
             }
