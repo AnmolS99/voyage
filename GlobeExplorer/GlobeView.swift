@@ -422,12 +422,12 @@ struct GlobeView: UIViewRepresentable {
         }
 
         func createStarNode() -> SCNNode {
-            // Small blue dot for capital
+            // Small black dot for capital
             let sphere = SCNSphere(radius: 0.006)
 
             let material = SCNMaterial()
-            material.diffuse.contents = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
-            material.emission.contents = UIColor(red: 0.3, green: 0.6, blue: 1.0, alpha: 0.8)
+            material.diffuse.contents = UIColor.black
+            material.emission.contents = UIColor(white: 0.2, alpha: 0.8)
             material.lightingModel = .constant
             sphere.materials = [material]
 
