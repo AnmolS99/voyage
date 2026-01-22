@@ -103,7 +103,7 @@ struct MapView: View {
                     let y = (90 - pointCountry.lat) / 180 * mapHeight + verticalOffset
                     let center = CGPoint(x: x, y: y).applying(transform)
 
-                    let dotRadius: CGFloat = 10
+                    let dotRadius: CGFloat = 5
                     let dotPath = Path(ellipseIn: CGRect(
                         x: center.x - dotRadius,
                         y: center.y - dotRadius,
