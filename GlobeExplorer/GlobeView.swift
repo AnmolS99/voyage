@@ -301,7 +301,7 @@ struct GlobeView: UIViewRepresentable {
 
         func findCountryAt(lat: Double, lon: Double) -> String? {
             // First check point countries (small island nations and microstates)
-            let pointHitRadius: Double = 1.0
+            let pointHitRadius: Double = 0.8
             for pointCountry in PointCountriesData.countries {
                 let distance = sqrt(pow(lat - pointCountry.lat, 2) + pow(lon - pointCountry.lon, 2))
                 if distance < pointHitRadius {
