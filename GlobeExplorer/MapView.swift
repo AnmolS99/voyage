@@ -39,8 +39,8 @@ struct MapView: View {
 
                     let fillColor: Color
                     if isCurrentlySelected {
-                        // Brighter green for selected
-                        fillColor = Color(red: 0.3, green: 0.85, blue: 0.6)
+                        // Orange #D98C59 (matches button color)
+                        fillColor = Color(red: 0.85, green: 0.55, blue: 0.35)
                     } else if isVisited {
                         // Light yellow #F2F013
                         fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)

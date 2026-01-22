@@ -363,9 +363,9 @@ struct GlobeView: UIViewRepresentable {
                 SCNTransaction.animationDuration = 0.3
 
                 if isCurrentlySelected {
-                    // Brighter green for selected country
-                    material.diffuse.contents = UIColor(red: 0.3, green: 0.85, blue: 0.6, alpha: 1.0)
-                    material.emission.contents = UIColor(red: 0.3, green: 0.85, blue: 0.6, alpha: 0.3)
+                    // Orange #D98C59 (matches button color)
+                    material.diffuse.contents = UIColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 1.0)
+                    material.emission.contents = UIColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 0.3)
                 } else if isVisited {
                     // Light yellow #F2F013
                     material.diffuse.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 1.0)
