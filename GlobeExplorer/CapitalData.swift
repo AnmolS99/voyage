@@ -171,7 +171,7 @@ class CapitalData {
             Capital(countryName: "South Sudan", capitalName: "Juba", lat: 4.8594, lon: 31.5713),
             Capital(countryName: "Republic of Congo", capitalName: "Brazzaville", lat: -4.2634, lon: 15.2429),
             Capital(countryName: "Gabon", capitalName: "Libreville", lat: 0.4162, lon: 9.4673),
-            Capital(countryName: "Equatorial Guinea", capitalName: "Malabo", lat: 3.7504, lon: 8.7371),
+            Capital(countryName: "Equatorial Guinea", capitalName: "Ciudad de la Paz", lat: 1.617, lon: 10.828),
             Capital(countryName: "Eritrea", capitalName: "Asmara", lat: 15.3229, lon: 38.9251),
             Capital(countryName: "Benin", capitalName: "Porto-Novo", lat: 6.4969, lon: 2.6289),
             Capital(countryName: "Togo", capitalName: "Lome", lat: 6.1256, lon: 1.2254),
