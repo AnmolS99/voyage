@@ -14,7 +14,35 @@ An interactive 3D globe iOS app built with SwiftUI and SceneKit. Tap on any coun
 - **Country Selection** - Tap any country to highlight it in yellow
 - **Country Flags** - Displays the flag emoji for selected countries
 - **Real Country Boundaries** - Uses GeoJSON data for accurate country outlines
-- **180+ Countries** - Includes all major countries and territories
+- **193 UN Member States** - All internationally recognized countries
+- **Additional Territories** - Includes some disputed and dependent territories
+
+## Countries
+
+### Basis for Inclusion
+
+The app uses **United Nations membership** as the primary basis for determining what constitutes a country. All 193 UN member states are included and selectable.
+
+### Country Categories
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| UN Member States | 193 | All internationally recognized sovereign nations |
+| Disputed Territories | ~5 | Kosovo, Taiwan, Western Sahara, Northern Cyprus, Palestine |
+| Dependent Territories | ~5 | Greenland, Puerto Rico, French Guiana, New Caledonia |
+
+### Small Countries
+
+Many small island nations and microstates (28 total) are rendered as circular point markers rather than polygon boundaries due to their size:
+
+- **European Microstates**: Andorra, Liechtenstein, Monaco, San Marino
+- **Caribbean**: Antigua and Barbuda, Barbados, Dominica, Grenada, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines
+- **Pacific Islands**: Kiribati, Marshall Islands, Micronesia, Nauru, Palau, Samoa, Tonga, Tuvalu
+- **Other Regions**: Bahrain, Cape Verde, Comoros, Maldives, Mauritius, Sao Tome and Principe, Seychelles, Singapore
+
+### Data Sources
+
+Country boundaries are derived from [Natural Earth](https://www.naturalearthdata.com/) via GeoJSON format.
 
 ## Screenshots
 
