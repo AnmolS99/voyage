@@ -44,7 +44,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Support")
                 } footer: {
-                    Text("Thanks for using GlobeExplorer! If you enjoy the app, consider buying me a coffee.")
+                    Text("Thanks for using voyage! If you enjoy the app, consider buying me a coffee.")
                 }
             }
             .navigationTitle("Settings")

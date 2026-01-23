@@ -1,4 +1,4 @@
-# Globe Explorer
+# voyage
 
 An interactive 3D globe iOS app built with SwiftUI and SceneKit. Tap on any country to highlight it and see its flag.
 

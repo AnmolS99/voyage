@@ -86,7 +86,7 @@ struct ContentView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(globeState.viewMode == .globe ? "Globe Explorer" : "World Map")
+                Text(globeState.viewMode == .globe ? "voyage" : "World Map")
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
                     .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
 

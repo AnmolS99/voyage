@@ -1,4 +1,4 @@
-# GlobeExplorer
+# voyage
 
 An iOS app that displays an interactive 3D globe where users can explore and track countries they've visited.
 
