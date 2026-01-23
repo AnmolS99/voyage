@@ -85,15 +85,9 @@ struct ContentView: View {
 
     private var header: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(globeState.viewMode == .globe ? "voyage" : "World Map")
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
-                    .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
-
-                Text("Tap any country to explore")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundColor(globeState.isDarkMode ? Color(red: 0.7, green: 0.7, blue: 0.75) : Color(red: 0.5, green: 0.45, blue: 0.4))
-            }
+            Text("voyage")
+                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
 
             Spacer()
 
