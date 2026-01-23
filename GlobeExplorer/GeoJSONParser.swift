@@ -23,6 +23,9 @@ class GeoJSONParser {
             return []
         }
 
+        // Get names of countries rendered as points (circles)
+        let pointCountryNames = Set(PointCountriesData.getAllNames())
+
         var countries: [GeoJSONCountry] = []
 
         for feature in features {
@@ -31,6 +34,11 @@ class GeoJSONParser {
                   let geometry = feature["geometry"] as? [String: Any],
                   let type = geometry["type"] as? String,
                   let coordinates = geometry["coordinates"] else {
+                continue
+            }
+
+            // Skip countries that are rendered as point markers
+            if pointCountryNames.contains(name) {
                 continue
             }
 
