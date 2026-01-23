@@ -82,6 +82,7 @@ class CapitalData {
             Capital(countryName: "Malta", capitalName: "Valletta", lat: 35.8989, lon: 14.5146),
             Capital(countryName: "Iceland", capitalName: "Reykjavik", lat: 64.1466, lon: -21.9426),
             Capital(countryName: "Cyprus", capitalName: "Nicosia", lat: 35.1856, lon: 33.3823),
+            Capital(countryName: "Northern Cyprus", capitalName: "North Nicosia", lat: 35.1856, lon: 33.3823),
             Capital(countryName: "Moldova", capitalName: "Chisinau", lat: 47.0105, lon: 28.8638),
             Capital(countryName: "Belarus", capitalName: "Minsk", lat: 53.9006, lon: 27.5590),
 

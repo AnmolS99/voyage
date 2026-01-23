@@ -13,8 +13,12 @@ class PointCountriesData {
     static let countries: [PointCountry] = [
         // European microstates
         PointCountry(name: "Andorra", lat: 42.5063, lon: 1.5218, flagCode: "AD"),
+        PointCountry(name: "Cyprus", lat: 34.65, lon: 32.95, flagCode: "CY"),
         PointCountry(name: "Liechtenstein", lat: 47.1660, lon: 9.5554, flagCode: "LI"),
+        PointCountry(name: "Luxembourg", lat: 49.8153, lon: 6.1296, flagCode: "LU"),
+        PointCountry(name: "Malta", lat: 35.9375, lon: 14.3754, flagCode: "MT"),
         PointCountry(name: "Monaco", lat: 43.7384, lon: 7.4246, flagCode: "MC"),
+        PointCountry(name: "Northern Cyprus", lat: 35.35, lon: 33.55, flagCode: "CY"),
         PointCountry(name: "San Marino", lat: 43.9424, lon: 12.4578, flagCode: "SM"),
 
         // Caribbean
