@@ -85,28 +85,16 @@ struct ContentView: View {
 
     private var header: some View {
         HStack {
-            Text("voyage")
-                .font(.system(size: 28, weight: .semibold, design: .rounded))
-                .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
-
-            Spacer()
-
-            // View mode toggle (Globe/Map)
             Button(action: {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                     globeState.viewMode = globeState.viewMode == .globe ? .map : .globe
                 }
             }) {
-                Image(systemName: globeState.viewMode == .globe ? "map" : "globe.americas")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(
-                        Circle()
-                            .fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35))
-                    )
-                    .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
+                Text(globeState.viewMode == .globe ? "🗺️" : "🌍")
+                    .font(.system(size: 32))
             }
+
+            Spacer()
 
             // Dark mode toggle
             Button(action: {
