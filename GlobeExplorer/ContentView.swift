@@ -155,6 +155,8 @@ struct ContentView: View {
                                     globeState.removeVisit(country)
                                 } else {
                                     globeState.addVisit(country)
+                                    // Remove from wishlist if adding as visited
+                                    globeState.removeFromWishlist(country)
                                 }
                             }
                         }) {
@@ -171,6 +173,33 @@ struct ContentView: View {
                                 Capsule()
                                     .fill(globeState.isVisited(country) ?
                                           Color(red: 0.3, green: 0.7, blue: 0.4) :
+                                          (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
+                            )
+                        }
+
+                        // Add/Remove Wishlist button
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                if globeState.isInWishlist(country) {
+                                    globeState.removeFromWishlist(country)
+                                } else {
+                                    globeState.addToWishlist(country)
+                                }
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: globeState.isInWishlist(country) ? "heart.fill" : "heart")
+                                    .font(.system(size: 16, weight: .medium))
+                                Text(globeState.isInWishlist(country) ? "Wishlist" : "Add Wish")
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(globeState.isInWishlist(country) ?
+                                          Color(red: 0.6, green: 0.4, blue: 0.8) :
                                           (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
                             )
                         }
@@ -262,6 +291,7 @@ class GlobeState: ObservableObject {
     @Published var selectedCountry: String?
     @Published var selectedCountries: Set<String> = []
     @Published var visitedCountries: Set<String> = []
+    @Published var wishlistCountries: Set<String> = []
     @Published var zoomLevel: Float = 4.0
     @Published var isDarkMode: Bool = false
     @Published var isAutoRotating: Bool = true
@@ -272,6 +302,7 @@ class GlobeState: ObservableObject {
     private let iCloudStore = NSUbiquitousKeyValueStore.default
     private let userDefaults = UserDefaults.standard
     private let visitedCountriesKey = "visitedCountries"
+    private let wishlistCountriesKey = "wishlistCountries"
 
     init() {
         loadData()
@@ -287,22 +318,32 @@ class GlobeState: ObservableObject {
     }
 
     private func loadData() {
+        // Load visited countries
         let localCountries = Set(userDefaults.stringArray(forKey: visitedCountriesKey) ?? [])
         let cloudCountries = Set(iCloudStore.array(forKey: visitedCountriesKey) as? [String] ?? [])
-
-        // Merge both sources - union of local and cloud data
         visitedCountries = localCountries.union(cloudCountries)
 
+        // Load wishlist countries
+        let localWishlist = Set(userDefaults.stringArray(forKey: wishlistCountriesKey) ?? [])
+        let cloudWishlist = Set(iCloudStore.array(forKey: wishlistCountriesKey) as? [String] ?? [])
+        wishlistCountries = localWishlist.union(cloudWishlist)
+
         // Sync merged data back to both stores
-        if visitedCountries != localCountries || visitedCountries != cloudCountries {
+        if visitedCountries != localCountries || visitedCountries != cloudCountries ||
+           wishlistCountries != localWishlist || wishlistCountries != cloudWishlist {
             saveData()
         }
     }
 
     private func saveData() {
-        let array = Array(visitedCountries)
-        userDefaults.set(array, forKey: visitedCountriesKey)
-        iCloudStore.set(array, forKey: visitedCountriesKey)
+        let visitedArray = Array(visitedCountries)
+        userDefaults.set(visitedArray, forKey: visitedCountriesKey)
+        iCloudStore.set(visitedArray, forKey: visitedCountriesKey)
+
+        let wishlistArray = Array(wishlistCountries)
+        userDefaults.set(wishlistArray, forKey: wishlistCountriesKey)
+        iCloudStore.set(wishlistArray, forKey: wishlistCountriesKey)
+
         iCloudStore.synchronize()
     }
 
@@ -333,6 +374,20 @@ class GlobeState: ObservableObject {
         visitedCountries.contains(name)
     }
 
+    func addToWishlist(_ name: String) {
+        wishlistCountries.insert(name)
+        saveData()
+    }
+
+    func removeFromWishlist(_ name: String) {
+        wishlistCountries.remove(name)
+        saveData()
+    }
+
+    func isInWishlist(_ name: String) -> Bool {
+        wishlistCountries.contains(name)
+    }
+
     func deselectCountry() {
         selectedCountry = nil
         targetCountryCenter = nil
@@ -350,6 +405,7 @@ class GlobeState: ObservableObject {
         selectedCountry = nil
         selectedCountries.removeAll()
         visitedCountries.removeAll()
+        wishlistCountries.removeAll()
         targetCountryCenter = nil
         isAutoRotating = true
         saveData()

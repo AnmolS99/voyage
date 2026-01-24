@@ -36,6 +36,7 @@ struct MapView: View {
                 for country in countries {
                     let isCurrentlySelected = globeState.selectedCountry == country.name
                     let isVisited = globeState.visitedCountries.contains(country.name)
+                    let isWishlist = globeState.wishlistCountries.contains(country.name)
 
                     let fillColor: Color
                     if isCurrentlySelected {
@@ -44,6 +45,9 @@ struct MapView: View {
                     } else if isVisited {
                         // Light yellow #F2F013
                         fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
+                    } else if isWishlist {
+                        // Purple for wishlist
+                        fillColor = Color(red: 0.6, green: 0.4, blue: 0.8)
                     } else {
                         // Green #34BE82
                         fillColor = Color(red: 0.204, green: 0.745, blue: 0.510)
@@ -86,6 +90,7 @@ struct MapView: View {
                 for pointCountry in PointCountriesData.countries {
                     let isCurrentlySelected = globeState.selectedCountry == pointCountry.name
                     let isVisited = globeState.visitedCountries.contains(pointCountry.name)
+                    let isWishlist = globeState.wishlistCountries.contains(pointCountry.name)
 
                     let fillColor: Color
                     if isCurrentlySelected {
@@ -94,6 +99,9 @@ struct MapView: View {
                     } else if isVisited {
                         // Light yellow #F2F013
                         fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
+                    } else if isWishlist {
+                        // Purple for wishlist
+                        fillColor = Color(red: 0.6, green: 0.4, blue: 0.8)
                     } else {
                         // Green #34BE82
                         fillColor = Color(red: 0.204, green: 0.745, blue: 0.510)

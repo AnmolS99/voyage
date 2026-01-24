@@ -374,6 +374,7 @@ struct GlobeView: UIViewRepresentable {
 
                 let isCurrentlySelected = globeState.selectedCountry == name
                 let isVisited = globeState.visitedCountries.contains(name)
+                let isWishlist = globeState.wishlistCountries.contains(name)
 
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.3
@@ -386,6 +387,10 @@ struct GlobeView: UIViewRepresentable {
                     // Light yellow #F2F013
                     material.diffuse.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 1.0)
                     material.emission.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 0.15)
+                } else if isWishlist {
+                    // Purple for wishlist
+                    material.diffuse.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 1.0)
+                    material.emission.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 0.15)
                 } else {
                     // Green for unvisited countries
                     if let originalColor = originalColors[name] {
