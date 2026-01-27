@@ -170,14 +170,8 @@ struct MapView: View {
                         lastOffset = offset
                     }
             )
-            .simultaneousGesture(
-                TapGesture()
-                    .onEnded { _ in
-                        // Tap handling is done via overlay
-                    }
-            )
             .contentShape(Rectangle())
-            .onTapGesture { location in
+            .onTapGesture(coordinateSpace: .local) { location in
                 handleTap(at: location, in: geometry.size)
             }
         }
