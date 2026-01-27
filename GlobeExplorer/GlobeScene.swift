@@ -8,40 +8,23 @@ class GlobeScene {
         let scene = SCNScene()
         scene.background.contents = UIColor.clear
 
-        // Create globe container node
-        let globeNode = SCNNode()
-        globeNode.name = "globe"
-        scene.rootNode.addChildNode(globeNode)
-        coordinator.globeNode = globeNode
+        // Load pre-built globe from bundle
+        if let bundledGlobe = GlobeCache.shared.loadBundledGlobe() {
+            scene.rootNode.addChildNode(bundledGlobe)
+            coordinator.globeNode = bundledGlobe
 
-        // Create ocean sphere (base)
-        let oceanSphere = SCNSphere(radius: 1.0)
-        oceanSphere.segmentCount = 64
-        let oceanMaterial = SCNMaterial()
-        oceanMaterial.diffuse.contents = UIColor(red: 0.184, green: 0.525, blue: 0.651, alpha: 1.0)
-        oceanMaterial.specular.contents = UIColor.white.withAlphaComponent(0.3)
-        oceanMaterial.shininess = 0.3
-        oceanSphere.materials = [oceanMaterial]
+            // Rebuild the countryNodes and originalColors dictionaries from cached nodes
+            rebuildCoordinatorData(from: bundledGlobe, coordinator: coordinator)
 
-        let oceanNode = SCNNode(geometry: oceanSphere)
-        oceanNode.name = "ocean"
-        globeNode.addChildNode(oceanNode)
-
-        // Create atmosphere glow
-        let atmosphereSphere = SCNSphere(radius: 1.08)
-        atmosphereSphere.segmentCount = 48
-        let atmosphereMaterial = SCNMaterial()
-        atmosphereMaterial.diffuse.contents = UIColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.15)
-        atmosphereMaterial.isDoubleSided = true
-        atmosphereMaterial.transparency = 0.3
-        atmosphereSphere.materials = [atmosphereMaterial]
-
-        let atmosphereNode = SCNNode(geometry: atmosphereSphere)
-        atmosphereNode.name = "atmosphere"
-        globeNode.addChildNode(atmosphereNode)
-
-        // Add countries from GeoJSON
-        addCountriesFromGeoJSON(to: globeNode, coordinator: coordinator)
+            // Add rotation animation (not saved in bundle)
+            let rotation = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 60))
+            bundledGlobe.runAction(rotation, forKey: "autoRotation")
+        } else {
+            // Fallback: Generate globe from scratch (should not happen in production)
+            let globeNode = createGlobeNode(coordinator: coordinator)
+            scene.rootNode.addChildNode(globeNode)
+            coordinator.globeNode = globeNode
+        }
 
         // Camera
         let cameraNode = SCNNode()
@@ -73,11 +56,63 @@ class GlobeScene {
         ambientLightNode.light?.intensity = 400
         scene.rootNode.addChildNode(ambientLightNode)
 
+        return scene
+    }
+
+    private static func createGlobeNode(coordinator: GlobeView.Coordinator) -> SCNNode {
+        let globeNode = SCNNode()
+        globeNode.name = "globe"
+
+        // Create ocean sphere (base)
+        let oceanSphere = SCNSphere(radius: 1.0)
+        oceanSphere.segmentCount = 64
+        let oceanMaterial = SCNMaterial()
+        oceanMaterial.diffuse.contents = UIColor(red: 0.184, green: 0.525, blue: 0.651, alpha: 1.0)
+        oceanMaterial.specular.contents = UIColor.white.withAlphaComponent(0.3)
+        oceanMaterial.shininess = 0.3
+        oceanSphere.materials = [oceanMaterial]
+
+        let oceanNode = SCNNode(geometry: oceanSphere)
+        oceanNode.name = "ocean"
+        globeNode.addChildNode(oceanNode)
+
+        // Create atmosphere glow
+        let atmosphereSphere = SCNSphere(radius: 1.08)
+        atmosphereSphere.segmentCount = 48
+        let atmosphereMaterial = SCNMaterial()
+        atmosphereMaterial.diffuse.contents = UIColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.15)
+        atmosphereMaterial.isDoubleSided = true
+        atmosphereMaterial.transparency = 0.3
+        atmosphereSphere.materials = [atmosphereMaterial]
+
+        let atmosphereNode = SCNNode(geometry: atmosphereSphere)
+        atmosphereNode.name = "atmosphere"
+        globeNode.addChildNode(atmosphereNode)
+
+        // Add countries from GeoJSON
+        addCountriesFromGeoJSON(to: globeNode, coordinator: coordinator)
+
         // Add subtle rotation animation
         let rotation = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 60))
         globeNode.runAction(rotation, forKey: "autoRotation")
 
-        return scene
+        return globeNode
+    }
+
+    private static func rebuildCoordinatorData(from globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
+        let landColor = UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0)
+
+        // Get all country names from both polygon and point countries
+        let polygonCountryNames = Set(GeoJSONParser.loadCountries().map { $0.name })
+        let pointCountryNames = Set(PointCountriesData.getAllNames())
+        let allCountryNames = polygonCountryNames.union(pointCountryNames)
+
+        for name in allCountryNames {
+            if let node = globeNode.childNode(withName: name, recursively: true) {
+                coordinator.countryNodes[name] = node
+                coordinator.originalColors[name] = landColor
+            }
+        }
     }
 
     static func addCountriesFromGeoJSON(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
