@@ -82,7 +82,7 @@ The app uses a ray-casting point-in-polygon algorithm to detect which country wa
 ## Installation
 
 1. Clone the repository
-2. Open `GlobeExplorer.xcodeproj` in Xcode
+2. Open `voyage.xcodeproj` in Xcode
 3. Build and run on simulator or device
 
 ## License

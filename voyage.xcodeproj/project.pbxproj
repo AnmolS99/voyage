@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E81234560001 /* GlobeExplorerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550001 /* GlobeExplorerApp.swift */; };
+		E81234560001 /* voyageApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550001 /* voyageApp.swift */; };
 		E81234560002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550002 /* ContentView.swift */; };
 		E81234560003 /* GlobeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550003 /* GlobeView.swift */; };
 		E81234560004 /* GlobeScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550004 /* GlobeScene.swift */; };
@@ -28,8 +28,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		E81234540001 /* GlobeExplorer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GlobeExplorer.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		E81234550001 /* GlobeExplorerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeExplorerApp.swift; sourceTree = "<group>"; };
+		E81234540001 /* voyage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voyage.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E81234550001 /* voyageApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageApp.swift; sourceTree = "<group>"; };
 		E81234550002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E81234550003 /* GlobeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeView.swift; sourceTree = "<group>"; };
 		E81234550004 /* GlobeScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeScene.swift; sourceTree = "<group>"; };
@@ -44,7 +44,7 @@
 		E81234550013 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E81234550014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E81234550015 /* CapitalData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapitalData.swift; sourceTree = "<group>"; };
-		E81234550016 /* GlobeExplorer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GlobeExplorer.entitlements; sourceTree = "<group>"; };
+		E81234550016 /* voyage.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = voyage.entitlements; sourceTree = "<group>"; };
 		E81234550017 /* PointCountries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointCountries.swift; sourceTree = "<group>"; };
 		E81234550018 /* GlobeCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeCache.swift; sourceTree = "<group>"; };
 		E81234550019 /* globe.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = globe.scn; sourceTree = "<group>"; };
@@ -64,16 +64,16 @@
 		E81234510001 = {
 			isa = PBXGroup;
 			children = (
-				E81234520001 /* GlobeExplorer */,
+				E81234520001 /* voyage */,
 				E81234520002 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		E81234520001 /* GlobeExplorer */ = {
+		E81234520001 /* voyage */ = {
 			isa = PBXGroup;
 			children = (
-				E81234550016 /* GlobeExplorer.entitlements */,
-				E81234550001 /* GlobeExplorerApp.swift */,
+				E81234550016 /* voyage.entitlements */,
+				E81234550001 /* voyageApp.swift */,
 				E81234550013 /* AppDelegate.swift */,
 				E81234550012 /* OrientationManager.swift */,
 				E81234550002 /* ContentView.swift */,
@@ -92,13 +92,13 @@
 				E81234550010 /* world.geojson */,
 				E81234550019 /* globe.scn */,
 			);
-			path = GlobeExplorer;
+			path = voyage;
 			sourceTree = "<group>";
 		};
 		E81234520002 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E81234540001 /* GlobeExplorer.app */,
+				E81234540001 /* voyage.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -106,9 +106,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		E81234530002 /* GlobeExplorer */ = {
+		E81234530002 /* voyage */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E81234570001 /* Build configuration list for PBXNativeTarget "GlobeExplorer" */;
+			buildConfigurationList = E81234570001 /* Build configuration list for PBXNativeTarget "voyage" */;
 			buildPhases = (
 				E81234530003 /* Sources */,
 				E81234530001 /* Frameworks */,
@@ -118,9 +118,9 @@
 			);
 			dependencies = (
 			);
-			name = GlobeExplorer;
-			productName = GlobeExplorer;
-			productReference = E81234540001 /* GlobeExplorer.app */;
+			name = voyage;
+			productName = voyage;
+			productReference = E81234540001 /* voyage.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -138,7 +138,7 @@
 					};
 				};
 			};
-			buildConfigurationList = E81234570002 /* Build configuration list for PBXProject "GlobeExplorer" */;
+			buildConfigurationList = E81234570002 /* Build configuration list for PBXProject "voyage" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -151,7 +151,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				E81234530002 /* GlobeExplorer */,
+				E81234530002 /* voyage */,
 			);
 		};
 /* End PBXProject section */
@@ -323,7 +323,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = GlobeExplorer/GlobeExplorer.entitlements;
+				CODE_SIGN_ENTITLEMENTS = voyage/voyage.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = LP4YVQGGQL;
@@ -340,7 +340,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.globe.GlobeExplorer;
+				PRODUCT_BUNDLE_IDENTIFIER = com.voyage.voyage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -353,7 +353,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = GlobeExplorer/GlobeExplorer.entitlements;
+				CODE_SIGN_ENTITLEMENTS = voyage/voyage.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = LP4YVQGGQL;
@@ -370,7 +370,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.globe.GlobeExplorer;
+				PRODUCT_BUNDLE_IDENTIFIER = com.voyage.voyage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

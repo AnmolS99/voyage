@@ -1,7 +1,7 @@
 import XCTest
-@testable import GlobeExplorer
+@testable import voyage
 
-final class GlobeExplorerTests: XCTestCase {
+final class voyageTests: XCTestCase {
 
     // Test point-in-polygon algorithm
     func testPointInPolygon() {

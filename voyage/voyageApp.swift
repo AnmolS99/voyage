@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct GlobeExplorerApp: App {
+struct voyageApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {

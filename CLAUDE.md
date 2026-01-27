@@ -6,11 +6,11 @@ An iOS app that displays an interactive 3D globe where users can explore and tra
 
 ```bash
 # Build
-xcodebuild -scheme GlobeExplorer -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6' -configuration Debug build
+xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6' -configuration Debug build
 
 # Run in simulator
-xcrun simctl install "iPhone 16 Pro" ~/Library/Developer/Xcode/DerivedData/GlobeExplorer-*/Build/Products/Debug-iphonesimulator/GlobeExplorer.app
-xcrun simctl launch "iPhone 16 Pro" com.globe.GlobeExplorer
+xcrun simctl install "iPhone 16 Pro" ~/Library/Developer/Xcode/DerivedData/voyage-*/Build/Products/Debug-iphonesimulator/voyage.app
+xcrun simctl launch "iPhone 16 Pro" com.voyage.voyage
 ```
 
 ## Architecture
