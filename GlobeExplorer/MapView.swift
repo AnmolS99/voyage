@@ -145,12 +145,31 @@ struct MapView: View {
                 }
             }
             .gesture(
-                MagnificationGesture()
+                MagnifyGesture()
                     .onChanged { value in
-                        let newScale = lastScale * value
-                        scale = min(max(newScale, 1.0), 10.0)
-                        // Clamp offset when scale changes
-                        offset = clampOffset(offset, scale: scale, viewSize: geometry.size)
+                        let newScale = min(max(lastScale * value.magnification, 1.0), 10.0)
+
+                        // Get the pinch anchor point in view coordinates
+                        let anchor = value.startLocation
+
+                        // Calculate offset adjustment to keep anchor point stationary
+                        // The anchor point relative to center before zoom
+                        let anchorFromCenter = CGPoint(
+                            x: anchor.x - geometry.size.width / 2 - lastOffset.width,
+                            y: anchor.y - geometry.size.height / 2 - lastOffset.height
+                        )
+
+                        // Scale factor change
+                        let scaleChange = newScale / lastScale
+
+                        // After zoom, the anchor would move by this much, so compensate
+                        let newOffset = CGSize(
+                            width: lastOffset.width + anchorFromCenter.x * (1 - scaleChange),
+                            height: lastOffset.height + anchorFromCenter.y * (1 - scaleChange)
+                        )
+
+                        scale = newScale
+                        offset = clampOffset(newOffset, scale: scale, viewSize: geometry.size)
                     }
                     .onEnded { _ in
                         lastScale = scale
