@@ -419,7 +419,8 @@ struct GlobeView: UIViewRepresentable {
 
             // Convert lat/lon to 3D position on sphere (radius slightly above surface)
             // Must match PolygonTriangulator.latLonToSphere coordinate system
-            let radius: Float = 1.03  // Slightly above globe surface
+            // Country polygons are at 1.003, borders at 1.005, so marker at 1.007
+            let radius: Float = 1.007  // Just above borders
             let latRad = Float(capital.lat) * .pi / 180.0
             let lonRad = Float(-capital.lon) * .pi / 180.0  // Negative lon to match globe
 
