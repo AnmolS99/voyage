@@ -74,6 +74,18 @@ The app displays a beautiful 3D globe with:
 
 The app uses a ray-casting point-in-polygon algorithm to detect which country was tapped. It includes a search radius feature to make selecting smaller countries easier.
 
+### Globe Bundling
+
+The 3D globe (`globe.scn`) is pre-built and bundled with the app for fast startup. To update it (e.g., add/remove countries):
+1. Temporarily modify `GlobeScene.swift` to regenerate from scratch and save to Documents
+2. Run the app to generate the new `globe.scn`
+3. Copy it back to the project bundle
+4. Users receive the updated globe with the next app update
+
+### User Data Storage
+
+Visited countries are stored as country name strings in UserDefaults and iCloud (`Set<String>`). This data is independent of `globe.scn` - adding/removing countries won't affect existing user data. However, renaming a country will break the association.
+
 ## Requirements
 
 - iOS 17.0+
