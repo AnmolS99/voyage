@@ -17,7 +17,6 @@
 		E81234560008 /* GeoJSONParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550008 /* GeoJSONParser.swift */; };
 		E81234560009 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
 		E81234560010 /* world.geojson in Resources */ = {isa = PBXBuildFile; fileRef = E81234550010 /* world.geojson */; };
-		E81234560019 /* globe.scn in Resources */ = {isa = PBXBuildFile; fileRef = E81234550019 /* globe.scn */; };
 		E81234560011 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550011 /* MapView.swift */; };
 		E81234560012 /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550012 /* OrientationManager.swift */; };
 		E81234560013 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550013 /* AppDelegate.swift */; };
@@ -25,10 +24,23 @@
 		E81234560015 /* CapitalData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550015 /* CapitalData.swift */; };
 		E81234560017 /* PointCountries.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550017 /* PointCountries.swift */; };
 		E81234560018 /* GlobeCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550018 /* GlobeCache.swift */; };
+		E81234560019 /* globe.scn in Resources */ = {isa = PBXBuildFile; fileRef = E81234550019 /* globe.scn */; };
+		E81234560020 /* voyageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550020 /* voyageTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E81234590001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E81234510002 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E81234530002;
+			remoteInfo = voyage;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		E81234540001 /* voyage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voyage.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E81234540002 /* voyageTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = voyageTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E81234550001 /* voyageApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageApp.swift; sourceTree = "<group>"; };
 		E81234550002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E81234550003 /* GlobeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeView.swift; sourceTree = "<group>"; };
@@ -48,10 +60,18 @@
 		E81234550017 /* PointCountries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointCountries.swift; sourceTree = "<group>"; };
 		E81234550018 /* GlobeCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeCache.swift; sourceTree = "<group>"; };
 		E81234550019 /* globe.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = globe.scn; sourceTree = "<group>"; };
+		E81234550020 /* voyageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		E81234530001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E81234530005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -65,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				E81234520001 /* voyage */,
+				E81234520003 /* voyageTests */,
 				E81234520002 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -99,8 +120,17 @@
 			isa = PBXGroup;
 			children = (
 				E81234540001 /* voyage.app */,
+				E81234540002 /* voyageTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E81234520003 /* voyageTests */ = {
+			isa = PBXGroup;
+			children = (
+				E81234550020 /* voyageTests.swift */,
+			);
+			path = voyageTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -123,6 +153,24 @@
 			productReference = E81234540001 /* voyage.app */;
 			productType = "com.apple.product-type.application";
 		};
+		E81234530006 /* voyageTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E81234570003 /* Build configuration list for PBXNativeTarget "voyageTests" */;
+			buildPhases = (
+				E81234530007 /* Sources */,
+				E81234530005 /* Frameworks */,
+				E81234530008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E81234590002 /* PBXTargetDependency */,
+			);
+			name = voyageTests;
+			productName = voyageTests;
+			productReference = E81234540002 /* voyageTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -135,6 +183,10 @@
 				TargetAttributes = {
 					E81234530002 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					E81234530006 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = E81234530002;
 					};
 				};
 			};
@@ -152,6 +204,7 @@
 			projectRoot = "";
 			targets = (
 				E81234530002 /* voyage */,
+				E81234530006 /* voyageTests */,
 			);
 		};
 /* End PBXProject section */
@@ -168,6 +221,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E81234530008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -175,7 +235,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E81234560001 /* GlobeExplorerApp.swift in Sources */,
+				E81234560001 /* voyageApp.swift in Sources */,
 				E81234560013 /* AppDelegate.swift in Sources */,
 				E81234560012 /* OrientationManager.swift in Sources */,
 				E81234560002 /* ContentView.swift in Sources */,
@@ -192,7 +252,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E81234530007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E81234560020 /* voyageTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E81234590002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E81234530002 /* voyage */;
+			targetProxy = E81234590001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		E81234580001 /* Debug */ = {
@@ -340,7 +416,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.voyage.voyage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anmol.voyage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -370,7 +446,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.voyage.voyage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anmol.voyage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -378,10 +454,48 @@
 			};
 			name = Release;
 		};
+		E81234580005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LP4YVQGGQL;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anmol.voyageTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/voyage.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/voyage";
+			};
+			name = Debug;
+		};
+		E81234580006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LP4YVQGGQL;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anmol.voyageTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/voyage.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/voyage";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E81234570001 /* Build configuration list for PBXNativeTarget "GlobeExplorer" */ = {
+		E81234570001 /* Build configuration list for PBXNativeTarget "voyage" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E81234580003 /* Debug */,
@@ -390,11 +504,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		E81234570002 /* Build configuration list for PBXProject "GlobeExplorer" */ = {
+		E81234570002 /* Build configuration list for PBXProject "voyage" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E81234580001 /* Debug */,
 				E81234580002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E81234570003 /* Build configuration list for PBXNativeTarget "voyageTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E81234580005 /* Debug */,
+				E81234580006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

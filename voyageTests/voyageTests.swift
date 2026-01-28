@@ -1,7 +1,45 @@
 import XCTest
+import SceneKit
 @testable import voyage
 
 final class voyageTests: XCTestCase {
+
+    // Test that globe.scn contains all countries from source data (map and globe consistency)
+    func testGlobeAndMapCountryConsistency() {
+        // Get expected countries from source data (used by map)
+        let geoJSONCountries = Set(GeoJSONParser.loadCountries().map { $0.name })
+        let pointCountries = Set(PointCountriesData.getAllNames())
+        let expectedCountries = geoJSONCountries.union(pointCountries)
+
+        // Load globe.scn and extract country names
+        guard let url = Bundle.main.url(forResource: "globe", withExtension: "scn"),
+              let scene = try? SCNScene(url: url, options: nil),
+              let globeNode = scene.rootNode.childNode(withName: "globe", recursively: true) else {
+            XCTFail("Could not load globe.scn")
+            return
+        }
+
+        var globeCountries = Set<String>()
+        globeNode.enumerateChildNodes { node, _ in
+            if let name = node.name,
+               !name.isEmpty,
+               !name.hasSuffix("_outline"),
+               name != "ocean",
+               name != "atmosphere" {
+                globeCountries.insert(name)
+            }
+        }
+
+        // Check for countries missing from globe
+        let missingFromGlobe = expectedCountries.subtracting(globeCountries)
+        XCTAssertTrue(missingFromGlobe.isEmpty,
+            "Countries in map but missing from globe: \(missingFromGlobe.sorted()). Regenerate globe.scn.")
+
+        // Check for extra countries in globe
+        let extraInGlobe = globeCountries.subtracting(expectedCountries)
+        XCTAssertTrue(extraInGlobe.isEmpty,
+            "Countries in globe but missing from map data: \(extraInGlobe.sorted())")
+    }
 
     // Test point-in-polygon algorithm
     func testPointInPolygon() {
