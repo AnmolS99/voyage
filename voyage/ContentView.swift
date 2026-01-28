@@ -424,7 +424,7 @@ class GlobeState: ObservableObject {
         let countryToCode: [String: String] = [
             "Afghanistan": "AF", "Albania": "AL", "Algeria": "DZ", "Angola": "AO", "Argentina": "AR",
             "Andorra": "AD", "Antigua and Barbuda": "AG", "Armenia": "AM", "Australia": "AU", "Austria": "AT", "Azerbaijan": "AZ",
-            "Bahrain": "BH", "Bangladesh": "BD", "Barbados": "BB", "Belarus": "BY", "Belgium": "BE", "Bermuda": "BM",
+            "Bahamas": "BS", "Bahrain": "BH", "Bangladesh": "BD", "Barbados": "BB", "Belarus": "BY", "Belgium": "BE", "Bermuda": "BM",
             "Belize": "BZ", "Benin": "BJ", "Bhutan": "BT", "Bolivia": "BO",
             "Bosnia": "BA", "Bosnia and Herzegovina": "BA", "Botswana": "BW",
             "Brazil": "BR", "Brunei": "BN", "Bulgaria": "BG", "Burkina Faso": "BF",
@@ -472,7 +472,7 @@ class GlobeState: ObservableObject {
             "UAE": "AE", "United Arab Emirates": "AE", "Uganda": "UG", "Ukraine": "UA",
             "United Kingdom": "GB", "United Republic of Tanzania": "TZ",
             "United States": "US", "United States of America": "US", "Uruguay": "UY",
-            "Uzbekistan": "UZ", "Vanuatu": "VU", "Venezuela": "VE", "Vietnam": "VN",
+            "Uzbekistan": "UZ", "Vanuatu": "VU", "Vatican City": "VA", "Venezuela": "VE", "Vietnam": "VN",
             "Western Sahara": "EH", "Yemen": "YE", "Zambia": "ZM", "Zimbabwe": "ZW", "Antarctica": "AQ"
         ]
 

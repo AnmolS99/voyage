@@ -60,6 +60,8 @@ class CountryData {
             CountryInfo(name: "Saint Kitts and Nevis", centerLat: 17.36, centerLon: -62.78, size: 0.4),
             CountryInfo(name: "Saint Lucia", centerLat: 13.91, centerLon: -60.98, size: 0.5),
             CountryInfo(name: "Saint Vincent and the Grenadines", centerLat: 13.25, centerLon: -61.20, size: 0.4),
+            CountryInfo(name: "Bahamas", centerLat: 25.03, centerLon: -77.40, size: 1.5),
+            CountryInfo(name: "Trinidad and Tobago", centerLat: 10.69, centerLon: -61.22, size: 1),
 
             // South America
             CountryInfo(name: "Brazil", centerLat: -14.2, centerLon: -51.9, size: 22),
@@ -102,7 +104,7 @@ class CountryData {
             CountryInfo(name: "Bulgaria", centerLat: 42.7, centerLon: 25.5, size: 3),
             CountryInfo(name: "Serbia", centerLat: 44.0, centerLon: 21.0, size: 2.5),
             CountryInfo(name: "Croatia", centerLat: 45.1, centerLon: 15.2, size: 2),
-            CountryInfo(name: "Bosnia", centerLat: 43.9, centerLon: 17.7, size: 2),
+            CountryInfo(name: "Bosnia and Herzegovina", centerLat: 43.9, centerLon: 17.7, size: 2),
             CountryInfo(name: "Albania", centerLat: 41.2, centerLon: 20.2, size: 1.5),
             CountryInfo(name: "Lithuania", centerLat: 55.2, centerLon: 23.9, size: 2),
             CountryInfo(name: "Latvia", centerLat: 56.9, centerLon: 24.6, size: 2),
@@ -116,6 +118,7 @@ class CountryData {
             CountryInfo(name: "Liechtenstein", centerLat: 47.17, centerLon: 9.56, size: 0.3),
             CountryInfo(name: "Monaco", centerLat: 43.74, centerLon: 7.42, size: 0.2),
             CountryInfo(name: "San Marino", centerLat: 43.94, centerLon: 12.46, size: 0.3),
+            CountryInfo(name: "Vatican City", centerLat: 41.90, centerLon: 12.45, size: 0.5),
             CountryInfo(name: "Iceland", centerLat: 64.9, centerLon: -19.0, size: 3),
             CountryInfo(name: "Cyprus", centerLat: 35.1, centerLon: 33.4, size: 1.5),
             CountryInfo(name: "Moldova", centerLat: 47.4, centerLon: 28.4, size: 2),
@@ -152,6 +155,7 @@ class CountryData {
             CountryInfo(name: "Bahrain", centerLat: 26.0, centerLon: 50.6, size: 0.8),
             CountryInfo(name: "Jordan", centerLat: 30.6, centerLon: 36.2, size: 2.5),
             CountryInfo(name: "Israel", centerLat: 31.0, centerLon: 34.9, size: 1.5),
+            CountryInfo(name: "Palestine", centerLat: 31.95, centerLon: 35.23, size: 0.8),
             CountryInfo(name: "Lebanon", centerLat: 33.9, centerLon: 35.9, size: 1),
             CountryInfo(name: "Syria", centerLat: 34.8, centerLon: 39.0, size: 4),
             CountryInfo(name: "Turkey", centerLat: 38.9, centerLon: 35.2, size: 8),
@@ -168,6 +172,7 @@ class CountryData {
             CountryInfo(name: "Tajikistan", centerLat: 38.9, centerLon: 71.3, size: 3),
             CountryInfo(name: "Bhutan", centerLat: 27.5, centerLon: 90.4, size: 1.5),
             CountryInfo(name: "Maldives", centerLat: 3.2, centerLon: 73.2, size: 0.5),
+            CountryInfo(name: "Timor-Leste", centerLat: -8.87, centerLon: 125.73, size: 1),
 
             // Africa
             CountryInfo(name: "Nigeria", centerLat: 9.1, centerLon: 8.7, size: 8),

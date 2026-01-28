@@ -20,6 +20,7 @@ class PointCountriesData {
         PointCountry(name: "Monaco", lat: 43.7384, lon: 7.4246, flagCode: "MC"),
         PointCountry(name: "Northern Cyprus", lat: 35.35, lon: 33.55, flagCode: "CY"),
         PointCountry(name: "San Marino", lat: 43.9424, lon: 12.4578, flagCode: "SM"),
+        PointCountry(name: "Vatican City", lat: 41.9029, lon: 12.4534, flagCode: "VA"),
 
         // Caribbean
         PointCountry(name: "Antigua and Barbuda", lat: 17.0608, lon: -61.7964, flagCode: "AG"),
