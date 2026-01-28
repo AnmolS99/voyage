@@ -13,23 +13,6 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    Button(role: .destructive) {
-                        showingResetConfirmation = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash")
-                                .foregroundColor(.red)
-                            Text("Reset All Data")
-                                .foregroundColor(.red)
-                        }
-                    }
-                } header: {
-                    Text("Data")
-                } footer: {
-                    Text("This will clear all visited countries and selections.")
-                }
-
-                Section {
                     Link(destination: URL(string: "https://buymeacoffee.com/anmols99")!) {
                         HStack {
                             Image(systemName: "cup.and.saucer.fill")
@@ -49,6 +32,23 @@ struct SettingsView: View {
                     Text("Support")
                 } footer: {
                     Text("Thanks for using voyage! If you enjoy the app, consider buying me a coffee.")
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        showingResetConfirmation = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                            Text("Reset All Data")
+                                .foregroundColor(.red)
+                        }
+                    }
+                } header: {
+                    Text("Data")
+                } footer: {
+                    Text("This will clear all visited countries and selections.")
                 }
 
                 Section {
