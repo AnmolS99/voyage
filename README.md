@@ -1,4 +1,4 @@
-# 🌍 voyage
+# voyage 🌍
 
 An interactive 3D globe iOS app to track the countries you've visited. Built with SwiftUI and SceneKit.
 
@@ -60,4 +60,4 @@ Visited countries are stored as country name strings in UserDefaults + iCloud. D
 
 ---
 
-*Built with vibes and [Claude](https://claude.ai) 🤖*
+_Built with vibes and [Claude](https://claude.ai) 🤖_
