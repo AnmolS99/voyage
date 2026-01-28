@@ -5,6 +5,10 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingResetConfirmation = false
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -45,6 +49,15 @@ struct SettingsView: View {
                     Text("Support")
                 } footer: {
                     Text("Thanks for using voyage! If you enjoy the app, consider buying me a coffee.")
+                }
+
+                Section {
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text(appVersion)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             .navigationTitle("Settings")
