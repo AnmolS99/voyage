@@ -211,7 +211,16 @@ struct GlobeView: UIViewRepresentable {
 
             let translation = gesture.translation(in: sceneView)
 
-            let rotationSpeed: Float = 0.005
+            // Scale rotation speed based on camera distance (zoom level)
+            // When zoomed in (closer), use slower rotation for finer control
+            let cameraDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
+                                      cameraNode.position.y * cameraNode.position.y +
+                                      cameraNode.position.z * cameraNode.position.z)
+            let baseRotationSpeed: Float = 0.005
+            let referenceDistance: Float = 4.0  // Default camera distance
+            let distanceRatio = cameraDistance / referenceDistance
+            // Use squared ratio for more aggressive scaling when zoomed in
+            let rotationSpeed = baseRotationSpeed * distanceRatio * distanceRatio
 
             // Horizontal drag: rotate globe around Y-axis
             currentRotationY += Float(translation.x) * rotationSpeed
@@ -222,9 +231,6 @@ struct GlobeView: UIViewRepresentable {
             currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX))
 
             // Keep camera at current distance from globe center
-            let cameraDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
-                                      cameraNode.position.y * cameraNode.position.y +
-                                      cameraNode.position.z * cameraNode.position.z)
             cameraNode.position = SCNVector3(
                 0,
                 cameraDistance * sin(currentRotationX),
