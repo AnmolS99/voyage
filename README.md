@@ -58,6 +58,10 @@ Run `testGlobeAndMapCountryConsistency` to verify map and globe are in sync.
 
 Visited countries are stored as country name strings in UserDefaults + iCloud. Data is independent of `globe.scn`.
 
+## Support
+
+Found a bug or have a feature request? [Open an issue](https://github.com/AnmolS99/voyage/issues) on GitHub.
+
 ---
 
 _Built with vibes and [Claude](https://claude.ai) 🤖_
