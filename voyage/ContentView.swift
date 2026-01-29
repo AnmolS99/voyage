@@ -26,6 +26,7 @@ struct StarryBackground: View {
 struct ContentView: View {
     @StateObject private var globeState = GlobeState()
     @State private var showingSettings = false
+    @State private var showingAchievements = false
 
     var body: some View {
         ZStack {
@@ -81,6 +82,9 @@ struct ContentView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView(globeState: globeState)
         }
+        .sheet(isPresented: $showingAchievements) {
+            AchievementsView(globeState: globeState)
+        }
     }
 
     private var header: some View {
@@ -95,6 +99,21 @@ struct ContentView: View {
             }
 
             Spacer()
+
+            // Achievements button
+            Button(action: {
+                showingAchievements = true
+            }) {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35))
+                    )
+                    .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
+            }
 
             // Dark mode toggle
             Button(action: {
