@@ -33,7 +33,7 @@ struct ContinentData {
             "Cameroon", "Cape Verde", "Central African Republic", "Chad", "Comoros",
             "Democratic Republic of the Congo", "Djibouti", "Egypt", "Equatorial Guinea",
             "Eritrea", "Eswatini", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea",
-            "Guinea-Bissau", "Ivory Coast", "Kenya", "Lesotho", "Liberia", "Libya",
+            "Guinea Bissau", "Côte d'Ivoire", "Kenya", "Lesotho", "Liberia", "Libya",
             "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco",
             "Mozambique", "Namibia", "Niger", "Nigeria", "Republic of the Congo", "Rwanda",
             "Sao Tome and Principe", "Senegal", "Seychelles", "Sierra Leone", "Somalia",
@@ -52,7 +52,7 @@ struct ContinentData {
         ],
         .europe: [
             "Albania", "Andorra", "Austria", "Belarus", "Belgium", "Bosnia and Herzegovina",
-            "Bulgaria", "Croatia", "Czech Republic", "Denmark", "Estonia", "Finland",
+            "Bulgaria", "Croatia", "Czechia", "Denmark", "Estonia", "Finland",
             "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Italy",
             "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta",
             "Moldova", "Monaco", "Montenegro", "Netherlands", "North Macedonia", "Norway",
@@ -60,11 +60,11 @@ struct ContinentData {
             "Spain", "Sweden", "Switzerland", "Ukraine", "United Kingdom", "Vatican City"
         ],
         .northAmerica: [
-            "Antigua and Barbuda", "Bahamas", "Barbados", "Belize", "Canada", "Costa Rica",
+            "Antigua and Barbuda", "The Bahamas", "Barbados", "Belize", "Canada", "Costa Rica",
             "Cuba", "Dominica", "Dominican Republic", "El Salvador", "Grenada", "Guatemala",
             "Haiti", "Honduras", "Jamaica", "Mexico", "Nicaragua", "Panama",
             "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines",
-            "Trinidad and Tobago", "United States"
+            "Trinidad and Tobago", "United States of America"
         ],
         .southAmerica: [
             "Argentina", "Bolivia", "Brazil", "Chile", "Colombia", "Ecuador", "Guyana",
