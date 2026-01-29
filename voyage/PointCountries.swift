@@ -23,6 +23,9 @@ class PointCountriesData {
         PointCountry(name: "San Marino", lat: 43.9424, lon: 12.4578, flagCode: "SM", continent: "Europe"),
         PointCountry(name: "Vatican City", lat: 41.9029, lon: 12.4534, flagCode: "VA", continent: "Europe"),
 
+        // Atlantic
+        PointCountry(name: "Bermuda", lat: 32.3078, lon: -64.7505, flagCode: "BM", continent: "North America"),
+
         // Caribbean
         PointCountry(name: "Antigua and Barbuda", lat: 17.0608, lon: -61.7964, flagCode: "AG", continent: "North America"),
         PointCountry(name: "Barbados", lat: 13.1939, lon: -59.5432, flagCode: "BB", continent: "North America"),
