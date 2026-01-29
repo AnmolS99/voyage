@@ -174,14 +174,14 @@ struct GlobeView: UIViewRepresentable {
         }
 
         func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
-            // Check point countries first
-            if let pointCountry = PointCountriesData.getCountry(named: name) {
-                return (lat: pointCountry.lat, lon: pointCountry.lon)
-            }
-
-            // Then check polygon countries
             guard let country = cachedCountries.first(where: { $0.name == name }) else { return nil }
 
+            // Point countries have their center stored directly
+            if country.isPointCountry, let coord = country.pointCoordinate {
+                return coord
+            }
+
+            // Calculate center for polygon countries
             var totalLat = 0.0
             var totalLon = 0.0
             var count = 0
@@ -308,10 +308,11 @@ struct GlobeView: UIViewRepresentable {
         func findCountryAt(lat: Double, lon: Double) -> String? {
             // First check point countries (small island nations and microstates)
             let pointHitRadius: Double = 0.8
-            for pointCountry in PointCountriesData.countries {
-                let distance = sqrt(pow(lat - pointCountry.lat, 2) + pow(lon - pointCountry.lon, 2))
+            for country in cachedCountries where country.isPointCountry {
+                guard let coord = country.pointCoordinate else { continue }
+                let distance = sqrt(pow(lat - coord.lat, 2) + pow(lon - coord.lon, 2))
                 if distance < pointHitRadius {
-                    return pointCountry.name
+                    return country.name
                 }
             }
 

@@ -41,8 +41,7 @@ Build and run on iOS 17.0+ simulator or device.
 | `GlobeView.swift`      | 3D globe with SceneKit + gesture handling      |
 | `MapView.swift`        | 2D flat map alternative                        |
 | `GlobeScene.swift`     | Scene setup (globe, lighting, camera)          |
-| `PointCountries.swift` | Small countries rendered as point markers      |
-| `GeoJSONParser.swift`  | Parses country boundaries from `world.geojson` |
+| `GeoJSONParser.swift`  | Parses country data from `world.geojson` (polygons + point markers) |
 
 ### Globe Bundling
 

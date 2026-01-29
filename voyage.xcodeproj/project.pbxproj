@@ -22,10 +22,14 @@
 		E81234560013 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550013 /* AppDelegate.swift */; };
 		E81234560014 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550014 /* SettingsView.swift */; };
 		E81234560015 /* CapitalData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550015 /* CapitalData.swift */; };
-		E81234560017 /* PointCountries.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550017 /* PointCountries.swift */; };
 		E81234560018 /* GlobeCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550018 /* GlobeCache.swift */; };
 		E81234560019 /* globe.scn in Resources */ = {isa = PBXBuildFile; fileRef = E81234550019 /* globe.scn */; };
 		E81234560020 /* voyageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550020 /* voyageTests.swift */; };
+		E81234560021 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550021 /* AchievementsView.swift */; };
+		E81234560022 /* ContinentData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550022 /* ContinentData.swift */; };
+		E81234560023 /* AchievementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550023 /* AchievementTests.swift */; };
+		E81234560024 /* ContinentDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550024 /* ContinentDataTests.swift */; };
+		E81234560025 /* AchievementCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550025 /* AchievementCompletionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,10 +61,14 @@
 		E81234550014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E81234550015 /* CapitalData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapitalData.swift; sourceTree = "<group>"; };
 		E81234550016 /* voyage.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = voyage.entitlements; sourceTree = "<group>"; };
-		E81234550017 /* PointCountries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointCountries.swift; sourceTree = "<group>"; };
 		E81234550018 /* GlobeCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeCache.swift; sourceTree = "<group>"; };
 		E81234550019 /* globe.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = globe.scn; sourceTree = "<group>"; };
 		E81234550020 /* voyageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageTests.swift; sourceTree = "<group>"; };
+		E81234550021 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
+		E81234550022 /* ContinentData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentData.swift; sourceTree = "<group>"; };
+		E81234550023 /* AchievementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementTests.swift; sourceTree = "<group>"; };
+		E81234550024 /* ContinentDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentDataTests.swift; sourceTree = "<group>"; };
+		E81234550025 /* AchievementCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCompletionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,8 +114,9 @@
 				E81234550015 /* CapitalData.swift */,
 				E81234550008 /* GeoJSONParser.swift */,
 				E81234550009 /* PolygonTriangulator.swift */,
-				E81234550017 /* PointCountries.swift */,
 				E81234550018 /* GlobeCache.swift */,
+				E81234550021 /* AchievementsView.swift */,
+				E81234550022 /* ContinentData.swift */,
 				E81234550006 /* Assets.xcassets */,
 				E81234550007 /* countries.json */,
 				E81234550010 /* world.geojson */,
@@ -129,6 +138,9 @@
 			isa = PBXGroup;
 			children = (
 				E81234550020 /* voyageTests.swift */,
+				E81234550023 /* AchievementTests.swift */,
+				E81234550024 /* ContinentDataTests.swift */,
+				E81234550025 /* AchievementCompletionTests.swift */,
 			);
 			path = voyageTests;
 			sourceTree = "<group>";
@@ -247,8 +259,9 @@
 				E81234560015 /* CapitalData.swift in Sources */,
 				E81234560008 /* GeoJSONParser.swift in Sources */,
 				E81234560009 /* PolygonTriangulator.swift in Sources */,
-				E81234560017 /* PointCountries.swift in Sources */,
 				E81234560018 /* GlobeCache.swift in Sources */,
+				E81234560021 /* AchievementsView.swift in Sources */,
+				E81234560022 /* ContinentData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,6 +270,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				E81234560020 /* voyageTests.swift in Sources */,
+				E81234560023 /* AchievementTests.swift in Sources */,
+				E81234560024 /* ContinentDataTests.swift in Sources */,
+				E81234560025 /* AchievementCompletionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

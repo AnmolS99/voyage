@@ -53,75 +53,58 @@ struct MapView: View {
                         fillColor = Color(red: 0.204, green: 0.745, blue: 0.510)
                     }
 
-                    for polygon in country.polygons {
-                        var path = Path()
-                        var firstPoint = true
+                    if country.isPointCountry {
+                        // Draw point country as a dot
+                        guard let coord = country.pointCoordinate else { continue }
+                        let x = (coord.lon + 180) / 360 * mapWidth
+                        let y = (90 - coord.lat) / 180 * mapHeight + verticalOffset
+                        let center = CGPoint(x: x, y: y).applying(transform)
 
-                        for coord in polygon {
-                            guard coord.count >= 2 else { continue }
-                            let lon = coord[0]
-                            let lat = coord[1]
+                        let dotRadius: CGFloat = 5
+                        let dotPath = Path(ellipseIn: CGRect(
+                            x: center.x - dotRadius,
+                            y: center.y - dotRadius,
+                            width: dotRadius * 2,
+                            height: dotRadius * 2
+                        ))
 
-                            // Equirectangular projection with proper aspect ratio
-                            let x = (lon + 180) / 360 * mapWidth
-                            let y = (90 - lat) / 180 * mapHeight + verticalOffset
-
-                            let point = CGPoint(x: x, y: y).applying(transform)
-
-                            if firstPoint {
-                                path.move(to: point)
-                                firstPoint = false
-                            } else {
-                                path.addLine(to: point)
-                            }
-                        }
-                        path.closeSubpath()
-
-                        context.fill(path, with: .color(fillColor))
-
-                        // Draw border
-                        let borderColor = globeState.isDarkMode ?
-                            Color(white: 0.3) : Color(white: 0.2)
-                        context.stroke(path, with: .color(borderColor), lineWidth: 0.5)
-                    }
-                }
-
-                // Draw point countries (small island nations and microstates)
-                for pointCountry in PointCountriesData.countries {
-                    let isCurrentlySelected = globeState.selectedCountry == pointCountry.name
-                    let isVisited = globeState.visitedCountries.contains(pointCountry.name)
-                    let isWishlist = globeState.wishlistCountries.contains(pointCountry.name)
-
-                    let fillColor: Color
-                    if isCurrentlySelected {
-                        // Orange #D98C59 (matches button color)
-                        fillColor = Color(red: 0.85, green: 0.55, blue: 0.35)
-                    } else if isVisited {
-                        // Light yellow #F2F013
-                        fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
-                    } else if isWishlist {
-                        // Purple for wishlist
-                        fillColor = Color(red: 0.6, green: 0.4, blue: 0.8)
+                        context.fill(dotPath, with: .color(fillColor))
+                        let borderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
+                        context.stroke(dotPath, with: .color(borderColor), lineWidth: 0.5)
                     } else {
-                        // Green #34BE82
-                        fillColor = Color(red: 0.204, green: 0.745, blue: 0.510)
+                        // Draw polygon country
+                        for polygon in country.polygons {
+                            var path = Path()
+                            var firstPoint = true
+
+                            for coord in polygon {
+                                guard coord.count >= 2 else { continue }
+                                let lon = coord[0]
+                                let lat = coord[1]
+
+                                // Equirectangular projection with proper aspect ratio
+                                let x = (lon + 180) / 360 * mapWidth
+                                let y = (90 - lat) / 180 * mapHeight + verticalOffset
+
+                                let point = CGPoint(x: x, y: y).applying(transform)
+
+                                if firstPoint {
+                                    path.move(to: point)
+                                    firstPoint = false
+                                } else {
+                                    path.addLine(to: point)
+                                }
+                            }
+                            path.closeSubpath()
+
+                            context.fill(path, with: .color(fillColor))
+
+                            // Draw border
+                            let borderColor = globeState.isDarkMode ?
+                                Color(white: 0.3) : Color(white: 0.2)
+                            context.stroke(path, with: .color(borderColor), lineWidth: 0.5)
+                        }
                     }
-
-                    let x = (pointCountry.lon + 180) / 360 * mapWidth
-                    let y = (90 - pointCountry.lat) / 180 * mapHeight + verticalOffset
-                    let center = CGPoint(x: x, y: y).applying(transform)
-
-                    let dotRadius: CGFloat = 5
-                    let dotPath = Path(ellipseIn: CGRect(
-                        x: center.x - dotRadius,
-                        y: center.y - dotRadius,
-                        width: dotRadius * 2,
-                        height: dotRadius * 2
-                    ))
-
-                    context.fill(dotPath, with: .color(fillColor))
-                    let borderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
-                    context.stroke(dotPath, with: .color(borderColor), lineWidth: 0.5)
                 }
 
                 // Draw capital dot for selected country
@@ -226,15 +209,16 @@ struct MapView: View {
     private func findCountryAt(lat: Double, lon: Double) -> String? {
         // First check point countries (small island nations and microstates)
         let pointHitRadius: Double = 0.8
-        for pointCountry in PointCountriesData.countries {
-            let distance = sqrt(pow(lat - pointCountry.lat, 2) + pow(lon - pointCountry.lon, 2))
+        for country in countries where country.isPointCountry {
+            guard let coord = country.pointCoordinate else { continue }
+            let distance = sqrt(pow(lat - coord.lat, 2) + pow(lon - coord.lon, 2))
             if distance < pointHitRadius {
-                return pointCountry.name
+                return country.name
             }
         }
 
         // Then check polygon countries
-        for country in countries {
+        for country in countries where !country.isPointCountry {
             for polygon in country.polygons {
                 if isPointInPolygon(lon: lon, lat: lat, polygon: polygon) {
                     return country.name
@@ -252,7 +236,7 @@ struct MapView: View {
                 let searchLat = lat + radius * sin(angle)
                 let searchLon = lon + radius * cos(angle)
 
-                for country in countries {
+                for country in countries where !country.isPointCountry {
                     for polygon in country.polygons {
                         if isPointInPolygon(lon: searchLon, lat: searchLat, polygon: polygon) {
                             return country.name
@@ -288,14 +272,14 @@ struct MapView: View {
     }
 
     private func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
-        // Check point countries first
-        if let pointCountry = PointCountriesData.getCountry(named: name) {
-            return (lat: pointCountry.lat, lon: pointCountry.lon)
-        }
-
-        // Then check polygon countries
         guard let country = countries.first(where: { $0.name == name }) else { return nil }
 
+        // Point countries have their center stored directly
+        if country.isPointCountry, let coord = country.pointCoordinate {
+            return coord
+        }
+
+        // Calculate center for polygon countries
         var totalLat = 0.0
         var totalLon = 0.0
         var count = 0

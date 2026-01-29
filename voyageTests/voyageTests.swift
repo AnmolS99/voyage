@@ -7,9 +7,8 @@ final class voyageTests: XCTestCase {
     // Test that globe.scn contains all countries from source data (map and globe consistency)
     func testGlobeAndMapCountryConsistency() {
         // Get expected countries from source data (used by map)
-        let geoJSONCountries = Set(GeoJSONParser.loadCountries().map { $0.name })
-        let pointCountries = Set(PointCountriesData.getAllNames())
-        let expectedCountries = geoJSONCountries.union(pointCountries)
+        // All countries (both polygon and point) are now in world.geojson
+        let expectedCountries = Set(GeoJSONParser.loadCountries().map { $0.name })
 
         // Load globe.scn and extract country names
         guard let url = Bundle.main.url(forResource: "globe", withExtension: "scn"),
@@ -110,10 +109,14 @@ final class voyageTests: XCTestCase {
         let countries = GeoJSONParser.loadCountries()
         XCTAssertGreaterThan(countries.count, 0, "Should load at least some countries")
 
-        // Check that countries have polygons
+        // Check that countries have valid data
         for country in countries.prefix(10) {
             XCTAssertFalse(country.name.isEmpty, "Country should have a name")
-            XCTAssertGreaterThan(country.polygons.count, 0, "Country should have at least one polygon")
+            if country.isPointCountry {
+                XCTAssertNotNil(country.pointCoordinate, "Point country should have coordinates")
+            } else {
+                XCTAssertGreaterThan(country.polygons.count, 0, "Polygon country should have at least one polygon")
+            }
         }
     }
 

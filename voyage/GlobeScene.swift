@@ -102,10 +102,8 @@ class GlobeScene {
     private static func rebuildCoordinatorData(from globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let landColor = UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0)
 
-        // Get all country names from both polygon and point countries
-        let polygonCountryNames = Set(GeoJSONParser.loadCountries().map { $0.name })
-        let pointCountryNames = Set(PointCountriesData.getAllNames())
-        let allCountryNames = polygonCountryNames.union(pointCountryNames)
+        // Get all country names from GeoJSON (includes both polygon and point countries)
+        let allCountryNames = Set(GeoJSONParser.loadCountries().map { $0.name })
 
         for name in allCountryNames {
             if let node = globeNode.childNode(withName: name, recursively: true) {
@@ -117,86 +115,85 @@ class GlobeScene {
 
     static func addCountriesFromGeoJSON(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let countries = GeoJSONParser.loadCountries()
+        let landColor = UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0) // Green #34BE82
 
         for country in countries {
-            if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons) {
+            if country.isPointCountry {
+                // Render as point marker (small island nations and microstates)
+                guard let pointCoord = country.pointCoordinate else { continue }
+
+                // Convert lat/lon to 3D position
+                let position = PolygonTriangulator.latLonToSphere(lat: pointCoord.lat, lon: pointCoord.lon, radius: 1.005)
+
+                // Create black outline circle (slightly larger, behind)
+                let outlineCircle = SCNCylinder(radius: 0.014, height: 0.0005)
+                let outlineMaterial = SCNMaterial()
+                outlineMaterial.diffuse.contents = UIColor.black
+                outlineMaterial.lightingModel = .constant
+                outlineMaterial.isDoubleSided = true
+                outlineCircle.materials = [outlineMaterial]
+
+                let outlineNode = SCNNode(geometry: outlineCircle)
+                outlineNode.name = "\(country.name)_outline"
+
+                // Create a flat circle (thin cylinder) for the country
+                let circle = SCNCylinder(radius: 0.012, height: 0.001)
                 let material = SCNMaterial()
-                material.diffuse.contents = country.color
+                material.diffuse.contents = landColor
                 material.specular.contents = UIColor.white.withAlphaComponent(0.2)
                 material.shininess = 0.2
                 material.isDoubleSided = true
-                geometry.materials = [material]
+                circle.materials = [material]
 
-                let node = SCNNode(geometry: geometry)
+                let node = SCNNode(geometry: circle)
                 node.name = country.name
+                node.position = position
+
+                // Orient the circles to face outward from globe center
+                let direction = SCNVector3(position.x, position.y, position.z)
+                let up = SCNVector3(0, 1, 0)
+                node.look(at: SCNVector3(direction.x * 2, direction.y * 2, direction.z * 2), up: up, localFront: SCNVector3(0, 1, 0))
+
+                // Position outline at same location
+                outlineNode.position = position
+                outlineNode.look(at: SCNVector3(direction.x * 2, direction.y * 2, direction.z * 2), up: up, localFront: SCNVector3(0, 1, 0))
+
+                globeNode.addChildNode(outlineNode)
                 globeNode.addChildNode(node)
+
                 coordinator.countryNodes[country.name] = node
-                coordinator.originalColors[country.name] = country.color
+                coordinator.originalColors[country.name] = landColor
+            } else {
+                // Render as polygon (regular countries)
+                if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons) {
+                    let material = SCNMaterial()
+                    material.diffuse.contents = country.color
+                    material.specular.contents = UIColor.white.withAlphaComponent(0.2)
+                    material.shininess = 0.2
+                    material.isDoubleSided = true
+                    geometry.materials = [material]
 
-                // Add black border outline
-                if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) {
-                    let outlineMaterial = SCNMaterial()
-                    outlineMaterial.diffuse.contents = UIColor.black
-                    outlineMaterial.lightingModel = .constant // Make it always visible
-                    outlineMaterial.isDoubleSided = true
-                    outlineGeometry.materials = [outlineMaterial]
+                    let node = SCNNode(geometry: geometry)
+                    node.name = country.name
+                    globeNode.addChildNode(node)
+                    coordinator.countryNodes[country.name] = node
+                    coordinator.originalColors[country.name] = country.color
 
-                    let outlineNode = SCNNode(geometry: outlineGeometry)
-                    outlineNode.name = "\(country.name)_outline"
-                    globeNode.addChildNode(outlineNode)
+                    // Add black border outline
+                    if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) {
+                        let outlineMaterial = SCNMaterial()
+                        outlineMaterial.diffuse.contents = UIColor.black
+                        outlineMaterial.lightingModel = .constant // Make it always visible
+                        outlineMaterial.isDoubleSided = true
+                        outlineGeometry.materials = [outlineMaterial]
+
+                        let outlineNode = SCNNode(geometry: outlineGeometry)
+                        outlineNode.name = "\(country.name)_outline"
+                        globeNode.addChildNode(outlineNode)
+                    }
                 }
             }
         }
-
-        // Add point countries (small island nations and microstates)
-        addPointCountries(to: globeNode, coordinator: coordinator)
     }
 
-    static func addPointCountries(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
-        let landColor = UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0) // Green #34BE82
-
-        for country in PointCountriesData.countries {
-            // Convert lat/lon to 3D position
-            let position = PolygonTriangulator.latLonToSphere(lat: country.lat, lon: country.lon, radius: 1.005)
-
-            // Create black outline circle (slightly larger, behind)
-            let outlineCircle = SCNCylinder(radius: 0.014, height: 0.0005)
-            let outlineMaterial = SCNMaterial()
-            outlineMaterial.diffuse.contents = UIColor.black
-            outlineMaterial.lightingModel = .constant
-            outlineMaterial.isDoubleSided = true
-            outlineCircle.materials = [outlineMaterial]
-
-            let outlineNode = SCNNode(geometry: outlineCircle)
-            outlineNode.name = "\(country.name)_outline"
-
-            // Create a flat circle (thin cylinder) for the country
-            let circle = SCNCylinder(radius: 0.012, height: 0.001)
-            let material = SCNMaterial()
-            material.diffuse.contents = landColor
-            material.specular.contents = UIColor.white.withAlphaComponent(0.2)
-            material.shininess = 0.2
-            material.isDoubleSided = true
-            circle.materials = [material]
-
-            let node = SCNNode(geometry: circle)
-            node.name = country.name
-            node.position = position
-
-            // Orient the circles to face outward from globe center
-            let direction = SCNVector3(position.x, position.y, position.z)
-            let up = SCNVector3(0, 1, 0)
-            node.look(at: SCNVector3(direction.x * 2, direction.y * 2, direction.z * 2), up: up, localFront: SCNVector3(0, 1, 0))
-
-            // Position outline at same location
-            outlineNode.position = position
-            outlineNode.look(at: SCNVector3(direction.x * 2, direction.y * 2, direction.z * 2), up: up, localFront: SCNVector3(0, 1, 0))
-
-            globeNode.addChildNode(outlineNode)
-            globeNode.addChildNode(node)
-
-            coordinator.countryNodes[country.name] = node
-            coordinator.originalColors[country.name] = landColor
-        }
-    }
 }
