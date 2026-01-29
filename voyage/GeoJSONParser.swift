@@ -3,9 +3,12 @@ import UIKit
 
 struct GeoJSONCountry {
     let name: String
-    let polygons: [[[Double]]] // Array of polygons, each polygon is array of [lon, lat] coordinates
+    let polygons: [[[Double]]] // Array of polygons, each polygon is array of [lon, lat] coordinates (empty for point countries)
     let color: UIColor
     let continent: String?
+    let isPointCountry: Bool
+    let pointCoordinate: (lat: Double, lon: Double)? // For point countries (small islands, microstates)
+    let flagCode: String?
 
     static func landColor() -> UIColor {
         // Green #34BE82
@@ -24,9 +27,6 @@ class GeoJSONParser {
             return []
         }
 
-        // Get names of countries rendered as points (circles)
-        let pointCountryNames = Set(PointCountriesData.getAllNames())
-
         var countries: [GeoJSONCountry] = []
 
         for feature in features {
@@ -38,39 +38,60 @@ class GeoJSONParser {
                 continue
             }
 
-            // Skip countries that are rendered as point markers
-            if pointCountryNames.contains(name) {
-                continue
-            }
+            let continent = properties["continent"] as? String
+            let flagCode = properties["flagCode"] as? String
+            let renderAs = properties["renderAs"] as? String
+            let isPointCountry = renderAs == "point"
 
-            var polygons: [[[Double]]] = []
-
-            if type == "Polygon" {
-                if let coords = coordinates as? [[[Double]]] {
-                    // Take only the outer ring (first element)
-                    if let outerRing = coords.first {
-                        polygons.append(outerRing)
-                    }
+            if type == "Point" {
+                // Point country (small islands, microstates)
+                if let coords = coordinates as? [Double], coords.count >= 2 {
+                    let lon = coords[0]
+                    let lat = coords[1]
+                    let country = GeoJSONCountry(
+                        name: name,
+                        polygons: [],
+                        color: GeoJSONCountry.landColor(),
+                        continent: continent,
+                        isPointCountry: true,
+                        pointCoordinate: (lat: lat, lon: lon),
+                        flagCode: flagCode
+                    )
+                    countries.append(country)
                 }
-            } else if type == "MultiPolygon" {
-                if let multiCoords = coordinates as? [[[[Double]]]] {
-                    for polygon in multiCoords {
-                        if let outerRing = polygon.first {
+            } else {
+                // Polygon or MultiPolygon country
+                var polygons: [[[Double]]] = []
+
+                if type == "Polygon" {
+                    if let coords = coordinates as? [[[Double]]] {
+                        // Take only the outer ring (first element)
+                        if let outerRing = coords.first {
                             polygons.append(outerRing)
                         }
                     }
+                } else if type == "MultiPolygon" {
+                    if let multiCoords = coordinates as? [[[[Double]]]] {
+                        for polygon in multiCoords {
+                            if let outerRing = polygon.first {
+                                polygons.append(outerRing)
+                            }
+                        }
+                    }
                 }
-            }
 
-            if !polygons.isEmpty {
-                let continent = properties["continent"] as? String
-                let country = GeoJSONCountry(
-                    name: name,
-                    polygons: polygons,
-                    color: GeoJSONCountry.landColor(),
-                    continent: continent
-                )
-                countries.append(country)
+                if !polygons.isEmpty {
+                    let country = GeoJSONCountry(
+                        name: name,
+                        polygons: polygons,
+                        color: GeoJSONCountry.landColor(),
+                        continent: continent,
+                        isPointCountry: isPointCountry,
+                        pointCoordinate: nil,
+                        flagCode: flagCode
+                    )
+                    countries.append(country)
+                }
             }
         }
 

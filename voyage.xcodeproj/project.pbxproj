@@ -22,7 +22,6 @@
 		E81234560013 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550013 /* AppDelegate.swift */; };
 		E81234560014 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550014 /* SettingsView.swift */; };
 		E81234560015 /* CapitalData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550015 /* CapitalData.swift */; };
-		E81234560017 /* PointCountries.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550017 /* PointCountries.swift */; };
 		E81234560018 /* GlobeCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550018 /* GlobeCache.swift */; };
 		E81234560019 /* globe.scn in Resources */ = {isa = PBXBuildFile; fileRef = E81234550019 /* globe.scn */; };
 		E81234560020 /* voyageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550020 /* voyageTests.swift */; };
@@ -62,7 +61,6 @@
 		E81234550014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E81234550015 /* CapitalData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapitalData.swift; sourceTree = "<group>"; };
 		E81234550016 /* voyage.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = voyage.entitlements; sourceTree = "<group>"; };
-		E81234550017 /* PointCountries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointCountries.swift; sourceTree = "<group>"; };
 		E81234550018 /* GlobeCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeCache.swift; sourceTree = "<group>"; };
 		E81234550019 /* globe.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = globe.scn; sourceTree = "<group>"; };
 		E81234550020 /* voyageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageTests.swift; sourceTree = "<group>"; };
@@ -116,7 +114,6 @@
 				E81234550015 /* CapitalData.swift */,
 				E81234550008 /* GeoJSONParser.swift */,
 				E81234550009 /* PolygonTriangulator.swift */,
-				E81234550017 /* PointCountries.swift */,
 				E81234550018 /* GlobeCache.swift */,
 				E81234550021 /* AchievementsView.swift */,
 				E81234550022 /* ContinentData.swift */,
@@ -262,7 +259,6 @@
 				E81234560015 /* CapitalData.swift in Sources */,
 				E81234560008 /* GeoJSONParser.swift in Sources */,
 				E81234560009 /* PolygonTriangulator.swift in Sources */,
-				E81234560017 /* PointCountries.swift in Sources */,
 				E81234560018 /* GlobeCache.swift in Sources */,
 				E81234560021 /* AchievementsView.swift in Sources */,
 				E81234560022 /* ContinentData.swift in Sources */,

@@ -41,7 +41,7 @@ enum Continent: String, CaseIterable {
 }
 
 struct ContinentData {
-    /// Lazily loaded country-to-continent mapping from GeoJSON and PointCountries
+    /// Lazily loaded country-to-continent mapping from GeoJSON
     /// This is the single source of truth for which countries belong to which continent
     private static var _countriesByContinent: [Continent: [String]]?
 
@@ -55,22 +55,12 @@ struct ContinentData {
             mapping[continent] = []
         }
 
-        // Load from GeoJSON (polygon countries)
+        // Load all countries from GeoJSON (includes both polygon and point countries)
         let geoJSONCountries = GeoJSONParser.loadCountries()
         for country in geoJSONCountries {
             if let continentStr = country.continent,
                let continent = Continent(rawContinent: continentStr) {
                 mapping[continent, default: []].append(country.name)
-            }
-        }
-
-        // Load from PointCountries (small countries rendered as points)
-        for pointCountry in PointCountriesData.countries {
-            if let continent = Continent(rawContinent: pointCountry.continent) {
-                // Only add if not already in the list (some might be in both)
-                if !mapping[continent, default: []].contains(pointCountry.name) {
-                    mapping[continent, default: []].append(pointCountry.name)
-                }
             }
         }
 

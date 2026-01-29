@@ -45707,6 +45707,534 @@
           ]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Andorra",
+        "continent": "Europe",
+        "flagCode": "AD",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1.5218,
+          42.5063
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Cyprus",
+        "continent": "Asia",
+        "flagCode": "CY",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.95,
+          34.65
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Liechtenstein",
+        "continent": "Europe",
+        "flagCode": "LI",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.5554,
+          47.166
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Luxembourg",
+        "continent": "Europe",
+        "flagCode": "LU",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.1296,
+          49.8153
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Malta",
+        "continent": "Europe",
+        "flagCode": "MT",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.3754,
+          35.9375
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Monaco",
+        "continent": "Europe",
+        "flagCode": "MC",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.4246,
+          43.7384
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Northern Cyprus",
+        "continent": "Asia",
+        "flagCode": "CY",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          33.55,
+          35.35
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "San Marino",
+        "continent": "Europe",
+        "flagCode": "SM",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12.4578,
+          43.9424
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Vatican City",
+        "continent": "Europe",
+        "flagCode": "VA",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12.4534,
+          41.9029
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bermuda",
+        "continent": "North America",
+        "flagCode": "BM",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -64.7505,
+          32.3078
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Antigua and Barbuda",
+        "continent": "North America",
+        "flagCode": "AG",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -61.7964,
+          17.0608
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Barbados",
+        "continent": "North America",
+        "flagCode": "BB",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -59.5432,
+          13.1939
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Dominica",
+        "continent": "North America",
+        "flagCode": "DM",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -61.371,
+          15.415
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Grenada",
+        "continent": "North America",
+        "flagCode": "GD",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -61.679,
+          12.1165
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Saint Kitts and Nevis",
+        "continent": "North America",
+        "flagCode": "KN",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -62.783,
+          17.3578
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Saint Lucia",
+        "continent": "North America",
+        "flagCode": "LC",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -60.9789,
+          13.9094
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Saint Vincent and the Grenadines",
+        "continent": "North America",
+        "flagCode": "VC",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -61.1971,
+          13.2528
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kiribati",
+        "continent": "Oceania",
+        "flagCode": "KI",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          173.0176,
+          1.8709
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Marshall Islands",
+        "continent": "Oceania",
+        "flagCode": "MH",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          171.1845,
+          7.1315
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Micronesia",
+        "continent": "Oceania",
+        "flagCode": "FM",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          158.161,
+          6.9248
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nauru",
+        "continent": "Oceania",
+        "flagCode": "NR",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          166.9315,
+          -0.5228
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Palau",
+        "continent": "Oceania",
+        "flagCode": "PW",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          134.5825,
+          7.515
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Samoa",
+        "continent": "Oceania",
+        "flagCode": "WS",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -172.1046,
+          -13.759
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tonga",
+        "continent": "Oceania",
+        "flagCode": "TO",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -175.1982,
+          -21.179
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tuvalu",
+        "continent": "Oceania",
+        "flagCode": "TV",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          179.194,
+          -7.1095
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bahrain",
+        "continent": "Asia",
+        "flagCode": "BH",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.5577,
+          26.0667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Cape Verde",
+        "continent": "Africa",
+        "flagCode": "CV",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -23.5133,
+          14.933
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Comoros",
+        "continent": "Africa",
+        "flagCode": "KM",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.3333,
+          -11.6455
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Maldives",
+        "continent": "Asia",
+        "flagCode": "MV",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          73.2207,
+          3.2028
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mauritius",
+        "continent": "Africa",
+        "flagCode": "MU",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          57.5522,
+          -20.3484
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sao Tome and Principe",
+        "continent": "Africa",
+        "flagCode": "ST",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.6131,
+          0.1864
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Seychelles",
+        "continent": "Africa",
+        "flagCode": "SC",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          55.492,
+          -4.6796
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Singapore",
+        "continent": "Asia",
+        "flagCode": "SG",
+        "renderAs": "point"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          103.8198,
+          1.3521
+        ]
+      }
     }
   ]
 }
