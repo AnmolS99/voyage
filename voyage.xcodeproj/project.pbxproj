@@ -28,6 +28,9 @@
 		E81234560020 /* voyageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550020 /* voyageTests.swift */; };
 		E81234560021 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550021 /* AchievementsView.swift */; };
 		E81234560022 /* ContinentData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550022 /* ContinentData.swift */; };
+		E81234560023 /* AchievementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550023 /* AchievementTests.swift */; };
+		E81234560024 /* ContinentDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550024 /* ContinentDataTests.swift */; };
+		E81234560025 /* AchievementCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550025 /* AchievementCompletionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +68,9 @@
 		E81234550020 /* voyageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageTests.swift; sourceTree = "<group>"; };
 		E81234550021 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
 		E81234550022 /* ContinentData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentData.swift; sourceTree = "<group>"; };
+		E81234550023 /* AchievementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementTests.swift; sourceTree = "<group>"; };
+		E81234550024 /* ContinentDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentDataTests.swift; sourceTree = "<group>"; };
+		E81234550025 /* AchievementCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCompletionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -135,6 +141,9 @@
 			isa = PBXGroup;
 			children = (
 				E81234550020 /* voyageTests.swift */,
+				E81234550023 /* AchievementTests.swift */,
+				E81234550024 /* ContinentDataTests.swift */,
+				E81234550025 /* AchievementCompletionTests.swift */,
 			);
 			path = voyageTests;
 			sourceTree = "<group>";
@@ -265,6 +274,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				E81234560020 /* voyageTests.swift in Sources */,
+				E81234560023 /* AchievementTests.swift in Sources */,
+				E81234560024 /* ContinentDataTests.swift in Sources */,
+				E81234560025 /* AchievementCompletionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
