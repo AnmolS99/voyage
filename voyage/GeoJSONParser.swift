@@ -5,6 +5,7 @@ struct GeoJSONCountry {
     let name: String
     let polygons: [[[Double]]] // Array of polygons, each polygon is array of [lon, lat] coordinates
     let color: UIColor
+    let continent: String?
 
     static func landColor() -> UIColor {
         // Green #34BE82
@@ -62,10 +63,12 @@ class GeoJSONParser {
             }
 
             if !polygons.isEmpty {
+                let continent = properties["continent"] as? String
                 let country = GeoJSONCountry(
                     name: name,
                     polygons: polygons,
-                    color: GeoJSONCountry.landColor()
+                    color: GeoJSONCountry.landColor(),
+                    continent: continent
                 )
                 countries.append(country)
             }
