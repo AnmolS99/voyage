@@ -15,6 +15,8 @@ class TipJarManager: ObservableObject {
     @Published private(set) var useFallback = false
     @Published private(set) var lastPurchasedProductId: String?
 
+    private var transactionListener: Task<Void, Never>?
+
     enum PurchaseState: Equatable {
         case ready
         case purchasing
@@ -35,8 +37,30 @@ class TipJarManager: ObservableObject {
     ]
 
     init() {
+        transactionListener = listenForTransactions()
         Task {
             await loadProducts()
+        }
+    }
+
+    deinit {
+        transactionListener?.cancel()
+    }
+
+    private func listenForTransactions() -> Task<Void, Never> {
+        Task.detached {
+            for await result in Transaction.updates {
+                await self.handleTransaction(result)
+            }
+        }
+    }
+
+    private func handleTransaction(_ result: VerificationResult<Transaction>) async {
+        switch result {
+        case .verified(let transaction):
+            await transaction.finish()
+        case .unverified:
+            break
         }
     }
 

@@ -49,7 +49,6 @@
 		E81234540001 /* voyage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voyage.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E81234540002 /* voyageTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = voyageTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E81234540003 /* GlobeCacheGenerator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = GlobeCacheGenerator; sourceTree = BUILT_PRODUCTS_DIR; };
-		E81234550030 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		E81234550001 /* voyageApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageApp.swift; sourceTree = "<group>"; };
 		E81234550002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E81234550003 /* GlobeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeView.swift; sourceTree = "<group>"; };
@@ -76,6 +75,7 @@
 		E81234550025 /* AchievementCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCompletionTests.swift; sourceTree = "<group>"; };
 		E81234550026 /* TipJarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipJarManager.swift; sourceTree = "<group>"; };
 		E81234550027 /* TipJar.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = TipJar.storekit; sourceTree = "<group>"; };
+		E81234550030 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,14 +111,6 @@
 				E81234520004 /* GlobeCacheGenerator */,
 				E81234520002 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		E81234520004 /* GlobeCacheGenerator */ = {
-			isa = PBXGroup;
-			children = (
-				E81234550030 /* main.swift */,
-			);
-			path = GlobeCacheGenerator;
 			sourceTree = "<group>";
 		};
 		E81234520001 /* voyage */ = {
@@ -169,6 +161,14 @@
 				E81234550025 /* AchievementCompletionTests.swift */,
 			);
 			path = voyageTests;
+			sourceTree = "<group>";
+		};
+		E81234520004 /* GlobeCacheGenerator */ = {
+			isa = PBXGroup;
+			children = (
+				E81234550030 /* main.swift */,
+			);
+			path = GlobeCacheGenerator;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -473,7 +473,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = voyage/voyage.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = LP4YVQGGQL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -503,7 +503,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = voyage/voyage.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = LP4YVQGGQL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
