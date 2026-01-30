@@ -28,6 +28,23 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
+                    Button(role: .destructive) {
+                        showingResetConfirmation = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                            Text("Reset All Data")
+                                .foregroundColor(.red)
+                        }
+                    }
+                } header: {
+                    Text("Data")
+                } footer: {
+                    Text("This will clear all visited countries and wishlist.")
+                }
+
+                Section {
                     if tipJarManager.isLoading {
                         HStack {
                             ProgressView()
@@ -60,23 +77,6 @@ struct SettingsView: View {
                     } else {
                         Text("Thanks for using voyage! If you enjoy the app, consider leaving a tip to support development.")
                     }
-                }
-
-                Section {
-                    Button(role: .destructive) {
-                        showingResetConfirmation = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash")
-                                .foregroundColor(.red)
-                            Text("Reset All Data")
-                                .foregroundColor(.red)
-                        }
-                    }
-                } header: {
-                    Text("Data")
-                } footer: {
-                    Text("This will clear all visited countries and selections.")
                 }
 
                 Section {
