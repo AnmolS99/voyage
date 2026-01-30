@@ -114,7 +114,7 @@ struct SettingsView: View {
                 get: { tipJarManager.purchaseState == .purchased },
                 set: { if !$0 { tipJarManager.resetState() } }
             )) {
-                Button("OK") {
+                Button("You're welcome!") {
                     tipJarManager.resetState()
                 }
             } message: {

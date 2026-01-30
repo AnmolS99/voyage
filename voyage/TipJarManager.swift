@@ -67,10 +67,6 @@ class TipJarManager: ObservableObject {
                     lastPurchasedProductId = product.id
                     purchaseState = .purchased
 
-                    // Reset to ready after a delay so user can tip again
-                    try? await Task.sleep(nanoseconds: 2_000_000_000)
-                    purchaseState = .ready
-
                 case .unverified(_, let error):
                     purchaseState = .failed("Verification failed: \(error.localizedDescription)")
                 }
