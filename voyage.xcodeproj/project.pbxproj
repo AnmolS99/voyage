@@ -30,6 +30,8 @@
 		E81234560023 /* AchievementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550023 /* AchievementTests.swift */; };
 		E81234560024 /* ContinentDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550024 /* ContinentDataTests.swift */; };
 		E81234560025 /* AchievementCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550025 /* AchievementCompletionTests.swift */; };
+		E81234560026 /* TipJarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550026 /* TipJarManager.swift */; };
+		E81234560027 /* TipJar.storekit in Resources */ = {isa = PBXBuildFile; fileRef = E81234550027 /* TipJar.storekit */; };
 		E81234560030 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550030 /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -72,6 +74,8 @@
 		E81234550023 /* AchievementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementTests.swift; sourceTree = "<group>"; };
 		E81234550024 /* ContinentDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentDataTests.swift; sourceTree = "<group>"; };
 		E81234550025 /* AchievementCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCompletionTests.swift; sourceTree = "<group>"; };
+		E81234550026 /* TipJarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipJarManager.swift; sourceTree = "<group>"; };
+		E81234550027 /* TipJar.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = TipJar.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,6 +140,8 @@
 				E81234550018 /* GlobeCache.swift */,
 				E81234550021 /* AchievementsView.swift */,
 				E81234550022 /* ContinentData.swift */,
+				E81234550026 /* TipJarManager.swift */,
+				E81234550027 /* TipJar.storekit */,
 				E81234550006 /* Assets.xcassets */,
 				E81234550007 /* countries.json */,
 				E81234550010 /* world.geojson */,
@@ -270,6 +276,7 @@
 				E81234560007 /* countries.json in Resources */,
 				E81234560010 /* world.geojson in Resources */,
 				E81234560019 /* globe.scn in Resources */,
+				E81234560027 /* TipJar.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -302,6 +309,7 @@
 				E81234560018 /* GlobeCache.swift in Sources */,
 				E81234560021 /* AchievementsView.swift in Sources */,
 				E81234560022 /* ContinentData.swift in Sources */,
+				E81234560026 /* TipJarManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
