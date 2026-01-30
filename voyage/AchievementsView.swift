@@ -19,6 +19,14 @@ struct AchievementsView: View {
     private var achievements: [Achievement] {
         var list: [Achievement] = []
 
+        // World traveler achievement (first)
+        list.append(Achievement(
+            name: "World Traveler",
+            medal: "🌍",
+            current: globeState.visitedUNCountries.count,
+            total: globeState.totalUNCountries
+        ))
+
         // Continent achievements
         for continent in Continent.allCases where continent != .antarctica {
             let countries = continent.countries
@@ -30,14 +38,6 @@ struct AchievementsView: View {
                 total: countries.count
             ))
         }
-
-        // World traveler achievement
-        list.append(Achievement(
-            name: "World Traveler",
-            medal: "🌍",
-            current: globeState.visitedCountries.count,
-            total: globeState.totalCountries
-        ))
 
         return list
     }

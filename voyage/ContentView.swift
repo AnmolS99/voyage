@@ -253,13 +253,13 @@ struct ContentView: View {
             // Progress bar
             VStack(spacing: 8) {
                 HStack {
-                    Text("\(globeState.visitedCountries.count) of \(globeState.totalCountries) countries")
+                    Text("\(globeState.visitedUNCountries.count) of \(globeState.totalUNCountries) countries")
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(globeState.isDarkMode ? Color(red: 0.7, green: 0.7, blue: 0.75) : Color(red: 0.4, green: 0.35, blue: 0.3))
 
                     Spacer()
 
-                    Text("\(Int(Double(globeState.visitedCountries.count) / Double(globeState.totalCountries) * 100))%")
+                    Text("\(Int(Double(globeState.visitedUNCountries.count) / Double(globeState.totalUNCountries) * 100))%")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.5, blue: 0.8) : Color(red: 0.85, green: 0.55, blue: 0.35))
                 }
@@ -281,8 +281,8 @@ struct ContentView: View {
                                     endPoint: .trailing
                                 )
                             )
-                            .frame(width: max(0, geometry.size.width * CGFloat(globeState.visitedCountries.count) / CGFloat(globeState.totalCountries)))
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: globeState.visitedCountries.count)
+                            .frame(width: max(0, geometry.size.width * CGFloat(globeState.visitedUNCountries.count) / CGFloat(globeState.totalUNCountries)))
+                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: globeState.visitedUNCountries.count)
                     }
                 }
                 .frame(height: 12)
@@ -316,7 +316,29 @@ class GlobeState: ObservableObject {
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
     @Published var viewMode: ViewMode = .globe
-    let totalCountries = 195
+    let totalUNCountries = 195
+
+    // Territories that are not UN member or observer states (excluded from progress count)
+    static let nonUNTerritories: Set<String> = [
+        "Antarctica",
+        "Bermuda",
+        "Falkland Islands",
+        "French Guiana",
+        "French Southern and Antarctic Lands",
+        "Greenland",
+        "Kosovo",
+        "New Caledonia",
+        "Northern Cyprus",
+        "Puerto Rico",
+        "Somaliland",
+        "Taiwan",
+        "Western Sahara"
+    ]
+
+    // Only count UN-recognized countries toward progress
+    var visitedUNCountries: Set<String> {
+        visitedCountries.subtracting(Self.nonUNTerritories)
+    }
 
     private let iCloudStore = NSUbiquitousKeyValueStore.default
     private let userDefaults = UserDefaults.standard
