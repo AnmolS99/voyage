@@ -30,6 +30,7 @@
 		E81234560023 /* AchievementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550023 /* AchievementTests.swift */; };
 		E81234560024 /* ContinentDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550024 /* ContinentDataTests.swift */; };
 		E81234560025 /* AchievementCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550025 /* AchievementCompletionTests.swift */; };
+		E81234560030 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550030 /* main.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,6 +46,8 @@
 /* Begin PBXFileReference section */
 		E81234540001 /* voyage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voyage.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E81234540002 /* voyageTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = voyageTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E81234540003 /* GlobeCacheGenerator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = GlobeCacheGenerator; sourceTree = BUILT_PRODUCTS_DIR; };
+		E81234550030 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		E81234550001 /* voyageApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageApp.swift; sourceTree = "<group>"; };
 		E81234550002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E81234550003 /* GlobeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeView.swift; sourceTree = "<group>"; };
@@ -86,6 +89,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E81234530009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -94,8 +104,17 @@
 			children = (
 				E81234520001 /* voyage */,
 				E81234520003 /* voyageTests */,
+				E81234520004 /* GlobeCacheGenerator */,
 				E81234520002 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		E81234520004 /* GlobeCacheGenerator */ = {
+			isa = PBXGroup;
+			children = (
+				E81234550030 /* main.swift */,
+			);
+			path = GlobeCacheGenerator;
 			sourceTree = "<group>";
 		};
 		E81234520001 /* voyage */ = {
@@ -130,6 +149,7 @@
 			children = (
 				E81234540001 /* voyage.app */,
 				E81234540002 /* voyageTests.xctest */,
+				E81234540003 /* GlobeCacheGenerator */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -183,6 +203,22 @@
 			productReference = E81234540002 /* voyageTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		E81234530010 /* GlobeCacheGenerator */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E81234570004 /* Build configuration list for PBXNativeTarget "GlobeCacheGenerator" */;
+			buildPhases = (
+				E81234530011 /* Sources */,
+				E81234530009 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GlobeCacheGenerator;
+			productName = GlobeCacheGenerator;
+			productReference = E81234540003 /* GlobeCacheGenerator */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -199,6 +235,9 @@
 					E81234530006 = {
 						CreatedOnToolsVersion = 15.0;
 						TestTargetID = E81234530002;
+					};
+					E81234530010 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
@@ -217,6 +256,7 @@
 			targets = (
 				E81234530002 /* voyage */,
 				E81234530006 /* voyageTests */,
+				E81234530010 /* GlobeCacheGenerator */,
 			);
 		};
 /* End PBXProject section */
@@ -273,6 +313,14 @@
 				E81234560023 /* AchievementTests.swift in Sources */,
 				E81234560024 /* ContinentDataTests.swift in Sources */,
 				E81234560025 /* AchievementCompletionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E81234530011 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E81234560030 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -508,6 +556,34 @@
 			};
 			name = Release;
 		};
+		E81234580007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LP4YVQGGQL;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E81234580008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LP4YVQGGQL;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -534,6 +610,15 @@
 			buildConfigurations = (
 				E81234580005 /* Debug */,
 				E81234580006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E81234570004 /* Build configuration list for PBXNativeTarget "GlobeCacheGenerator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E81234580007 /* Debug */,
+				E81234580008 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -56,3 +56,17 @@ The globe has layers: ocean sphere (base) → country polygons → border outlin
 
 - `world.geojson` - Country boundaries
 - `countries.json` - Country metadata
+- `globe.scn` - Pre-built 3D globe cache (regenerate with GlobeCacheGenerator)
+
+## Globe Cache Generation
+
+The `globe.scn` file is a pre-built SceneKit scene for fast app startup. To regenerate after modifying `world.geojson`:
+
+```bash
+# From Xcode: Select GlobeCacheGenerator scheme and Run (⌘R)
+# Or from command line:
+xcodebuild -scheme GlobeCacheGenerator -destination 'platform=macOS' build
+./DerivedData/voyage/Build/Products/Debug/GlobeCacheGenerator
+```
+
+The generator reads `voyage/world.geojson` and outputs to `voyage/globe.scn`.

@@ -45,11 +45,16 @@ Build and run on iOS 17.0+ simulator or device.
 
 ### Globe Bundling
 
-The globe (`globe.scn`) is pre-built for fast startup. To regenerate after adding/removing countries:
+The globe (`globe.scn`) is pre-built for fast startup. To regenerate after modifying `world.geojson`:
 
-1. Modify `GlobeScene.swift` to build from scratch and save to Documents
-2. Run the app to generate new `globe.scn`
-3. Copy it back to the project bundle
+```bash
+# Build and run the generator
+xcodebuild -scheme GlobeCacheGenerator -destination 'platform=macOS' build
+# Run it (output goes directly to voyage/globe.scn)
+./DerivedData/voyage/Build/Products/Debug/GlobeCacheGenerator
+```
+
+Or from Xcode: Select the `GlobeCacheGenerator` scheme, build and run (⌘R).
 
 Run `testGlobeAndMapCountryConsistency` to verify map and globe are in sync.
 
