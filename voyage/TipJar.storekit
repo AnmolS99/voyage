@@ -10,7 +10,7 @@
       "internalID" : "tip_small",
       "localizations" : [
         {
-          "description" : "A small tip to support the developer",
+          "description" : "Buy me a banana",
           "displayName" : "Small Tip",
           "locale" : "en_US"
         }
@@ -25,7 +25,7 @@
       "internalID" : "tip_medium",
       "localizations" : [
         {
-          "description" : "A medium tip to support the developer",
+          "description" : "Buy me a chocolate bar",
           "displayName" : "Medium Tip",
           "locale" : "en_US"
         }
@@ -40,7 +40,7 @@
       "internalID" : "tip_large",
       "localizations" : [
         {
-          "description" : "A large tip to support the developer",
+          "description" : "Buy me a coffee",
           "displayName" : "Large Tip",
           "locale" : "en_US"
         }

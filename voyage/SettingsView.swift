@@ -11,16 +11,33 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
 
+    private var thankYouMessage: String {
+        switch tipJarManager.lastPurchasedProductId {
+        case "com.anmol.voyage.tip.small":
+            return "🍌 Thanks, bananas are useful for code monkeys like me!"
+        case "com.anmol.voyage.tip.medium":
+            return "🍫 Mmm... you just made my day sweeter. Thank you!"
+        case "com.anmol.voyage.tip.large":
+            return "☕ Much needed caffeine! Thanks to you, I'll be coding all night. You're amazing!"
+        default:
+            return "Your support means a lot! Thank you for helping make voyage better."
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    if tipJarManager.tips.isEmpty {
+                    if tipJarManager.isLoading {
                         HStack {
                             ProgressView()
                                 .padding(.trailing, 8)
                             Text("Loading tips...")
                                 .foregroundColor(.secondary)
+                        }
+                    } else if tipJarManager.useFallback {
+                        ForEach(TipJarManager.fallbackTips) { tip in
+                            FallbackTipRowView(tip: tip)
                         }
                     } else {
                         ForEach(tipJarManager.tips, id: \.id) { tip in
@@ -38,7 +55,11 @@ struct SettingsView: View {
                 } header: {
                     Text("Support")
                 } footer: {
-                    Text("Thanks for using voyage! If you enjoy the app, consider leaving a tip to support development.")
+                    if tipJarManager.useFallback {
+                        Text("Tips unavailable in this environment. In the App Store version, you can leave a tip to support development.")
+                    } else {
+                        Text("Thanks for using voyage! If you enjoy the app, consider leaving a tip to support development.")
+                    }
                 }
 
                 Section {
@@ -97,7 +118,7 @@ struct SettingsView: View {
                     tipJarManager.resetState()
                 }
             } message: {
-                Text("Your support means a lot! Thank you for helping make voyage better.")
+                Text(thankYouMessage)
             }
         }
     }
@@ -108,40 +129,25 @@ struct TipRowView: View {
     let purchaseState: TipJarManager.PurchaseState
     let onPurchase: () -> Void
 
-    private var iconName: String {
+    private var emoji: String {
         switch tip.id {
         case "com.anmol.voyage.tip.small":
-            return "cup.and.saucer"
+            return "🍌"
         case "com.anmol.voyage.tip.medium":
-            return "cup.and.saucer.fill"
+            return "🍫"
         case "com.anmol.voyage.tip.large":
-            return "heart.fill"
+            return "☕"
         default:
-            return "cup.and.saucer"
-        }
-    }
-
-    private var iconColor: Color {
-        switch tip.id {
-        case "com.anmol.voyage.tip.small":
-            return Color(red: 0.37, green: 0.5, blue: 1.0)
-        case "com.anmol.voyage.tip.medium":
-            return Color(red: 0.85, green: 0.55, blue: 0.35)
-        case "com.anmol.voyage.tip.large":
-            return Color(red: 0.85, green: 0.35, blue: 0.35)
-        default:
-            return Color(red: 0.37, green: 0.5, blue: 1.0)
+            return "🍌"
         }
     }
 
     var body: some View {
         Button(action: onPurchase) {
             HStack {
-                Image(systemName: iconName)
-                    .foregroundColor(.white)
+                Text(emoji)
+                    .font(.title2)
                     .frame(width: 28, height: 28)
-                    .background(iconColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(tip.displayName)
@@ -166,5 +172,46 @@ struct TipRowView: View {
             }
         }
         .disabled(purchaseState == .purchasing)
+    }
+}
+
+struct FallbackTipRowView: View {
+    let tip: FallbackTip
+
+    private var emoji: String {
+        switch tip.id {
+        case "com.anmol.voyage.tip.small":
+            return "🍌"
+        case "com.anmol.voyage.tip.medium":
+            return "🍫"
+        case "com.anmol.voyage.tip.large":
+            return "☕"
+        default:
+            return "🍌"
+        }
+    }
+
+    var body: some View {
+        HStack {
+            Text(emoji)
+                .font(.title2)
+                .frame(width: 28, height: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tip.displayName)
+                    .foregroundColor(.primary)
+                Text(tip.description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            Text(tip.displayPrice)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+                .frame(minWidth: 60)
+        }
     }
 }
