@@ -376,8 +376,7 @@ struct GlobeView: UIViewRepresentable {
 
         func updateHighlights() {
             for (name, node) in countryNodes {
-                guard let geometry = node.geometry,
-                      let material = geometry.firstMaterial else { continue }
+                guard let geometry = node.geometry else { continue }
 
                 let isCurrentlySelected = globeState.selectedCountry == name
                 let isVisited = globeState.visitedCountries.contains(name)
@@ -386,24 +385,27 @@ struct GlobeView: UIViewRepresentable {
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.3
 
-                if isCurrentlySelected {
-                    // Orange #D98C59 (matches button color)
-                    material.diffuse.contents = UIColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 1.0)
-                    material.emission.contents = UIColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 0.3)
-                } else if isVisited {
-                    // Light yellow #F2F013
-                    material.diffuse.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 1.0)
-                    material.emission.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 0.15)
-                } else if isWishlist {
-                    // Purple for wishlist
-                    material.diffuse.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 1.0)
-                    material.emission.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 0.15)
-                } else {
-                    // Green for unvisited countries
-                    if let originalColor = originalColors[name] {
-                        material.diffuse.contents = originalColor
+                // Update all materials (needed for cylinders which have multiple materials for sides/caps)
+                for material in geometry.materials {
+                    if isCurrentlySelected {
+                        // Orange #D98C59 (matches button color)
+                        material.diffuse.contents = UIColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 1.0)
+                        material.emission.contents = UIColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 0.3)
+                    } else if isVisited {
+                        // Light yellow #F2F013
+                        material.diffuse.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 1.0)
+                        material.emission.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 0.15)
+                    } else if isWishlist {
+                        // Purple for wishlist
+                        material.diffuse.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 1.0)
+                        material.emission.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 0.15)
+                    } else {
+                        // Green for unvisited countries
+                        if let originalColor = originalColors[name] {
+                            material.diffuse.contents = originalColor
+                        }
+                        material.emission.contents = UIColor.black
                     }
-                    material.emission.contents = UIColor.black
                 }
 
                 SCNTransaction.commit()
