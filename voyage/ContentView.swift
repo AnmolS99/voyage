@@ -330,7 +330,6 @@ class GlobeState: ObservableObject {
         "New Caledonia",
         "Northern Cyprus",
         "Puerto Rico",
-        "Somaliland",
         "Taiwan",
         "Western Sahara"
     ]
