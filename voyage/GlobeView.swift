@@ -23,6 +23,12 @@ struct GlobeView: UIViewRepresentable {
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         sceneView.addGestureRecognizer(tapGesture)
 
+        // Double-tap-drag to zoom (like Google Maps)
+        let doubleTapDragGesture = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleDoubleTapDrag(_:)))
+        doubleTapDragGesture.numberOfTapsRequired = 1
+        doubleTapDragGesture.minimumPressDuration = 0.1
+        sceneView.addGestureRecognizer(doubleTapDragGesture)
+
         context.coordinator.sceneView = sceneView
 
         return sceneView
@@ -54,6 +60,8 @@ struct GlobeView: UIViewRepresentable {
         private var hasAnimatedToCountry: Bool = false
         private var lastAnimatedCountry: String?
         private var capitalStarNode: SCNNode?
+        private var doubleTapDragStartY: CGFloat = 0
+        private var doubleTapDragStartDistance: Float = 0
 
         init(globeState: GlobeState) {
             self.globeState = globeState
@@ -262,6 +270,40 @@ struct GlobeView: UIViewRepresentable {
                 cameraNode.look(at: SCNVector3(0, 0, 0))
 
                 gesture.scale = 1
+            }
+        }
+
+        @objc func handleDoubleTapDrag(_ gesture: UILongPressGestureRecognizer) {
+            guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+
+            let location = gesture.location(in: sceneView)
+
+            switch gesture.state {
+            case .began:
+                doubleTapDragStartY = location.y
+                doubleTapDragStartDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
+                                                   cameraNode.position.y * cameraNode.position.y +
+                                                   cameraNode.position.z * cameraNode.position.z)
+                globeState.isAutoRotating = false
+
+            case .changed:
+                let deltaY = location.y - doubleTapDragStartY
+                // Drag down = zoom in (negative distance), drag up = zoom out
+                let zoomSpeed: Float = 0.01
+                var newDistance = doubleTapDragStartDistance + Float(deltaY) * zoomSpeed
+
+                // Clamp zoom level
+                newDistance = max(1.2, min(8.0, newDistance))
+
+                cameraNode.position = SCNVector3(
+                    0,
+                    newDistance * sin(currentRotationX),
+                    newDistance * cos(currentRotationX)
+                )
+                cameraNode.look(at: SCNVector3(0, 0, 0))
+
+            default:
+                break
             }
         }
 
