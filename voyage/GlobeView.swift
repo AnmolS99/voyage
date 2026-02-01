@@ -112,7 +112,16 @@ struct GlobeView: UIViewRepresentable {
                     globeNode.runAction(rotation, forKey: "autoRotation")
                     hasAnimatedToCountry = false
                 } else {
-                    // Just stop auto-rotation - rotation capture happens in centerOnSelectedCountry
+                    // Capture the current actual rotation from the presentation node before stopping
+                    let currentActualRotationY = globeNode.presentation.eulerAngles.y
+
+                    // Update our tracked rotation to match the actual position
+                    currentRotationY = currentActualRotationY
+
+                    // Set the model node to match (freeze at current position)
+                    globeNode.eulerAngles.y = currentActualRotationY
+
+                    // Now remove the action
                     globeNode.removeAction(forKey: "autoRotation")
                 }
             }
@@ -214,6 +223,11 @@ struct GlobeView: UIViewRepresentable {
 
             // Stop auto-rotation when user drags
             if gesture.state == .began {
+                // Sync rotation state with actual visual position before stopping auto-rotation
+                let currentActualRotationY = globeNode.presentation.eulerAngles.y
+                currentRotationY = currentActualRotationY
+                globeNode.eulerAngles.y = currentActualRotationY
+                globeNode.removeAction(forKey: "autoRotation")
                 globeState.isAutoRotating = false
             }
 
@@ -250,7 +264,17 @@ struct GlobeView: UIViewRepresentable {
         }
 
         @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-            guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+
+            if gesture.state == .began {
+                // Sync rotation state with actual visual position before stopping auto-rotation
+                let currentActualRotationY = globeNode.presentation.eulerAngles.y
+                currentRotationY = currentActualRotationY
+                globeNode.eulerAngles.y = currentActualRotationY
+                globeNode.removeAction(forKey: "autoRotation")
+                globeState.isAutoRotating = false
+            }
 
             if gesture.state == .changed {
                 let zoomSpeed: Float = 0.5
@@ -274,7 +298,8 @@ struct GlobeView: UIViewRepresentable {
         }
 
         @objc func handleDoubleTapDrag(_ gesture: UILongPressGestureRecognizer) {
-            guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
 
             let location = gesture.location(in: sceneView)
 
@@ -284,6 +309,11 @@ struct GlobeView: UIViewRepresentable {
                 doubleTapDragStartDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
                                                    cameraNode.position.y * cameraNode.position.y +
                                                    cameraNode.position.z * cameraNode.position.z)
+                // Sync rotation state with actual visual position before stopping auto-rotation
+                let currentActualRotationY = globeNode.presentation.eulerAngles.y
+                currentRotationY = currentActualRotationY
+                globeNode.eulerAngles.y = currentActualRotationY
+                globeNode.removeAction(forKey: "autoRotation")
                 globeState.isAutoRotating = false
 
             case .changed:
