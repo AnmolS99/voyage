@@ -39,18 +39,29 @@ struct MapView: View {
                     let isWishlist = globeState.wishlistCountries.contains(country.name)
 
                     let fillColor: Color
+                    let borderColor: Color
+                    let defaultBorderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
+
                     if isCurrentlySelected {
                         // Orange #D98C59 (matches button color)
                         fillColor = Color(red: 0.85, green: 0.55, blue: 0.35)
+                        borderColor = defaultBorderColor
+                    } else if isVisited && isWishlist {
+                        // Yellow fill with purple border for visited + wishlist
+                        fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
+                        borderColor = Color(red: 0.6, green: 0.4, blue: 0.8)
                     } else if isVisited {
                         // Light yellow #F2F013
                         fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
+                        borderColor = defaultBorderColor
                     } else if isWishlist {
                         // Purple for wishlist
                         fillColor = Color(red: 0.6, green: 0.4, blue: 0.8)
+                        borderColor = defaultBorderColor
                     } else {
                         // Green #34BE82
                         fillColor = Color(red: 0.204, green: 0.745, blue: 0.510)
+                        borderColor = defaultBorderColor
                     }
 
                     if country.isPointCountry {
@@ -69,7 +80,6 @@ struct MapView: View {
                         ))
 
                         context.fill(dotPath, with: .color(fillColor))
-                        let borderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
                         context.stroke(dotPath, with: .color(borderColor), lineWidth: 0.5)
                     } else {
                         // Draw polygon country
@@ -100,8 +110,6 @@ struct MapView: View {
                             context.fill(path, with: .color(fillColor))
 
                             // Draw border
-                            let borderColor = globeState.isDarkMode ?
-                                Color(white: 0.3) : Color(white: 0.2)
                             context.stroke(path, with: .color(borderColor), lineWidth: 0.5)
                         }
                     }
