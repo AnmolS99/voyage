@@ -13,7 +13,6 @@
 		E81234560004 /* GlobeScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550004 /* GlobeScene.swift */; };
 		E81234560005 /* CountryData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550005 /* CountryData.swift */; };
 		E81234560006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E81234550006 /* Assets.xcassets */; };
-		E81234560007 /* countries.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550007 /* countries.json */; };
 		E81234560008 /* GeoJSONParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550008 /* GeoJSONParser.swift */; };
 		E81234560009 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
 		E81234560010 /* world.geojson in Resources */ = {isa = PBXBuildFile; fileRef = E81234550010 /* world.geojson */; };
@@ -55,7 +54,6 @@
 		E81234550004 /* GlobeScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeScene.swift; sourceTree = "<group>"; };
 		E81234550005 /* CountryData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryData.swift; sourceTree = "<group>"; };
 		E81234550006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		E81234550007 /* countries.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = countries.json; sourceTree = "<group>"; };
 		E81234550008 /* GeoJSONParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoJSONParser.swift; sourceTree = "<group>"; };
 		E81234550009 /* PolygonTriangulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonTriangulator.swift; sourceTree = "<group>"; };
 		E81234550010 /* world.geojson */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = world.geojson; sourceTree = "<group>"; };
@@ -135,7 +133,6 @@
 				E81234550026 /* TipJarManager.swift */,
 				E81234550027 /* TipJar.storekit */,
 				E81234550006 /* Assets.xcassets */,
-				E81234550007 /* countries.json */,
 				E81234550010 /* world.geojson */,
 				E81234550019 /* globe.scn */,
 			);
@@ -273,7 +270,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				E81234560006 /* Assets.xcassets in Resources */,
-				E81234560007 /* countries.json in Resources */,
 				E81234560010 /* world.geojson in Resources */,
 				E81234560019 /* globe.scn in Resources */,
 				E81234560027 /* TipJar.storekit in Resources */,

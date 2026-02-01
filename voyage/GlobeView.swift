@@ -463,6 +463,10 @@ struct GlobeView: UIViewRepresentable {
                         // Orange #D98C59 (matches button color)
                         material.diffuse.contents = UIColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 1.0)
                         material.emission.contents = UIColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 0.3)
+                    } else if isVisited && isWishlist {
+                        // Yellow fill for visited + wishlist (outline will be purple)
+                        material.diffuse.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 1.0)
+                        material.emission.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 0.15)
                     } else if isVisited {
                         // Light yellow #F2F013
                         material.diffuse.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 1.0)
@@ -477,6 +481,21 @@ struct GlobeView: UIViewRepresentable {
                             material.diffuse.contents = originalColor
                         }
                         material.emission.contents = UIColor.black
+                    }
+                }
+
+                // Update outline color for visited+wishlist countries
+                if let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                   let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false),
+                   let outlineGeometry = outlineNode.geometry {
+                    for material in outlineGeometry.materials {
+                        if isVisited && isWishlist {
+                            // Purple outline for visited+wishlist
+                            material.diffuse.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 1.0)
+                        } else {
+                            // Black outline for all other states
+                            material.diffuse.contents = UIColor.black
+                        }
                     }
                 }
 

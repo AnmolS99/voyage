@@ -70,7 +70,6 @@ The globe has layers: ocean sphere (base) → country polygons → border outlin
 ## Data Files
 
 - `world.geojson` - Country boundaries
-- `countries.json` - Country metadata
 - `globe.scn` - Pre-built 3D globe cache (regenerate with GlobeCacheGenerator)
 
 ## Globe Cache Generation
