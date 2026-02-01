@@ -311,7 +311,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
     oceanSphere.segmentCount = 64
     let oceanMaterial = SCNMaterial()
     oceanMaterial.diffuse.contents = NSColor(red: 0.184, green: 0.525, blue: 0.651, alpha: 1.0)
-    oceanMaterial.specular.contents = NSColor.white.withAlphaComponent(0.3)
+    oceanMaterial.specular.contents = NSColor.clear
     oceanMaterial.shininess = 0.3
     oceanSphere.materials = [oceanMaterial]
 
@@ -354,7 +354,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
             let circle = SCNCylinder(radius: 0.012, height: 0.001)
             let material = SCNMaterial()
             material.diffuse.contents = landColor
-            material.specular.contents = NSColor.white.withAlphaComponent(0.2)
+            material.specular.contents = NSColor.clear
             material.shininess = 0.2
             material.isDoubleSided = true
             circle.materials = [material]
@@ -377,7 +377,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
             if let geometry = createCountryGeometry(polygons: country.polygons) {
                 let material = SCNMaterial()
                 material.diffuse.contents = landColor
-                material.specular.contents = NSColor.white.withAlphaComponent(0.2)
+                material.specular.contents = NSColor.clear
                 material.shininess = 0.2
                 material.isDoubleSided = true
                 geometry.materials = [material]

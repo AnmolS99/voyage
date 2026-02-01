@@ -68,7 +68,7 @@ class GlobeScene {
         oceanSphere.segmentCount = 64
         let oceanMaterial = SCNMaterial()
         oceanMaterial.diffuse.contents = UIColor(red: 0.184, green: 0.525, blue: 0.651, alpha: 1.0)
-        oceanMaterial.specular.contents = UIColor.white.withAlphaComponent(0.3)
+        oceanMaterial.specular.contents = UIColor.clear
         oceanMaterial.shininess = 0.3
         oceanSphere.materials = [oceanMaterial]
 
@@ -140,7 +140,7 @@ class GlobeScene {
                 let circle = SCNCylinder(radius: 0.012, height: 0.001)
                 let material = SCNMaterial()
                 material.diffuse.contents = landColor
-                material.specular.contents = UIColor.white.withAlphaComponent(0.2)
+                material.specular.contents = UIColor.clear
                 material.shininess = 0.2
                 material.isDoubleSided = true
                 circle.materials = [material]
@@ -168,7 +168,7 @@ class GlobeScene {
                 if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons) {
                     let material = SCNMaterial()
                     material.diffuse.contents = country.color
-                    material.specular.contents = UIColor.white.withAlphaComponent(0.2)
+                    material.specular.contents = UIColor.clear
                     material.shininess = 0.2
                     material.isDoubleSided = true
                     geometry.materials = [material]
