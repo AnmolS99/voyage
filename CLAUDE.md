@@ -2,6 +2,21 @@
 
 An iOS app that displays an interactive 3D globe where users can explore and track countries they've visited.
 
+## Git Conventions
+
+Use conventional commits and conventional branch naming.
+
+**Commit format:** `<type>: <description>`
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
+**Branch format:** `<type>/<short-description>`
+
+Examples:
+- `feat/dark-mode-toggle`
+- `fix/globe-rotation-reset`
+- `refactor/country-data-parsing`
+
 ## Build & Run
 
 ```bash
