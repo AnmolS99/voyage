@@ -42,21 +42,34 @@ struct MapView: View {
                     let borderColor: Color
                     let defaultBorderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
 
-                    if isCurrentlySelected {
-                        // Orange #D98C59 (matches button color)
-                        fillColor = Color(red: 0.85, green: 0.55, blue: 0.35)
-                        borderColor = defaultBorderColor
+                    // Priority: visited/wishlist status takes precedence over selection
+                    if isVisited && isWishlist && isCurrentlySelected {
+                        // Bright yellow fill with purple border for selected visited + wishlist
+                        fillColor = Color(red: 1.0, green: 1.0, blue: 0.3)
+                        borderColor = Color(red: 0.6, green: 0.4, blue: 0.8)
                     } else if isVisited && isWishlist {
                         // Yellow fill with purple border for visited + wishlist
                         fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
                         borderColor = Color(red: 0.6, green: 0.4, blue: 0.8)
+                    } else if isVisited && isCurrentlySelected {
+                        // Bright yellow for selected visited
+                        fillColor = Color(red: 1.0, green: 1.0, blue: 0.3)
+                        borderColor = defaultBorderColor
                     } else if isVisited {
                         // Light yellow #F2F013
                         fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
                         borderColor = defaultBorderColor
+                    } else if isWishlist && isCurrentlySelected {
+                        // Bright purple for selected wishlist
+                        fillColor = Color(red: 0.75, green: 0.55, blue: 0.95)
+                        borderColor = defaultBorderColor
                     } else if isWishlist {
                         // Purple for wishlist
                         fillColor = Color(red: 0.6, green: 0.4, blue: 0.8)
+                        borderColor = defaultBorderColor
+                    } else if isCurrentlySelected {
+                        // Light green for selected (lighter than default #34BE82)
+                        fillColor = Color(red: 0.45, green: 0.85, blue: 0.60)
                         borderColor = defaultBorderColor
                     } else {
                         // Green #34BE82
