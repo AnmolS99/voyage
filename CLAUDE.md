@@ -57,14 +57,28 @@ Countries are rendered by:
 
 The globe has layers: ocean sphere (base) → country polygons → border outlines → atmosphere glow
 
+## Globe and Map Consistency
+
+The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain identical appearance and behavior. The only difference should be the rendering perspective (3D sphere vs 2D flat projection). This includes:
+
+- Country colors and selection highlighting
+- Color priority logic (visited/wishlist status takes precedence over selection)
+- Border/outline colors and styles
+- Capital star markers
+
+When modifying colors or selection logic, always update both files together.
+
 ## Color Palette
 
 | Element | Hex | RGB |
 |---------|-----|-----|
 | Ocean | #2F86A6 | (0.184, 0.525, 0.651) |
 | Land (unvisited) | #34BE82 | (0.204, 0.745, 0.510) |
-| Visited countries | #F2F013 | (0.949, 0.941, 0.075) |
-| Selected country | #D98C59 | (0.85, 0.55, 0.35) |
+| Selected (unvisited) | - | (0.45, 0.85, 0.60) |
+| Visited | #F2F013 | (0.949, 0.941, 0.075) |
+| Visited + selected | - | (1.0, 1.0, 0.3) |
+| Wishlist | - | (0.6, 0.4, 0.8) |
+| Wishlist + selected | - | (0.75, 0.55, 0.95) |
 | Buttons (light mode) | #D98C59 | (0.85, 0.55, 0.35) |
 
 ## Data Files
