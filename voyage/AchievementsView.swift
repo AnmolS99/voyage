@@ -200,8 +200,10 @@ struct AchievementCard: View {
                     achievement: achievement,
                     isDarkMode: isDarkMode
                 )
+                .transition(.opacity)
             }
         }
+        .clipped()
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(isDarkMode ?
