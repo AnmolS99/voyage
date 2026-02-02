@@ -86,6 +86,10 @@ struct SettingsView: View {
                         Text(appVersion)
                             .foregroundColor(.secondary)
                     }
+                } footer: {
+                    Text("© 2026 Anmol Singh. All rights reserved.")
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 16)
                 }
             }
             .navigationTitle("Settings")
