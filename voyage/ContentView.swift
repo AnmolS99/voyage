@@ -174,8 +174,6 @@ struct ContentView: View {
                                     globeState.removeVisit(country)
                                 } else {
                                     globeState.addVisit(country)
-                                    // Remove from wishlist if adding as visited
-                                    globeState.removeFromWishlist(country)
                                 }
                             }
                         }) {
