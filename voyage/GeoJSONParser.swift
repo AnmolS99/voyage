@@ -9,6 +9,7 @@ struct GeoJSONCountry {
     let isPointCountry: Bool
     let pointCoordinate: (lat: Double, lon: Double)? // For point countries (small islands, microstates)
     let flagCode: String?
+    let capital: (name: String, lat: Double, lon: Double)?
 
     static func landColor() -> UIColor {
         // Green #34BE82
@@ -43,6 +44,14 @@ class GeoJSONParser {
             let renderAs = properties["renderAs"] as? String
             let isPointCountry = renderAs == "point"
 
+            // Parse capital data
+            var capital: (name: String, lat: Double, lon: Double)? = nil
+            if let capitalName = properties["capital"] as? String,
+               let capitalLat = properties["capitalLat"] as? Double,
+               let capitalLon = properties["capitalLon"] as? Double {
+                capital = (name: capitalName, lat: capitalLat, lon: capitalLon)
+            }
+
             if type == "Point" {
                 // Point country (small islands, microstates)
                 if let coords = coordinates as? [Double], coords.count >= 2 {
@@ -55,7 +64,8 @@ class GeoJSONParser {
                         continent: continent,
                         isPointCountry: true,
                         pointCoordinate: (lat: lat, lon: lon),
-                        flagCode: flagCode
+                        flagCode: flagCode,
+                        capital: capital
                     )
                     countries.append(country)
                 }
@@ -88,7 +98,8 @@ class GeoJSONParser {
                         continent: continent,
                         isPointCountry: isPointCountry,
                         pointCoordinate: nil,
-                        flagCode: flagCode
+                        flagCode: flagCode,
+                        capital: capital
                     )
                     countries.append(country)
                 }

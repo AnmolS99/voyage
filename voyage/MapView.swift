@@ -130,7 +130,8 @@ struct MapView: View {
 
                 // Draw capital dot for selected country
                 if let selectedCountry = globeState.selectedCountry,
-                   let capital = CapitalData.getCapital(for: selectedCountry) {
+                   let country = countries.first(where: { $0.name == selectedCountry }),
+                   let capital = country.capital {
                     let x = (capital.lon + 180) / 360 * mapWidth
                     let y = (90 - capital.lat) / 180 * mapHeight + verticalOffset
                     let center = CGPoint(x: x, y: y).applying(transform)

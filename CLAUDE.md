@@ -45,7 +45,6 @@ xcrun simctl launch "iPhone 16 Pro" com.anmol.voyage
 | `GeoJSONParser.swift`       | Parses world.geojson into country data            |
 | `MapView.swift`             | 2D flat map view alternative                      |
 | `ContentView.swift`         | Main app container with UI controls               |
-| `CapitalData.swift`         | Capital city coordinates                          |
 
 ## Globe Rendering
 

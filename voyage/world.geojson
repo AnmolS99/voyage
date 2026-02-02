@@ -6,7 +6,10 @@
       "id": "AFG",
       "properties": {
         "name": "Afghanistan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Kabul",
+        "capitalLat": 34.5553,
+        "capitalLon": 69.2075
       },
       "geometry": {
         "type": "Polygon",
@@ -297,7 +300,10 @@
       "id": "AGO",
       "properties": {
         "name": "Angola",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Luanda",
+        "capitalLat": -8.839,
+        "capitalLon": 13.2894
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -618,7 +624,10 @@
       "id": "ALB",
       "properties": {
         "name": "Albania",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Tirana",
+        "capitalLat": 41.3275,
+        "capitalLon": 19.8187
       },
       "geometry": {
         "type": "Polygon",
@@ -721,7 +730,10 @@
       "id": "ARE",
       "properties": {
         "name": "United Arab Emirates",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Abu Dhabi",
+        "capitalLat": 24.4539,
+        "capitalLon": 54.3773
       },
       "geometry": {
         "type": "Polygon",
@@ -824,7 +836,10 @@
       "id": "ARG",
       "properties": {
         "name": "Argentina",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Buenos Aires",
+        "capitalLat": -34.6037,
+        "capitalLon": -58.3816
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -1329,7 +1344,10 @@
       "id": "ARM",
       "properties": {
         "name": "Armenia",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Yerevan",
+        "capitalLat": 40.1792,
+        "capitalLon": 44.4991
       },
       "geometry": {
         "type": "Polygon",
@@ -4144,7 +4162,10 @@
       "id": "AUS",
       "properties": {
         "name": "Australia",
-        "continent": "Oceania"
+        "continent": "Oceania",
+        "capital": "Canberra",
+        "capitalLat": -35.2809,
+        "capitalLon": 149.13
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -5129,7 +5150,10 @@
       "id": "AUT",
       "properties": {
         "name": "Austria",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Vienna",
+        "capitalLat": 48.2082,
+        "capitalLon": 16.3738
       },
       "geometry": {
         "type": "Polygon",
@@ -5292,7 +5316,10 @@
       "id": "AZE",
       "properties": {
         "name": "Azerbaijan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Baku",
+        "capitalLat": 40.4093,
+        "capitalLon": 49.8671
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -5489,7 +5516,10 @@
       "id": "BDI",
       "properties": {
         "name": "Burundi",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Gitega",
+        "capitalLat": -3.4264,
+        "capitalLon": 29.9246
       },
       "geometry": {
         "type": "Polygon",
@@ -5556,7 +5586,10 @@
       "id": "BEL",
       "properties": {
         "name": "Belgium",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Brussels",
+        "capitalLat": 50.8503,
+        "capitalLon": 4.3517
       },
       "geometry": {
         "type": "Polygon",
@@ -5631,7 +5664,10 @@
       "id": "BEN",
       "properties": {
         "name": "Benin",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Porto-Novo",
+        "capitalLat": 6.4969,
+        "capitalLon": 2.6289
       },
       "geometry": {
         "type": "Polygon",
@@ -5746,7 +5782,10 @@
       "id": "BFA",
       "properties": {
         "name": "Burkina Faso",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Ouagadougou",
+        "capitalLat": 12.3714,
+        "capitalLon": -1.5197
       },
       "geometry": {
         "type": "Polygon",
@@ -5917,7 +5956,10 @@
       "id": "BGD",
       "properties": {
         "name": "Bangladesh",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Dhaka",
+        "capitalLat": 23.8103,
+        "capitalLon": 90.4125
       },
       "geometry": {
         "type": "Polygon",
@@ -6076,7 +6118,10 @@
       "id": "BGR",
       "properties": {
         "name": "Bulgaria",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Sofia",
+        "capitalLat": 42.6977,
+        "capitalLon": 23.3219
       },
       "geometry": {
         "type": "Polygon",
@@ -6203,7 +6248,10 @@
       "id": "BHS",
       "properties": {
         "name": "The Bahamas",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Nassau",
+        "capitalLat": 25.0343,
+        "capitalLon": -77.3963
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -6312,7 +6360,10 @@
       "id": "BIH",
       "properties": {
         "name": "Bosnia and Herzegovina",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Sarajevo",
+        "capitalLat": 43.8563,
+        "capitalLon": 18.4131
       },
       "geometry": {
         "type": "Polygon",
@@ -6415,7 +6466,10 @@
       "id": "BLR",
       "properties": {
         "name": "Belarus",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Minsk",
+        "capitalLat": 53.9006,
+        "capitalLon": 27.559
       },
       "geometry": {
         "type": "Polygon",
@@ -6606,7 +6660,10 @@
       "id": "BLZ",
       "properties": {
         "name": "Belize",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Belmopan",
+        "capitalLat": 17.251,
+        "capitalLon": -88.759
       },
       "geometry": {
         "type": "Polygon",
@@ -6701,7 +6758,10 @@
       "id": "BOL",
       "properties": {
         "name": "Bolivia",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "La Paz",
+        "capitalLat": -16.4897,
+        "capitalLon": -68.1193
       },
       "geometry": {
         "type": "Polygon",
@@ -6956,7 +7016,10 @@
       "id": "BRA",
       "properties": {
         "name": "Brazil",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Brasilia",
+        "capitalLat": -15.7975,
+        "capitalLon": -47.8919
       },
       "geometry": {
         "type": "Polygon",
@@ -7783,7 +7846,10 @@
       "id": "BRN",
       "properties": {
         "name": "Brunei",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Bandar Seri Begawan",
+        "capitalLat": 4.9031,
+        "capitalLon": 114.9398
       },
       "geometry": {
         "type": "Polygon",
@@ -7830,7 +7896,10 @@
       "id": "BTN",
       "properties": {
         "name": "Bhutan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Thimphu",
+        "capitalLat": 27.4728,
+        "capitalLon": 89.639
       },
       "geometry": {
         "type": "Polygon",
@@ -7897,7 +7966,10 @@
       "id": "BWA",
       "properties": {
         "name": "Botswana",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Gaborone",
+        "capitalLat": -24.6282,
+        "capitalLon": 25.9231
       },
       "geometry": {
         "type": "Polygon",
@@ -8072,7 +8144,10 @@
       "id": "CAF",
       "properties": {
         "name": "Central African Republic",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Bangui",
+        "capitalLat": 4.3947,
+        "capitalLon": 18.5582
       },
       "geometry": {
         "type": "Polygon",
@@ -8335,7 +8410,10 @@
       "id": "CAN",
       "properties": {
         "name": "Canada",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Ottawa",
+        "capitalLat": 45.4215,
+        "capitalLon": -75.6972
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -11636,7 +11714,10 @@
       "id": "CHE",
       "properties": {
         "name": "Switzerland",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Bern",
+        "capitalLat": 46.948,
+        "capitalLon": 7.4474
       },
       "geometry": {
         "type": "Polygon",
@@ -11747,7 +11828,10 @@
       "id": "CHL",
       "properties": {
         "name": "Chile",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Santiago",
+        "capitalLat": -33.4489,
+        "capitalLon": -70.6693
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -12224,7 +12308,10 @@
       "id": "CHN",
       "properties": {
         "name": "China",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Beijing",
+        "capitalLat": 39.9042,
+        "capitalLon": 116.4074
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -13205,7 +13292,10 @@
       "id": "CIV",
       "properties": {
         "name": "C\u00f4te d'Ivoire",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Yamoussoukro",
+        "capitalLat": 6.8276,
+        "capitalLon": -5.2893
       },
       "geometry": {
         "type": "Polygon",
@@ -13404,7 +13494,10 @@
       "id": "CMR",
       "properties": {
         "name": "Cameroon",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Yaounde",
+        "capitalLat": 3.848,
+        "capitalLon": 11.5021
       },
       "geometry": {
         "type": "Polygon",
@@ -13663,7 +13756,10 @@
       "id": "COD",
       "properties": {
         "name": "Democratic Republic of the Congo",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Kinshasa",
+        "capitalLat": -4.4419,
+        "capitalLon": 15.2663
       },
       "geometry": {
         "type": "Polygon",
@@ -14166,7 +14262,10 @@
       "id": "COG",
       "properties": {
         "name": "Republic of the Congo",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Brazzaville",
+        "capitalLat": -4.2634,
+        "capitalLon": 15.2429
       },
       "geometry": {
         "type": "Polygon",
@@ -14377,7 +14476,10 @@
       "id": "COL",
       "properties": {
         "name": "Colombia",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Bogota",
+        "capitalLat": 4.711,
+        "capitalLon": -74.0721
       },
       "geometry": {
         "type": "Polygon",
@@ -14792,7 +14894,10 @@
       "id": "CRI",
       "properties": {
         "name": "Costa Rica",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "San Jose",
+        "capitalLat": 9.9281,
+        "capitalLon": -84.0907
       },
       "geometry": {
         "type": "Polygon",
@@ -14951,7 +15056,10 @@
       "id": "CUB",
       "properties": {
         "name": "Cuba",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Havana",
+        "capitalLat": 23.1136,
+        "capitalLon": -82.3666
       },
       "geometry": {
         "type": "Polygon",
@@ -15134,7 +15242,10 @@
       "id": "CZE",
       "properties": {
         "name": "Czechia",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Prague",
+        "capitalLat": 50.0755,
+        "capitalLon": 14.4378
       },
       "geometry": {
         "type": "Polygon",
@@ -15289,7 +15400,10 @@
       "id": "DEU",
       "properties": {
         "name": "Germany",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Berlin",
+        "capitalLat": 52.52,
+        "capitalLon": 13.405
       },
       "geometry": {
         "type": "Polygon",
@@ -15536,7 +15650,10 @@
       "id": "DJI",
       "properties": {
         "name": "Djibouti",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Djibouti",
+        "capitalLat": 11.5721,
+        "capitalLon": 43.1456
       },
       "geometry": {
         "type": "Polygon",
@@ -15611,7 +15728,10 @@
       "id": "DNK",
       "properties": {
         "name": "Denmark",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Copenhagen",
+        "capitalLat": 55.6761,
+        "capitalLon": 12.5683
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -15728,7 +15848,10 @@
       "id": "DOM",
       "properties": {
         "name": "Dominican Republic",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Santo Domingo",
+        "capitalLat": 18.4861,
+        "capitalLon": -69.9312
       },
       "geometry": {
         "type": "Polygon",
@@ -15847,7 +15970,10 @@
       "id": "DZA",
       "properties": {
         "name": "Algeria",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Algiers",
+        "capitalLat": 36.7538,
+        "capitalLon": 3.0588
       },
       "geometry": {
         "type": "Polygon",
@@ -16110,7 +16236,10 @@
       "id": "ECU",
       "properties": {
         "name": "Ecuador",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Quito",
+        "capitalLat": -0.1807,
+        "capitalLon": -78.4678
       },
       "geometry": {
         "type": "Polygon",
@@ -16257,7 +16386,10 @@
       "id": "EGY",
       "properties": {
         "name": "Egypt",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Cairo",
+        "capitalLat": 30.0444,
+        "capitalLon": 31.2357
       },
       "geometry": {
         "type": "Polygon",
@@ -16440,7 +16572,10 @@
       "id": "ERI",
       "properties": {
         "name": "Eritrea",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Asmara",
+        "capitalLat": 15.3229,
+        "capitalLon": 38.9251
       },
       "geometry": {
         "type": "Polygon",
@@ -16567,7 +16702,10 @@
       "id": "ESP",
       "properties": {
         "name": "Spain",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Madrid",
+        "capitalLat": 40.4168,
+        "capitalLon": -3.7038
       },
       "geometry": {
         "type": "Polygon",
@@ -16786,7 +16924,10 @@
       "id": "EST",
       "properties": {
         "name": "Estonia",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Tallinn",
+        "capitalLat": 59.437,
+        "capitalLon": 24.7536
       },
       "geometry": {
         "type": "Polygon",
@@ -16869,7 +17010,10 @@
       "id": "ETH",
       "properties": {
         "name": "Ethiopia",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Addis Ababa",
+        "capitalLat": 8.9806,
+        "capitalLon": 38.7578
       },
       "geometry": {
         "type": "Polygon",
@@ -17120,7 +17264,10 @@
       "id": "FIN",
       "properties": {
         "name": "Finland",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Helsinki",
+        "capitalLat": 60.1699,
+        "capitalLon": 24.9384
       },
       "geometry": {
         "type": "Polygon",
@@ -17287,7 +17434,10 @@
       "id": "FJI",
       "properties": {
         "name": "Fiji",
-        "continent": "Oceania"
+        "continent": "Oceania",
+        "capital": "Suva",
+        "capitalLat": -18.1416,
+        "capitalLon": 178.4419
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -17400,7 +17550,10 @@
       "id": "FLK",
       "properties": {
         "name": "Falkland Islands",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Stanley",
+        "capitalLat": -51.692,
+        "capitalLon": -57.857
       },
       "geometry": {
         "type": "Polygon",
@@ -17455,7 +17608,10 @@
       "id": "FRA",
       "properties": {
         "name": "France",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Paris",
+        "capitalLat": 48.8566,
+        "capitalLon": 2.3522
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -17696,7 +17852,10 @@
       "id": "GAB",
       "properties": {
         "name": "Gabon",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Libreville",
+        "capitalLat": 0.4162,
+        "capitalLon": 9.4673
       },
       "geometry": {
         "type": "Polygon",
@@ -17835,7 +17994,10 @@
       "id": "GBR",
       "properties": {
         "name": "United Kingdom",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "London",
+        "capitalLat": 51.5074,
+        "capitalLon": -0.1278
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -18080,7 +18242,10 @@
       "id": "GEO",
       "properties": {
         "name": "Georgia",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Tbilisi",
+        "capitalLat": 41.7151,
+        "capitalLon": 44.8271
       },
       "geometry": {
         "type": "Polygon",
@@ -18191,7 +18356,10 @@
       "id": "GHA",
       "properties": {
         "name": "Ghana",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Accra",
+        "capitalLat": 5.6037,
+        "capitalLon": -0.187
       },
       "geometry": {
         "type": "Polygon",
@@ -18306,7 +18474,10 @@
       "id": "GIN",
       "properties": {
         "name": "Guinea",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Conakry",
+        "capitalLat": 9.6412,
+        "capitalLon": -13.5784
       },
       "geometry": {
         "type": "Polygon",
@@ -18601,7 +18772,10 @@
       "id": "GMB",
       "properties": {
         "name": "Gambia",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Banjul",
+        "capitalLat": 13.4549,
+        "capitalLon": -16.579
       },
       "geometry": {
         "type": "Polygon",
@@ -18680,7 +18854,10 @@
       "id": "GNB",
       "properties": {
         "name": "Guinea Bissau",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Bissau",
+        "capitalLat": 11.8037,
+        "capitalLon": -15.1804
       },
       "geometry": {
         "type": "Polygon",
@@ -18771,7 +18948,10 @@
       "id": "GNQ",
       "properties": {
         "name": "Equatorial Guinea",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Ciudad de la Paz",
+        "capitalLat": 1.617,
+        "capitalLon": 10.828
       },
       "geometry": {
         "type": "Polygon",
@@ -18814,7 +18994,10 @@
       "id": "GRC",
       "properties": {
         "name": "Greece",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Athens",
+        "capitalLat": 37.9838,
+        "capitalLon": 23.7275
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -19051,7 +19234,10 @@
       "id": "GRL",
       "properties": {
         "name": "Greenland",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Nuuk",
+        "capitalLat": 64.1814,
+        "capitalLon": -51.6941
       },
       "geometry": {
         "type": "Polygon",
@@ -19594,7 +19780,10 @@
       "id": "GTM",
       "properties": {
         "name": "Guatemala",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Guatemala City",
+        "capitalLat": 14.6349,
+        "capitalLon": -90.5069
       },
       "geometry": {
         "type": "Polygon",
@@ -19749,7 +19938,10 @@
       "id": "GUF",
       "properties": {
         "name": "French Guiana",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Cayenne",
+        "capitalLat": 4.9372,
+        "capitalLon": -52.326
       },
       "geometry": {
         "type": "Polygon",
@@ -19840,7 +20032,10 @@
       "id": "GUY",
       "properties": {
         "name": "Guyana",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Georgetown",
+        "capitalLat": 6.8013,
+        "capitalLon": -58.1551
       },
       "geometry": {
         "type": "Polygon",
@@ -20015,7 +20210,10 @@
       "id": "HND",
       "properties": {
         "name": "Honduras",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Tegucigalpa",
+        "capitalLat": 14.0723,
+        "capitalLon": -87.1921
       },
       "geometry": {
         "type": "Polygon",
@@ -20258,7 +20456,10 @@
       "id": "HRV",
       "properties": {
         "name": "Croatia",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Zagreb",
+        "capitalLat": 45.815,
+        "capitalLon": 15.9819
       },
       "geometry": {
         "type": "Polygon",
@@ -20441,7 +20642,10 @@
       "id": "HTI",
       "properties": {
         "name": "Haiti",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Port-au-Prince",
+        "capitalLat": 18.5944,
+        "capitalLon": -72.3074
       },
       "geometry": {
         "type": "Polygon",
@@ -20540,7 +20744,10 @@
       "id": "HUN",
       "properties": {
         "name": "Hungary",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Budapest",
+        "capitalLat": 47.4979,
+        "capitalLon": 19.0402
       },
       "geometry": {
         "type": "Polygon",
@@ -20679,7 +20886,10 @@
       "id": "IDN",
       "properties": {
         "name": "Indonesia",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Jakarta",
+        "capitalLat": -6.2088,
+        "capitalLon": 106.8456
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -21744,7 +21954,10 @@
       "id": "IND",
       "properties": {
         "name": "India",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "New Delhi",
+        "capitalLat": 28.6139,
+        "capitalLon": 77.209
       },
       "geometry": {
         "type": "Polygon",
@@ -22303,7 +22516,10 @@
       "id": "IRL",
       "properties": {
         "name": "Ireland",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Dublin",
+        "capitalLat": 53.3498,
+        "capitalLon": -6.2603
       },
       "geometry": {
         "type": "Polygon",
@@ -22370,7 +22586,10 @@
       "id": "IRN",
       "properties": {
         "name": "Iran",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Tehran",
+        "capitalLat": 35.6892,
+        "capitalLon": 51.389
       },
       "geometry": {
         "type": "Polygon",
@@ -22685,7 +22904,10 @@
       "id": "IRQ",
       "properties": {
         "name": "Iraq",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Baghdad",
+        "capitalLat": 33.3152,
+        "capitalLon": 44.3661
       },
       "geometry": {
         "type": "Polygon",
@@ -22820,7 +23042,10 @@
       "id": "ISL",
       "properties": {
         "name": "Iceland",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Reykjavik",
+        "capitalLat": 64.1466,
+        "capitalLon": -21.9426
       },
       "geometry": {
         "type": "Polygon",
@@ -22915,7 +23140,10 @@
       "id": "ISR",
       "properties": {
         "name": "Israel",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Jerusalem",
+        "capitalLat": 31.7683,
+        "capitalLon": 35.2137
       },
       "geometry": {
         "type": "Polygon",
@@ -23022,7 +23250,10 @@
       "id": "ITA",
       "properties": {
         "name": "Italy",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Rome",
+        "capitalLat": 41.9028,
+        "capitalLon": 12.4964
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -23395,7 +23626,10 @@
       "id": "JAM",
       "properties": {
         "name": "Jamaica",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Kingston",
+        "capitalLat": 17.9714,
+        "capitalLon": -76.792
       },
       "geometry": {
         "type": "Polygon",
@@ -23454,7 +23688,10 @@
       "id": "JOR",
       "properties": {
         "name": "Jordan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Amman",
+        "capitalLat": 31.9454,
+        "capitalLon": 35.9284
       },
       "geometry": {
         "type": "Polygon",
@@ -23545,7 +23782,10 @@
       "id": "JPN",
       "properties": {
         "name": "Japan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Tokyo",
+        "capitalLat": 35.6762,
+        "capitalLon": 139.6503
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -23830,7 +24070,10 @@
       "id": "KAZ",
       "properties": {
         "name": "Kazakhstan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Astana",
+        "capitalLat": 51.1694,
+        "capitalLon": 71.4491
       },
       "geometry": {
         "type": "Polygon",
@@ -24293,7 +24536,10 @@
       "id": "KEN",
       "properties": {
         "name": "Kenya",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Nairobi",
+        "capitalLat": -1.2921,
+        "capitalLon": 36.8219
       },
       "geometry": {
         "type": "Polygon",
@@ -24456,7 +24702,10 @@
       "id": "KGZ",
       "properties": {
         "name": "Kyrgyzstan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Bishkek",
+        "capitalLat": 42.8746,
+        "capitalLon": 74.5698
       },
       "geometry": {
         "type": "Polygon",
@@ -24611,7 +24860,10 @@
       "id": "KHM",
       "properties": {
         "name": "Cambodia",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Phnom Penh",
+        "capitalLat": 11.5564,
+        "capitalLon": 104.9282
       },
       "geometry": {
         "type": "Polygon",
@@ -24694,7 +24946,10 @@
       "id": "KOR",
       "properties": {
         "name": "South Korea",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Seoul",
+        "capitalLat": 37.5665,
+        "capitalLon": 126.978
       },
       "geometry": {
         "type": "Polygon",
@@ -24785,7 +25040,10 @@
       "id": "CS-KM",
       "properties": {
         "name": "Kosovo",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Pristina",
+        "capitalLat": 42.6629,
+        "capitalLon": 21.1655
       },
       "geometry": {
         "type": "Polygon",
@@ -24884,7 +25142,10 @@
       "id": "KWT",
       "properties": {
         "name": "Kuwait",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Kuwait City",
+        "capitalLat": 29.3759,
+        "capitalLon": 47.9774
       },
       "geometry": {
         "type": "Polygon",
@@ -24935,7 +25196,10 @@
       "id": "LAO",
       "properties": {
         "name": "Laos",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Vientiane",
+        "capitalLat": 17.9757,
+        "capitalLon": 102.6331
       },
       "geometry": {
         "type": "Polygon",
@@ -25098,7 +25362,10 @@
       "id": "LBN",
       "properties": {
         "name": "Lebanon",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Beirut",
+        "capitalLat": 33.8938,
+        "capitalLon": 35.5018
       },
       "geometry": {
         "type": "Polygon",
@@ -25157,7 +25424,10 @@
       "id": "LBR",
       "properties": {
         "name": "Liberia",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Monrovia",
+        "capitalLat": 6.2907,
+        "capitalLon": -10.7605
       },
       "geometry": {
         "type": "Polygon",
@@ -25280,7 +25550,10 @@
       "id": "LBY",
       "properties": {
         "name": "Libya",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Tripoli",
+        "capitalLat": 32.8872,
+        "capitalLon": 13.1913
       },
       "geometry": {
         "type": "Polygon",
@@ -25519,7 +25792,10 @@
       "id": "LKA",
       "properties": {
         "name": "Sri Lanka",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Colombo",
+        "capitalLat": 6.9271,
+        "capitalLon": 79.8612
       },
       "geometry": {
         "type": "Polygon",
@@ -25574,7 +25850,10 @@
       "id": "LSO",
       "properties": {
         "name": "Lesotho",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Maseru",
+        "capitalLat": -29.3167,
+        "capitalLon": 27.4833
       },
       "geometry": {
         "type": "Polygon",
@@ -25637,7 +25916,10 @@
       "id": "LTU",
       "properties": {
         "name": "Lithuania",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Vilnius",
+        "capitalLat": 54.6872,
+        "capitalLon": 25.2797
       },
       "geometry": {
         "type": "Polygon",
@@ -25728,7 +26010,10 @@
       "id": "LVA",
       "properties": {
         "name": "Latvia",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Riga",
+        "capitalLat": 56.9496,
+        "capitalLon": 24.1052
       },
       "geometry": {
         "type": "Polygon",
@@ -25831,7 +26116,10 @@
       "id": "MAR",
       "properties": {
         "name": "Morocco",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Rabat",
+        "capitalLat": 34.0209,
+        "capitalLon": -6.8416
       },
       "geometry": {
         "type": "Polygon",
@@ -26102,7 +26390,10 @@
       "id": "MDA",
       "properties": {
         "name": "Moldova",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Chisinau",
+        "capitalLat": 47.0105,
+        "capitalLon": 28.8638
       },
       "geometry": {
         "type": "Polygon",
@@ -26225,7 +26516,10 @@
       "id": "MDG",
       "properties": {
         "name": "Madagascar",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Antananarivo",
+        "capitalLat": -18.8792,
+        "capitalLon": 47.5079
       },
       "geometry": {
         "type": "Polygon",
@@ -26436,7 +26730,10 @@
       "id": "MEX",
       "properties": {
         "name": "Mexico",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Mexico City",
+        "capitalLat": 19.4326,
+        "capitalLon": -99.1332
       },
       "geometry": {
         "type": "Polygon",
@@ -27131,7 +27428,10 @@
       "id": "MKD",
       "properties": {
         "name": "North Macedonia",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Skopje",
+        "capitalLat": 41.9973,
+        "capitalLon": 21.428
       },
       "geometry": {
         "type": "Polygon",
@@ -27214,7 +27514,10 @@
       "id": "MLI",
       "properties": {
         "name": "Mali",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Bamako",
+        "capitalLat": 12.6392,
+        "capitalLon": -8.0029
       },
       "geometry": {
         "type": "Polygon",
@@ -27533,7 +27836,10 @@
       "id": "MMR",
       "properties": {
         "name": "Myanmar",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Naypyidaw",
+        "capitalLat": 19.7633,
+        "capitalLon": 96.0785
       },
       "geometry": {
         "type": "Polygon",
@@ -27828,7 +28134,10 @@
       "id": "MNE",
       "properties": {
         "name": "Montenegro",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Podgorica",
+        "capitalLat": 42.4304,
+        "capitalLon": 19.2594
       },
       "geometry": {
         "type": "Polygon",
@@ -27915,7 +28224,10 @@
       "id": "MNG",
       "properties": {
         "name": "Mongolia",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Ulaanbaatar",
+        "capitalLat": 47.8864,
+        "capitalLon": 106.9057
       },
       "geometry": {
         "type": "Polygon",
@@ -28230,7 +28542,10 @@
       "id": "MOZ",
       "properties": {
         "name": "Mozambique",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Maputo",
+        "capitalLat": -25.9692,
+        "capitalLon": 32.5732
       },
       "geometry": {
         "type": "Polygon",
@@ -28553,7 +28868,10 @@
       "id": "MRT",
       "properties": {
         "name": "Mauritania",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Nouakchott",
+        "capitalLat": 18.0735,
+        "capitalLon": -15.9582
       },
       "geometry": {
         "type": "Polygon",
@@ -28724,7 +29042,10 @@
       "id": "MWI",
       "properties": {
         "name": "Malawi",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Lilongwe",
+        "capitalLat": -13.9626,
+        "capitalLon": 33.7741
       },
       "geometry": {
         "type": "Polygon",
@@ -28851,7 +29172,10 @@
       "id": "MYS",
       "properties": {
         "name": "Malaysia",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Kuala Lumpur",
+        "capitalLat": 3.139,
+        "capitalLon": 101.6869
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -29120,7 +29444,10 @@
       "id": "NAM",
       "properties": {
         "name": "Namibia",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Windhoek",
+        "capitalLat": -22.5609,
+        "capitalLon": 17.0658
       },
       "geometry": {
         "type": "Polygon",
@@ -29311,7 +29638,10 @@
       "id": "NCL",
       "properties": {
         "name": "New Caledonia",
-        "continent": "Oceania"
+        "continent": "Oceania",
+        "capital": "Noumea",
+        "capitalLat": -22.2758,
+        "capitalLon": 166.458
       },
       "geometry": {
         "type": "Polygon",
@@ -29378,7 +29708,10 @@
       "id": "NER",
       "properties": {
         "name": "Niger",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Niamey",
+        "capitalLat": 13.5137,
+        "capitalLon": 2.1098
       },
       "geometry": {
         "type": "Polygon",
@@ -29625,7 +29958,10 @@
       "id": "NGA",
       "properties": {
         "name": "Nigeria",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Abuja",
+        "capitalLat": 9.0765,
+        "capitalLon": 7.3986
       },
       "geometry": {
         "type": "Polygon",
@@ -29872,7 +30208,10 @@
       "id": "NIC",
       "properties": {
         "name": "Nicaragua",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Managua",
+        "capitalLat": 12.115,
+        "capitalLon": -86.2362
       },
       "geometry": {
         "type": "Polygon",
@@ -30095,7 +30434,10 @@
       "id": "NLD",
       "properties": {
         "name": "Netherlands",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Amsterdam",
+        "capitalLat": 52.3676,
+        "capitalLon": 4.9041
       },
       "geometry": {
         "type": "Polygon",
@@ -30166,7 +30508,10 @@
       "id": "NOR",
       "properties": {
         "name": "Norway",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Oslo",
+        "capitalLat": 59.9139,
+        "capitalLon": 10.7522
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -30547,7 +30892,10 @@
       "id": "NPL",
       "properties": {
         "name": "Nepal",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Kathmandu",
+        "capitalLat": 27.7172,
+        "capitalLon": 85.324
       },
       "geometry": {
         "type": "Polygon",
@@ -30654,7 +31002,10 @@
       "id": "NZL",
       "properties": {
         "name": "New Zealand",
-        "continent": "Oceania"
+        "continent": "Oceania",
+        "capital": "Wellington",
+        "capitalLat": -41.2866,
+        "capitalLon": 174.7756
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -30939,7 +31290,10 @@
       "id": "OMN",
       "properties": {
         "name": "Oman",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Muscat",
+        "capitalLat": 23.588,
+        "capitalLon": 58.3829
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -31148,7 +31502,10 @@
       "id": "PAK",
       "properties": {
         "name": "Pakistan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Islamabad",
+        "capitalLat": 33.6844,
+        "capitalLon": 73.0479
       },
       "geometry": {
         "type": "Polygon",
@@ -31427,7 +31784,10 @@
       "id": "PAN",
       "properties": {
         "name": "Panama",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Panama City",
+        "capitalLat": 8.9824,
+        "capitalLon": -79.5199
       },
       "geometry": {
         "type": "Polygon",
@@ -31650,7 +32010,10 @@
       "id": "PER",
       "properties": {
         "name": "Peru",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Lima",
+        "capitalLat": -12.0464,
+        "capitalLon": -77.0428
       },
       "geometry": {
         "type": "Polygon",
@@ -31969,7 +32332,10 @@
       "id": "PHL",
       "properties": {
         "name": "Philippines",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Manila",
+        "capitalLat": 14.5995,
+        "capitalLon": 120.9842
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -32450,7 +32816,10 @@
       "id": "PNG",
       "properties": {
         "name": "Papua New Guinea",
-        "continent": "Oceania"
+        "continent": "Oceania",
+        "capital": "Port Moresby",
+        "capitalLat": -9.4438,
+        "capitalLon": 147.1803
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -32803,7 +33172,10 @@
       "id": "POL",
       "properties": {
         "name": "Poland",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Warsaw",
+        "capitalLat": 52.2297,
+        "capitalLon": 21.0122
       },
       "geometry": {
         "type": "Polygon",
@@ -32998,7 +33370,10 @@
       "id": "PRI",
       "properties": {
         "name": "Puerto Rico",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "San Juan",
+        "capitalLat": 18.4655,
+        "capitalLon": -66.1057
       },
       "geometry": {
         "type": "Polygon",
@@ -33049,7 +33424,10 @@
       "id": "PRK",
       "properties": {
         "name": "North Korea",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Pyongyang",
+        "capitalLat": 39.0392,
+        "capitalLon": 125.7625
       },
       "geometry": {
         "type": "Polygon",
@@ -33236,7 +33614,10 @@
       "id": "PRT",
       "properties": {
         "name": "Portugal",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Lisbon",
+        "capitalLat": 38.7223,
+        "capitalLon": -9.1393
       },
       "geometry": {
         "type": "Polygon",
@@ -33383,7 +33764,10 @@
       "id": "PRY",
       "properties": {
         "name": "Paraguay",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Asuncion",
+        "capitalLat": -25.2637,
+        "capitalLon": -57.5759
       },
       "geometry": {
         "type": "Polygon",
@@ -33530,7 +33914,10 @@
       "id": "QAT",
       "properties": {
         "name": "Qatar",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Doha",
+        "capitalLat": 25.2854,
+        "capitalLon": 51.531
       },
       "geometry": {
         "type": "Polygon",
@@ -33581,7 +33968,10 @@
       "id": "ROU",
       "properties": {
         "name": "Romania",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Bucharest",
+        "capitalLat": 44.4268,
+        "capitalLon": 26.1025
       },
       "geometry": {
         "type": "Polygon",
@@ -33772,7 +34162,10 @@
       "id": "RUS",
       "properties": {
         "name": "Russia",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Moscow",
+        "capitalLat": 55.7558,
+        "capitalLon": 37.6173
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -36229,7 +36622,10 @@
       "id": "RWA",
       "properties": {
         "name": "Rwanda",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Kigali",
+        "capitalLat": -1.9403,
+        "capitalLon": 30.0587
       },
       "geometry": {
         "type": "Polygon",
@@ -36296,7 +36692,10 @@
       "id": "ESH",
       "properties": {
         "name": "Western Sahara",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Laayoune",
+        "capitalLat": 27.1536,
+        "capitalLon": -13.2034
       },
       "geometry": {
         "type": "Polygon",
@@ -36423,7 +36822,10 @@
       "id": "SAU",
       "properties": {
         "name": "Saudi Arabia",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Riyadh",
+        "capitalLat": 24.7136,
+        "capitalLon": 46.6753
       },
       "geometry": {
         "type": "Polygon",
@@ -36742,7 +37144,10 @@
       "id": "SDN",
       "properties": {
         "name": "Sudan",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Khartoum",
+        "capitalLat": 15.5007,
+        "capitalLon": 32.5599
       },
       "geometry": {
         "type": "Polygon",
@@ -37073,7 +37478,10 @@
       "id": "SSD",
       "properties": {
         "name": "South Sudan",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Juba",
+        "capitalLat": 4.8594,
+        "capitalLon": 31.5713
       },
       "geometry": {
         "type": "Polygon",
@@ -37340,7 +37748,10 @@
       "id": "SEN",
       "properties": {
         "name": "Senegal",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Dakar",
+        "capitalLat": 14.7167,
+        "capitalLon": -17.4677
       },
       "geometry": {
         "type": "Polygon",
@@ -37531,7 +37942,10 @@
       "id": "SLB",
       "properties": {
         "name": "Solomon Islands",
-        "continent": "Oceania"
+        "continent": "Oceania",
+        "capital": "Honiara",
+        "capitalLat": -9.4456,
+        "capitalLon": 159.9729
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -37712,7 +38126,10 @@
       "id": "SLE",
       "properties": {
         "name": "Sierra Leone",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Freetown",
+        "capitalLat": 8.4657,
+        "capitalLon": -13.2317
       },
       "geometry": {
         "type": "Polygon",
@@ -37815,7 +38232,10 @@
       "id": "SLV",
       "properties": {
         "name": "El Salvador",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "San Salvador",
+        "capitalLat": 13.6929,
+        "capitalLon": -89.2182
       },
       "geometry": {
         "type": "Polygon",
@@ -37910,7 +38330,10 @@
       "id": "SOM",
       "properties": {
         "name": "Somalia",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Mogadishu",
+        "capitalLat": 2.0469,
+        "capitalLon": 45.3182
       },
       "geometry": {
         "type": "Polygon",
@@ -38121,7 +38544,10 @@
       "id": "SRB",
       "properties": {
         "name": "Serbia",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Belgrade",
+        "capitalLat": 44.7866,
+        "capitalLon": 20.4489
       },
       "geometry": {
         "type": "Polygon",
@@ -38320,7 +38746,10 @@
       "id": "SUR",
       "properties": {
         "name": "Suriname",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Paramaribo",
+        "capitalLat": 5.852,
+        "capitalLon": -55.2038
       },
       "geometry": {
         "type": "Polygon",
@@ -38439,7 +38868,10 @@
       "id": "SVK",
       "properties": {
         "name": "Slovakia",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Bratislava",
+        "capitalLat": 48.1486,
+        "capitalLon": 17.1077
       },
       "geometry": {
         "type": "Polygon",
@@ -38586,7 +39018,10 @@
       "id": "SVN",
       "properties": {
         "name": "Slovenia",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Ljubljana",
+        "capitalLat": 46.0569,
+        "capitalLon": 14.5058
       },
       "geometry": {
         "type": "Polygon",
@@ -38673,7 +39108,10 @@
       "id": "SWE",
       "properties": {
         "name": "Sweden",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Stockholm",
+        "capitalLat": 59.3293,
+        "capitalLon": 18.0686
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -38990,7 +39428,10 @@
       "id": "SWZ",
       "properties": {
         "name": "Eswatini",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Mbabane",
+        "capitalLat": -26.3054,
+        "capitalLon": 31.1367
       },
       "geometry": {
         "type": "Polygon",
@@ -39049,7 +39490,10 @@
       "id": "SYR",
       "properties": {
         "name": "Syria",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Damascus",
+        "capitalLat": 33.5138,
+        "capitalLon": 36.2765
       },
       "geometry": {
         "type": "Polygon",
@@ -39172,7 +39616,10 @@
       "id": "TCD",
       "properties": {
         "name": "Chad",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "N'Djamena",
+        "capitalLat": 12.1348,
+        "capitalLon": 15.0557
       },
       "geometry": {
         "type": "Polygon",
@@ -39419,7 +39866,10 @@
       "id": "TGO",
       "properties": {
         "name": "Togo",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Lome",
+        "capitalLat": 6.1256,
+        "capitalLon": 1.2254
       },
       "geometry": {
         "type": "Polygon",
@@ -39510,7 +39960,10 @@
       "id": "THA",
       "properties": {
         "name": "Thailand",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Bangkok",
+        "capitalLat": 13.7563,
+        "capitalLon": 100.5018
       },
       "geometry": {
         "type": "Polygon",
@@ -39781,7 +40234,10 @@
       "id": "TJK",
       "properties": {
         "name": "Tajikistan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Dushanbe",
+        "capitalLat": 38.5598,
+        "capitalLon": 68.774
       },
       "geometry": {
         "type": "Polygon",
@@ -39960,7 +40416,10 @@
       "id": "TKM",
       "properties": {
         "name": "Turkmenistan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Ashgabat",
+        "capitalLat": 37.9601,
+        "capitalLon": 58.3261
       },
       "geometry": {
         "type": "Polygon",
@@ -40191,7 +40650,10 @@
       "id": "TLS",
       "properties": {
         "name": "Timor-Leste",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Dili",
+        "capitalLat": -8.5569,
+        "capitalLon": 125.5603
       },
       "geometry": {
         "type": "Polygon",
@@ -40250,7 +40712,10 @@
       "id": "TTO",
       "properties": {
         "name": "Trinidad and Tobago",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Port of Spain",
+        "capitalLat": 10.6596,
+        "capitalLon": -61.5086
       },
       "geometry": {
         "type": "Polygon",
@@ -40297,7 +40762,10 @@
       "id": "TUN",
       "properties": {
         "name": "Tunisia",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Tunis",
+        "capitalLat": 36.8065,
+        "capitalLon": 10.1815
       },
       "geometry": {
         "type": "Polygon",
@@ -40436,7 +40904,10 @@
       "id": "TUR",
       "properties": {
         "name": "Turkey",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Ankara",
+        "capitalLat": 39.9334,
+        "capitalLon": 32.8597
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -40725,7 +41196,10 @@
       "id": "TWN",
       "properties": {
         "name": "Taiwan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Taipei",
+        "capitalLat": 25.033,
+        "capitalLon": 121.5654
       },
       "geometry": {
         "type": "Polygon",
@@ -40776,7 +41250,10 @@
       "id": "TZA",
       "properties": {
         "name": "Tanzania",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Dodoma",
+        "capitalLat": -6.163,
+        "capitalLon": 35.7516
       },
       "geometry": {
         "type": "Polygon",
@@ -40987,7 +41464,10 @@
       "id": "UGA",
       "properties": {
         "name": "Uganda",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Kampala",
+        "capitalLat": 0.3476,
+        "capitalLon": 32.5825
       },
       "geometry": {
         "type": "Polygon",
@@ -41110,7 +41590,10 @@
       "id": "UKR",
       "properties": {
         "name": "Ukraine",
-        "continent": "Europe"
+        "continent": "Europe",
+        "capital": "Kyiv",
+        "capitalLat": 50.4501,
+        "capitalLon": 30.5234
       },
       "geometry": {
         "type": "Polygon",
@@ -41517,7 +42000,10 @@
       "id": "URY",
       "properties": {
         "name": "Uruguay",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Montevideo",
+        "capitalLat": -34.9011,
+        "capitalLon": -56.1645
       },
       "geometry": {
         "type": "Polygon",
@@ -41616,7 +42102,10 @@
       "id": "USA",
       "properties": {
         "name": "United States of America",
-        "continent": "North America"
+        "continent": "North America",
+        "capital": "Washington D.C.",
+        "capitalLat": 38.9072,
+        "capitalLon": -77.0369
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -43441,7 +43930,10 @@
       "id": "UZB",
       "properties": {
         "name": "Uzbekistan",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Tashkent",
+        "capitalLat": 41.2995,
+        "capitalLon": 69.2401
       },
       "geometry": {
         "type": "Polygon",
@@ -43672,7 +44164,10 @@
       "id": "VEN",
       "properties": {
         "name": "Venezuela",
-        "continent": "South America"
+        "continent": "South America",
+        "capital": "Caracas",
+        "capitalLat": 10.4806,
+        "capitalLon": -66.9036
       },
       "geometry": {
         "type": "Polygon",
@@ -44055,7 +44550,10 @@
       "id": "VNM",
       "properties": {
         "name": "Vietnam",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Hanoi",
+        "capitalLat": 21.0285,
+        "capitalLon": 105.8542
       },
       "geometry": {
         "type": "Polygon",
@@ -44246,7 +44744,10 @@
       "id": "VUT",
       "properties": {
         "name": "Vanuatu",
-        "continent": "Oceania"
+        "continent": "Oceania",
+        "capital": "Port Vila",
+        "capitalLat": -17.7334,
+        "capitalLon": 168.322
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -44315,7 +44816,10 @@
       "id": "PSE",
       "properties": {
         "name": "Palestine",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Ramallah",
+        "capitalLat": 31.9038,
+        "capitalLon": 35.2034
       },
       "geometry": {
         "type": "Polygon",
@@ -44366,7 +44870,10 @@
       "id": "YEM",
       "properties": {
         "name": "Yemen",
-        "continent": "Asia"
+        "continent": "Asia",
+        "capital": "Sanaa",
+        "capitalLat": 15.3694,
+        "capitalLon": 44.191
       },
       "geometry": {
         "type": "Polygon",
@@ -44557,7 +45064,10 @@
       "id": "ZAF",
       "properties": {
         "name": "South Africa",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Pretoria",
+        "capitalLat": -25.7479,
+        "capitalLon": 28.2293
       },
       "geometry": {
         "type": "Polygon",
@@ -44950,7 +45460,10 @@
       "id": "ZMB",
       "properties": {
         "name": "Zambia",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Lusaka",
+        "capitalLat": -15.3875,
+        "capitalLon": 28.3228
       },
       "geometry": {
         "type": "Polygon",
@@ -45209,7 +45722,10 @@
       "id": "ZWE",
       "properties": {
         "name": "Zimbabwe",
-        "continent": "Africa"
+        "continent": "Africa",
+        "capital": "Harare",
+        "capitalLat": -17.8252,
+        "capitalLon": 31.0335
       },
       "geometry": {
         "type": "Polygon",
@@ -45373,7 +45889,10 @@
         "name": "Andorra",
         "continent": "Europe",
         "flagCode": "AD",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Andorra la Vella",
+        "capitalLat": 42.5063,
+        "capitalLon": 1.5218
       },
       "geometry": {
         "type": "Point",
@@ -45389,7 +45908,10 @@
         "name": "Cyprus",
         "continent": "Asia",
         "flagCode": "CY",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Nicosia",
+        "capitalLat": 35.1856,
+        "capitalLon": 33.3823
       },
       "geometry": {
         "type": "Point",
@@ -45405,7 +45927,10 @@
         "name": "Liechtenstein",
         "continent": "Europe",
         "flagCode": "LI",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Vaduz",
+        "capitalLat": 47.141,
+        "capitalLon": 9.5209
       },
       "geometry": {
         "type": "Point",
@@ -45421,7 +45946,10 @@
         "name": "Luxembourg",
         "continent": "Europe",
         "flagCode": "LU",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Luxembourg City",
+        "capitalLat": 49.6116,
+        "capitalLon": 6.1319
       },
       "geometry": {
         "type": "Point",
@@ -45437,7 +45965,10 @@
         "name": "Malta",
         "continent": "Europe",
         "flagCode": "MT",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Valletta",
+        "capitalLat": 35.8989,
+        "capitalLon": 14.5146
       },
       "geometry": {
         "type": "Point",
@@ -45453,7 +45984,10 @@
         "name": "Monaco",
         "continent": "Europe",
         "flagCode": "MC",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Monaco",
+        "capitalLat": 43.7384,
+        "capitalLon": 7.4246
       },
       "geometry": {
         "type": "Point",
@@ -45469,7 +46003,10 @@
         "name": "Northern Cyprus",
         "continent": "Asia",
         "flagCode": "CY",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "North Nicosia",
+        "capitalLat": 35.1856,
+        "capitalLon": 33.3823
       },
       "geometry": {
         "type": "Point",
@@ -45485,7 +46022,10 @@
         "name": "San Marino",
         "continent": "Europe",
         "flagCode": "SM",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "San Marino",
+        "capitalLat": 43.9356,
+        "capitalLon": 12.4473
       },
       "geometry": {
         "type": "Point",
@@ -45501,7 +46041,10 @@
         "name": "Vatican City",
         "continent": "Europe",
         "flagCode": "VA",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Vatican City",
+        "capitalLat": 41.9029,
+        "capitalLon": 12.4534
       },
       "geometry": {
         "type": "Point",
@@ -45517,7 +46060,10 @@
         "name": "Bermuda",
         "continent": "North America",
         "flagCode": "BM",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Hamilton",
+        "capitalLat": 32.2949,
+        "capitalLon": -64.783
       },
       "geometry": {
         "type": "Point",
@@ -45533,7 +46079,10 @@
         "name": "Antigua and Barbuda",
         "continent": "North America",
         "flagCode": "AG",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "St. John's",
+        "capitalLat": 17.1274,
+        "capitalLon": -61.8468
       },
       "geometry": {
         "type": "Point",
@@ -45549,7 +46098,10 @@
         "name": "Barbados",
         "continent": "North America",
         "flagCode": "BB",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Bridgetown",
+        "capitalLat": 13.0969,
+        "capitalLon": -59.6145
       },
       "geometry": {
         "type": "Point",
@@ -45565,7 +46117,10 @@
         "name": "Dominica",
         "continent": "North America",
         "flagCode": "DM",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Roseau",
+        "capitalLat": 15.301,
+        "capitalLon": -61.3881
       },
       "geometry": {
         "type": "Point",
@@ -45581,7 +46136,10 @@
         "name": "Grenada",
         "continent": "North America",
         "flagCode": "GD",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "St. George's",
+        "capitalLat": 12.0561,
+        "capitalLon": -61.7486
       },
       "geometry": {
         "type": "Point",
@@ -45597,7 +46155,10 @@
         "name": "Saint Kitts and Nevis",
         "continent": "North America",
         "flagCode": "KN",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Basseterre",
+        "capitalLat": 17.2968,
+        "capitalLon": -62.7138
       },
       "geometry": {
         "type": "Point",
@@ -45613,7 +46174,10 @@
         "name": "Saint Lucia",
         "continent": "North America",
         "flagCode": "LC",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Castries",
+        "capitalLat": 14.0101,
+        "capitalLon": -60.987
       },
       "geometry": {
         "type": "Point",
@@ -45629,7 +46193,10 @@
         "name": "Saint Vincent and the Grenadines",
         "continent": "North America",
         "flagCode": "VC",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Kingstown",
+        "capitalLat": 13.1587,
+        "capitalLon": -61.2248
       },
       "geometry": {
         "type": "Point",
@@ -45645,7 +46212,10 @@
         "name": "Kiribati",
         "continent": "Oceania",
         "flagCode": "KI",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Tarawa",
+        "capitalLat": 1.3382,
+        "capitalLon": 173.0176
       },
       "geometry": {
         "type": "Point",
@@ -45661,7 +46231,10 @@
         "name": "Marshall Islands",
         "continent": "Oceania",
         "flagCode": "MH",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Majuro",
+        "capitalLat": 7.1164,
+        "capitalLon": 171.1858
       },
       "geometry": {
         "type": "Point",
@@ -45677,7 +46250,10 @@
         "name": "Micronesia",
         "continent": "Oceania",
         "flagCode": "FM",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Palikir",
+        "capitalLat": 6.9248,
+        "capitalLon": 158.161
       },
       "geometry": {
         "type": "Point",
@@ -45693,7 +46269,10 @@
         "name": "Nauru",
         "continent": "Oceania",
         "flagCode": "NR",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Yaren",
+        "capitalLat": -0.5477,
+        "capitalLon": 166.9209
       },
       "geometry": {
         "type": "Point",
@@ -45709,7 +46288,10 @@
         "name": "Palau",
         "continent": "Oceania",
         "flagCode": "PW",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Ngerulmud",
+        "capitalLat": 7.5006,
+        "capitalLon": 134.6242
       },
       "geometry": {
         "type": "Point",
@@ -45725,7 +46307,10 @@
         "name": "Samoa",
         "continent": "Oceania",
         "flagCode": "WS",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Apia",
+        "capitalLat": -13.8333,
+        "capitalLon": -171.75
       },
       "geometry": {
         "type": "Point",
@@ -45741,7 +46326,10 @@
         "name": "Tonga",
         "continent": "Oceania",
         "flagCode": "TO",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Nuku'alofa",
+        "capitalLat": -21.2114,
+        "capitalLon": -175.1998
       },
       "geometry": {
         "type": "Point",
@@ -45757,7 +46345,10 @@
         "name": "Tuvalu",
         "continent": "Oceania",
         "flagCode": "TV",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Funafuti",
+        "capitalLat": -8.5211,
+        "capitalLon": 179.1962
       },
       "geometry": {
         "type": "Point",
@@ -45773,7 +46364,10 @@
         "name": "Bahrain",
         "continent": "Asia",
         "flagCode": "BH",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Manama",
+        "capitalLat": 26.2285,
+        "capitalLon": 50.586
       },
       "geometry": {
         "type": "Point",
@@ -45789,7 +46383,10 @@
         "name": "Cape Verde",
         "continent": "Africa",
         "flagCode": "CV",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Praia",
+        "capitalLat": 14.933,
+        "capitalLon": -23.5133
       },
       "geometry": {
         "type": "Point",
@@ -45805,7 +46402,10 @@
         "name": "Comoros",
         "continent": "Africa",
         "flagCode": "KM",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Moroni",
+        "capitalLat": -11.7172,
+        "capitalLon": 43.2473
       },
       "geometry": {
         "type": "Point",
@@ -45821,7 +46421,10 @@
         "name": "Maldives",
         "continent": "Asia",
         "flagCode": "MV",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Male",
+        "capitalLat": 4.1755,
+        "capitalLon": 73.5093
       },
       "geometry": {
         "type": "Point",
@@ -45837,7 +46440,10 @@
         "name": "Mauritius",
         "continent": "Africa",
         "flagCode": "MU",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Port Louis",
+        "capitalLat": -20.1609,
+        "capitalLon": 57.5012
       },
       "geometry": {
         "type": "Point",
@@ -45853,7 +46459,10 @@
         "name": "Sao Tome and Principe",
         "continent": "Africa",
         "flagCode": "ST",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Sao Tome",
+        "capitalLat": 0.3365,
+        "capitalLon": 6.7273
       },
       "geometry": {
         "type": "Point",
@@ -45869,7 +46478,10 @@
         "name": "Seychelles",
         "continent": "Africa",
         "flagCode": "SC",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Victoria",
+        "capitalLat": -4.6191,
+        "capitalLon": 55.4513
       },
       "geometry": {
         "type": "Point",
@@ -45885,7 +46497,10 @@
         "name": "Singapore",
         "continent": "Asia",
         "flagCode": "SG",
-        "renderAs": "point"
+        "renderAs": "point",
+        "capital": "Singapore",
+        "capitalLat": 1.3521,
+        "capitalLon": 103.8198
       },
       "geometry": {
         "type": "Point",

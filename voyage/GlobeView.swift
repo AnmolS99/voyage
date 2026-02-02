@@ -528,7 +528,8 @@ struct GlobeView: UIViewRepresentable {
 
             // If a country is selected, show star at its capital
             guard let selectedCountry = globeState.selectedCountry,
-                  let capital = CapitalData.getCapital(for: selectedCountry) else { return }
+                  let country = cachedCountries.first(where: { $0.name == selectedCountry }),
+                  let capital = country.capital else { return }
 
             // Convert lat/lon to 3D position on sphere (radius slightly above surface)
             // Must match PolygonTriangulator.latLonToSphere coordinate system
