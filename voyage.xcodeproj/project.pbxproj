@@ -11,7 +11,6 @@
 		E81234560002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550002 /* ContentView.swift */; };
 		E81234560003 /* GlobeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550003 /* GlobeView.swift */; };
 		E81234560004 /* GlobeScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550004 /* GlobeScene.swift */; };
-		E81234560005 /* CountryData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550005 /* CountryData.swift */; };
 		E81234560006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E81234550006 /* Assets.xcassets */; };
 		E81234560008 /* GeoJSONParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550008 /* GeoJSONParser.swift */; };
 		E81234560009 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
@@ -53,7 +52,6 @@
 		E81234550002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E81234550003 /* GlobeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeView.swift; sourceTree = "<group>"; };
 		E81234550004 /* GlobeScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeScene.swift; sourceTree = "<group>"; };
-		E81234550005 /* CountryData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryData.swift; sourceTree = "<group>"; };
 		E81234550006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E81234550008 /* GeoJSONParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoJSONParser.swift; sourceTree = "<group>"; };
 		E81234550009 /* PolygonTriangulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonTriangulator.swift; sourceTree = "<group>"; };
@@ -125,7 +123,6 @@
 				E81234550003 /* GlobeView.swift */,
 				E81234550011 /* MapView.swift */,
 				E81234550004 /* GlobeScene.swift */,
-				E81234550005 /* CountryData.swift */,
 				E81234550015 /* CapitalData.swift */,
 				E81234550008 /* GeoJSONParser.swift */,
 				E81234550009 /* PolygonTriangulator.swift */,
@@ -301,7 +298,6 @@
 				E81234560003 /* GlobeView.swift in Sources */,
 				E81234560011 /* MapView.swift in Sources */,
 				E81234560004 /* GlobeScene.swift in Sources */,
-				E81234560005 /* CountryData.swift in Sources */,
 				E81234560015 /* CapitalData.swift in Sources */,
 				E81234560008 /* GeoJSONParser.swift in Sources */,
 				E81234560009 /* PolygonTriangulator.swift in Sources */,
