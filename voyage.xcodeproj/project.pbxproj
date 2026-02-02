@@ -25,6 +25,7 @@
 		E81234560019 /* globe.scn in Resources */ = {isa = PBXBuildFile; fileRef = E81234550019 /* globe.scn */; };
 		E81234560020 /* voyageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550020 /* voyageTests.swift */; };
 		E81234560021 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550021 /* AchievementsView.swift */; };
+		E81234560028 /* Achievement.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550028 /* Achievement.swift */; };
 		E81234560022 /* ContinentData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550022 /* ContinentData.swift */; };
 		E81234560023 /* AchievementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550023 /* AchievementTests.swift */; };
 		E81234560024 /* ContinentDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550024 /* ContinentDataTests.swift */; };
@@ -67,6 +68,7 @@
 		E81234550019 /* globe.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = globe.scn; sourceTree = "<group>"; };
 		E81234550020 /* voyageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageTests.swift; sourceTree = "<group>"; };
 		E81234550021 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
+		E81234550028 /* Achievement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievement.swift; sourceTree = "<group>"; };
 		E81234550022 /* ContinentData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentData.swift; sourceTree = "<group>"; };
 		E81234550023 /* AchievementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementTests.swift; sourceTree = "<group>"; };
 		E81234550024 /* ContinentDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentDataTests.swift; sourceTree = "<group>"; };
@@ -129,6 +131,7 @@
 				E81234550009 /* PolygonTriangulator.swift */,
 				E81234550018 /* GlobeCache.swift */,
 				E81234550021 /* AchievementsView.swift */,
+				E81234550028 /* Achievement.swift */,
 				E81234550022 /* ContinentData.swift */,
 				E81234550026 /* TipJarManager.swift */,
 				E81234550027 /* TipJar.storekit */,
@@ -304,6 +307,7 @@
 				E81234560009 /* PolygonTriangulator.swift in Sources */,
 				E81234560018 /* GlobeCache.swift in Sources */,
 				E81234560021 /* AchievementsView.swift in Sources */,
+				E81234560028 /* Achievement.swift in Sources */,
 				E81234560022 /* ContinentData.swift in Sources */,
 				E81234560026 /* TipJarManager.swift in Sources */,
 			);
@@ -469,7 +473,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = voyage/voyage.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = LP4YVQGGQL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -483,7 +487,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.anmol.voyage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -499,7 +503,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = voyage/voyage.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = LP4YVQGGQL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -513,7 +517,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.anmol.voyage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

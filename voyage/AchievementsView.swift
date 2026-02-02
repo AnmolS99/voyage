@@ -1,41 +1,38 @@
 import SwiftUI
 
-struct Achievement: Identifiable {
-    let id = UUID()
-    let name: String
-    let medal: String
-    let current: Int
-    let total: Int
-
-    var isCompleted: Bool { current >= total }
-    var progress: Double { total > 0 ? Double(current) / Double(total) : 0 }
-    var percentage: Int { Int(progress * 100) }
-}
-
 struct AchievementsView: View {
     @ObservedObject var globeState: GlobeState
     @Environment(\.dismiss) private var dismiss
+    @State private var expandedAchievementID: String? = nil
 
     private var achievements: [Achievement] {
         var list: [Achievement] = []
 
         // World traveler achievement (first)
+        let allCountries = Set(GeoJSONParser.loadCountries().map { $0.name })
+        let unCountries = allCountries.subtracting(GlobeState.nonUNTerritories)
+        let visitedUN = Array(globeState.visitedUNCountries).sorted()
+        let remainingUN = Array(unCountries.subtracting(globeState.visitedUNCountries)).sorted()
+
         list.append(Achievement(
             name: "World Traveler",
             medal: "🌍",
-            current: globeState.visitedUNCountries.count,
-            total: globeState.totalUNCountries
+            visitedCountries: visitedUN,
+            remainingCountries: remainingUN
         ))
 
         // Continent achievements
         for continent in Continent.allCases where continent != .antarctica {
             let countries = continent.countries
             let visited = ContinentData.visitedCountries(in: continent, from: globeState.visitedCountries)
+            let visitedSorted = Array(visited).sorted()
+            let remainingSorted = Array(countries.subtracting(visited)).sorted()
+
             list.append(Achievement(
                 name: "Explorer of \(continent.rawValue)",
                 medal: continent.medal,
-                current: visited.count,
-                total: countries.count
+                visitedCountries: visitedSorted,
+                remainingCountries: remainingSorted
             ))
         }
 
@@ -56,10 +53,22 @@ struct AchievementsView: View {
                     // Achievements list
                     VStack(spacing: 12) {
                         ForEach(achievements) { achievement in
-                            AchievementCard(
-                                achievement: achievement,
-                                isDarkMode: globeState.isDarkMode
-                            )
+                            Button {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    if expandedAchievementID == achievement.id {
+                                        expandedAchievementID = nil
+                                    } else {
+                                        expandedAchievementID = achievement.id
+                                    }
+                                }
+                            } label: {
+                                AchievementCard(
+                                    achievement: achievement,
+                                    isDarkMode: globeState.isDarkMode,
+                                    isExpanded: expandedAchievementID == achievement.id
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal, 20)
@@ -115,69 +124,84 @@ struct AchievementsView: View {
 struct AchievementCard: View {
     let achievement: Achievement
     let isDarkMode: Bool
+    let isExpanded: Bool
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Progress circle with medal
-            ZStack {
-                // Background circle
-                Circle()
-                    .stroke(
-                        isDarkMode ?
-                            Color(red: 0.25, green: 0.25, blue: 0.3) :
-                            Color(red: 0.9, green: 0.88, blue: 0.85),
-                        lineWidth: 4
-                    )
+        VStack(spacing: 0) {
+            // Main card header
+            HStack(spacing: 16) {
+                // Progress circle with medal
+                ZStack {
+                    Circle()
+                        .stroke(
+                            isDarkMode ?
+                                Color(red: 0.25, green: 0.25, blue: 0.3) :
+                                Color(red: 0.9, green: 0.88, blue: 0.85),
+                            lineWidth: 4
+                        )
 
-                // Progress arc
-                Circle()
-                    .trim(from: 0, to: achievement.progress)
-                    .stroke(
-                        achievement.isCompleted ?
-                            Color(red: 0.3, green: 0.7, blue: 0.4) :
-                            (isDarkMode ?
-                                Color(red: 0.5, green: 0.4, blue: 0.8) :
-                                Color(red: 0.85, green: 0.55, blue: 0.35)),
-                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(-90))
-                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: achievement.progress)
+                    Circle()
+                        .trim(from: 0, to: achievement.progress)
+                        .stroke(
+                            achievement.isCompleted ?
+                                Color(red: 0.3, green: 0.7, blue: 0.4) :
+                                (isDarkMode ?
+                                    Color(red: 0.5, green: 0.4, blue: 0.8) :
+                                    Color(red: 0.85, green: 0.55, blue: 0.35)),
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(-90))
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: achievement.progress)
 
-                // Medal
-                Text(achievement.medal)
-                    .font(.system(size: 24))
-                    .grayscale(achievement.isCompleted ? 0 : 0.8)
-                    .opacity(achievement.isCompleted ? 1 : 0.5)
+                    Text(achievement.medal)
+                        .font(.system(size: 24))
+                        .grayscale(achievement.isCompleted ? 0 : 0.8)
+                        .opacity(achievement.isCompleted ? 1 : 0.5)
+                }
+                .frame(width: 56, height: 56)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(achievement.name)
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundColor(isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
+
+                    Text("\(achievement.current)/\(achievement.total) countries")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(isDarkMode ?
+                            Color(red: 0.6, green: 0.6, blue: 0.65) :
+                            Color(red: 0.5, green: 0.45, blue: 0.4))
+                }
+
+                Spacer()
+
+                HStack(spacing: 8) {
+                    Text("\(achievement.percentage)%")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(
+                            achievement.isCompleted ?
+                                Color(red: 0.3, green: 0.7, blue: 0.4) :
+                                (isDarkMode ?
+                                    Color(red: 0.6, green: 0.5, blue: 0.8) :
+                                    Color(red: 0.85, green: 0.55, blue: 0.35))
+                        )
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(isDarkMode ?
+                            Color(red: 0.5, green: 0.5, blue: 0.55) :
+                            Color(red: 0.6, green: 0.55, blue: 0.5))
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
             }
-            .frame(width: 56, height: 56)
+            .padding(16)
 
-            // Achievement info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(achievement.name)
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundColor(isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
-
-                Text("\(achievement.current)/\(achievement.total) countries")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundColor(isDarkMode ?
-                        Color(red: 0.6, green: 0.6, blue: 0.65) :
-                        Color(red: 0.5, green: 0.45, blue: 0.4))
-            }
-
-            Spacer()
-
-            // Percentage
-            Text("\(achievement.percentage)%")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundColor(
-                    achievement.isCompleted ?
-                        Color(red: 0.3, green: 0.7, blue: 0.4) :
-                        (isDarkMode ?
-                            Color(red: 0.6, green: 0.5, blue: 0.8) :
-                            Color(red: 0.85, green: 0.55, blue: 0.35))
+            if isExpanded {
+                AchievementDetailSection(
+                    achievement: achievement,
+                    isDarkMode: isDarkMode
                 )
+            }
         }
-        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(isDarkMode ?
@@ -194,5 +218,81 @@ struct AchievementCard: View {
                     lineWidth: 2
                 )
         )
+        .contentShape(Rectangle())
+    }
+}
+
+struct AchievementDetailSection: View {
+    let achievement: Achievement
+    let isDarkMode: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Rectangle()
+                .fill(isDarkMode ?
+                    Color(red: 0.3, green: 0.3, blue: 0.35) :
+                    Color(red: 0.9, green: 0.88, blue: 0.85))
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+
+            if !achievement.visitedCountries.isEmpty {
+                CountryListSection(
+                    title: "Visited",
+                    count: achievement.visitedCountries.count,
+                    countries: achievement.visitedCountries,
+                    icon: "checkmark.circle.fill",
+                    iconColor: Color(red: 0.3, green: 0.7, blue: 0.4),
+                    isDarkMode: isDarkMode
+                )
+            }
+
+            if !achievement.remainingCountries.isEmpty {
+                CountryListSection(
+                    title: "Remaining",
+                    count: achievement.remainingCountries.count,
+                    countries: achievement.remainingCountries,
+                    icon: "circle",
+                    iconColor: isDarkMode ?
+                        Color(red: 0.5, green: 0.5, blue: 0.55) :
+                        Color(red: 0.6, green: 0.55, blue: 0.5),
+                    isDarkMode: isDarkMode
+                )
+            }
+        }
+        .padding(.bottom, 16)
+    }
+}
+
+struct CountryListSection: View {
+    let title: String
+    let count: Int
+    let countries: [String]
+    let icon: String
+    let iconColor: Color
+    let isDarkMode: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                    .foregroundColor(iconColor)
+
+                Text("\(title) (\(count))")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundColor(isDarkMode ?
+                        Color(red: 0.8, green: 0.8, blue: 0.85) :
+                        Color(red: 0.3, green: 0.25, blue: 0.2))
+            }
+            .padding(.horizontal, 16)
+
+            Text(countries.joined(separator: ", "))
+                .font(.system(size: 12, design: .rounded))
+                .foregroundColor(isDarkMode ?
+                    Color(red: 0.6, green: 0.6, blue: 0.65) :
+                    Color(red: 0.5, green: 0.45, blue: 0.4))
+                .lineLimit(4)
+                .padding(.horizontal, 16)
+        }
     }
 }

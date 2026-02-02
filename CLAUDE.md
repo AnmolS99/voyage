@@ -13,6 +13,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 **Branch format:** `<type>/<short-description>`
 
 Examples:
+
 - `feat/dark-mode-toggle`
 - `fix/globe-rotation-reset`
 - `refactor/country-data-parsing`
@@ -25,7 +26,7 @@ xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 16 Pr
 
 # Run in simulator
 xcrun simctl install "iPhone 16 Pro" ~/Library/Developer/Xcode/DerivedData/voyage-*/Build/Products/Debug-iphonesimulator/voyage.app
-xcrun simctl launch "iPhone 16 Pro" com.voyage.voyage
+xcrun simctl launch "iPhone 16 Pro" com.anmol.voyage
 ```
 
 ## Architecture
@@ -36,20 +37,21 @@ xcrun simctl launch "iPhone 16 Pro" com.voyage.voyage
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `GlobeView.swift` | Main 3D globe view with SceneKit integration |
-| `GlobeScene.swift` | Creates the 3D scene (globe, countries, lighting) |
-| `PolygonTriangulator.swift` | Converts GeoJSON polygons to 3D geometry |
-| `GeoJSONParser.swift` | Parses world.geojson into country data |
-| `MapView.swift` | 2D flat map view alternative |
-| `ContentView.swift` | Main app container with UI controls |
-| `CountryData.swift` | Country metadata and flag emojis |
-| `CapitalData.swift` | Capital city coordinates |
+| File                        | Purpose                                           |
+| --------------------------- | ------------------------------------------------- |
+| `GlobeView.swift`           | Main 3D globe view with SceneKit integration      |
+| `GlobeScene.swift`          | Creates the 3D scene (globe, countries, lighting) |
+| `PolygonTriangulator.swift` | Converts GeoJSON polygons to 3D geometry          |
+| `GeoJSONParser.swift`       | Parses world.geojson into country data            |
+| `MapView.swift`             | 2D flat map view alternative                      |
+| `ContentView.swift`         | Main app container with UI controls               |
+| `CountryData.swift`         | Country metadata and flag emojis                  |
+| `CapitalData.swift`         | Capital city coordinates                          |
 
 ## Globe Rendering
 
 Countries are rendered by:
+
 1. Parsing GeoJSON polygon coordinates (lon/lat)
 2. Converting to 3D sphere vertices via `latLonToSphere()`
 3. Triangulating polygons using grid-based fill
@@ -70,16 +72,16 @@ When modifying colors or selection logic, always update both files together.
 
 ## Color Palette
 
-| Element | Hex | RGB |
-|---------|-----|-----|
-| Ocean | #2F86A6 | (0.184, 0.525, 0.651) |
-| Land (unvisited) | #34BE82 | (0.204, 0.745, 0.510) |
-| Selected (unvisited) | - | (0.45, 0.85, 0.60) |
-| Visited | #F2F013 | (0.949, 0.941, 0.075) |
-| Visited + selected | - | (1.0, 1.0, 0.3) |
-| Wishlist | - | (0.6, 0.4, 0.8) |
-| Wishlist + selected | - | (0.75, 0.55, 0.95) |
-| Buttons (light mode) | #D98C59 | (0.85, 0.55, 0.35) |
+| Element              | Hex     | RGB                   |
+| -------------------- | ------- | --------------------- |
+| Ocean                | #2F86A6 | (0.184, 0.525, 0.651) |
+| Land (unvisited)     | #34BE82 | (0.204, 0.745, 0.510) |
+| Selected (unvisited) | -       | (0.45, 0.85, 0.60)    |
+| Visited              | #F2F013 | (0.949, 0.941, 0.075) |
+| Visited + selected   | -       | (1.0, 1.0, 0.3)       |
+| Wishlist             | -       | (0.6, 0.4, 0.8)       |
+| Wishlist + selected  | -       | (0.75, 0.55, 0.95)    |
+| Buttons (light mode) | #D98C59 | (0.85, 0.55, 0.35)    |
 
 ## Data Files
 
