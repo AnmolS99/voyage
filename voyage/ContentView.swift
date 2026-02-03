@@ -316,6 +316,9 @@ class GlobeState: ObservableObject {
     @Published var viewMode: ViewMode = .globe
     let totalUNCountries = 195
 
+    // Flag codes loaded from GeoJSON
+    private var countryFlagCodes: [String: String] = [:]
+
     // Territories that are not UN member or observer states (excluded from progress count)
     static let nonUNTerritories: Set<String> = [
         "Antarctica",
@@ -343,6 +346,7 @@ class GlobeState: ObservableObject {
     private let wishlistCountriesKey = "wishlistCountries"
 
     init() {
+        loadFlagCodes()
         loadData()
 
         NotificationCenter.default.addObserver(
@@ -353,6 +357,15 @@ class GlobeState: ObservableObject {
         )
 
         iCloudStore.synchronize()
+    }
+
+    private func loadFlagCodes() {
+        let countries = GeoJSONParser.loadCountries()
+        for country in countries {
+            if let flagCode = country.flagCode {
+                countryFlagCodes[country.name] = flagCode
+            }
+        }
     }
 
     private func loadData() {
@@ -459,62 +472,7 @@ class GlobeState: ObservableObject {
 
     // Get flag emoji for a country
     func flagForCountry(_ name: String) -> String {
-        let countryToCode: [String: String] = [
-            "Afghanistan": "AF", "Albania": "AL", "Algeria": "DZ", "Angola": "AO", "Argentina": "AR",
-            "Andorra": "AD", "Antigua and Barbuda": "AG", "Armenia": "AM", "Australia": "AU", "Austria": "AT", "Azerbaijan": "AZ",
-            "Bahamas": "BS", "Bahrain": "BH", "Bangladesh": "BD", "Barbados": "BB", "Belarus": "BY", "Belgium": "BE", "Bermuda": "BM",
-            "Belize": "BZ", "Benin": "BJ", "Bhutan": "BT", "Bolivia": "BO",
-            "Bosnia": "BA", "Bosnia and Herzegovina": "BA", "Botswana": "BW",
-            "Brazil": "BR", "Brunei": "BN", "Bulgaria": "BG", "Burkina Faso": "BF",
-            "Burundi": "BI", "Cambodia": "KH", "Cameroon": "CM", "Canada": "CA",
-            "Cape Verde": "CV", "Central African Republic": "CF", "Chad": "TD",
-            "Chile": "CL", "China": "CN", "Colombia": "CO", "Comoros": "KM",
-            "Costa Rica": "CR", "Croatia": "HR", "Cuba": "CU", "Cyprus": "CY",
-            "Czech Republic": "CZ", "Czechia": "CZ", "Denmark": "DK", "Djibouti": "DJ",
-            "Dominica": "DM", "Dominican Republic": "DO", "DRC": "CD", "Democratic Republic of the Congo": "CD",
-            "East Timor": "TL", "Ecuador": "EC", "Egypt": "EG", "El Salvador": "SV", "Equatorial Guinea": "GQ",
-            "Eritrea": "ER", "Estonia": "EE", "Eswatini": "SZ", "Ethiopia": "ET",
-            "Falkland Islands": "FK", "Fiji": "FJ", "Finland": "FI", "France": "FR",
-            "French Guiana": "GF", "French Southern and Antarctic Lands": "TF", "Gabon": "GA",
-            "Gambia": "GM", "Georgia": "GE", "Germany": "DE", "Ghana": "GH",
-            "Greece": "GR", "Greenland": "GL", "Grenada": "GD", "Guatemala": "GT", "Guinea": "GN",
-            "Guinea-Bissau": "GW", "Guinea Bissau": "GW", "Guyana": "GY", "Haiti": "HT", "Honduras": "HN",
-            "Hungary": "HU", "Iceland": "IS", "India": "IN", "Indonesia": "ID",
-            "Iran": "IR", "Iraq": "IQ", "Ireland": "IE", "Israel": "IL",
-            "Italy": "IT", "Ivory Coast": "CI", "Côte d'Ivoire": "CI",
-            "Jamaica": "JM", "Japan": "JP", "Jordan": "JO", "Kazakhstan": "KZ",
-            "Kenya": "KE", "Kiribati": "KI", "Kosovo": "XK", "Kuwait": "KW", "Kyrgyzstan": "KG",
-            "Laos": "LA", "Latvia": "LV", "Lebanon": "LB", "Lesotho": "LS",
-            "Liberia": "LR", "Libya": "LY", "Liechtenstein": "LI", "Lithuania": "LT", "Luxembourg": "LU",
-            "Macedonia": "MK", "Madagascar": "MG", "Malawi": "MW", "Malaysia": "MY", "Maldives": "MV",
-            "Mali": "ML", "Malta": "MT", "Marshall Islands": "MH", "Mauritania": "MR",
-            "Mauritius": "MU", "Mexico": "MX", "Micronesia": "FM", "Moldova": "MD", "Monaco": "MC",
-            "Mongolia": "MN", "Montenegro": "ME", "Morocco": "MA", "Mozambique": "MZ",
-            "Myanmar": "MM", "Namibia": "NA", "Nauru": "NR", "Nepal": "NP",
-            "Netherlands": "NL", "New Caledonia": "NC", "New Zealand": "NZ", "Nicaragua": "NI", "Niger": "NE",
-            "Nigeria": "NG", "North Korea": "KP", "North Macedonia": "MK", "Northern Cyprus": "CY", "Norway": "NO",
-            "Oman": "OM", "Pakistan": "PK", "Palau": "PW", "Palestine": "PS", "Panama": "PA",
-            "Papua New Guinea": "PG", "Paraguay": "PY", "Peru": "PE", "Philippines": "PH",
-            "Poland": "PL", "Portugal": "PT", "Puerto Rico": "PR", "Qatar": "QA",
-            "Republic of Congo": "CG", "Republic of the Congo": "CG", "Republic of Serbia": "RS",
-            "Romania": "RO", "Russia": "RU", "Rwanda": "RW", "Samoa": "WS",
-            "Saint Kitts and Nevis": "KN", "Saint Lucia": "LC", "Saint Vincent and the Grenadines": "VC",
-            "San Marino": "SM", "Sao Tome and Principe": "ST", "Saudi Arabia": "SA", "Senegal": "SN",
-            "Serbia": "RS", "Seychelles": "SC", "Sierra Leone": "SL", "Singapore": "SG",
-            "Slovakia": "SK", "Slovenia": "SI", "Solomon Islands": "SB", "Somalia": "SO", "Somaliland": "SO",
-            "South Africa": "ZA", "South Korea": "KR", "South Sudan": "SS", "Spain": "ES",
-            "Sri Lanka": "LK", "Sudan": "SD", "Suriname": "SR", "Swaziland": "SZ", "Sweden": "SE",
-            "Switzerland": "CH", "Syria": "SY", "Taiwan": "TW", "Tajikistan": "TJ",
-            "Tanzania": "TZ", "Thailand": "TH", "The Bahamas": "BS", "Timor-Leste": "TL", "Togo": "TG", "Tonga": "TO",
-            "Trinidad and Tobago": "TT", "Tunisia": "TN", "Turkey": "TR", "Turkmenistan": "TM", "Tuvalu": "TV",
-            "UAE": "AE", "United Arab Emirates": "AE", "Uganda": "UG", "Ukraine": "UA",
-            "United Kingdom": "GB", "United Republic of Tanzania": "TZ",
-            "United States": "US", "United States of America": "US", "Uruguay": "UY",
-            "Uzbekistan": "UZ", "Vanuatu": "VU", "Vatican City": "VA", "Venezuela": "VE", "Vietnam": "VN",
-            "Western Sahara": "EH", "Yemen": "YE", "Zambia": "ZM", "Zimbabwe": "ZW", "Antarctica": "AQ"
-        ]
-
-        if let code = countryToCode[name] {
+        if let code = countryFlagCodes[name] {
             return flagEmoji(from: code)
         }
         return "🌍" // Generic globe emoji as fallback

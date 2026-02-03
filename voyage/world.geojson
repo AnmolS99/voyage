@@ -9,7 +9,8 @@
         "continent": "Asia",
         "capital": "Kabul",
         "capitalLat": 34.5553,
-        "capitalLon": 69.2075
+        "capitalLon": 69.2075,
+        "flagCode": "AF"
       },
       "geometry": {
         "type": "Polygon",
@@ -303,7 +304,8 @@
         "continent": "Africa",
         "capital": "Luanda",
         "capitalLat": -8.839,
-        "capitalLon": 13.2894
+        "capitalLon": 13.2894,
+        "flagCode": "AO"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -627,7 +629,8 @@
         "continent": "Europe",
         "capital": "Tirana",
         "capitalLat": 41.3275,
-        "capitalLon": 19.8187
+        "capitalLon": 19.8187,
+        "flagCode": "AL"
       },
       "geometry": {
         "type": "Polygon",
@@ -733,7 +736,8 @@
         "continent": "Asia",
         "capital": "Abu Dhabi",
         "capitalLat": 24.4539,
-        "capitalLon": 54.3773
+        "capitalLon": 54.3773,
+        "flagCode": "AE"
       },
       "geometry": {
         "type": "Polygon",
@@ -839,7 +843,8 @@
         "continent": "South America",
         "capital": "Buenos Aires",
         "capitalLat": -34.6037,
-        "capitalLon": -58.3816
+        "capitalLon": -58.3816,
+        "flagCode": "AR"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -1347,7 +1352,8 @@
         "continent": "Asia",
         "capital": "Yerevan",
         "capitalLat": 40.1792,
-        "capitalLon": 44.4991
+        "capitalLon": 44.4991,
+        "flagCode": "AM"
       },
       "geometry": {
         "type": "Polygon",
@@ -1442,7 +1448,8 @@
       "id": "ATA",
       "properties": {
         "name": "Antarctica",
-        "continent": "Antarctica"
+        "continent": "Antarctica",
+        "flagCode": "AQ"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -4111,7 +4118,8 @@
       "id": "ATF",
       "properties": {
         "name": "French Southern and Antarctic Lands",
-        "continent": "Antarctica"
+        "continent": "Antarctica",
+        "flagCode": "TF"
       },
       "geometry": {
         "type": "Polygon",
@@ -4165,7 +4173,8 @@
         "continent": "Oceania",
         "capital": "Canberra",
         "capitalLat": -35.2809,
-        "capitalLon": 149.13
+        "capitalLon": 149.13,
+        "flagCode": "AU"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -5153,7 +5162,8 @@
         "continent": "Europe",
         "capital": "Vienna",
         "capitalLat": 48.2082,
-        "capitalLon": 16.3738
+        "capitalLon": 16.3738,
+        "flagCode": "AT"
       },
       "geometry": {
         "type": "Polygon",
@@ -5319,7 +5329,8 @@
         "continent": "Asia",
         "capital": "Baku",
         "capitalLat": 40.4093,
-        "capitalLon": 49.8671
+        "capitalLon": 49.8671,
+        "flagCode": "AZ"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -5519,7 +5530,8 @@
         "continent": "Africa",
         "capital": "Gitega",
         "capitalLat": -3.4264,
-        "capitalLon": 29.9246
+        "capitalLon": 29.9246,
+        "flagCode": "BI"
       },
       "geometry": {
         "type": "Polygon",
@@ -5589,7 +5601,8 @@
         "continent": "Europe",
         "capital": "Brussels",
         "capitalLat": 50.8503,
-        "capitalLon": 4.3517
+        "capitalLon": 4.3517,
+        "flagCode": "BE"
       },
       "geometry": {
         "type": "Polygon",
@@ -5667,7 +5680,8 @@
         "continent": "Africa",
         "capital": "Porto-Novo",
         "capitalLat": 6.4969,
-        "capitalLon": 2.6289
+        "capitalLon": 2.6289,
+        "flagCode": "BJ"
       },
       "geometry": {
         "type": "Polygon",
@@ -5785,7 +5799,8 @@
         "continent": "Africa",
         "capital": "Ouagadougou",
         "capitalLat": 12.3714,
-        "capitalLon": -1.5197
+        "capitalLon": -1.5197,
+        "flagCode": "BF"
       },
       "geometry": {
         "type": "Polygon",
@@ -5959,7 +5974,8 @@
         "continent": "Asia",
         "capital": "Dhaka",
         "capitalLat": 23.8103,
-        "capitalLon": 90.4125
+        "capitalLon": 90.4125,
+        "flagCode": "BD"
       },
       "geometry": {
         "type": "Polygon",
@@ -6121,7 +6137,8 @@
         "continent": "Europe",
         "capital": "Sofia",
         "capitalLat": 42.6977,
-        "capitalLon": 23.3219
+        "capitalLon": 23.3219,
+        "flagCode": "BG"
       },
       "geometry": {
         "type": "Polygon",
@@ -6251,7 +6268,8 @@
         "continent": "North America",
         "capital": "Nassau",
         "capitalLat": 25.0343,
-        "capitalLon": -77.3963
+        "capitalLon": -77.3963,
+        "flagCode": "BS"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -6363,7 +6381,8 @@
         "continent": "Europe",
         "capital": "Sarajevo",
         "capitalLat": 43.8563,
-        "capitalLon": 18.4131
+        "capitalLon": 18.4131,
+        "flagCode": "BA"
       },
       "geometry": {
         "type": "Polygon",
@@ -6469,7 +6488,8 @@
         "continent": "Europe",
         "capital": "Minsk",
         "capitalLat": 53.9006,
-        "capitalLon": 27.559
+        "capitalLon": 27.559,
+        "flagCode": "BY"
       },
       "geometry": {
         "type": "Polygon",
@@ -6663,7 +6683,8 @@
         "continent": "North America",
         "capital": "Belmopan",
         "capitalLat": 17.251,
-        "capitalLon": -88.759
+        "capitalLon": -88.759,
+        "flagCode": "BZ"
       },
       "geometry": {
         "type": "Polygon",
@@ -6761,7 +6782,8 @@
         "continent": "South America",
         "capital": "La Paz",
         "capitalLat": -16.4897,
-        "capitalLon": -68.1193
+        "capitalLon": -68.1193,
+        "flagCode": "BO"
       },
       "geometry": {
         "type": "Polygon",
@@ -7019,7 +7041,8 @@
         "continent": "South America",
         "capital": "Brasilia",
         "capitalLat": -15.7975,
-        "capitalLon": -47.8919
+        "capitalLon": -47.8919,
+        "flagCode": "BR"
       },
       "geometry": {
         "type": "Polygon",
@@ -7849,7 +7872,8 @@
         "continent": "Asia",
         "capital": "Bandar Seri Begawan",
         "capitalLat": 4.9031,
-        "capitalLon": 114.9398
+        "capitalLon": 114.9398,
+        "flagCode": "BN"
       },
       "geometry": {
         "type": "Polygon",
@@ -7899,7 +7923,8 @@
         "continent": "Asia",
         "capital": "Thimphu",
         "capitalLat": 27.4728,
-        "capitalLon": 89.639
+        "capitalLon": 89.639,
+        "flagCode": "BT"
       },
       "geometry": {
         "type": "Polygon",
@@ -7969,7 +7994,8 @@
         "continent": "Africa",
         "capital": "Gaborone",
         "capitalLat": -24.6282,
-        "capitalLon": 25.9231
+        "capitalLon": 25.9231,
+        "flagCode": "BW"
       },
       "geometry": {
         "type": "Polygon",
@@ -8147,7 +8173,8 @@
         "continent": "Africa",
         "capital": "Bangui",
         "capitalLat": 4.3947,
-        "capitalLon": 18.5582
+        "capitalLon": 18.5582,
+        "flagCode": "CF"
       },
       "geometry": {
         "type": "Polygon",
@@ -8413,7 +8440,8 @@
         "continent": "North America",
         "capital": "Ottawa",
         "capitalLat": 45.4215,
-        "capitalLon": -75.6972
+        "capitalLon": -75.6972,
+        "flagCode": "CA"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -11717,7 +11745,8 @@
         "continent": "Europe",
         "capital": "Bern",
         "capitalLat": 46.948,
-        "capitalLon": 7.4474
+        "capitalLon": 7.4474,
+        "flagCode": "CH"
       },
       "geometry": {
         "type": "Polygon",
@@ -11831,7 +11860,8 @@
         "continent": "South America",
         "capital": "Santiago",
         "capitalLat": -33.4489,
-        "capitalLon": -70.6693
+        "capitalLon": -70.6693,
+        "flagCode": "CL"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -12311,7 +12341,8 @@
         "continent": "Asia",
         "capital": "Beijing",
         "capitalLat": 39.9042,
-        "capitalLon": 116.4074
+        "capitalLon": 116.4074,
+        "flagCode": "CN"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -13291,11 +13322,12 @@
       "type": "Feature",
       "id": "CIV",
       "properties": {
-        "name": "C\u00f4te d'Ivoire",
+        "name": "Côte d'Ivoire",
         "continent": "Africa",
         "capital": "Yamoussoukro",
         "capitalLat": 6.8276,
-        "capitalLon": -5.2893
+        "capitalLon": -5.2893,
+        "flagCode": "CI"
       },
       "geometry": {
         "type": "Polygon",
@@ -13497,7 +13529,8 @@
         "continent": "Africa",
         "capital": "Yaounde",
         "capitalLat": 3.848,
-        "capitalLon": 11.5021
+        "capitalLon": 11.5021,
+        "flagCode": "CM"
       },
       "geometry": {
         "type": "Polygon",
@@ -13759,7 +13792,8 @@
         "continent": "Africa",
         "capital": "Kinshasa",
         "capitalLat": -4.4419,
-        "capitalLon": 15.2663
+        "capitalLon": 15.2663,
+        "flagCode": "CD"
       },
       "geometry": {
         "type": "Polygon",
@@ -14265,7 +14299,8 @@
         "continent": "Africa",
         "capital": "Brazzaville",
         "capitalLat": -4.2634,
-        "capitalLon": 15.2429
+        "capitalLon": 15.2429,
+        "flagCode": "CG"
       },
       "geometry": {
         "type": "Polygon",
@@ -14479,7 +14514,8 @@
         "continent": "South America",
         "capital": "Bogota",
         "capitalLat": 4.711,
-        "capitalLon": -74.0721
+        "capitalLon": -74.0721,
+        "flagCode": "CO"
       },
       "geometry": {
         "type": "Polygon",
@@ -14897,7 +14933,8 @@
         "continent": "North America",
         "capital": "San Jose",
         "capitalLat": 9.9281,
-        "capitalLon": -84.0907
+        "capitalLon": -84.0907,
+        "flagCode": "CR"
       },
       "geometry": {
         "type": "Polygon",
@@ -15059,7 +15096,8 @@
         "continent": "North America",
         "capital": "Havana",
         "capitalLat": 23.1136,
-        "capitalLon": -82.3666
+        "capitalLon": -82.3666,
+        "flagCode": "CU"
       },
       "geometry": {
         "type": "Polygon",
@@ -15245,7 +15283,8 @@
         "continent": "Europe",
         "capital": "Prague",
         "capitalLat": 50.0755,
-        "capitalLon": 14.4378
+        "capitalLon": 14.4378,
+        "flagCode": "CZ"
       },
       "geometry": {
         "type": "Polygon",
@@ -15403,7 +15442,8 @@
         "continent": "Europe",
         "capital": "Berlin",
         "capitalLat": 52.52,
-        "capitalLon": 13.405
+        "capitalLon": 13.405,
+        "flagCode": "DE"
       },
       "geometry": {
         "type": "Polygon",
@@ -15653,7 +15693,8 @@
         "continent": "Africa",
         "capital": "Djibouti",
         "capitalLat": 11.5721,
-        "capitalLon": 43.1456
+        "capitalLon": 43.1456,
+        "flagCode": "DJ"
       },
       "geometry": {
         "type": "Polygon",
@@ -15731,7 +15772,8 @@
         "continent": "Europe",
         "capital": "Copenhagen",
         "capitalLat": 55.6761,
-        "capitalLon": 12.5683
+        "capitalLon": 12.5683,
+        "flagCode": "DK"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -15851,7 +15893,8 @@
         "continent": "North America",
         "capital": "Santo Domingo",
         "capitalLat": 18.4861,
-        "capitalLon": -69.9312
+        "capitalLon": -69.9312,
+        "flagCode": "DO"
       },
       "geometry": {
         "type": "Polygon",
@@ -15973,7 +16016,8 @@
         "continent": "Africa",
         "capital": "Algiers",
         "capitalLat": 36.7538,
-        "capitalLon": 3.0588
+        "capitalLon": 3.0588,
+        "flagCode": "DZ"
       },
       "geometry": {
         "type": "Polygon",
@@ -16239,7 +16283,8 @@
         "continent": "South America",
         "capital": "Quito",
         "capitalLat": -0.1807,
-        "capitalLon": -78.4678
+        "capitalLon": -78.4678,
+        "flagCode": "EC"
       },
       "geometry": {
         "type": "Polygon",
@@ -16389,7 +16434,8 @@
         "continent": "Africa",
         "capital": "Cairo",
         "capitalLat": 30.0444,
-        "capitalLon": 31.2357
+        "capitalLon": 31.2357,
+        "flagCode": "EG"
       },
       "geometry": {
         "type": "Polygon",
@@ -16575,7 +16621,8 @@
         "continent": "Africa",
         "capital": "Asmara",
         "capitalLat": 15.3229,
-        "capitalLon": 38.9251
+        "capitalLon": 38.9251,
+        "flagCode": "ER"
       },
       "geometry": {
         "type": "Polygon",
@@ -16705,7 +16752,8 @@
         "continent": "Europe",
         "capital": "Madrid",
         "capitalLat": 40.4168,
-        "capitalLon": -3.7038
+        "capitalLon": -3.7038,
+        "flagCode": "ES"
       },
       "geometry": {
         "type": "Polygon",
@@ -16927,7 +16975,8 @@
         "continent": "Europe",
         "capital": "Tallinn",
         "capitalLat": 59.437,
-        "capitalLon": 24.7536
+        "capitalLon": 24.7536,
+        "flagCode": "EE"
       },
       "geometry": {
         "type": "Polygon",
@@ -17013,7 +17062,8 @@
         "continent": "Africa",
         "capital": "Addis Ababa",
         "capitalLat": 8.9806,
-        "capitalLon": 38.7578
+        "capitalLon": 38.7578,
+        "flagCode": "ET"
       },
       "geometry": {
         "type": "Polygon",
@@ -17267,7 +17317,8 @@
         "continent": "Europe",
         "capital": "Helsinki",
         "capitalLat": 60.1699,
-        "capitalLon": 24.9384
+        "capitalLon": 24.9384,
+        "flagCode": "FI"
       },
       "geometry": {
         "type": "Polygon",
@@ -17437,7 +17488,8 @@
         "continent": "Oceania",
         "capital": "Suva",
         "capitalLat": -18.1416,
-        "capitalLon": 178.4419
+        "capitalLon": 178.4419,
+        "flagCode": "FJ"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -17553,7 +17605,8 @@
         "continent": "South America",
         "capital": "Stanley",
         "capitalLat": -51.692,
-        "capitalLon": -57.857
+        "capitalLon": -57.857,
+        "flagCode": "FK"
       },
       "geometry": {
         "type": "Polygon",
@@ -17611,7 +17664,8 @@
         "continent": "Europe",
         "capital": "Paris",
         "capitalLat": 48.8566,
-        "capitalLon": 2.3522
+        "capitalLon": 2.3522,
+        "flagCode": "FR"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -17855,7 +17909,8 @@
         "continent": "Africa",
         "capital": "Libreville",
         "capitalLat": 0.4162,
-        "capitalLon": 9.4673
+        "capitalLon": 9.4673,
+        "flagCode": "GA"
       },
       "geometry": {
         "type": "Polygon",
@@ -17997,7 +18052,8 @@
         "continent": "Europe",
         "capital": "London",
         "capitalLat": 51.5074,
-        "capitalLon": -0.1278
+        "capitalLon": -0.1278,
+        "flagCode": "GB"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -18245,7 +18301,8 @@
         "continent": "Asia",
         "capital": "Tbilisi",
         "capitalLat": 41.7151,
-        "capitalLon": 44.8271
+        "capitalLon": 44.8271,
+        "flagCode": "GE"
       },
       "geometry": {
         "type": "Polygon",
@@ -18359,7 +18416,8 @@
         "continent": "Africa",
         "capital": "Accra",
         "capitalLat": 5.6037,
-        "capitalLon": -0.187
+        "capitalLon": -0.187,
+        "flagCode": "GH"
       },
       "geometry": {
         "type": "Polygon",
@@ -18477,7 +18535,8 @@
         "continent": "Africa",
         "capital": "Conakry",
         "capitalLat": 9.6412,
-        "capitalLon": -13.5784
+        "capitalLon": -13.5784,
+        "flagCode": "GN"
       },
       "geometry": {
         "type": "Polygon",
@@ -18775,7 +18834,8 @@
         "continent": "Africa",
         "capital": "Banjul",
         "capitalLat": 13.4549,
-        "capitalLon": -16.579
+        "capitalLon": -16.579,
+        "flagCode": "GM"
       },
       "geometry": {
         "type": "Polygon",
@@ -18857,7 +18917,8 @@
         "continent": "Africa",
         "capital": "Bissau",
         "capitalLat": 11.8037,
-        "capitalLon": -15.1804
+        "capitalLon": -15.1804,
+        "flagCode": "GW"
       },
       "geometry": {
         "type": "Polygon",
@@ -18951,7 +19012,8 @@
         "continent": "Africa",
         "capital": "Ciudad de la Paz",
         "capitalLat": 1.617,
-        "capitalLon": 10.828
+        "capitalLon": 10.828,
+        "flagCode": "GQ"
       },
       "geometry": {
         "type": "Polygon",
@@ -18997,7 +19059,8 @@
         "continent": "Europe",
         "capital": "Athens",
         "capitalLat": 37.9838,
-        "capitalLon": 23.7275
+        "capitalLon": 23.7275,
+        "flagCode": "GR"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -19237,7 +19300,8 @@
         "continent": "North America",
         "capital": "Nuuk",
         "capitalLat": 64.1814,
-        "capitalLon": -51.6941
+        "capitalLon": -51.6941,
+        "flagCode": "GL"
       },
       "geometry": {
         "type": "Polygon",
@@ -19783,7 +19847,8 @@
         "continent": "North America",
         "capital": "Guatemala City",
         "capitalLat": 14.6349,
-        "capitalLon": -90.5069
+        "capitalLon": -90.5069,
+        "flagCode": "GT"
       },
       "geometry": {
         "type": "Polygon",
@@ -19941,7 +20006,8 @@
         "continent": "South America",
         "capital": "Cayenne",
         "capitalLat": 4.9372,
-        "capitalLon": -52.326
+        "capitalLon": -52.326,
+        "flagCode": "GF"
       },
       "geometry": {
         "type": "Polygon",
@@ -20035,7 +20101,8 @@
         "continent": "South America",
         "capital": "Georgetown",
         "capitalLat": 6.8013,
-        "capitalLon": -58.1551
+        "capitalLon": -58.1551,
+        "flagCode": "GY"
       },
       "geometry": {
         "type": "Polygon",
@@ -20213,7 +20280,8 @@
         "continent": "North America",
         "capital": "Tegucigalpa",
         "capitalLat": 14.0723,
-        "capitalLon": -87.1921
+        "capitalLon": -87.1921,
+        "flagCode": "HN"
       },
       "geometry": {
         "type": "Polygon",
@@ -20459,7 +20527,8 @@
         "continent": "Europe",
         "capital": "Zagreb",
         "capitalLat": 45.815,
-        "capitalLon": 15.9819
+        "capitalLon": 15.9819,
+        "flagCode": "HR"
       },
       "geometry": {
         "type": "Polygon",
@@ -20645,7 +20714,8 @@
         "continent": "North America",
         "capital": "Port-au-Prince",
         "capitalLat": 18.5944,
-        "capitalLon": -72.3074
+        "capitalLon": -72.3074,
+        "flagCode": "HT"
       },
       "geometry": {
         "type": "Polygon",
@@ -20747,7 +20817,8 @@
         "continent": "Europe",
         "capital": "Budapest",
         "capitalLat": 47.4979,
-        "capitalLon": 19.0402
+        "capitalLon": 19.0402,
+        "flagCode": "HU"
       },
       "geometry": {
         "type": "Polygon",
@@ -20889,7 +20960,8 @@
         "continent": "Asia",
         "capital": "Jakarta",
         "capitalLat": -6.2088,
-        "capitalLon": 106.8456
+        "capitalLon": 106.8456,
+        "flagCode": "ID"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -21957,7 +22029,8 @@
         "continent": "Asia",
         "capital": "New Delhi",
         "capitalLat": 28.6139,
-        "capitalLon": 77.209
+        "capitalLon": 77.209,
+        "flagCode": "IN"
       },
       "geometry": {
         "type": "Polygon",
@@ -22519,7 +22592,8 @@
         "continent": "Europe",
         "capital": "Dublin",
         "capitalLat": 53.3498,
-        "capitalLon": -6.2603
+        "capitalLon": -6.2603,
+        "flagCode": "IE"
       },
       "geometry": {
         "type": "Polygon",
@@ -22589,7 +22663,8 @@
         "continent": "Asia",
         "capital": "Tehran",
         "capitalLat": 35.6892,
-        "capitalLon": 51.389
+        "capitalLon": 51.389,
+        "flagCode": "IR"
       },
       "geometry": {
         "type": "Polygon",
@@ -22907,7 +22982,8 @@
         "continent": "Asia",
         "capital": "Baghdad",
         "capitalLat": 33.3152,
-        "capitalLon": 44.3661
+        "capitalLon": 44.3661,
+        "flagCode": "IQ"
       },
       "geometry": {
         "type": "Polygon",
@@ -23045,7 +23121,8 @@
         "continent": "Europe",
         "capital": "Reykjavik",
         "capitalLat": 64.1466,
-        "capitalLon": -21.9426
+        "capitalLon": -21.9426,
+        "flagCode": "IS"
       },
       "geometry": {
         "type": "Polygon",
@@ -23143,7 +23220,8 @@
         "continent": "Asia",
         "capital": "Jerusalem",
         "capitalLat": 31.7683,
-        "capitalLon": 35.2137
+        "capitalLon": 35.2137,
+        "flagCode": "IL"
       },
       "geometry": {
         "type": "Polygon",
@@ -23253,7 +23331,8 @@
         "continent": "Europe",
         "capital": "Rome",
         "capitalLat": 41.9028,
-        "capitalLon": 12.4964
+        "capitalLon": 12.4964,
+        "flagCode": "IT"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -23629,7 +23708,8 @@
         "continent": "North America",
         "capital": "Kingston",
         "capitalLat": 17.9714,
-        "capitalLon": -76.792
+        "capitalLon": -76.792,
+        "flagCode": "JM"
       },
       "geometry": {
         "type": "Polygon",
@@ -23691,7 +23771,8 @@
         "continent": "Asia",
         "capital": "Amman",
         "capitalLat": 31.9454,
-        "capitalLon": 35.9284
+        "capitalLon": 35.9284,
+        "flagCode": "JO"
       },
       "geometry": {
         "type": "Polygon",
@@ -23785,7 +23866,8 @@
         "continent": "Asia",
         "capital": "Tokyo",
         "capitalLat": 35.6762,
-        "capitalLon": 139.6503
+        "capitalLon": 139.6503,
+        "flagCode": "JP"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -24073,7 +24155,8 @@
         "continent": "Asia",
         "capital": "Astana",
         "capitalLat": 51.1694,
-        "capitalLon": 71.4491
+        "capitalLon": 71.4491,
+        "flagCode": "KZ"
       },
       "geometry": {
         "type": "Polygon",
@@ -24539,7 +24622,8 @@
         "continent": "Africa",
         "capital": "Nairobi",
         "capitalLat": -1.2921,
-        "capitalLon": 36.8219
+        "capitalLon": 36.8219,
+        "flagCode": "KE"
       },
       "geometry": {
         "type": "Polygon",
@@ -24705,7 +24789,8 @@
         "continent": "Asia",
         "capital": "Bishkek",
         "capitalLat": 42.8746,
-        "capitalLon": 74.5698
+        "capitalLon": 74.5698,
+        "flagCode": "KG"
       },
       "geometry": {
         "type": "Polygon",
@@ -24863,7 +24948,8 @@
         "continent": "Asia",
         "capital": "Phnom Penh",
         "capitalLat": 11.5564,
-        "capitalLon": 104.9282
+        "capitalLon": 104.9282,
+        "flagCode": "KH"
       },
       "geometry": {
         "type": "Polygon",
@@ -24949,7 +25035,8 @@
         "continent": "Asia",
         "capital": "Seoul",
         "capitalLat": 37.5665,
-        "capitalLon": 126.978
+        "capitalLon": 126.978,
+        "flagCode": "KR"
       },
       "geometry": {
         "type": "Polygon",
@@ -25043,7 +25130,8 @@
         "continent": "Europe",
         "capital": "Pristina",
         "capitalLat": 42.6629,
-        "capitalLon": 21.1655
+        "capitalLon": 21.1655,
+        "flagCode": "XK"
       },
       "geometry": {
         "type": "Polygon",
@@ -25145,7 +25233,8 @@
         "continent": "Asia",
         "capital": "Kuwait City",
         "capitalLat": 29.3759,
-        "capitalLon": 47.9774
+        "capitalLon": 47.9774,
+        "flagCode": "KW"
       },
       "geometry": {
         "type": "Polygon",
@@ -25199,7 +25288,8 @@
         "continent": "Asia",
         "capital": "Vientiane",
         "capitalLat": 17.9757,
-        "capitalLon": 102.6331
+        "capitalLon": 102.6331,
+        "flagCode": "LA"
       },
       "geometry": {
         "type": "Polygon",
@@ -25365,7 +25455,8 @@
         "continent": "Asia",
         "capital": "Beirut",
         "capitalLat": 33.8938,
-        "capitalLon": 35.5018
+        "capitalLon": 35.5018,
+        "flagCode": "LB"
       },
       "geometry": {
         "type": "Polygon",
@@ -25427,7 +25518,8 @@
         "continent": "Africa",
         "capital": "Monrovia",
         "capitalLat": 6.2907,
-        "capitalLon": -10.7605
+        "capitalLon": -10.7605,
+        "flagCode": "LR"
       },
       "geometry": {
         "type": "Polygon",
@@ -25553,7 +25645,8 @@
         "continent": "Africa",
         "capital": "Tripoli",
         "capitalLat": 32.8872,
-        "capitalLon": 13.1913
+        "capitalLon": 13.1913,
+        "flagCode": "LY"
       },
       "geometry": {
         "type": "Polygon",
@@ -25795,7 +25888,8 @@
         "continent": "Asia",
         "capital": "Colombo",
         "capitalLat": 6.9271,
-        "capitalLon": 79.8612
+        "capitalLon": 79.8612,
+        "flagCode": "LK"
       },
       "geometry": {
         "type": "Polygon",
@@ -25853,7 +25947,8 @@
         "continent": "Africa",
         "capital": "Maseru",
         "capitalLat": -29.3167,
-        "capitalLon": 27.4833
+        "capitalLon": 27.4833,
+        "flagCode": "LS"
       },
       "geometry": {
         "type": "Polygon",
@@ -25919,7 +26014,8 @@
         "continent": "Europe",
         "capital": "Vilnius",
         "capitalLat": 54.6872,
-        "capitalLon": 25.2797
+        "capitalLon": 25.2797,
+        "flagCode": "LT"
       },
       "geometry": {
         "type": "Polygon",
@@ -26013,7 +26109,8 @@
         "continent": "Europe",
         "capital": "Riga",
         "capitalLat": 56.9496,
-        "capitalLon": 24.1052
+        "capitalLon": 24.1052,
+        "flagCode": "LV"
       },
       "geometry": {
         "type": "Polygon",
@@ -26119,7 +26216,8 @@
         "continent": "Africa",
         "capital": "Rabat",
         "capitalLat": 34.0209,
-        "capitalLon": -6.8416
+        "capitalLon": -6.8416,
+        "flagCode": "MA"
       },
       "geometry": {
         "type": "Polygon",
@@ -26393,7 +26491,8 @@
         "continent": "Europe",
         "capital": "Chisinau",
         "capitalLat": 47.0105,
-        "capitalLon": 28.8638
+        "capitalLon": 28.8638,
+        "flagCode": "MD"
       },
       "geometry": {
         "type": "Polygon",
@@ -26519,7 +26618,8 @@
         "continent": "Africa",
         "capital": "Antananarivo",
         "capitalLat": -18.8792,
-        "capitalLon": 47.5079
+        "capitalLon": 47.5079,
+        "flagCode": "MG"
       },
       "geometry": {
         "type": "Polygon",
@@ -26733,7 +26833,8 @@
         "continent": "North America",
         "capital": "Mexico City",
         "capitalLat": 19.4326,
-        "capitalLon": -99.1332
+        "capitalLon": -99.1332,
+        "flagCode": "MX"
       },
       "geometry": {
         "type": "Polygon",
@@ -27431,7 +27532,8 @@
         "continent": "Europe",
         "capital": "Skopje",
         "capitalLat": 41.9973,
-        "capitalLon": 21.428
+        "capitalLon": 21.428,
+        "flagCode": "MK"
       },
       "geometry": {
         "type": "Polygon",
@@ -27517,7 +27619,8 @@
         "continent": "Africa",
         "capital": "Bamako",
         "capitalLat": 12.6392,
-        "capitalLon": -8.0029
+        "capitalLon": -8.0029,
+        "flagCode": "ML"
       },
       "geometry": {
         "type": "Polygon",
@@ -27839,7 +27942,8 @@
         "continent": "Asia",
         "capital": "Naypyidaw",
         "capitalLat": 19.7633,
-        "capitalLon": 96.0785
+        "capitalLon": 96.0785,
+        "flagCode": "MM"
       },
       "geometry": {
         "type": "Polygon",
@@ -28137,7 +28241,8 @@
         "continent": "Europe",
         "capital": "Podgorica",
         "capitalLat": 42.4304,
-        "capitalLon": 19.2594
+        "capitalLon": 19.2594,
+        "flagCode": "ME"
       },
       "geometry": {
         "type": "Polygon",
@@ -28227,7 +28332,8 @@
         "continent": "Asia",
         "capital": "Ulaanbaatar",
         "capitalLat": 47.8864,
-        "capitalLon": 106.9057
+        "capitalLon": 106.9057,
+        "flagCode": "MN"
       },
       "geometry": {
         "type": "Polygon",
@@ -28545,7 +28651,8 @@
         "continent": "Africa",
         "capital": "Maputo",
         "capitalLat": -25.9692,
-        "capitalLon": 32.5732
+        "capitalLon": 32.5732,
+        "flagCode": "MZ"
       },
       "geometry": {
         "type": "Polygon",
@@ -28871,7 +28978,8 @@
         "continent": "Africa",
         "capital": "Nouakchott",
         "capitalLat": 18.0735,
-        "capitalLon": -15.9582
+        "capitalLon": -15.9582,
+        "flagCode": "MR"
       },
       "geometry": {
         "type": "Polygon",
@@ -29045,7 +29153,8 @@
         "continent": "Africa",
         "capital": "Lilongwe",
         "capitalLat": -13.9626,
-        "capitalLon": 33.7741
+        "capitalLon": 33.7741,
+        "flagCode": "MW"
       },
       "geometry": {
         "type": "Polygon",
@@ -29175,7 +29284,8 @@
         "continent": "Asia",
         "capital": "Kuala Lumpur",
         "capitalLat": 3.139,
-        "capitalLon": 101.6869
+        "capitalLon": 101.6869,
+        "flagCode": "MY"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -29447,7 +29557,8 @@
         "continent": "Africa",
         "capital": "Windhoek",
         "capitalLat": -22.5609,
-        "capitalLon": 17.0658
+        "capitalLon": 17.0658,
+        "flagCode": "NA"
       },
       "geometry": {
         "type": "Polygon",
@@ -29641,7 +29752,8 @@
         "continent": "Oceania",
         "capital": "Noumea",
         "capitalLat": -22.2758,
-        "capitalLon": 166.458
+        "capitalLon": 166.458,
+        "flagCode": "NC"
       },
       "geometry": {
         "type": "Polygon",
@@ -29711,7 +29823,8 @@
         "continent": "Africa",
         "capital": "Niamey",
         "capitalLat": 13.5137,
-        "capitalLon": 2.1098
+        "capitalLon": 2.1098,
+        "flagCode": "NE"
       },
       "geometry": {
         "type": "Polygon",
@@ -29961,7 +30074,8 @@
         "continent": "Africa",
         "capital": "Abuja",
         "capitalLat": 9.0765,
-        "capitalLon": 7.3986
+        "capitalLon": 7.3986,
+        "flagCode": "NG"
       },
       "geometry": {
         "type": "Polygon",
@@ -30211,7 +30325,8 @@
         "continent": "North America",
         "capital": "Managua",
         "capitalLat": 12.115,
-        "capitalLon": -86.2362
+        "capitalLon": -86.2362,
+        "flagCode": "NI"
       },
       "geometry": {
         "type": "Polygon",
@@ -30437,7 +30552,8 @@
         "continent": "Europe",
         "capital": "Amsterdam",
         "capitalLat": 52.3676,
-        "capitalLon": 4.9041
+        "capitalLon": 4.9041,
+        "flagCode": "NL"
       },
       "geometry": {
         "type": "Polygon",
@@ -30511,7 +30627,8 @@
         "continent": "Europe",
         "capital": "Oslo",
         "capitalLat": 59.9139,
-        "capitalLon": 10.7522
+        "capitalLon": 10.7522,
+        "flagCode": "NO"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -30895,7 +31012,8 @@
         "continent": "Asia",
         "capital": "Kathmandu",
         "capitalLat": 27.7172,
-        "capitalLon": 85.324
+        "capitalLon": 85.324,
+        "flagCode": "NP"
       },
       "geometry": {
         "type": "Polygon",
@@ -31005,7 +31123,8 @@
         "continent": "Oceania",
         "capital": "Wellington",
         "capitalLat": -41.2866,
-        "capitalLon": 174.7756
+        "capitalLon": 174.7756,
+        "flagCode": "NZ"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -31293,7 +31412,8 @@
         "continent": "Asia",
         "capital": "Muscat",
         "capitalLat": 23.588,
-        "capitalLon": 58.3829
+        "capitalLon": 58.3829,
+        "flagCode": "OM"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -31505,7 +31625,8 @@
         "continent": "Asia",
         "capital": "Islamabad",
         "capitalLat": 33.6844,
-        "capitalLon": 73.0479
+        "capitalLon": 73.0479,
+        "flagCode": "PK"
       },
       "geometry": {
         "type": "Polygon",
@@ -31787,7 +31908,8 @@
         "continent": "North America",
         "capital": "Panama City",
         "capitalLat": 8.9824,
-        "capitalLon": -79.5199
+        "capitalLon": -79.5199,
+        "flagCode": "PA"
       },
       "geometry": {
         "type": "Polygon",
@@ -32013,7 +32135,8 @@
         "continent": "South America",
         "capital": "Lima",
         "capitalLat": -12.0464,
-        "capitalLon": -77.0428
+        "capitalLon": -77.0428,
+        "flagCode": "PE"
       },
       "geometry": {
         "type": "Polygon",
@@ -32335,7 +32458,8 @@
         "continent": "Asia",
         "capital": "Manila",
         "capitalLat": 14.5995,
-        "capitalLon": 120.9842
+        "capitalLon": 120.9842,
+        "flagCode": "PH"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -32819,7 +32943,8 @@
         "continent": "Oceania",
         "capital": "Port Moresby",
         "capitalLat": -9.4438,
-        "capitalLon": 147.1803
+        "capitalLon": 147.1803,
+        "flagCode": "PG"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -33175,7 +33300,8 @@
         "continent": "Europe",
         "capital": "Warsaw",
         "capitalLat": 52.2297,
-        "capitalLon": 21.0122
+        "capitalLon": 21.0122,
+        "flagCode": "PL"
       },
       "geometry": {
         "type": "Polygon",
@@ -33373,7 +33499,8 @@
         "continent": "North America",
         "capital": "San Juan",
         "capitalLat": 18.4655,
-        "capitalLon": -66.1057
+        "capitalLon": -66.1057,
+        "flagCode": "PR"
       },
       "geometry": {
         "type": "Polygon",
@@ -33427,7 +33554,8 @@
         "continent": "Asia",
         "capital": "Pyongyang",
         "capitalLat": 39.0392,
-        "capitalLon": 125.7625
+        "capitalLon": 125.7625,
+        "flagCode": "KP"
       },
       "geometry": {
         "type": "Polygon",
@@ -33617,7 +33745,8 @@
         "continent": "Europe",
         "capital": "Lisbon",
         "capitalLat": 38.7223,
-        "capitalLon": -9.1393
+        "capitalLon": -9.1393,
+        "flagCode": "PT"
       },
       "geometry": {
         "type": "Polygon",
@@ -33767,7 +33896,8 @@
         "continent": "South America",
         "capital": "Asuncion",
         "capitalLat": -25.2637,
-        "capitalLon": -57.5759
+        "capitalLon": -57.5759,
+        "flagCode": "PY"
       },
       "geometry": {
         "type": "Polygon",
@@ -33917,7 +34047,8 @@
         "continent": "Asia",
         "capital": "Doha",
         "capitalLat": 25.2854,
-        "capitalLon": 51.531
+        "capitalLon": 51.531,
+        "flagCode": "QA"
       },
       "geometry": {
         "type": "Polygon",
@@ -33971,7 +34102,8 @@
         "continent": "Europe",
         "capital": "Bucharest",
         "capitalLat": 44.4268,
-        "capitalLon": 26.1025
+        "capitalLon": 26.1025,
+        "flagCode": "RO"
       },
       "geometry": {
         "type": "Polygon",
@@ -34165,7 +34297,8 @@
         "continent": "Asia",
         "capital": "Moscow",
         "capitalLat": 55.7558,
-        "capitalLon": 37.6173
+        "capitalLon": 37.6173,
+        "flagCode": "RU"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -36625,7 +36758,8 @@
         "continent": "Africa",
         "capital": "Kigali",
         "capitalLat": -1.9403,
-        "capitalLon": 30.0587
+        "capitalLon": 30.0587,
+        "flagCode": "RW"
       },
       "geometry": {
         "type": "Polygon",
@@ -36695,7 +36829,8 @@
         "continent": "Africa",
         "capital": "Laayoune",
         "capitalLat": 27.1536,
-        "capitalLon": -13.2034
+        "capitalLon": -13.2034,
+        "flagCode": "EH"
       },
       "geometry": {
         "type": "Polygon",
@@ -36825,7 +36960,8 @@
         "continent": "Asia",
         "capital": "Riyadh",
         "capitalLat": 24.7136,
-        "capitalLon": 46.6753
+        "capitalLon": 46.6753,
+        "flagCode": "SA"
       },
       "geometry": {
         "type": "Polygon",
@@ -37147,7 +37283,8 @@
         "continent": "Africa",
         "capital": "Khartoum",
         "capitalLat": 15.5007,
-        "capitalLon": 32.5599
+        "capitalLon": 32.5599,
+        "flagCode": "SD"
       },
       "geometry": {
         "type": "Polygon",
@@ -37481,7 +37618,8 @@
         "continent": "Africa",
         "capital": "Juba",
         "capitalLat": 4.8594,
-        "capitalLon": 31.5713
+        "capitalLon": 31.5713,
+        "flagCode": "SS"
       },
       "geometry": {
         "type": "Polygon",
@@ -37751,7 +37889,8 @@
         "continent": "Africa",
         "capital": "Dakar",
         "capitalLat": 14.7167,
-        "capitalLon": -17.4677
+        "capitalLon": -17.4677,
+        "flagCode": "SN"
       },
       "geometry": {
         "type": "Polygon",
@@ -37945,7 +38084,8 @@
         "continent": "Oceania",
         "capital": "Honiara",
         "capitalLat": -9.4456,
-        "capitalLon": 159.9729
+        "capitalLon": 159.9729,
+        "flagCode": "SB"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -38129,7 +38269,8 @@
         "continent": "Africa",
         "capital": "Freetown",
         "capitalLat": 8.4657,
-        "capitalLon": -13.2317
+        "capitalLon": -13.2317,
+        "flagCode": "SL"
       },
       "geometry": {
         "type": "Polygon",
@@ -38235,7 +38376,8 @@
         "continent": "North America",
         "capital": "San Salvador",
         "capitalLat": 13.6929,
-        "capitalLon": -89.2182
+        "capitalLon": -89.2182,
+        "flagCode": "SV"
       },
       "geometry": {
         "type": "Polygon",
@@ -38333,7 +38475,8 @@
         "continent": "Africa",
         "capital": "Mogadishu",
         "capitalLat": 2.0469,
-        "capitalLon": 45.3182
+        "capitalLon": 45.3182,
+        "flagCode": "SO"
       },
       "geometry": {
         "type": "Polygon",
@@ -38547,7 +38690,8 @@
         "continent": "Europe",
         "capital": "Belgrade",
         "capitalLat": 44.7866,
-        "capitalLon": 20.4489
+        "capitalLon": 20.4489,
+        "flagCode": "RS"
       },
       "geometry": {
         "type": "Polygon",
@@ -38749,7 +38893,8 @@
         "continent": "South America",
         "capital": "Paramaribo",
         "capitalLat": 5.852,
-        "capitalLon": -55.2038
+        "capitalLon": -55.2038,
+        "flagCode": "SR"
       },
       "geometry": {
         "type": "Polygon",
@@ -38871,7 +39016,8 @@
         "continent": "Europe",
         "capital": "Bratislava",
         "capitalLat": 48.1486,
-        "capitalLon": 17.1077
+        "capitalLon": 17.1077,
+        "flagCode": "SK"
       },
       "geometry": {
         "type": "Polygon",
@@ -39021,7 +39167,8 @@
         "continent": "Europe",
         "capital": "Ljubljana",
         "capitalLat": 46.0569,
-        "capitalLon": 14.5058
+        "capitalLon": 14.5058,
+        "flagCode": "SI"
       },
       "geometry": {
         "type": "Polygon",
@@ -39111,7 +39258,8 @@
         "continent": "Europe",
         "capital": "Stockholm",
         "capitalLat": 59.3293,
-        "capitalLon": 18.0686
+        "capitalLon": 18.0686,
+        "flagCode": "SE"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -39431,7 +39579,8 @@
         "continent": "Africa",
         "capital": "Mbabane",
         "capitalLat": -26.3054,
-        "capitalLon": 31.1367
+        "capitalLon": 31.1367,
+        "flagCode": "SZ"
       },
       "geometry": {
         "type": "Polygon",
@@ -39493,7 +39642,8 @@
         "continent": "Asia",
         "capital": "Damascus",
         "capitalLat": 33.5138,
-        "capitalLon": 36.2765
+        "capitalLon": 36.2765,
+        "flagCode": "SY"
       },
       "geometry": {
         "type": "Polygon",
@@ -39619,7 +39769,8 @@
         "continent": "Africa",
         "capital": "N'Djamena",
         "capitalLat": 12.1348,
-        "capitalLon": 15.0557
+        "capitalLon": 15.0557,
+        "flagCode": "TD"
       },
       "geometry": {
         "type": "Polygon",
@@ -39869,7 +40020,8 @@
         "continent": "Africa",
         "capital": "Lome",
         "capitalLat": 6.1256,
-        "capitalLon": 1.2254
+        "capitalLon": 1.2254,
+        "flagCode": "TG"
       },
       "geometry": {
         "type": "Polygon",
@@ -39963,7 +40115,8 @@
         "continent": "Asia",
         "capital": "Bangkok",
         "capitalLat": 13.7563,
-        "capitalLon": 100.5018
+        "capitalLon": 100.5018,
+        "flagCode": "TH"
       },
       "geometry": {
         "type": "Polygon",
@@ -40237,7 +40390,8 @@
         "continent": "Asia",
         "capital": "Dushanbe",
         "capitalLat": 38.5598,
-        "capitalLon": 68.774
+        "capitalLon": 68.774,
+        "flagCode": "TJ"
       },
       "geometry": {
         "type": "Polygon",
@@ -40419,7 +40573,8 @@
         "continent": "Asia",
         "capital": "Ashgabat",
         "capitalLat": 37.9601,
-        "capitalLon": 58.3261
+        "capitalLon": 58.3261,
+        "flagCode": "TM"
       },
       "geometry": {
         "type": "Polygon",
@@ -40653,7 +40808,8 @@
         "continent": "Asia",
         "capital": "Dili",
         "capitalLat": -8.5569,
-        "capitalLon": 125.5603
+        "capitalLon": 125.5603,
+        "flagCode": "TL"
       },
       "geometry": {
         "type": "Polygon",
@@ -40715,7 +40871,8 @@
         "continent": "North America",
         "capital": "Port of Spain",
         "capitalLat": 10.6596,
-        "capitalLon": -61.5086
+        "capitalLon": -61.5086,
+        "flagCode": "TT"
       },
       "geometry": {
         "type": "Polygon",
@@ -40765,7 +40922,8 @@
         "continent": "Africa",
         "capital": "Tunis",
         "capitalLat": 36.8065,
-        "capitalLon": 10.1815
+        "capitalLon": 10.1815,
+        "flagCode": "TN"
       },
       "geometry": {
         "type": "Polygon",
@@ -40907,7 +41065,8 @@
         "continent": "Asia",
         "capital": "Ankara",
         "capitalLat": 39.9334,
-        "capitalLon": 32.8597
+        "capitalLon": 32.8597,
+        "flagCode": "TR"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -41199,7 +41358,8 @@
         "continent": "Asia",
         "capital": "Taipei",
         "capitalLat": 25.033,
-        "capitalLon": 121.5654
+        "capitalLon": 121.5654,
+        "flagCode": "TW"
       },
       "geometry": {
         "type": "Polygon",
@@ -41253,7 +41413,8 @@
         "continent": "Africa",
         "capital": "Dodoma",
         "capitalLat": -6.163,
-        "capitalLon": 35.7516
+        "capitalLon": 35.7516,
+        "flagCode": "TZ"
       },
       "geometry": {
         "type": "Polygon",
@@ -41467,7 +41628,8 @@
         "continent": "Africa",
         "capital": "Kampala",
         "capitalLat": 0.3476,
-        "capitalLon": 32.5825
+        "capitalLon": 32.5825,
+        "flagCode": "UG"
       },
       "geometry": {
         "type": "Polygon",
@@ -41593,7 +41755,8 @@
         "continent": "Europe",
         "capital": "Kyiv",
         "capitalLat": 50.4501,
-        "capitalLon": 30.5234
+        "capitalLon": 30.5234,
+        "flagCode": "UA"
       },
       "geometry": {
         "type": "Polygon",
@@ -42003,7 +42166,8 @@
         "continent": "South America",
         "capital": "Montevideo",
         "capitalLat": -34.9011,
-        "capitalLon": -56.1645
+        "capitalLon": -56.1645,
+        "flagCode": "UY"
       },
       "geometry": {
         "type": "Polygon",
@@ -42105,7 +42269,8 @@
         "continent": "North America",
         "capital": "Washington D.C.",
         "capitalLat": 38.9072,
-        "capitalLon": -77.0369
+        "capitalLon": -77.0369,
+        "flagCode": "US"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -43933,7 +44098,8 @@
         "continent": "Asia",
         "capital": "Tashkent",
         "capitalLat": 41.2995,
-        "capitalLon": 69.2401
+        "capitalLon": 69.2401,
+        "flagCode": "UZ"
       },
       "geometry": {
         "type": "Polygon",
@@ -44167,7 +44333,8 @@
         "continent": "South America",
         "capital": "Caracas",
         "capitalLat": 10.4806,
-        "capitalLon": -66.9036
+        "capitalLon": -66.9036,
+        "flagCode": "VE"
       },
       "geometry": {
         "type": "Polygon",
@@ -44553,7 +44720,8 @@
         "continent": "Asia",
         "capital": "Hanoi",
         "capitalLat": 21.0285,
-        "capitalLon": 105.8542
+        "capitalLon": 105.8542,
+        "flagCode": "VN"
       },
       "geometry": {
         "type": "Polygon",
@@ -44747,7 +44915,8 @@
         "continent": "Oceania",
         "capital": "Port Vila",
         "capitalLat": -17.7334,
-        "capitalLon": 168.322
+        "capitalLon": 168.322,
+        "flagCode": "VU"
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -44819,7 +44988,8 @@
         "continent": "Asia",
         "capital": "Ramallah",
         "capitalLat": 31.9038,
-        "capitalLon": 35.2034
+        "capitalLon": 35.2034,
+        "flagCode": "PS"
       },
       "geometry": {
         "type": "Polygon",
@@ -44873,7 +45043,8 @@
         "continent": "Asia",
         "capital": "Sanaa",
         "capitalLat": 15.3694,
-        "capitalLon": 44.191
+        "capitalLon": 44.191,
+        "flagCode": "YE"
       },
       "geometry": {
         "type": "Polygon",
@@ -45067,7 +45238,8 @@
         "continent": "Africa",
         "capital": "Pretoria",
         "capitalLat": -25.7479,
-        "capitalLon": 28.2293
+        "capitalLon": 28.2293,
+        "flagCode": "ZA"
       },
       "geometry": {
         "type": "Polygon",
@@ -45463,7 +45635,8 @@
         "continent": "Africa",
         "capital": "Lusaka",
         "capitalLat": -15.3875,
-        "capitalLon": 28.3228
+        "capitalLon": 28.3228,
+        "flagCode": "ZM"
       },
       "geometry": {
         "type": "Polygon",
@@ -45725,7 +45898,8 @@
         "continent": "Africa",
         "capital": "Harare",
         "capitalLat": -17.8252,
-        "capitalLon": 31.0335
+        "capitalLon": 31.0335,
+        "flagCode": "ZW"
       },
       "geometry": {
         "type": "Polygon",
