@@ -357,7 +357,7 @@ class GlobeState: ObservableObject {
     }
 
     private func loadFlagCodes() {
-        let countries = GeoJSONParser.loadCountries()
+        let countries = CountryDataCache.shared.countries
         for country in countries {
             if let flagCode = country.flagCode {
                 countryFlagCodes[country.name] = flagCode

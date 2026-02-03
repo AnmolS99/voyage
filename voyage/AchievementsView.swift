@@ -9,7 +9,7 @@ struct AchievementsView: View {
         var list: [Achievement] = []
 
         // World traveler achievement (first)
-        let allCountries = Set(GeoJSONParser.loadCountries().map { $0.name })
+        let allCountries = CountryDataCache.shared.countryNames
         let unCountries = allCountries.subtracting(GlobeState.nonUNTerritories)
         let visitedUN = Array(globeState.visitedUNCountries).sorted()
         let remainingUN = Array(unCountries.subtracting(globeState.visitedUNCountries)).sorted()

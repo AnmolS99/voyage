@@ -189,7 +189,7 @@ struct MapView: View {
             }
         }
         .onAppear {
-            countries = GeoJSONParser.loadCountries()
+            countries = CountryDataCache.shared.countries
         }
     }
 

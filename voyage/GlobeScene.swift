@@ -103,7 +103,7 @@ class GlobeScene {
         let landColor = AppColors.landUI
 
         // Get all country names from GeoJSON (includes both polygon and point countries)
-        let allCountryNames = Set(GeoJSONParser.loadCountries().map { $0.name })
+        let allCountryNames = Set(CountryDataCache.shared.countries.map { $0.name })
 
         for name in allCountryNames {
             if let node = globeNode.childNode(withName: name, recursively: true) {
@@ -114,7 +114,7 @@ class GlobeScene {
     }
 
     static func addCountriesFromGeoJSON(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
-        let countries = GeoJSONParser.loadCountries()
+        let countries = CountryDataCache.shared.countries
         let landColor = AppColors.landUI
 
         for country in countries {

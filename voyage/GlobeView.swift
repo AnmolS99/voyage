@@ -67,7 +67,7 @@ struct GlobeView: UIViewRepresentable {
             self.globeState = globeState
             super.init()
             // Cache countries data once
-            self.cachedCountries = GeoJSONParser.loadCountries()
+            self.cachedCountries = CountryDataCache.shared.countries
         }
 
         func zoomIn() {

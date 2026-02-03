@@ -56,7 +56,7 @@ struct ContinentData {
         }
 
         // Load all countries from GeoJSON (includes both polygon and point countries)
-        let geoJSONCountries = GeoJSONParser.loadCountries()
+        let geoJSONCountries = CountryDataCache.shared.countries
         for country in geoJSONCountries {
             if let continentStr = country.continent,
                let continent = Continent(rawContinent: continentStr) {

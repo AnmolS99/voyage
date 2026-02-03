@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2A8624B82500CE1AE3C92F34 /* CountryDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */; };
 		409A1AEDFDF8E44EBF23A179 /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */; };
 		E81234560001 /* voyageApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550001 /* voyageApp.swift */; };
 		E81234560002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550002 /* ContentView.swift */; };
@@ -45,6 +46,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryDataCache.swift; sourceTree = "<group>"; };
 		6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
 		E81234540001 /* voyage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voyage.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E81234540002 /* voyageTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = voyageTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -128,6 +130,7 @@
 				E81234550018 /* GlobeCache.swift */,
 				E81234550021 /* AchievementsView.swift */,
 				E81234550028 /* Achievement.swift */,
+				B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */,
 				6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */,
 				E81234550022 /* ContinentData.swift */,
 				E81234550026 /* TipJarManager.swift */,
@@ -303,6 +306,7 @@
 				E81234560018 /* GlobeCache.swift in Sources */,
 				E81234560021 /* AchievementsView.swift in Sources */,
 				E81234560028 /* Achievement.swift in Sources */,
+				2A8624B82500CE1AE3C92F34 /* CountryDataCache.swift in Sources */,
 				409A1AEDFDF8E44EBF23A179 /* ColorPalette.swift in Sources */,
 				E81234560022 /* ContinentData.swift in Sources */,
 				E81234560026 /* TipJarManager.swift in Sources */,
