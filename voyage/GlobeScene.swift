@@ -67,7 +67,7 @@ class GlobeScene {
         let oceanSphere = SCNSphere(radius: 1.0)
         oceanSphere.segmentCount = 64
         let oceanMaterial = SCNMaterial()
-        oceanMaterial.diffuse.contents = UIColor(red: 0.184, green: 0.525, blue: 0.651, alpha: 1.0)
+        oceanMaterial.diffuse.contents = AppColors.oceanUI
         oceanMaterial.specular.contents = UIColor.clear
         oceanMaterial.shininess = 0.3
         oceanSphere.materials = [oceanMaterial]
@@ -80,7 +80,7 @@ class GlobeScene {
         let atmosphereSphere = SCNSphere(radius: 1.08)
         atmosphereSphere.segmentCount = 48
         let atmosphereMaterial = SCNMaterial()
-        atmosphereMaterial.diffuse.contents = UIColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.15)
+        atmosphereMaterial.diffuse.contents = AppColors.atmosphere
         atmosphereMaterial.isDoubleSided = true
         atmosphereMaterial.transparency = 0.3
         atmosphereSphere.materials = [atmosphereMaterial]
@@ -100,7 +100,7 @@ class GlobeScene {
     }
 
     private static func rebuildCoordinatorData(from globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
-        let landColor = UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0)
+        let landColor = AppColors.landUI
 
         // Get all country names from GeoJSON (includes both polygon and point countries)
         let allCountryNames = Set(GeoJSONParser.loadCountries().map { $0.name })
@@ -115,7 +115,7 @@ class GlobeScene {
 
     static func addCountriesFromGeoJSON(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let countries = GeoJSONParser.loadCountries()
-        let landColor = UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0) // Green #34BE82
+        let landColor = AppColors.landUI
 
         for country in countries {
             if country.isPointCountry {

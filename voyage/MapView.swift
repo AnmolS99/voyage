@@ -17,10 +17,7 @@ struct MapView: View {
 
             Canvas { context, size in
                 // Draw ocean background
-                // Blue #2F86A6
-                let oceanColor = globeState.isDarkMode ?
-                    Color(red: 0.1, green: 0.15, blue: 0.25) :
-                    Color(red: 0.184, green: 0.525, blue: 0.651)
+                let oceanColor = globeState.isDarkMode ? AppColors.oceanDark : AppColors.ocean
                 context.fill(
                     Path(CGRect(origin: .zero, size: size)),
                     with: .color(oceanColor)
@@ -44,36 +41,28 @@ struct MapView: View {
 
                     // Priority: visited/wishlist status takes precedence over selection
                     if isVisited && isWishlist && isCurrentlySelected {
-                        // Bright yellow fill with purple border for selected visited + wishlist
-                        fillColor = Color(red: 1.0, green: 1.0, blue: 0.3)
-                        borderColor = Color(red: 0.6, green: 0.4, blue: 0.8)
+                        fillColor = AppColors.visitedSelected
+                        borderColor = AppColors.wishlist
                     } else if isVisited && isWishlist {
-                        // Yellow fill with purple border for visited + wishlist
-                        fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
-                        borderColor = Color(red: 0.6, green: 0.4, blue: 0.8)
+                        fillColor = AppColors.visited
+                        borderColor = AppColors.wishlist
                     } else if isVisited && isCurrentlySelected {
-                        // Bright yellow for selected visited
-                        fillColor = Color(red: 1.0, green: 1.0, blue: 0.3)
+                        fillColor = AppColors.visitedSelected
                         borderColor = defaultBorderColor
                     } else if isVisited {
-                        // Light yellow #F2F013
-                        fillColor = Color(red: 0.949, green: 0.941, blue: 0.075)
+                        fillColor = AppColors.visited
                         borderColor = defaultBorderColor
                     } else if isWishlist && isCurrentlySelected {
-                        // Bright purple for selected wishlist
-                        fillColor = Color(red: 0.75, green: 0.55, blue: 0.95)
+                        fillColor = AppColors.wishlistSelected
                         borderColor = defaultBorderColor
                     } else if isWishlist {
-                        // Purple for wishlist
-                        fillColor = Color(red: 0.6, green: 0.4, blue: 0.8)
+                        fillColor = AppColors.wishlist
                         borderColor = defaultBorderColor
                     } else if isCurrentlySelected {
-                        // Light green for selected (lighter than default #34BE82)
-                        fillColor = Color(red: 0.45, green: 0.85, blue: 0.60)
+                        fillColor = AppColors.landSelected
                         borderColor = defaultBorderColor
                     } else {
-                        // Green #34BE82
-                        fillColor = Color(red: 0.204, green: 0.745, blue: 0.510)
+                        fillColor = AppColors.land
                         borderColor = defaultBorderColor
                     }
 

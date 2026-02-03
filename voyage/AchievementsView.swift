@@ -76,9 +76,7 @@ struct AchievementsView: View {
                 .padding(.vertical, 16)
             }
             .background(
-                globeState.isDarkMode ?
-                    Color(red: 0.1, green: 0.1, blue: 0.12) :
-                    Color(red: 0.96, green: 0.95, blue: 0.93)
+                globeState.isDarkMode ? AppColors.achievementsBgDark : AppColors.achievementsBgLight
             )
             .navigationTitle("Achievements")
             .navigationBarTitleDisplayMode(.inline)
@@ -87,9 +85,7 @@ struct AchievementsView: View {
                     Button("Done") {
                         dismiss()
                     }
-                    .foregroundColor(globeState.isDarkMode ?
-                        Color(red: 0.6, green: 0.5, blue: 0.8) :
-                        Color(red: 0.85, green: 0.55, blue: 0.35))
+                    .foregroundColor(globeState.isDarkMode ? AppColors.progressDarkStart : AppColors.buttonLight)
                 }
             }
         }
@@ -100,21 +96,17 @@ struct AchievementsView: View {
         VStack(spacing: 8) {
             Text("\(completedCount) of \(achievements.count)")
                 .font(.system(size: 32, weight: .bold, design: .rounded))
-                .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
+                .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
 
             Text("Achievements Unlocked")
                 .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundColor(globeState.isDarkMode ?
-                    Color(red: 0.7, green: 0.7, blue: 0.75) :
-                    Color(red: 0.5, green: 0.45, blue: 0.4))
+                .foregroundColor(AppColors.textTertiary(isDarkMode: globeState.isDarkMode))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(globeState.isDarkMode ?
-                    Color(red: 0.2, green: 0.2, blue: 0.25) :
-                    .white)
+                .fill(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
         )
         .padding(.horizontal, 20)
@@ -134,9 +126,7 @@ struct AchievementCard: View {
                 ZStack {
                     Circle()
                         .stroke(
-                            isDarkMode ?
-                                Color(red: 0.25, green: 0.25, blue: 0.3) :
-                                Color(red: 0.9, green: 0.88, blue: 0.85),
+                            AppColors.track(isDarkMode: isDarkMode),
                             lineWidth: 4
                         )
 
@@ -144,10 +134,8 @@ struct AchievementCard: View {
                         .trim(from: 0, to: achievement.progress)
                         .stroke(
                             achievement.isCompleted ?
-                                Color(red: 0.3, green: 0.7, blue: 0.4) :
-                                (isDarkMode ?
-                                    Color(red: 0.5, green: 0.4, blue: 0.8) :
-                                    Color(red: 0.85, green: 0.55, blue: 0.35)),
+                                AppColors.buttonVisited :
+                                AppColors.buttonColor(isDarkMode: isDarkMode),
                             style: StrokeStyle(lineWidth: 4, lineCap: .round)
                         )
                         .rotationEffect(.degrees(-90))
@@ -163,13 +151,11 @@ struct AchievementCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(achievement.name)
                         .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundColor(isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                     Text("\(achievement.current)/\(achievement.total) countries")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundColor(isDarkMode ?
-                            Color(red: 0.6, green: 0.6, blue: 0.65) :
-                            Color(red: 0.5, green: 0.45, blue: 0.4))
+                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 }
 
                 Spacer()
@@ -179,17 +165,13 @@ struct AchievementCard: View {
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundColor(
                             achievement.isCompleted ?
-                                Color(red: 0.3, green: 0.7, blue: 0.4) :
-                                (isDarkMode ?
-                                    Color(red: 0.6, green: 0.5, blue: 0.8) :
-                                    Color(red: 0.85, green: 0.55, blue: 0.35))
+                                AppColors.buttonVisited :
+                                AppColors.buttonColor(isDarkMode: isDarkMode)
                         )
 
                     Image(systemName: "chevron.down")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(isDarkMode ?
-                            Color(red: 0.5, green: 0.5, blue: 0.55) :
-                            Color(red: 0.6, green: 0.55, blue: 0.5))
+                        .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }
             }
@@ -206,16 +188,14 @@ struct AchievementCard: View {
         .clipped()
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(isDarkMode ?
-                    Color(red: 0.2, green: 0.2, blue: 0.25) :
-                    .white)
+                .fill(AppColors.cardBackground(isDarkMode: isDarkMode))
                 .shadow(color: .black.opacity(isDarkMode ? 0.2 : 0.06), radius: 8, y: 2)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
                     achievement.isCompleted ?
-                        Color(red: 0.3, green: 0.7, blue: 0.4).opacity(0.5) :
+                        AppColors.buttonVisited.opacity(0.5) :
                         Color.clear,
                     lineWidth: 2
                 )
@@ -231,9 +211,7 @@ struct AchievementDetailSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Rectangle()
-                .fill(isDarkMode ?
-                    Color(red: 0.3, green: 0.3, blue: 0.35) :
-                    Color(red: 0.9, green: 0.88, blue: 0.85))
+                .fill(isDarkMode ? AppColors.closeButtonDark : AppColors.trackLight)
                 .frame(height: 1)
                 .padding(.horizontal, 16)
 
@@ -243,7 +221,7 @@ struct AchievementDetailSection: View {
                     count: achievement.visitedCountries.count,
                     countries: achievement.visitedCountries,
                     icon: "checkmark.circle.fill",
-                    iconColor: Color(red: 0.3, green: 0.7, blue: 0.4),
+                    iconColor: AppColors.buttonVisited,
                     isDarkMode: isDarkMode
                 )
             }
@@ -254,9 +232,7 @@ struct AchievementDetailSection: View {
                     count: achievement.remainingCountries.count,
                     countries: achievement.remainingCountries,
                     icon: "circle",
-                    iconColor: isDarkMode ?
-                        Color(red: 0.5, green: 0.5, blue: 0.55) :
-                        Color(red: 0.6, green: 0.55, blue: 0.5),
+                    iconColor: AppColors.textMuted(isDarkMode: isDarkMode),
                     isDarkMode: isDarkMode
                 )
             }
@@ -282,17 +258,13 @@ struct CountryListSection: View {
 
                 Text("\(title) (\(count))")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundColor(isDarkMode ?
-                        Color(red: 0.8, green: 0.8, blue: 0.85) :
-                        Color(red: 0.3, green: 0.25, blue: 0.2))
+                    .foregroundColor(isDarkMode ? AppColors.badgeTextDark : AppColors.badgeTextLight)
             }
             .padding(.horizontal, 16)
 
             Text(countries.joined(separator: ", "))
                 .font(.system(size: 12, design: .rounded))
-                .foregroundColor(isDarkMode ?
-                    Color(red: 0.6, green: 0.6, blue: 0.65) :
-                    Color(red: 0.5, green: 0.45, blue: 0.4))
+                .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 .lineLimit(4)
                 .padding(.horizontal, 16)
         }

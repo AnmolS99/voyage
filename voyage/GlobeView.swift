@@ -461,35 +461,27 @@ struct GlobeView: UIViewRepresentable {
                 // Priority: visited/wishlist status takes precedence over selection
                 for material in geometry.materials {
                     if isVisited && isWishlist && isCurrentlySelected {
-                        // Bright yellow fill for selected visited + wishlist
-                        material.diffuse.contents = UIColor(red: 1.0, green: 1.0, blue: 0.3, alpha: 1.0)
-                        material.emission.contents = UIColor(red: 1.0, green: 1.0, blue: 0.3, alpha: 0.25)
+                        material.diffuse.contents = AppColors.visitedSelectedUI
+                        material.emission.contents = AppColors.visitedSelectedUI.withAlphaComponent(0.25)
                     } else if isVisited && isWishlist {
-                        // Yellow fill for visited + wishlist (outline will be purple)
-                        material.diffuse.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 1.0)
-                        material.emission.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 0.15)
+                        material.diffuse.contents = AppColors.visitedUI
+                        material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
                     } else if isVisited && isCurrentlySelected {
-                        // Bright yellow for selected visited
-                        material.diffuse.contents = UIColor(red: 1.0, green: 1.0, blue: 0.3, alpha: 1.0)
-                        material.emission.contents = UIColor(red: 1.0, green: 1.0, blue: 0.3, alpha: 0.25)
+                        material.diffuse.contents = AppColors.visitedSelectedUI
+                        material.emission.contents = AppColors.visitedSelectedUI.withAlphaComponent(0.25)
                     } else if isVisited {
-                        // Light yellow #F2F013
-                        material.diffuse.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 1.0)
-                        material.emission.contents = UIColor(red: 0.949, green: 0.941, blue: 0.075, alpha: 0.15)
+                        material.diffuse.contents = AppColors.visitedUI
+                        material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
                     } else if isWishlist && isCurrentlySelected {
-                        // Bright purple for selected wishlist
-                        material.diffuse.contents = UIColor(red: 0.75, green: 0.55, blue: 0.95, alpha: 1.0)
-                        material.emission.contents = UIColor(red: 0.75, green: 0.55, blue: 0.95, alpha: 0.25)
+                        material.diffuse.contents = AppColors.wishlistSelectedUI
+                        material.emission.contents = AppColors.wishlistSelectedUI.withAlphaComponent(0.25)
                     } else if isWishlist {
-                        // Purple for wishlist
-                        material.diffuse.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 1.0)
-                        material.emission.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 0.15)
+                        material.diffuse.contents = AppColors.wishlistUI
+                        material.emission.contents = AppColors.wishlistUI.withAlphaComponent(0.15)
                     } else if isCurrentlySelected {
-                        // Light green for selected (lighter than default #34BE82)
-                        material.diffuse.contents = UIColor(red: 0.45, green: 0.85, blue: 0.60, alpha: 1.0)
-                        material.emission.contents = UIColor(red: 0.45, green: 0.85, blue: 0.60, alpha: 0.2)
+                        material.diffuse.contents = AppColors.landSelectedUI
+                        material.emission.contents = AppColors.landSelectedUI.withAlphaComponent(0.2)
                     } else {
-                        // Green for unvisited countries
                         if let originalColor = originalColors[name] {
                             material.diffuse.contents = originalColor
                         }
@@ -503,10 +495,8 @@ struct GlobeView: UIViewRepresentable {
                    let outlineGeometry = outlineNode.geometry {
                     for material in outlineGeometry.materials {
                         if isVisited && isWishlist {
-                            // Purple outline for visited+wishlist
-                            material.diffuse.contents = UIColor(red: 0.6, green: 0.4, blue: 0.8, alpha: 1.0)
+                            material.diffuse.contents = AppColors.wishlistUI
                         } else {
-                            // Black outline for all other states
                             material.diffuse.contents = UIColor.black
                         }
                     }

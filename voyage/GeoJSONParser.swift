@@ -12,8 +12,7 @@ struct GeoJSONCountry {
     let capital: (name: String, lat: Double, lon: Double)?
 
     static func landColor() -> UIColor {
-        // Green #34BE82
-        return UIColor(red: 0.204, green: 0.745, blue: 0.510, alpha: 1.0)
+        return AppColors.landUI
     }
 }
 

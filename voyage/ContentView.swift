@@ -36,10 +36,7 @@ struct ContentView: View {
                     StarryBackground()
                 } else {
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.98, green: 0.96, blue: 0.93),
-                            Color(red: 0.95, green: 0.91, blue: 0.87)
-                        ],
+                        colors: [AppColors.backgroundLightTop, AppColors.backgroundLightBottom],
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -110,9 +107,9 @@ struct ContentView: View {
                     .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35))
+                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
                     )
-                    .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
+                    .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
             }
 
             // Dark mode toggle
@@ -127,9 +124,9 @@ struct ContentView: View {
                     .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35))
+                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
                     )
-                    .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
+                    .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
             }
 
             // Settings button
@@ -142,9 +139,9 @@ struct ContentView: View {
                     .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35))
+                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
                     )
-                    .shadow(color: (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)).opacity(0.4), radius: 8, y: 4)
+                    .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
             }
         }
         .padding(.horizontal, 24)
@@ -163,7 +160,7 @@ struct ContentView: View {
 
                         Text(country)
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
-                            .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.2, green: 0.15, blue: 0.1))
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
                     }
 
                     HStack(spacing: 12) {
@@ -189,8 +186,8 @@ struct ContentView: View {
                             .background(
                                 Capsule()
                                     .fill(globeState.isVisited(country) ?
-                                          Color(red: 0.3, green: 0.7, blue: 0.4) :
-                                          (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
+                                          AppColors.buttonVisited :
+                                          AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
                             )
                         }
 
@@ -216,8 +213,8 @@ struct ContentView: View {
                             .background(
                                 Capsule()
                                     .fill(globeState.isInWishlist(country) ?
-                                          Color(red: 0.6, green: 0.4, blue: 0.8) :
-                                          (globeState.isDarkMode ? Color(red: 0.4, green: 0.35, blue: 0.6) : Color(red: 0.85, green: 0.55, blue: 0.35)))
+                                          AppColors.wishlist :
+                                          AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
                             )
                         }
 
@@ -229,11 +226,11 @@ struct ContentView: View {
                         }) {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(globeState.isDarkMode ? .white : Color(red: 0.3, green: 0.3, blue: 0.3))
+                                .foregroundColor(globeState.isDarkMode ? .white : AppColors.closeButtonText)
                                 .frame(width: 36, height: 36)
                                 .background(
                                     Circle()
-                                        .fill(globeState.isDarkMode ? Color(red: 0.3, green: 0.3, blue: 0.35) : Color(red: 0.9, green: 0.9, blue: 0.9))
+                                        .fill(globeState.isDarkMode ? AppColors.closeButtonDark : AppColors.closeButtonLight)
                                 )
                         }
                     }
@@ -242,7 +239,7 @@ struct ContentView: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(globeState.isDarkMode ? Color(red: 0.2, green: 0.2, blue: 0.25) : .white)
+                        .fill(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                         .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
                 )
                 .transition(.scale.combined(with: .opacity))
@@ -253,28 +250,28 @@ struct ContentView: View {
                 HStack {
                     Text("\(globeState.visitedUNCountries.count) of \(globeState.totalUNCountries) countries")
                         .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(globeState.isDarkMode ? Color(red: 0.7, green: 0.7, blue: 0.75) : Color(red: 0.4, green: 0.35, blue: 0.3))
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: globeState.isDarkMode))
 
                     Spacer()
 
                     Text("\(Int(Double(globeState.visitedUNCountries.count) / Double(globeState.totalUNCountries) * 100))%")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(globeState.isDarkMode ? Color(red: 0.6, green: 0.5, blue: 0.8) : Color(red: 0.85, green: 0.55, blue: 0.35))
+                        .foregroundColor(globeState.isDarkMode ? AppColors.progressDarkStart : AppColors.buttonLight)
                 }
 
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         // Background track
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(globeState.isDarkMode ? Color(red: 0.25, green: 0.25, blue: 0.3) : Color(red: 0.9, green: 0.88, blue: 0.85))
+                            .fill(AppColors.track(isDarkMode: globeState.isDarkMode))
 
                         // Progress fill
                         RoundedRectangle(cornerRadius: 6)
                             .fill(
                                 LinearGradient(
                                     colors: globeState.isDarkMode ?
-                                        [Color(red: 0.5, green: 0.4, blue: 0.8), Color(red: 0.6, green: 0.5, blue: 0.9)] :
-                                        [Color(red: 0.85, green: 0.5, blue: 0.3), Color(red: 0.95, green: 0.6, blue: 0.4)],
+                                        [AppColors.progressDarkStart, AppColors.progressDarkEnd] :
+                                        [AppColors.progressLightStart, AppColors.progressLightEnd],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -289,7 +286,7 @@ struct ContentView: View {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(globeState.isDarkMode ? Color(red: 0.15, green: 0.15, blue: 0.2).opacity(0.8) : .white.opacity(0.7))
+                    .fill(globeState.isDarkMode ? AppColors.cardDarkSecondary.opacity(0.8) : .white.opacity(0.7))
             )
         }
         .padding(.horizontal, 24)
