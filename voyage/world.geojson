@@ -46174,25 +46174,6 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Northern Cyprus",
-        "continent": "Asia",
-        "flagCode": "CY",
-        "renderAs": "point",
-        "capital": "North Nicosia",
-        "capitalLat": 35.1856,
-        "capitalLon": 33.3823
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          33.55,
-          35.35
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "name": "San Marino",
         "continent": "Europe",
         "flagCode": "SM",
