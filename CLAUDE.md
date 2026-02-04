@@ -20,6 +20,8 @@ Examples:
 
 ## Build & Run
 
+**Always build and run the simulator after making larger changes to verify the implementation works correctly.**
+
 ```bash
 # Build
 xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6' -configuration Debug build

@@ -27,6 +27,7 @@ struct ContentView: View {
     @StateObject private var globeState = GlobeState()
     @State private var showingSettings = false
     @State private var showingAchievements = false
+    @State private var showingCountryList = false
 
     var body: some View {
         ZStack {
@@ -82,6 +83,9 @@ struct ContentView: View {
         .sheet(isPresented: $showingAchievements) {
             AchievementsView(globeState: globeState)
         }
+        .sheet(isPresented: $showingCountryList) {
+            CountryListView(globeState: globeState)
+        }
     }
 
     private var header: some View {
@@ -134,6 +138,21 @@ struct ContentView: View {
                 showingSettings = true
             }) {
                 Image(systemName: "gearshape.fill")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                    )
+                    .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
+            }
+
+            // Add Country button (plus)
+            Button(action: {
+                showingCountryList = true
+            }) {
+                Image(systemName: "plus")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
