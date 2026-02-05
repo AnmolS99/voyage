@@ -3,7 +3,6 @@ import StoreKit
 
 struct SettingsView: View {
     @ObservedObject var globeState: GlobeState
-    @Environment(\.dismiss) private var dismiss
     @State private var showingResetConfirmation = false
     @StateObject private var tipJarManager = TipJarManager()
 
@@ -38,6 +37,7 @@ struct SettingsView: View {
                                 .foregroundColor(.red)
                         }
                     }
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } header: {
                     Text("Data")
                 } footer: {
@@ -52,9 +52,11 @@ struct SettingsView: View {
                             Text("Loading tips...")
                                 .foregroundColor(.secondary)
                         }
+                        .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                     } else if tipJarManager.useFallback {
                         ForEach(TipJarManager.fallbackTips) { tip in
                             FallbackTipRowView(tip: tip)
+                                .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                         }
                     } else {
                         ForEach(tipJarManager.tips, id: \.id) { tip in
@@ -67,6 +69,7 @@ struct SettingsView: View {
                                     }
                                 }
                             )
+                            .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                         }
                     }
                 } header: {
@@ -86,21 +89,17 @@ struct SettingsView: View {
                         Text(appVersion)
                             .foregroundColor(.secondary)
                     }
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } footer: {
                     Text("© 2026 Anmol Singh. All rights reserved.")
                         .frame(maxWidth: .infinity)
                         .padding(.top, 16)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
             .confirmationDialog(
                 "Reset All Data",
                 isPresented: $showingResetConfirmation,
@@ -108,7 +107,6 @@ struct SettingsView: View {
             ) {
                 Button("Reset", role: .destructive) {
                     globeState.resetAllData()
-                    dismiss()
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {

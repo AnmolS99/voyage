@@ -113,13 +113,13 @@ enum AppColors {
     static let progressLightStart = Color(red: 0.85, green: 0.5, blue: 0.3)
     static let progressLightEnd = Color(red: 0.95, green: 0.6, blue: 0.4)
 
-    // MARK: - Achievements View Colors
+    // MARK: - Page Background Colors
 
-    /// Achievements background (dark mode)
-    static let achievementsBgDark = Color(red: 0.1, green: 0.1, blue: 0.12)
+    /// Page background (dark mode)
+    static let pageBgDark = Color(red: 0.1, green: 0.1, blue: 0.12)
 
-    /// Achievements background (light mode)
-    static let achievementsBgLight = Color(red: 0.96, green: 0.95, blue: 0.93)
+    /// Page background (light mode)
+    static let pageBgLight = Color(red: 0.96, green: 0.95, blue: 0.93)
 
     /// Badge text (dark mode)
     static let badgeTextDark = Color(red: 0.8, green: 0.8, blue: 0.85)
@@ -162,5 +162,10 @@ enum AppColors {
     /// Returns the appropriate card background based on dark mode
     static func cardBackground(isDarkMode: Bool) -> Color {
         isDarkMode ? cardDark : .white
+    }
+
+    /// Returns the appropriate page background based on dark mode
+    static func pageBackground(isDarkMode: Bool) -> Color {
+        isDarkMode ? pageBgDark : pageBgLight
     }
 }

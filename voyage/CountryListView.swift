@@ -25,6 +25,8 @@ struct CountryListView: View {
                 )
             }
             .searchable(text: $searchText, prompt: "Search countries")
+            .scrollContentBackground(.hidden)
+            .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
             .navigationTitle("Countries")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

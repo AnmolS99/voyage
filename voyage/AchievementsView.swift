@@ -2,7 +2,6 @@ import SwiftUI
 
 struct AchievementsView: View {
     @ObservedObject var globeState: GlobeState
-    @Environment(\.dismiss) private var dismiss
     @State private var expandedAchievementID: String? = nil
 
     private var achievements: [Achievement] {
@@ -75,19 +74,9 @@ struct AchievementsView: View {
                 }
                 .padding(.vertical, 16)
             }
-            .background(
-                globeState.isDarkMode ? AppColors.achievementsBgDark : AppColors.achievementsBgLight
-            )
+            .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
             .navigationTitle("Achievements")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                    .foregroundColor(globeState.isDarkMode ? AppColors.progressDarkStart : AppColors.buttonLight)
-                }
-            }
         }
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
     }

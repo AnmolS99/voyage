@@ -34,6 +34,7 @@
 		E81234560027 /* TipJar.storekit in Resources */ = {isa = PBXBuildFile; fileRef = E81234550027 /* TipJar.storekit */; };
 		E81234560030 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550030 /* main.swift */; };
 		E81234560031 /* CountryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550031 /* CountryListView.swift */; };
+		E81234560032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550032 /* HomeView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +79,7 @@
 		E81234550027 /* TipJar.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = TipJar.storekit; sourceTree = "<group>"; };
 		E81234550030 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		E81234550031 /* CountryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryListView.swift; sourceTree = "<group>"; };
+		E81234550032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +125,7 @@
 				E81234550013 /* AppDelegate.swift */,
 				E81234550012 /* OrientationManager.swift */,
 				E81234550002 /* ContentView.swift */,
+				E81234550032 /* HomeView.swift */,
 				E81234550014 /* SettingsView.swift */,
 				E81234550031 /* CountryListView.swift */,
 				E81234550003 /* GlobeView.swift */,
@@ -314,6 +317,7 @@
 				E81234560022 /* ContinentData.swift in Sources */,
 				E81234560026 /* TipJarManager.swift in Sources */,
 				E81234560031 /* CountryListView.swift in Sources */,
+				E81234560032 /* HomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
