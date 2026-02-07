@@ -277,7 +277,7 @@ struct GlobeView: UIViewRepresentable {
             }
 
             if gesture.state == .changed {
-                let zoomSpeed: Float = 0.5
+                let zoomSpeed: Float = 1
                 let currentDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
                                           cameraNode.position.y * cameraNode.position.y +
                                           cameraNode.position.z * cameraNode.position.z)
