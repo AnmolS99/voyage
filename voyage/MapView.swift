@@ -17,7 +17,7 @@ struct MapView: View {
 
             Canvas { context, size in
                 // Draw ocean background
-                let oceanColor = globeState.isDarkMode ? AppColors.oceanDark : AppColors.ocean
+                let oceanColor = globeState.isDarkMode ? AppColors.oceanDark : AppColors.oceanMap
                 context.fill(
                     Path(CGRect(origin: .zero, size: size)),
                     with: .color(oceanColor)
