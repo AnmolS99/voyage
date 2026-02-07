@@ -277,10 +277,11 @@ struct GlobeView: UIViewRepresentable {
             }
 
             if gesture.state == .changed {
-                let zoomSpeed: Float = 1
                 let currentDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
                                           cameraNode.position.y * cameraNode.position.y +
                                           cameraNode.position.z * cameraNode.position.z)
+                // Scale zoom speed proportionally to distance so it slows down when zoomed in
+                let zoomSpeed: Float = currentDistance * 0.4    // After some manual testing, this felt like a good pinch-zoom sensitivity
                 var newDistance = currentDistance - Float(gesture.scale - 1) * zoomSpeed
 
                 // Clamp zoom level
