@@ -225,7 +225,8 @@ struct HomeView: View {
                 .transition(.scale.combined(with: .opacity))
             }
 
-            // Progress bar
+            // Progress bar (hidden when a country is selected)
+            if globeState.selectedCountry == nil {
             VStack(spacing: 8) {
                 HStack {
                     Text("\(globeState.visitedUNCountries.count) of \(globeState.totalUNCountries) countries")
@@ -268,6 +269,8 @@ struct HomeView: View {
                 RoundedRectangle(cornerRadius: 20)
                     .fill(globeState.isDarkMode ? AppColors.cardDarkSecondary.opacity(0.8) : .white.opacity(0.7))
             )
+            .transition(.opacity)
+            }
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 32)
