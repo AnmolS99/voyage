@@ -30,6 +30,11 @@ enum ViewMode {
     case map
 }
 
+enum GlobeStyle: String {
+    case stylized
+    case realistic
+}
+
 class GlobeState: ObservableObject {
     @Published var selectedCountry: String?
     @Published var selectedCountries: Set<String> = []
@@ -40,6 +45,7 @@ class GlobeState: ObservableObject {
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
     @Published var viewMode: ViewMode = .globe
+    @Published var globeStyle: GlobeStyle = .stylized
     let totalUNCountries = 195
 
     // Flag codes loaded from GeoJSON
@@ -69,6 +75,7 @@ class GlobeState: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let visitedCountriesKey = "visitedCountries"
     private let wishlistCountriesKey = "wishlistCountries"
+    private let globeStyleKey = "globeStyle"
 
     init() {
         loadFlagCodes()
@@ -104,6 +111,11 @@ class GlobeState: ObservableObject {
         let cloudWishlist = Set(iCloudStore.array(forKey: wishlistCountriesKey) as? [String] ?? [])
         wishlistCountries = localWishlist.union(cloudWishlist)
 
+        // Load globe style
+        let localStyle = userDefaults.string(forKey: globeStyleKey) ?? "stylized"
+        let cloudStyle = iCloudStore.string(forKey: globeStyleKey) ?? "stylized"
+        globeStyle = GlobeStyle(rawValue: cloudStyle) ?? GlobeStyle(rawValue: localStyle) ?? .stylized
+
         // Sync merged data back to both stores
         if visitedCountries != localCountries || visitedCountries != cloudCountries ||
            wishlistCountries != localWishlist || wishlistCountries != cloudWishlist {
@@ -120,7 +132,15 @@ class GlobeState: ObservableObject {
         userDefaults.set(wishlistArray, forKey: wishlistCountriesKey)
         iCloudStore.set(wishlistArray, forKey: wishlistCountriesKey)
 
+        userDefaults.set(globeStyle.rawValue, forKey: globeStyleKey)
+        iCloudStore.set(globeStyle.rawValue, forKey: globeStyleKey)
+
         iCloudStore.synchronize()
+    }
+
+    func setGlobeStyle(_ style: GlobeStyle) {
+        globeStyle = style
+        saveData()
     }
 
     @objc private func iCloudDidChange(_ notification: Notification) {

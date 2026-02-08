@@ -35,6 +35,7 @@ struct GlobeView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {
+        context.coordinator.updateGlobeStyle()
         context.coordinator.updateHighlights()
         context.coordinator.updateAutoRotation()
         context.coordinator.centerOnSelectedCountry()
@@ -62,6 +63,7 @@ struct GlobeView: UIViewRepresentable {
         private var capitalStarNode: SCNNode?
         private var doubleTapDragStartY: CGFloat = 0
         private var doubleTapDragStartDistance: Float = 0
+        private var lastGlobeStyle: GlobeStyle?
 
         init(globeState: GlobeState) {
             self.globeState = globeState
@@ -447,53 +449,95 @@ struct GlobeView: UIViewRepresentable {
             return inside
         }
 
+        func updateGlobeStyle() {
+            guard globeState.globeStyle != lastGlobeStyle else { return }
+            lastGlobeStyle = globeState.globeStyle
+
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                  let oceanNode = globeNode.childNode(withName: "ocean", recursively: false),
+                  let oceanGeometry = oceanNode.geometry,
+                  let oceanMaterial = oceanGeometry.materials.first else { return }
+
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0.5
+
+            if globeState.globeStyle == .realistic {
+                if let earthTexture = UIImage(named: "EarthTexture") {
+                    oceanMaterial.diffuse.contents = earthTexture
+                    // Shift texture to align with country polygon coordinate system
+                    // latLonToSphere maps lon=0 to +X axis, but SCNSphere UV has U=0.5 offset
+                    oceanMaterial.diffuse.contentsTransform = SCNMatrix4MakeTranslation(-0.25, 0, 0)
+                    oceanMaterial.diffuse.wrapS = .repeat
+                }
+            } else {
+                oceanMaterial.diffuse.contents = AppColors.oceanUI
+                oceanMaterial.diffuse.contentsTransform = SCNMatrix4Identity
+                oceanMaterial.diffuse.wrapS = .clamp
+            }
+
+            SCNTransaction.commit()
+        }
+
         func updateHighlights() {
+            let isRealistic = globeState.globeStyle == .realistic
+
             for (name, node) in countryNodes {
                 guard let geometry = node.geometry else { continue }
 
                 let isCurrentlySelected = globeState.selectedCountry == name
                 let isVisited = globeState.visitedCountries.contains(name)
                 let isWishlist = globeState.wishlistCountries.contains(name)
+                let hasStatus = isVisited || isWishlist || isCurrentlySelected
 
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.3
 
-                // Update all materials (needed for cylinders which have multiple materials for sides/caps)
-                // Priority: visited/wishlist status takes precedence over selection
-                for material in geometry.materials {
-                    if isVisited && isWishlist && isCurrentlySelected {
-                        material.diffuse.contents = AppColors.visitedSelectedUI
-                        material.emission.contents = AppColors.visitedSelectedUI.withAlphaComponent(0.25)
-                    } else if isVisited && isWishlist {
-                        material.diffuse.contents = AppColors.visitedUI
-                        material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
-                    } else if isVisited && isCurrentlySelected {
-                        material.diffuse.contents = AppColors.visitedSelectedUI
-                        material.emission.contents = AppColors.visitedSelectedUI.withAlphaComponent(0.25)
-                    } else if isVisited {
-                        material.diffuse.contents = AppColors.visitedUI
-                        material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
-                    } else if isWishlist && isCurrentlySelected {
-                        material.diffuse.contents = AppColors.wishlistSelectedUI
-                        material.emission.contents = AppColors.wishlistSelectedUI.withAlphaComponent(0.25)
-                    } else if isWishlist {
-                        material.diffuse.contents = AppColors.wishlistUI
-                        material.emission.contents = AppColors.wishlistUI.withAlphaComponent(0.15)
-                    } else if isCurrentlySelected {
-                        material.diffuse.contents = AppColors.landSelectedUI
-                        material.emission.contents = AppColors.landSelectedUI.withAlphaComponent(0.2)
-                    } else {
-                        if let originalColor = originalColors[name] {
-                            material.diffuse.contents = originalColor
+                if isRealistic && !hasStatus {
+                    // Hide unstatused countries in realistic mode so texture shows through
+                    node.isHidden = true
+                } else {
+                    node.isHidden = false
+
+                    // Update all materials (needed for cylinders which have multiple materials for sides/caps)
+                    // Priority: visited/wishlist status takes precedence over selection
+                    for material in geometry.materials {
+                        material.transparency = 1.0
+
+                        if isVisited && isWishlist && isCurrentlySelected {
+                            material.diffuse.contents = AppColors.visitedSelectedUI
+                            material.emission.contents = AppColors.visitedSelectedUI.withAlphaComponent(0.25)
+                        } else if isVisited && isWishlist {
+                            material.diffuse.contents = AppColors.visitedUI
+                            material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
+                        } else if isVisited && isCurrentlySelected {
+                            material.diffuse.contents = AppColors.visitedSelectedUI
+                            material.emission.contents = AppColors.visitedSelectedUI.withAlphaComponent(0.25)
+                        } else if isVisited {
+                            material.diffuse.contents = AppColors.visitedUI
+                            material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
+                        } else if isWishlist && isCurrentlySelected {
+                            material.diffuse.contents = AppColors.wishlistSelectedUI
+                            material.emission.contents = AppColors.wishlistSelectedUI.withAlphaComponent(0.25)
+                        } else if isWishlist {
+                            material.diffuse.contents = AppColors.wishlistUI
+                            material.emission.contents = AppColors.wishlistUI.withAlphaComponent(0.15)
+                        } else if isCurrentlySelected {
+                            material.diffuse.contents = AppColors.landSelectedUI
+                            material.emission.contents = AppColors.landSelectedUI.withAlphaComponent(0.2)
+                        } else {
+                            if let originalColor = originalColors[name] {
+                                material.diffuse.contents = originalColor
+                            }
+                            material.emission.contents = UIColor.black
                         }
-                        material.emission.contents = UIColor.black
                     }
                 }
 
-                // Update outline color for visited+wishlist countries
+                // Update outline visibility and color
                 if let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                    let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false),
                    let outlineGeometry = outlineNode.geometry {
+                    outlineNode.isHidden = false
                     for material in outlineGeometry.materials {
                         if isVisited && isWishlist {
                             material.diffuse.contents = AppColors.wishlistUI

@@ -27,6 +27,29 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
+                    HStack {
+                        Image(systemName: "globe.americas")
+                            .foregroundColor(globeState.isDarkMode ? AppColors.buttonDark : AppColors.buttonLight)
+
+                        Text("Globe Style")
+
+                        Spacer()
+
+                        Picker("", selection: $globeState.globeStyle) {
+                            Text("Stylized").tag(GlobeStyle.stylized)
+                            Text("Realistic").tag(GlobeStyle.realistic)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 180)
+                    }
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("Stylized uses flat colors. Realistic shows a NASA satellite texture.")
+                }
+
+                Section {
                     Button(role: .destructive) {
                         showingResetConfirmation = true
                     } label: {
@@ -95,6 +118,9 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, 16)
                 }
+            }
+            .onChange(of: globeState.globeStyle) { _, newStyle in
+                globeState.setGlobeStyle(newStyle)
             }
             .scrollContentBackground(.hidden)
             .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
