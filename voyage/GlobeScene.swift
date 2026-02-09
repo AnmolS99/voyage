@@ -16,6 +16,9 @@ class GlobeScene {
             // Rebuild the countryNodes and originalColors dictionaries from cached nodes
             rebuildCoordinatorData(from: bundledGlobe, coordinator: coordinator)
 
+            // Start facing Europe/Africa (~15°E longitude)
+            bundledGlobe.eulerAngles.y = -.pi / 2 - .pi / 12
+
             // Add rotation animation (not saved in bundle)
             let rotation = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 60))
             bundledGlobe.runAction(rotation, forKey: "autoRotation")
@@ -91,6 +94,9 @@ class GlobeScene {
 
         // Add countries from GeoJSON
         addCountriesFromGeoJSON(to: globeNode, coordinator: coordinator)
+
+        // Start facing Europe/Africa (~15°E longitude)
+        globeNode.eulerAngles.y = -.pi / 2 - .pi / 12
 
         // Add subtle rotation animation
         let rotation = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 60))

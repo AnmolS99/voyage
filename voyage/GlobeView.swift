@@ -55,7 +55,7 @@ struct GlobeView: UIViewRepresentable {
 
         private var lastPanLocation: CGPoint = .zero
         private var currentRotationX: Float = 0
-        private var currentRotationY: Float = 0
+        private var currentRotationY: Float = -.pi / 2 - .pi / 12
         private var currentScale: Float = 1.0
         private var lastAutoRotatingState: Bool = true
         private var hasAnimatedToCountry: Bool = false
@@ -458,9 +458,6 @@ struct GlobeView: UIViewRepresentable {
                   let oceanGeometry = oceanNode.geometry,
                   let oceanMaterial = oceanGeometry.materials.first else { return }
 
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.5
-
             if globeState.globeStyle == .realistic {
                 if let earthTexture = UIImage(named: "EarthTexture") {
                     oceanMaterial.diffuse.contents = earthTexture
@@ -474,8 +471,6 @@ struct GlobeView: UIViewRepresentable {
                 oceanMaterial.diffuse.contentsTransform = SCNMatrix4Identity
                 oceanMaterial.diffuse.wrapS = .clamp
             }
-
-            SCNTransaction.commit()
         }
 
         func updateHighlights() {
