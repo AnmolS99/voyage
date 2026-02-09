@@ -479,8 +479,13 @@ struct GlobeView: UIViewRepresentable {
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.3
 
-                if !hasStatus {
-                    // Hide countries without status so the texture shows through
+                let isPointCountry = geometry is SCNCylinder
+
+                if !hasStatus && !isPointCountry {
+                    // Hide polygon countries without status so the texture shows through
+                    node.isHidden = true
+                } else if !hasStatus && isPointCountry {
+                    // Point countries: hide fill, outline becomes a ring
                     node.isHidden = true
                 } else {
                     node.isHidden = false
@@ -522,14 +527,39 @@ struct GlobeView: UIViewRepresentable {
 
                 // Update outline visibility and color
                 if let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                   let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false),
-                   let outlineGeometry = outlineNode.geometry {
+                   let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false) {
                     outlineNode.isHidden = false
-                    for material in outlineGeometry.materials {
-                        if isVisited && isWishlist {
-                            material.diffuse.contents = AppColors.wishlistUI
-                        } else {
+
+                    // Point countries without status: swap outline to a ring so fill is see-through
+                    if isPointCountry && !hasStatus {
+                        if !(outlineNode.geometry is SCNTube) {
+                            let ring = SCNTube(innerRadius: 0.012, outerRadius: 0.014, height: 0.0005)
+                            let material = SCNMaterial()
                             material.diffuse.contents = UIColor.black
+                            material.lightingModel = .constant
+                            material.isDoubleSided = true
+                            ring.materials = [material]
+                            outlineNode.geometry = ring
+                        }
+                    } else if isPointCountry && hasStatus {
+                        if !(outlineNode.geometry is SCNCylinder) {
+                            let disc = SCNCylinder(radius: 0.014, height: 0.0005)
+                            let material = SCNMaterial()
+                            material.diffuse.contents = UIColor.black
+                            material.lightingModel = .constant
+                            material.isDoubleSided = true
+                            disc.materials = [material]
+                            outlineNode.geometry = disc
+                        }
+                    }
+
+                    if let outlineGeometry = outlineNode.geometry {
+                        for material in outlineGeometry.materials {
+                            if isVisited && isWishlist {
+                                material.diffuse.contents = AppColors.wishlistUI
+                            } else {
+                                material.diffuse.contents = UIColor.black
+                            }
                         }
                     }
                 }
