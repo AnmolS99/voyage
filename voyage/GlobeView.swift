@@ -458,24 +458,16 @@ struct GlobeView: UIViewRepresentable {
                   let oceanGeometry = oceanNode.geometry,
                   let oceanMaterial = oceanGeometry.materials.first else { return }
 
-            if globeState.globeStyle == .realistic {
-                if let earthTexture = UIImage(named: "EarthTexture") {
-                    oceanMaterial.diffuse.contents = earthTexture
-                    // Shift texture to align with country polygon coordinate system
-                    // latLonToSphere maps lon=0 to +X axis, but SCNSphere UV has U=0.5 offset
-                    oceanMaterial.diffuse.contentsTransform = SCNMatrix4MakeTranslation(-0.25, 0, 0)
-                    oceanMaterial.diffuse.wrapS = .repeat
-                }
-            } else {
-                oceanMaterial.diffuse.contents = AppColors.oceanUI
-                oceanMaterial.diffuse.contentsTransform = SCNMatrix4Identity
-                oceanMaterial.diffuse.wrapS = .clamp
+            if let texture = UIImage(named: globeState.globeStyle.textureName) {
+                oceanMaterial.diffuse.contents = texture
+                // Shift texture to align with country polygon coordinate system
+                // latLonToSphere maps lon=0 to +X axis, but SCNSphere UV has U=0.5 offset
+                oceanMaterial.diffuse.contentsTransform = SCNMatrix4MakeTranslation(-0.25, 0, 0)
+                oceanMaterial.diffuse.wrapS = .repeat
             }
         }
 
         func updateHighlights() {
-            let isRealistic = globeState.globeStyle == .realistic
-
             for (name, node) in countryNodes {
                 guard let geometry = node.geometry else { continue }
 
@@ -487,8 +479,8 @@ struct GlobeView: UIViewRepresentable {
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.3
 
-                if isRealistic && !hasStatus {
-                    // Hide unstatused countries in realistic mode so texture shows through
+                if !hasStatus {
+                    // Hide countries without status so the texture shows through
                     node.isHidden = true
                 } else {
                     node.isHidden = false

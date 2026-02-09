@@ -30,9 +30,26 @@ enum ViewMode {
     case map
 }
 
-enum GlobeStyle: String {
+enum GlobeStyle: String, CaseIterable {
     case stylized
+    case natural
     case realistic
+
+    var textureName: String {
+        switch self {
+        case .stylized: return "StylizedEarthTexture"
+        case .natural: return "NaturalEarthTexture"
+        case .realistic: return "EarthTexture"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .stylized: return "Stylized"
+        case .natural: return "Natural"
+        case .realistic: return "Realistic"
+        }
+    }
 }
 
 class GlobeState: ObservableObject {

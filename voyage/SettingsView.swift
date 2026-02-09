@@ -36,17 +36,17 @@ struct SettingsView: View {
                         Spacer()
 
                         Picker("", selection: $globeState.globeStyle) {
-                            Text("Stylized").tag(GlobeStyle.stylized)
-                            Text("Realistic").tag(GlobeStyle.realistic)
+                            ForEach(GlobeStyle.allCases, id: \.self) { style in
+                                Text(style.displayName).tag(style)
+                            }
                         }
-                        .pickerStyle(.segmented)
-                        .frame(width: 180)
+                        .pickerStyle(.menu)
                     }
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } header: {
                     Text("Appearance")
                 } footer: {
-                    Text("Stylized uses flat colors. Realistic shows a NASA satellite texture.")
+                    Text("Choose a globe texture style.")
                 }
 
                 Section {
