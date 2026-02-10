@@ -471,10 +471,9 @@ struct GlobeView: UIViewRepresentable {
             for (name, node) in countryNodes {
                 guard let geometry = node.geometry else { continue }
 
-                let isCurrentlySelected = globeState.selectedCountry == name
                 let isVisited = globeState.visitedCountries.contains(name)
                 let isWishlist = globeState.wishlistCountries.contains(name)
-                let hasStatus = isVisited || isWishlist || isCurrentlySelected
+                let hasStatus = isVisited || isWishlist
 
                 let isPointCountry = geometry is SCNCylinder
 
@@ -488,31 +487,15 @@ struct GlobeView: UIViewRepresentable {
                     node.isHidden = false
 
                     // Update all materials (needed for cylinders which have multiple materials for sides/caps)
-                    // Priority: visited/wishlist status takes precedence over selection
                     for material in geometry.materials {
                         material.transparency = 1.0
 
-                        if isVisited && isWishlist && isCurrentlySelected {
-                            material.diffuse.contents = AppColors.visitedSelectedUI
-                            material.emission.contents = AppColors.visitedSelectedUI.withAlphaComponent(0.25)
-                        } else if isVisited && isWishlist {
+                        if isVisited {
                             material.diffuse.contents = AppColors.visitedUI
                             material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
-                        } else if isVisited && isCurrentlySelected {
-                            material.diffuse.contents = AppColors.visitedSelectedUI
-                            material.emission.contents = AppColors.visitedSelectedUI.withAlphaComponent(0.25)
-                        } else if isVisited {
-                            material.diffuse.contents = AppColors.visitedUI
-                            material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
-                        } else if isWishlist && isCurrentlySelected {
-                            material.diffuse.contents = AppColors.wishlistSelectedUI
-                            material.emission.contents = AppColors.wishlistSelectedUI.withAlphaComponent(0.25)
                         } else if isWishlist {
                             material.diffuse.contents = AppColors.wishlistUI
                             material.emission.contents = AppColors.wishlistUI.withAlphaComponent(0.15)
-                        } else if isCurrentlySelected {
-                            material.diffuse.contents = AppColors.landSelectedUI
-                            material.emission.contents = AppColors.landSelectedUI.withAlphaComponent(0.2)
                         } else {
                             if let originalColor = originalColors[name] {
                                 material.diffuse.contents = originalColor

@@ -31,7 +31,6 @@ struct MapView: View {
 
                 // Draw countries
                 for country in countries {
-                    let isCurrentlySelected = globeState.selectedCountry == country.name
                     let isVisited = globeState.visitedCountries.contains(country.name)
                     let isWishlist = globeState.wishlistCountries.contains(country.name)
 
@@ -39,27 +38,14 @@ struct MapView: View {
                     let borderColor: Color
                     let defaultBorderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
 
-                    // Priority: visited/wishlist status takes precedence over selection
-                    if isVisited && isWishlist && isCurrentlySelected {
-                        fillColor = AppColors.visitedSelected
-                        borderColor = AppColors.wishlist
-                    } else if isVisited && isWishlist {
+                    if isVisited && isWishlist {
                         fillColor = AppColors.visited
                         borderColor = AppColors.wishlist
-                    } else if isVisited && isCurrentlySelected {
-                        fillColor = AppColors.visitedSelected
-                        borderColor = defaultBorderColor
                     } else if isVisited {
                         fillColor = AppColors.visited
                         borderColor = defaultBorderColor
-                    } else if isWishlist && isCurrentlySelected {
-                        fillColor = AppColors.wishlistSelected
-                        borderColor = defaultBorderColor
                     } else if isWishlist {
                         fillColor = AppColors.wishlist
-                        borderColor = defaultBorderColor
-                    } else if isCurrentlySelected {
-                        fillColor = AppColors.landSelected
                         borderColor = defaultBorderColor
                     } else {
                         fillColor = AppColors.land
