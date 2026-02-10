@@ -476,9 +476,6 @@ struct GlobeView: UIViewRepresentable {
                 let isWishlist = globeState.wishlistCountries.contains(name)
                 let hasStatus = isVisited || isWishlist || isCurrentlySelected
 
-                SCNTransaction.begin()
-                SCNTransaction.animationDuration = 0.3
-
                 let isPointCountry = geometry is SCNCylinder
 
                 if !hasStatus && !isPointCountry {
@@ -564,7 +561,6 @@ struct GlobeView: UIViewRepresentable {
                     }
                 }
 
-                SCNTransaction.commit()
             }
 
             // Update capital star
