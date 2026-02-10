@@ -34,8 +34,10 @@ struct MapView: View {
                     let isVisited = globeState.visitedCountries.contains(country.name)
                     let isWishlist = globeState.wishlistCountries.contains(country.name)
 
+                    let isSelected = globeState.selectedCountry == country.name
                     let fillColor: Color
                     let borderColor: Color
+                    let borderWidth: CGFloat = isSelected ? 1.5 : 0.5
                     let defaultBorderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
 
                     if isVisited && isWishlist {
@@ -68,7 +70,7 @@ struct MapView: View {
                         ))
 
                         context.fill(dotPath, with: .color(fillColor))
-                        context.stroke(dotPath, with: .color(borderColor), lineWidth: 0.5)
+                        context.stroke(dotPath, with: .color(borderColor), lineWidth: borderWidth)
                     } else {
                         // Draw polygon country
                         for polygon in country.polygons {
@@ -98,7 +100,7 @@ struct MapView: View {
                             context.fill(path, with: .color(fillColor))
 
                             // Draw border
-                            context.stroke(path, with: .color(borderColor), lineWidth: 0.5)
+                            context.stroke(path, with: .color(borderColor), lineWidth: borderWidth)
                         }
                     }
                 }
