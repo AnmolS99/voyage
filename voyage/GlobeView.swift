@@ -61,6 +61,8 @@ struct GlobeView: UIViewRepresentable {
         private var hasAnimatedToCountry: Bool = false
         private var lastAnimatedCountry: String?
         private var capitalStarNode: SCNNode?
+        private var normalOutlineGeometries: [String: SCNGeometry] = [:]
+        private var thickOutlineGeometries: [String: SCNGeometry] = [:]
         private var doubleTapDragStartY: CGFloat = 0
         private var doubleTapDragStartDistance: Float = 0
         private var lastGlobeStyle: GlobeStyle?
@@ -505,31 +507,52 @@ struct GlobeView: UIViewRepresentable {
                     }
                 }
 
-                // Update outline visibility and color
+                // Update outline visibility, color, and thickness
+                let isSelected = globeState.selectedCountry == name
                 if let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                    let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false) {
                     outlineNode.isHidden = false
 
-                    // Point countries without status: swap outline to a ring so fill is see-through
+                    // Point countries: swap outline geometry based on status and selection
                     if isPointCountry && !hasStatus {
-                        if !(outlineNode.geometry is SCNTube) {
-                            let ring = SCNTube(innerRadius: 0.012, outerRadius: 0.014, height: 0.0005)
-                            let material = SCNMaterial()
-                            material.diffuse.contents = UIColor.black
-                            material.lightingModel = .constant
-                            material.isDoubleSided = true
-                            ring.materials = [material]
-                            outlineNode.geometry = ring
-                        }
+                        let outerRadius: CGFloat = isSelected ? 0.0155 : 0.014
+                        let ring = SCNTube(innerRadius: 0.012, outerRadius: outerRadius, height: 0.0005)
+                        let material = SCNMaterial()
+                        material.diffuse.contents = UIColor.black
+                        material.lightingModel = .constant
+                        material.isDoubleSided = true
+                        ring.materials = [material]
+                        outlineNode.geometry = ring
                     } else if isPointCountry && hasStatus {
-                        if !(outlineNode.geometry is SCNCylinder) {
-                            let disc = SCNCylinder(radius: 0.014, height: 0.0005)
-                            let material = SCNMaterial()
-                            material.diffuse.contents = UIColor.black
-                            material.lightingModel = .constant
-                            material.isDoubleSided = true
-                            disc.materials = [material]
-                            outlineNode.geometry = disc
+                        let radius: CGFloat = isSelected ? 0.0155 : 0.014
+                        let disc = SCNCylinder(radius: radius, height: 0.0005)
+                        let material = SCNMaterial()
+                        material.diffuse.contents = UIColor.black
+                        material.lightingModel = .constant
+                        material.isDoubleSided = true
+                        disc.materials = [material]
+                        outlineNode.geometry = disc
+                    } else if !isPointCountry {
+                        // Swap border geometry between normal and thick based on selection
+                        if isSelected {
+                            if thickOutlineGeometries[name] == nil,
+                               let country = cachedCountries.first(where: { $0.name == name }),
+                               let thickGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons, thickness: 0.0035) {
+                                let material = SCNMaterial()
+                                material.diffuse.contents = UIColor.black
+                                material.lightingModel = .constant
+                                material.isDoubleSided = true
+                                thickGeometry.materials = [material]
+                                thickOutlineGeometries[name] = thickGeometry
+                            }
+                            if normalOutlineGeometries[name] == nil {
+                                normalOutlineGeometries[name] = outlineNode.geometry
+                            }
+                            if let thickGeometry = thickOutlineGeometries[name] {
+                                outlineNode.geometry = thickGeometry
+                            }
+                        } else if let normalGeometry = normalOutlineGeometries[name] {
+                            outlineNode.geometry = normalGeometry
                         }
                     }
 
