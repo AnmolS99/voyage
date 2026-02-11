@@ -16,13 +16,20 @@ class PolygonTriangulator {
         return SCNVector3(x, y, z)
     }
 
-    // Create country geometry using adaptive resolution grid-based fill
+    // Create country fill geometry using grid-based point-in-polygon fill
     static func createCountryGeometry(polygons: [[[Double]]], radius: Float = 1.003) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
 
         for polygon in polygons {
-            let coords = polygon.filter { $0.count >= 2 }
+            var coords = polygon.filter { $0.count >= 2 }
+            guard coords.count >= 3 else { continue }
+
+            // Remove duplicate closing point
+            if let first = coords.first, let last = coords.last,
+               first[0] == last[0] && first[1] == last[1] {
+                coords.removeLast()
+            }
             guard coords.count >= 3 else { continue }
 
             // Get bounding box
@@ -35,111 +42,42 @@ class PolygonTriangulator {
                 maxLat = max(maxLat, coord[1])
             }
 
-            // Calculate adaptive cell size based on polygon size
-            let lonSpan = maxLon - minLon
-            let latSpan = maxLat - minLat
-            let maxSpan = max(lonSpan, latSpan)
+            let maxSpan = max(maxLon - minLon, maxLat - minLat)
+            let cellSize: Double = maxSpan < 0.5 ? 0.02 : maxSpan < 2.0 ? 0.04 : maxSpan < 10.0 ? 0.12 : 0.25
 
-            let cellSize: Double
-            if maxSpan < 0.5 {
-                // Tiny countries (Vatican, San Marino, Monaco, etc.) - use triangle fan
-                let baseIndex = Int32(allVertices.count)
-
-                // Calculate centroid
-                var centroidLon = 0.0, centroidLat = 0.0
-                for coord in coords {
-                    centroidLon += coord[0]
-                    centroidLat += coord[1]
-                }
-                centroidLon /= Double(coords.count)
-                centroidLat /= Double(coords.count)
-
-                // Add centroid vertex
-                allVertices.append(latLonToSphere(lat: centroidLat, lon: centroidLon, radius: radius))
-
-                // Add boundary vertices
-                for coord in coords {
-                    allVertices.append(latLonToSphere(lat: coord[1], lon: coord[0], radius: radius))
-                }
-
-                // Create triangle fan
-                for i in 0..<coords.count {
-                    let next = (i + 1) % coords.count
-                    allIndices.append(baseIndex) // centroid
-                    allIndices.append(baseIndex + Int32(i) + 1)
-                    allIndices.append(baseIndex + Int32(next) + 1)
-                }
-                continue
-            } else if maxSpan < 2.0 {
-                // Small countries (Luxembourg, Andorra, etc.)
-                cellSize = 0.05
-            } else if maxSpan < 10.0 {
-                // Medium countries
-                cellSize = 0.15
-            } else {
-                // Large countries
-                cellSize = 0.3
-            }
-
-            // Create grid and fill cells that are inside the polygon
+            // Fill grid cells that are inside the polygon
             var cellCount = 0
             var lat = minLat
             while lat <= maxLat {
                 var lon = minLon
                 while lon <= maxLon {
-                    // Check if cell center is inside polygon
-                    let centerLon = lon + cellSize / 2
-                    let centerLat = lat + cellSize / 2
-
-                    if isPointInPolygon(lon: centerLon, lat: centerLat, polygon: coords) {
+                    if isPointInPolygon(lon: lon + cellSize / 2, lat: lat + cellSize / 2, polygon: coords) {
                         let baseIndex = Int32(allVertices.count)
-
-                        // Add 4 corners of the cell
                         allVertices.append(latLonToSphere(lat: lat, lon: lon, radius: radius))
                         allVertices.append(latLonToSphere(lat: lat, lon: lon + cellSize, radius: radius))
                         allVertices.append(latLonToSphere(lat: lat + cellSize, lon: lon + cellSize, radius: radius))
                         allVertices.append(latLonToSphere(lat: lat + cellSize, lon: lon, radius: radius))
-
-                        // Two triangles for the quad
-                        allIndices.append(baseIndex)
-                        allIndices.append(baseIndex + 1)
-                        allIndices.append(baseIndex + 2)
-
-                        allIndices.append(baseIndex)
-                        allIndices.append(baseIndex + 2)
-                        allIndices.append(baseIndex + 3)
-
+                        allIndices.append(contentsOf: [baseIndex, baseIndex + 1, baseIndex + 2,
+                                                       baseIndex, baseIndex + 2, baseIndex + 3])
                         cellCount += 1
                     }
-
                     lon += cellSize
                 }
                 lat += cellSize
             }
 
-            // Fallback: if no cells were created, use triangle fan
+            // Fallback for tiny polygons where no grid cell center falls inside
             if cellCount == 0 {
                 let baseIndex = Int32(allVertices.count)
-
-                var centroidLon = 0.0, centroidLat = 0.0
-                for coord in coords {
-                    centroidLon += coord[0]
-                    centroidLat += coord[1]
-                }
-                centroidLon /= Double(coords.count)
-                centroidLat /= Double(coords.count)
-
+                let centroidLon = coords.reduce(0.0) { $0 + $1[0] } / Double(coords.count)
+                let centroidLat = coords.reduce(0.0) { $0 + $1[1] } / Double(coords.count)
                 allVertices.append(latLonToSphere(lat: centroidLat, lon: centroidLon, radius: radius))
-
                 for coord in coords {
                     allVertices.append(latLonToSphere(lat: coord[1], lon: coord[0], radius: radius))
                 }
-
                 for i in 0..<coords.count {
                     let next = (i + 1) % coords.count
-                    allIndices.append(baseIndex)
-                    allIndices.append(baseIndex + Int32(i) + 1)
-                    allIndices.append(baseIndex + Int32(next) + 1)
+                    allIndices.append(contentsOf: [baseIndex, baseIndex + Int32(i) + 1, baseIndex + Int32(next) + 1])
                 }
             }
         }
@@ -150,6 +88,22 @@ class PolygonTriangulator {
         let element = SCNGeometryElement(indices: allIndices, primitiveType: .triangles)
 
         return SCNGeometry(sources: [vertexSource], elements: [element])
+    }
+
+    // Ray casting point-in-polygon test
+    static func isPointInPolygon(lon: Double, lat: Double, polygon: [[Double]]) -> Bool {
+        var inside = false
+        var j = polygon.count - 1
+        for i in 0..<polygon.count {
+            let xi = polygon[i][0], yi = polygon[i][1]
+            let xj = polygon[j][0], yj = polygon[j][1]
+            if ((yi > lat) != (yj > lat)) &&
+                (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
+                inside = !inside
+            }
+            j = i
+        }
+        return inside
     }
 
     // Create border outline as a continuous quad strip with shared vertices at joins
@@ -216,24 +170,5 @@ class PolygonTriangulator {
         let element = SCNGeometryElement(indices: allIndices, primitiveType: .triangles)
 
         return SCNGeometry(sources: [vertexSource], elements: [element])
-    }
-
-    // Ray casting algorithm for point-in-polygon test
-    static func isPointInPolygon(lon: Double, lat: Double, polygon: [[Double]]) -> Bool {
-        var inside = false
-        var j = polygon.count - 1
-
-        for i in 0..<polygon.count {
-            let xi = polygon[i][0], yi = polygon[i][1]
-            let xj = polygon[j][0], yj = polygon[j][1]
-
-            if ((yi > lat) != (yj > lat)) &&
-                (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
-                inside = !inside
-            }
-            j = i
-        }
-
-        return inside
     }
 }
