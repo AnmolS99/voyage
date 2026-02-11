@@ -64,20 +64,24 @@ class PolygonTriangulator {
 
             var cellCount = 0
 
+            func emitCell(lat: Double, lon: Double, size: Double) {
+                // Expand interior cells slightly to eliminate T-junction gaps; border cells stay tight
+                let overlap = size > minSize ? size * 0.02 : 0.0
+                let baseIndex = Int32(allVertices.count)
+                allVertices.append(latLonToSphere(lat: lat - overlap, lon: lon - overlap, radius: radius))
+                allVertices.append(latLonToSphere(lat: lat - overlap, lon: lon + size + overlap, radius: radius))
+                allVertices.append(latLonToSphere(lat: lat + size + overlap, lon: lon + size + overlap, radius: radius))
+                allVertices.append(latLonToSphere(lat: lat + size + overlap, lon: lon - overlap, radius: radius))
+                allIndices.append(contentsOf: [baseIndex, baseIndex + 1, baseIndex + 2,
+                                               baseIndex, baseIndex + 2, baseIndex + 3])
+                cellCount += 1
+            }
+
             func addCell(lat: Double, lon: Double, size: Double) {
                 let centerIn = isPointInPolygon(lon: lon + size / 2, lat: lat + size / 2, polygon: coords)
 
                 if size <= minSize {
-                    if centerIn {
-                        let baseIndex = Int32(allVertices.count)
-                        allVertices.append(latLonToSphere(lat: lat, lon: lon, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat, lon: lon + size, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat + size, lon: lon + size, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat + size, lon: lon, radius: radius))
-                        allIndices.append(contentsOf: [baseIndex, baseIndex + 1, baseIndex + 2,
-                                                       baseIndex, baseIndex + 2, baseIndex + 3])
-                        cellCount += 1
-                    }
+                    if centerIn { emitCell(lat: lat, lon: lon, size: size) }
                     return
                 }
 
@@ -94,15 +98,7 @@ class PolygonTriangulator {
                                   isPointInPolygon(lon: lon + half, lat: lat + size, polygon: coords) &&
                                   isPointInPolygon(lon: lon, lat: lat + half, polygon: coords)
                     if edgesIn {
-                        // All 9 points inside — emit large cell
-                        let baseIndex = Int32(allVertices.count)
-                        allVertices.append(latLonToSphere(lat: lat, lon: lon, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat, lon: lon + size, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat + size, lon: lon + size, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat + size, lon: lon, radius: radius))
-                        allIndices.append(contentsOf: [baseIndex, baseIndex + 1, baseIndex + 2,
-                                                       baseIndex, baseIndex + 2, baseIndex + 3])
-                        cellCount += 1
+                        emitCell(lat: lat, lon: lon, size: size)
                     } else {
                         // Edge crosses concavity — subdivide
                         addCell(lat: lat, lon: lon, size: half)
