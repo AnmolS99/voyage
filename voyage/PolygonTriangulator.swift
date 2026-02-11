@@ -46,7 +46,9 @@ class PolygonTriangulator {
             let maxSpan = max(maxLon - minLon, maxLat - minLat)
             let startSize: Double
             let minSize: Double
-            if maxSpan < 0.05 {
+            if maxSpan < 0.01 {
+                startSize = 0.0005; minSize = 0.0005
+            } else if maxSpan < 0.05 {
                 startSize = 0.002; minSize = 0.002
             } else if maxSpan < 0.2 {
                 startSize = 0.01; minSize = 0.01
@@ -57,9 +59,9 @@ class PolygonTriangulator {
             } else if maxSpan < 10.0 {
                 startSize = 0.5; minSize = 0.125
             } else if maxSpan < 30.0 {
-                startSize = 2.0; minSize = 0.25
+                startSize = 2.0; minSize = 0.125
             } else {
-                startSize = 4.0; minSize = 0.25
+                startSize = 4.0; minSize = 0.125
             }
 
             var cellCount = 0
