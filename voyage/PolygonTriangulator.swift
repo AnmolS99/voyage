@@ -16,7 +16,8 @@ class PolygonTriangulator {
         return SCNVector3(x, y, z)
     }
 
-    // Create country fill geometry using grid-based point-in-polygon fill
+    // Create country fill geometry using adaptive grid-based point-in-polygon fill.
+    // Large cells cover the interior; cells near borders subdivide to finer resolution.
     static func createCountryGeometry(polygons: [[[Double]]], radius: Float = 1.003) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
@@ -43,27 +44,103 @@ class PolygonTriangulator {
             }
 
             let maxSpan = max(maxLon - minLon, maxLat - minLat)
-            let cellSize: Double = maxSpan < 0.5 ? 0.02 : maxSpan < 2.0 ? 0.04 : maxSpan < 10.0 ? 0.12 : 0.25
+            let startSize: Double
+            let minSize: Double
+            if maxSpan < 0.05 {
+                startSize = 0.002; minSize = 0.002
+            } else if maxSpan < 0.2 {
+                startSize = 0.01; minSize = 0.01
+            } else if maxSpan < 0.5 {
+                startSize = 0.04; minSize = 0.02
+            } else if maxSpan < 2.0 {
+                startSize = 0.16; minSize = 0.04
+            } else if maxSpan < 10.0 {
+                startSize = 0.5; minSize = 0.125
+            } else if maxSpan < 30.0 {
+                startSize = 2.0; minSize = 0.25
+            } else {
+                startSize = 4.0; minSize = 0.25
+            }
 
-            // Fill grid cells that are inside the polygon
             var cellCount = 0
-            var lat = minLat
-            while lat <= maxLat {
-                var lon = minLon
-                while lon <= maxLon {
-                    if isPointInPolygon(lon: lon + cellSize / 2, lat: lat + cellSize / 2, polygon: coords) {
+
+            func addCell(lat: Double, lon: Double, size: Double) {
+                let centerIn = isPointInPolygon(lon: lon + size / 2, lat: lat + size / 2, polygon: coords)
+
+                if size <= minSize {
+                    if centerIn {
                         let baseIndex = Int32(allVertices.count)
                         allVertices.append(latLonToSphere(lat: lat, lon: lon, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat, lon: lon + cellSize, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat + cellSize, lon: lon + cellSize, radius: radius))
-                        allVertices.append(latLonToSphere(lat: lat + cellSize, lon: lon, radius: radius))
+                        allVertices.append(latLonToSphere(lat: lat, lon: lon + size, radius: radius))
+                        allVertices.append(latLonToSphere(lat: lat + size, lon: lon + size, radius: radius))
+                        allVertices.append(latLonToSphere(lat: lat + size, lon: lon, radius: radius))
                         allIndices.append(contentsOf: [baseIndex, baseIndex + 1, baseIndex + 2,
                                                        baseIndex, baseIndex + 2, baseIndex + 3])
                         cellCount += 1
                     }
-                    lon += cellSize
+                    return
                 }
-                lat += cellSize
+
+                let c00 = isPointInPolygon(lon: lon, lat: lat, polygon: coords)
+                let c10 = isPointInPolygon(lon: lon + size, lat: lat, polygon: coords)
+                let c01 = isPointInPolygon(lon: lon, lat: lat + size, polygon: coords)
+                let c11 = isPointInPolygon(lon: lon + size, lat: lat + size, polygon: coords)
+
+                if c00 && c10 && c01 && c11 && centerIn {
+                    // Corners + center inside — verify edge midpoints to catch concavities
+                    let half = size / 2
+                    let edgesIn = isPointInPolygon(lon: lon + half, lat: lat, polygon: coords) &&
+                                  isPointInPolygon(lon: lon + size, lat: lat + half, polygon: coords) &&
+                                  isPointInPolygon(lon: lon + half, lat: lat + size, polygon: coords) &&
+                                  isPointInPolygon(lon: lon, lat: lat + half, polygon: coords)
+                    if edgesIn {
+                        // All 9 points inside — emit large cell
+                        let baseIndex = Int32(allVertices.count)
+                        allVertices.append(latLonToSphere(lat: lat, lon: lon, radius: radius))
+                        allVertices.append(latLonToSphere(lat: lat, lon: lon + size, radius: radius))
+                        allVertices.append(latLonToSphere(lat: lat + size, lon: lon + size, radius: radius))
+                        allVertices.append(latLonToSphere(lat: lat + size, lon: lon, radius: radius))
+                        allIndices.append(contentsOf: [baseIndex, baseIndex + 1, baseIndex + 2,
+                                                       baseIndex, baseIndex + 2, baseIndex + 3])
+                        cellCount += 1
+                    } else {
+                        // Edge crosses concavity — subdivide
+                        addCell(lat: lat, lon: lon, size: half)
+                        addCell(lat: lat, lon: lon + half, size: half)
+                        addCell(lat: lat + half, lon: lon, size: half)
+                        addCell(lat: lat + half, lon: lon + half, size: half)
+                    }
+                } else if !c00 && !c10 && !c01 && !c11 && !centerIn {
+                    // All test points outside — but a narrow feature (peninsula, isthmus)
+                    // might still pass through. Subdivide if any polygon vertex is in the cell.
+                    let hasVertex = coords.contains { coord in
+                        coord[0] >= lon && coord[0] <= lon + size &&
+                        coord[1] >= lat && coord[1] <= lat + size
+                    }
+                    if !hasVertex { return }
+                    let half = size / 2
+                    addCell(lat: lat, lon: lon, size: half)
+                    addCell(lat: lat, lon: lon + half, size: half)
+                    addCell(lat: lat + half, lon: lon, size: half)
+                    addCell(lat: lat + half, lon: lon + half, size: half)
+                } else {
+                    // Near border — subdivide
+                    let half = size / 2
+                    addCell(lat: lat, lon: lon, size: half)
+                    addCell(lat: lat, lon: lon + half, size: half)
+                    addCell(lat: lat + half, lon: lon, size: half)
+                    addCell(lat: lat + half, lon: lon + half, size: half)
+                }
+            }
+
+            var lat = minLat
+            while lat < maxLat {
+                var lon = minLon
+                while lon < maxLon {
+                    addCell(lat: lat, lon: lon, size: startSize)
+                    lon += startSize
+                }
+                lat += startSize
             }
 
             // Fallback for tiny polygons where no grid cell center falls inside
