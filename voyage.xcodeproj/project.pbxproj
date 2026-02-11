@@ -35,6 +35,7 @@
 		E81234560030 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550030 /* main.swift */; };
 		E81234560031 /* CountryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550031 /* CountryListView.swift */; };
 		E81234560032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550032 /* HomeView.swift */; };
+		E81234560033 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -337,6 +338,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E81234560030 /* main.swift in Sources */,
+				E81234560033 /* PolygonTriangulator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

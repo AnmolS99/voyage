@@ -1,5 +1,6 @@
 import Foundation
 import SceneKit
+import simd
 
 class PolygonTriangulator {
 
@@ -151,69 +152,61 @@ class PolygonTriangulator {
         return SCNGeometry(sources: [vertexSource], elements: [element])
     }
 
-    // Create border outline geometry from polygon coordinates as thick quad strips
+    // Create border outline as a continuous quad strip with shared vertices at joins
     static func createBorderOutlineGeometry(polygons: [[[Double]]], radius: Float = 1.005, thickness: Float = 0.002) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
 
         for polygon in polygons {
-            let coords = polygon.filter { $0.count >= 2 }
+            var coords = polygon.filter { $0.count >= 2 }
             guard coords.count >= 3 else { continue }
 
-            // Create quad strip for each edge
-            for i in 0..<coords.count {
-                let next = (i + 1) % coords.count
+            // Remove duplicate closing point (GeoJSON repeats first point at end)
+            if let first = coords.first, let last = coords.last,
+               first[0] == last[0] && first[1] == last[1] {
+                coords.removeLast()
+            }
+            guard coords.count >= 3 else { continue }
 
-                let lat1 = coords[i][1]
-                let lon1 = coords[i][0]
-                let lat2 = coords[next][1]
-                let lon2 = coords[next][0]
+            let n = coords.count
 
-                // Get points on sphere
-                let p1 = latLonToSphere(lat: lat1, lon: lon1, radius: radius)
-                let p2 = latLonToSphere(lat: lat2, lon: lon2, radius: radius)
+            // Convert all coordinates to 3D positions on sphere
+            let positions: [simd_float3] = coords.map { coord in
+                let p = latLonToSphere(lat: coord[1], lon: coord[0], radius: radius)
+                return simd_float3(Float(p.x), Float(p.y), Float(p.z))
+            }
 
-                // Calculate direction along the edge
-                let dx = Float(p2.x - p1.x)
-                let dy = Float(p2.y - p1.y)
-                let dz = Float(p2.z - p1.z)
+            // Build inner/outer vertex pairs using miter offset at each vertex
+            let baseIndex = Int32(allVertices.count)
+            for i in 0..<n {
+                let p = positions[i]
+                let prev = positions[(i - 1 + n) % n]
+                let next = positions[(i + 1) % n]
+                let normal = p / radius
 
-                // Normal at p1 (points outward from sphere center)
-                let nx = Float(p1.x) / radius
-                let ny = Float(p1.y) / radius
-                let nz = Float(p1.z) / radius
+                // Perpendicular to each adjacent edge, projected onto sphere surface
+                let perp1 = simd_normalize(simd_cross(p - prev, normal))
+                let perp2 = simd_normalize(simd_cross(next - p, normal))
 
-                // Cross product of edge direction and normal gives perpendicular direction
-                let perpX = dy * nz - dz * ny
-                let perpY = dz * nx - dx * nz
-                let perpZ = dx * ny - dy * nx
+                // Miter direction: average of the two perpendiculars
+                var miter = simd_normalize(perp1 + perp2)
+                let dot = simd_dot(miter, perp1)
+                let scale = dot > 0.3 ? min(thickness / dot, thickness * 2.0) : thickness
+                miter *= scale
 
-                // Normalize perpendicular
-                let perpLen = sqrtf(perpX * perpX + perpY * perpY + perpZ * perpZ)
-                guard perpLen > 0.0001 else { continue }
+                allVertices.append(SCNVector3(p - miter))
+                allVertices.append(SCNVector3(p + miter))
+            }
 
-                let px = perpX / perpLen * thickness
-                let py = perpY / perpLen * thickness
-                let pz = perpZ / perpLen * thickness
+            // Connect as continuous quad strip wrapping around
+            for i in 0..<n {
+                let next = (i + 1) % n
+                let i0 = baseIndex + Int32(i * 2)
+                let i1 = i0 + 1
+                let i2 = baseIndex + Int32(next * 2)
+                let i3 = i2 + 1
 
-                // Create quad vertices (offset in perpendicular direction)
-                let baseIndex = Int32(allVertices.count)
-                let p1x = Float(p1.x), p1y = Float(p1.y), p1z = Float(p1.z)
-                let p2x = Float(p2.x), p2y = Float(p2.y), p2z = Float(p2.z)
-
-                allVertices.append(SCNVector3(p1x - px, p1y - py, p1z - pz))
-                allVertices.append(SCNVector3(p1x + px, p1y + py, p1z + pz))
-                allVertices.append(SCNVector3(p2x + px, p2y + py, p2z + pz))
-                allVertices.append(SCNVector3(p2x - px, p2y - py, p2z - pz))
-
-                // Two triangles for the quad
-                allIndices.append(baseIndex)
-                allIndices.append(baseIndex + 1)
-                allIndices.append(baseIndex + 2)
-
-                allIndices.append(baseIndex)
-                allIndices.append(baseIndex + 2)
-                allIndices.append(baseIndex + 3)
+                allIndices.append(contentsOf: [i0, i1, i3, i0, i3, i2])
             }
         }
 
