@@ -180,7 +180,7 @@ class PolygonTriangulator {
     }
 
     // Create border outline as a continuous quad strip with shared vertices at joins
-    static func createBorderOutlineGeometry(polygons: [[[Double]]], radius: Float = 1.005, thickness: Float = 0.002) -> SCNGeometry? {
+    static func createBorderOutlineGeometry(polygons: [[[Double]]], radius: Float = 1.005, thickness: Float = 0.0015) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
 

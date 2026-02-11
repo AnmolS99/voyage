@@ -537,7 +537,7 @@ struct GlobeView: UIViewRepresentable {
                         if isSelected {
                             if thickOutlineGeometries[name] == nil,
                                let country = cachedCountries.first(where: { $0.name == name }),
-                               let thickGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons, thickness: 0.0035) {
+                               let thickGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons, thickness: 0.0025) {
                                 let material = SCNMaterial()
                                 material.diffuse.contents = UIColor.black
                                 material.lightingModel = .constant
