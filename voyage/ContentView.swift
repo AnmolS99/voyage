@@ -62,7 +62,7 @@ class GlobeState: ObservableObject {
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
     @Published var viewMode: ViewMode = .globe
-    @Published var globeStyle: GlobeStyle = .stylized
+    @Published var globeStyle: GlobeStyle = .realistic
     let totalUNCountries = 195
 
     // Flag codes loaded from GeoJSON
