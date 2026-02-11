@@ -95,7 +95,7 @@ struct HomeView: View {
             // Dark mode toggle
             Button(action: {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    globeState.isDarkMode.toggle()
+                    globeState.toggleDarkMode()
                 }
             }) {
                 Image(systemName: globeState.isDarkMode ? "sun.max.fill" : "moon.fill")

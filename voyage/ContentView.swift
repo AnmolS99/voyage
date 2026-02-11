@@ -93,6 +93,7 @@ class GlobeState: ObservableObject {
     private let visitedCountriesKey = "visitedCountries"
     private let wishlistCountriesKey = "wishlistCountries"
     private let globeStyleKey = "globeStyle"
+    private let isDarkModeKey = "isDarkMode"
 
     init() {
         loadFlagCodes()
@@ -128,10 +129,16 @@ class GlobeState: ObservableObject {
         let cloudWishlist = Set(iCloudStore.array(forKey: wishlistCountriesKey) as? [String] ?? [])
         wishlistCountries = localWishlist.union(cloudWishlist)
 
-        // Load globe style
-        let localStyle = userDefaults.string(forKey: globeStyleKey) ?? "stylized"
-        let cloudStyle = iCloudStore.string(forKey: globeStyleKey) ?? "stylized"
-        globeStyle = GlobeStyle(rawValue: cloudStyle) ?? GlobeStyle(rawValue: localStyle) ?? .stylized
+        // Load globe style (prefer iCloud, fall back to local)
+        if let raw = iCloudStore.string(forKey: globeStyleKey) ?? userDefaults.string(forKey: globeStyleKey),
+           let style = GlobeStyle(rawValue: raw) {
+            globeStyle = style
+        }
+
+        // Load dark mode
+        if userDefaults.object(forKey: isDarkModeKey) != nil || iCloudStore.object(forKey: isDarkModeKey) != nil {
+            isDarkMode = iCloudStore.bool(forKey: isDarkModeKey) || userDefaults.bool(forKey: isDarkModeKey)
+        }
 
         // Sync merged data back to both stores
         if visitedCountries != localCountries || visitedCountries != cloudCountries ||
@@ -152,11 +159,19 @@ class GlobeState: ObservableObject {
         userDefaults.set(globeStyle.rawValue, forKey: globeStyleKey)
         iCloudStore.set(globeStyle.rawValue, forKey: globeStyleKey)
 
+        userDefaults.set(isDarkMode, forKey: isDarkModeKey)
+        iCloudStore.set(isDarkMode, forKey: isDarkModeKey)
+
         iCloudStore.synchronize()
     }
 
     func setGlobeStyle(_ style: GlobeStyle) {
         globeStyle = style
+        saveData()
+    }
+
+    func toggleDarkMode() {
+        isDarkMode.toggle()
         saveData()
     }
 
