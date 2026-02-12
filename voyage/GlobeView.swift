@@ -476,70 +476,64 @@ struct GlobeView: UIViewRepresentable {
                 let isVisited = globeState.visitedCountries.contains(name)
                 let isWishlist = globeState.wishlistCountries.contains(name)
                 let hasStatus = isVisited || isWishlist
-
+                let isSelected = globeState.selectedCountry == name
                 let isPointCountry = geometry is SCNCylinder
 
-                if !hasStatus && !isPointCountry {
-                    // Hide polygon countries without status so the texture shows through
-                    node.isHidden = true
-                } else if !hasStatus && isPointCountry {
-                    // Point countries: hide fill, outline becomes a ring
-                    node.isHidden = true
-                } else {
+                // Overlay: visible only when has status AND not selected
+                if hasStatus && !isSelected {
                     node.isHidden = false
-
-                    // Update all materials (needed for cylinders which have multiple materials for sides/caps)
                     for material in geometry.materials {
                         material.transparency = 1.0
-
-                        if isVisited {
+                        if isVisited && isWishlist {
+                            material.lightingModel = .constant
+                            material.diffuse.contents = AppColors.visitedWishlistGradient
+                            material.emission.contents = UIColor.black
+                        } else if isVisited {
+                            material.lightingModel = .blinn
                             material.diffuse.contents = AppColors.visitedUI
                             material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
-                        } else if isWishlist {
+                        } else {
+                            material.lightingModel = .blinn
                             material.diffuse.contents = AppColors.wishlistUI
                             material.emission.contents = AppColors.wishlistUI.withAlphaComponent(0.15)
-                        } else {
-                            if let originalColor = originalColors[name] {
-                                material.diffuse.contents = originalColor
-                            }
-                            material.emission.contents = UIColor.black
                         }
                     }
+                } else {
+                    node.isHidden = true
                 }
 
                 // Update outline visibility, color, and thickness
-                let isSelected = globeState.selectedCountry == name
                 if let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                    let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false) {
                     outlineNode.isHidden = false
 
                     // Point countries: swap outline geometry based on status and selection
-                    if isPointCountry && !hasStatus {
-                        let outerRadius: CGFloat = isSelected ? 0.0155 : 0.014
-                        let ring = SCNTube(innerRadius: 0.012, outerRadius: outerRadius, height: 0.0005)
-                        let material = SCNMaterial()
-                        material.diffuse.contents = UIColor.black
-                        material.lightingModel = .constant
-                        material.isDoubleSided = true
-                        ring.materials = [material]
-                        outlineNode.geometry = ring
-                    } else if isPointCountry && hasStatus {
-                        let radius: CGFloat = isSelected ? 0.0155 : 0.014
-                        let disc = SCNCylinder(radius: radius, height: 0.0005)
-                        let material = SCNMaterial()
-                        material.diffuse.contents = UIColor.black
-                        material.lightingModel = .constant
-                        material.isDoubleSided = true
-                        disc.materials = [material]
-                        outlineNode.geometry = disc
-                    } else if !isPointCountry {
+                    if isPointCountry {
+                        if isSelected || !hasStatus {
+                            // Ring (border only) — fill is hidden
+                            let outerRadius: CGFloat = isSelected ? 0.0155 : 0.014
+                            let ring = SCNTube(innerRadius: 0.012, outerRadius: outerRadius, height: 0.0005)
+                            let material = SCNMaterial()
+                            material.lightingModel = .constant
+                            material.isDoubleSided = true
+                            ring.materials = [material]
+                            outlineNode.geometry = ring
+                        } else {
+                            // Disc (behind visible fill overlay)
+                            let disc = SCNCylinder(radius: 0.014, height: 0.0005)
+                            let material = SCNMaterial()
+                            material.lightingModel = .constant
+                            material.isDoubleSided = true
+                            disc.materials = [material]
+                            outlineNode.geometry = disc
+                        }
+                    } else {
                         // Swap border geometry between normal and thick based on selection
                         if isSelected {
                             if thickOutlineGeometries[name] == nil,
                                let country = cachedCountries.first(where: { $0.name == name }),
                                let thickGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons, thickness: 0.0025) {
                                 let material = SCNMaterial()
-                                material.diffuse.contents = UIColor.black
                                 material.lightingModel = .constant
                                 material.isDoubleSided = true
                                 thickGeometry.materials = [material]
@@ -556,17 +550,25 @@ struct GlobeView: UIViewRepresentable {
                         }
                     }
 
+                    // Border color: status color when selected, black otherwise
                     if let outlineGeometry = outlineNode.geometry {
-                        for material in outlineGeometry.materials {
-                            if isVisited && isWishlist {
-                                material.diffuse.contents = AppColors.wishlistUI
-                            } else {
-                                material.diffuse.contents = UIColor.black
+                        let borderContents: Any = {
+                            if isSelected {
+                                if isVisited && isWishlist {
+                                    return AppColors.visitedWishlistGradient
+                                } else if isVisited {
+                                    return AppColors.visitedUI
+                                } else if isWishlist {
+                                    return AppColors.wishlistUI
+                                }
                             }
+                            return UIColor.black
+                        }()
+                        for material in outlineGeometry.materials {
+                            material.diffuse.contents = borderContents
                         }
                     }
                 }
-
             }
 
             // Update capital star

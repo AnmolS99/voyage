@@ -33,60 +33,92 @@ struct MapView: View {
                 for country in countries {
                     let isVisited = globeState.visitedCountries.contains(country.name)
                     let isWishlist = globeState.wishlistCountries.contains(country.name)
-
                     let isSelected = globeState.selectedCountry == country.name
-                    let fillColor: Color
-                    let borderColor: Color
                     let borderWidth: CGFloat = isSelected ? 1.5 : 0.5
-                    let defaultBorderColor = globeState.isDarkMode ? Color(white: 0.3) : Color(white: 0.2)
+                    let isBoth = isVisited && isWishlist
 
-                    if isVisited && isWishlist {
-                        fillColor = AppColors.visited
-                        borderColor = AppColors.wishlist
-                    } else if isVisited {
-                        fillColor = AppColors.visited
-                        borderColor = defaultBorderColor
-                    } else if isWishlist {
-                        fillColor = AppColors.wishlist
-                        borderColor = defaultBorderColor
-                    } else {
-                        fillColor = AppColors.land
-                        borderColor = defaultBorderColor
-                    }
+                    // Determine fill and border shading
+                    let fillShading: GraphicsContext.Shading
+                    let borderShading: GraphicsContext.Shading
 
                     if country.isPointCountry {
-                        // Draw point country as a dot
+                        // Point country: compute bounding box from dot position
                         guard let coord = country.pointCoordinate else { continue }
                         let x = (coord.lon + 180) / 360 * mapWidth
                         let y = (90 - coord.lat) / 180 * mapHeight + verticalOffset
                         let center = CGPoint(x: x, y: y).applying(transform)
-
                         let dotRadius: CGFloat = 5
-                        let dotPath = Path(ellipseIn: CGRect(
-                            x: center.x - dotRadius,
-                            y: center.y - dotRadius,
-                            width: dotRadius * 2,
-                            height: dotRadius * 2
-                        ))
+                        let dotRect = CGRect(x: center.x - dotRadius, y: center.y - dotRadius,
+                                             width: dotRadius * 2, height: dotRadius * 2)
 
-                        context.fill(dotPath, with: .color(fillColor))
-                        context.stroke(dotPath, with: .color(borderColor), lineWidth: borderWidth)
+                        let gradientShading: GraphicsContext.Shading = .linearGradient(
+                            Gradient(colors: [AppColors.visited, AppColors.wishlist]),
+                            startPoint: CGPoint(x: dotRect.minX, y: dotRect.maxY),
+                            endPoint: CGPoint(x: dotRect.maxX, y: dotRect.minY))
+
+                        if isSelected {
+                            fillShading = .color(AppColors.land)
+                            if isBoth { borderShading = gradientShading }
+                            else if isVisited { borderShading = .color(AppColors.visited) }
+                            else if isWishlist { borderShading = .color(AppColors.wishlist) }
+                            else { borderShading = .color(.black) }
+                        } else {
+                            borderShading = .color(.black)
+                            if isBoth { fillShading = gradientShading }
+                            else if isVisited { fillShading = .color(AppColors.visited) }
+                            else if isWishlist { fillShading = .color(AppColors.wishlist) }
+                            else { fillShading = .color(AppColors.land) }
+                        }
+
+                        let dotPath = Path(ellipseIn: dotRect)
+                        context.fill(dotPath, with: fillShading)
+                        context.stroke(dotPath, with: borderShading, lineWidth: borderWidth)
                     } else {
-                        // Draw polygon country
+                        // Polygon country: compute gradient shading from bounding box when both visited+wishlist
+                        func countryGradient() -> GraphicsContext.Shading {
+                            var minX = CGFloat.infinity, maxX = -CGFloat.infinity
+                            var minY = CGFloat.infinity, maxY = -CGFloat.infinity
+                            for polygon in country.polygons {
+                                for coord in polygon where coord.count >= 2 {
+                                    let pt = CGPoint(
+                                        x: (coord[0] + 180) / 360 * mapWidth,
+                                        y: (90 - coord[1]) / 180 * mapHeight + verticalOffset
+                                    ).applying(transform)
+                                    minX = min(minX, pt.x); maxX = max(maxX, pt.x)
+                                    minY = min(minY, pt.y); maxY = max(maxY, pt.y)
+                                }
+                            }
+                            return .linearGradient(
+                                Gradient(colors: [AppColors.visited, AppColors.wishlist]),
+                                startPoint: CGPoint(x: minX, y: maxY),
+                                endPoint: CGPoint(x: maxX, y: minY))
+                        }
+
+                        if isSelected {
+                            fillShading = .color(AppColors.land)
+                            if isBoth { borderShading = countryGradient() }
+                            else if isVisited { borderShading = .color(AppColors.visited) }
+                            else if isWishlist { borderShading = .color(AppColors.wishlist) }
+                            else { borderShading = .color(.black) }
+                        } else {
+                            borderShading = .color(.black)
+                            if isBoth { fillShading = countryGradient() }
+                            else if isVisited { fillShading = .color(AppColors.visited) }
+                            else if isWishlist { fillShading = .color(AppColors.wishlist) }
+                            else { fillShading = .color(AppColors.land) }
+                        }
+
+                        // Draw all polygons with the determined shading
                         for polygon in country.polygons {
                             var path = Path()
                             var firstPoint = true
 
                             for coord in polygon {
                                 guard coord.count >= 2 else { continue }
-                                let lon = coord[0]
-                                let lat = coord[1]
-
-                                // Equirectangular projection with proper aspect ratio
-                                let x = (lon + 180) / 360 * mapWidth
-                                let y = (90 - lat) / 180 * mapHeight + verticalOffset
-
-                                let point = CGPoint(x: x, y: y).applying(transform)
+                                let point = CGPoint(
+                                    x: (coord[0] + 180) / 360 * mapWidth,
+                                    y: (90 - coord[1]) / 180 * mapHeight + verticalOffset
+                                ).applying(transform)
 
                                 if firstPoint {
                                     path.move(to: point)
@@ -97,10 +129,8 @@ struct MapView: View {
                             }
                             path.closeSubpath()
 
-                            context.fill(path, with: .color(fillColor))
-
-                            // Draw border
-                            context.stroke(path, with: .color(borderColor), lineWidth: borderWidth)
+                            context.fill(path, with: fillShading)
+                            context.stroke(path, with: borderShading, lineWidth: borderWidth)
                         }
                     }
                 }

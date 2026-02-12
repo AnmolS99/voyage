@@ -16,6 +16,32 @@ class PolygonTriangulator {
         return SCNVector3(x, y, z)
     }
 
+    // Compute UV texture coordinates from 3D vertices by reverse-mapping to lat/lon
+    private static func computeTexCoords(vertices: [SCNVector3], polygons: [[[Double]]]) -> [CGPoint] {
+        // Compute overall bounding box across all polygons
+        var minLon = Double.infinity, maxLon = -Double.infinity
+        var minLat = Double.infinity, maxLat = -Double.infinity
+        for polygon in polygons {
+            for coord in polygon where coord.count >= 2 {
+                minLon = min(minLon, coord[0])
+                maxLon = max(maxLon, coord[0])
+                minLat = min(minLat, coord[1])
+                maxLat = max(maxLat, coord[1])
+            }
+        }
+        let lonSpan = maxLon - minLon
+        let latSpan = maxLat - minLat
+
+        return vertices.map { v in
+            let len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+            let latDeg = Double(asin(v.y / len)) * 180.0 / .pi
+            let lonDeg = Double(-atan2(v.z, v.x)) * 180.0 / .pi
+            let u = lonSpan > 0 ? (lonDeg - minLon) / lonSpan : 0.5
+            let vv = latSpan > 0 ? (latDeg - minLat) / latSpan : 0.5
+            return CGPoint(x: u, y: vv)
+        }
+    }
+
     // Create country fill geometry using adaptive grid-based point-in-polygon fill.
     // Large cells cover the interior; cells near borders subdivide to finer resolution.
     static func createCountryGeometry(polygons: [[[Double]]], radius: Float = 1.003) -> SCNGeometry? {
@@ -160,9 +186,10 @@ class PolygonTriangulator {
         guard !allVertices.isEmpty && !allIndices.isEmpty else { return nil }
 
         let vertexSource = SCNGeometrySource(vertices: allVertices)
+        let texCoordSource = SCNGeometrySource(textureCoordinates: computeTexCoords(vertices: allVertices, polygons: polygons))
         let element = SCNGeometryElement(indices: allIndices, primitiveType: .triangles)
 
-        return SCNGeometry(sources: [vertexSource], elements: [element])
+        return SCNGeometry(sources: [vertexSource, texCoordSource], elements: [element])
     }
 
     // Ray casting point-in-polygon test
@@ -242,8 +269,9 @@ class PolygonTriangulator {
         guard !allVertices.isEmpty && !allIndices.isEmpty else { return nil }
 
         let vertexSource = SCNGeometrySource(vertices: allVertices)
+        let texCoordSource = SCNGeometrySource(textureCoordinates: computeTexCoords(vertices: allVertices, polygons: polygons))
         let element = SCNGeometryElement(indices: allIndices, primitiveType: .triangles)
 
-        return SCNGeometry(sources: [vertexSource], elements: [element])
+        return SCNGeometry(sources: [vertexSource, texCoordSource], elements: [element])
     }
 }

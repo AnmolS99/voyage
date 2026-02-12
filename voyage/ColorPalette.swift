@@ -34,6 +34,22 @@ enum AppColors {
     static let wishlistSelected = Color(red: 0.75, green: 0.55, blue: 0.95)
     static let wishlistSelectedUI = UIColor(red: 0.75, green: 0.55, blue: 0.95, alpha: 1.0)
 
+    /// Diagonal gradient image (yellow→purple) for visited+wishlist countries
+    static let visitedWishlistGradient: UIImage = {
+        let size = 64
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
+        return renderer.image { ctx in
+            let cgContext = ctx.cgContext
+            let colors = [visitedUI.cgColor, wishlistUI.cgColor] as CFArray
+            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0.0, 1.0])!
+            // Yellow at bottom-left, purple at top-right (UIImage coords: origin at top-left)
+            cgContext.drawLinearGradient(gradient,
+                                         start: CGPoint(x: 0, y: CGFloat(size)),
+                                         end: CGPoint(x: CGFloat(size), y: 0),
+                                         options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        }
+    }()
+
     /// Atmosphere glow
     static let atmosphere = UIColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.15)
 
