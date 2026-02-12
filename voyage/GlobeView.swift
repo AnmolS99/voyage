@@ -532,7 +532,7 @@ struct GlobeView: UIViewRepresentable {
                         if isSelected {
                             if thickOutlineGeometries[name] == nil,
                                let country = cachedCountries.first(where: { $0.name == name }),
-                               let thickGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons, thickness: 0.0025) {
+                               let thickGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons, radius: 1.006, thickness: 0.0025) {
                                 let material = SCNMaterial()
                                 material.lightingModel = .constant
                                 material.isDoubleSided = true
