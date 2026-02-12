@@ -5,7 +5,7 @@ An interactive 3D globe iOS app to track the countries you've visited. Built wit
 ![iOS](https://img.shields.io/badge/iOS-17.0+-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.0-orange)
 
-<a href="https://www.buymeacoffee.com/anmols99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40"></a>
+<a href="https://apps.apple.com/no/app/voyage-track-your-journey/id6758411779?l=nb" target="_blank"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="40"></a>&nbsp;&nbsp;<a href="https://www.buymeacoffee.com/anmols99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40"></a>
 
 ## Why voyage?
 
