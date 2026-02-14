@@ -61,6 +61,7 @@ struct CountryExploreView: View {
                             items: highlights.cities,
                             checkedItems: globeState.checkedCitiesForCountry(countryName),
                             isDarkMode: globeState.isDarkMode,
+                            capitalName: country?.capital?.name,
                             onToggle: { globeState.toggleCheckedCity($0, for: countryName) }
                         )
 
@@ -95,6 +96,7 @@ struct ChecklistSection: View {
     let items: [String]
     let checkedItems: Set<String>
     let isDarkMode: Bool
+    var capitalName: String? = nil
     let onToggle: (String) -> Void
 
     var body: some View {
@@ -125,6 +127,12 @@ struct ChecklistSection: View {
                             Text(item)
                                 .font(.system(size: 16, weight: .medium, design: .rounded))
                                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+
+                            if item == capitalName {
+                                Image(systemName: "building.columns.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(AppColors.buttonColor(isDarkMode: isDarkMode))
+                            }
 
                             Spacer()
                         }
