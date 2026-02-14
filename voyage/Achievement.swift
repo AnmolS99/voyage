@@ -6,6 +6,7 @@ struct Achievement: Identifiable {
     let medal: String
     let visitedCountries: [String]
     let remainingCountries: [String]
+    var itemLabel: String = "countries"
 
     var current: Int { visitedCountries.count }
     var total: Int { visitedCountries.count + remainingCountries.count }

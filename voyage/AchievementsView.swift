@@ -20,6 +20,26 @@ struct AchievementsView: View {
             remainingCountries: remainingUN
         ))
 
+        // Capital Collector achievement
+        let countriesWithCapitals = CountryDataCache.shared.countries.filter { country in
+            guard country.capital != nil else { return false }
+            return unCountries.contains(country.name)
+        }
+        let visitedCapitals = countriesWithCapitals.filter { country in
+            globeState.checkedCitiesForCountry(country.name).contains(country.capital!.name)
+        }.map { $0.capital!.name }.sorted()
+        let remainingCapitals = countriesWithCapitals.filter { country in
+            !globeState.checkedCitiesForCountry(country.name).contains(country.capital!.name)
+        }.map { $0.capital!.name }.sorted()
+
+        list.append(Achievement(
+            name: "Capital Collector",
+            medal: "🏛️",
+            visitedCountries: visitedCapitals,
+            remainingCountries: remainingCapitals,
+            itemLabel: "capitals"
+        ))
+
         // Continent achievements
         for continent in Continent.allCases where continent != .antarctica {
             let countries = continent.countries
@@ -142,7 +162,7 @@ struct AchievementCard: View {
                         .font(.system(size: 16, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
-                    Text("\(achievement.current)/\(achievement.total) countries")
+                    Text("\(achievement.current)/\(achievement.total) \(achievement.itemLabel)")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 }
