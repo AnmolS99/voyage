@@ -39,7 +39,7 @@ class GeoJSONParser {
             }
 
             let continent = properties["continent"] as? String
-            let flagCode = properties["flagCode"] as? String
+            let flagCode = feature["id"] as? String
             let renderAs = properties["renderAs"] as? String
             let isPointCountry = renderAs == "point"
 

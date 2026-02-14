@@ -85,7 +85,7 @@ When modifying colors or selection logic, always update both files together.
 
 ## Data Files
 
-- `world.geojson` - Country boundaries
+- `world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
 - `globe.scn` - Pre-built 3D globe cache (regenerate with GlobeCacheGenerator)
 
 ## Globe Cache Generation
