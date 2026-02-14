@@ -57,6 +57,8 @@ class GlobeState: ObservableObject {
     @Published var selectedCountries: Set<String> = []
     @Published var visitedCountries: Set<String> = []
     @Published var wishlistCountries: Set<String> = []
+    @Published var checkedCities: [String: Set<String>] = [:]
+    @Published var checkedAttractions: [String: Set<String>] = [:]
     @Published var zoomLevel: Float = 4.0
     @Published var isDarkMode: Bool = false
     @Published var isAutoRotating: Bool = true
@@ -94,6 +96,8 @@ class GlobeState: ObservableObject {
     private let wishlistCountriesKey = "wishlistCountries"
     private let globeStyleKey = "globeStyle"
     private let isDarkModeKey = "isDarkMode"
+    private let checkedCitiesKey = "checkedCities"
+    private let checkedAttractionsKey = "checkedAttractions"
 
     init() {
         loadFlagCodes()
@@ -129,6 +133,16 @@ class GlobeState: ObservableObject {
         let cloudWishlist = Set(iCloudStore.array(forKey: wishlistCountriesKey) as? [String] ?? [])
         wishlistCountries = localWishlist.union(cloudWishlist)
 
+        // Load checked cities
+        let localCities = userDefaults.dictionary(forKey: checkedCitiesKey) as? [String: [String]] ?? [:]
+        let cloudCities = iCloudStore.dictionary(forKey: checkedCitiesKey) as? [String: [String]] ?? [:]
+        checkedCities = mergeDictionaries(localCities, cloudCities)
+
+        // Load checked attractions
+        let localAttractions = userDefaults.dictionary(forKey: checkedAttractionsKey) as? [String: [String]] ?? [:]
+        let cloudAttractions = iCloudStore.dictionary(forKey: checkedAttractionsKey) as? [String: [String]] ?? [:]
+        checkedAttractions = mergeDictionaries(localAttractions, cloudAttractions)
+
         // Load globe style (prefer iCloud, fall back to local)
         if let raw = iCloudStore.string(forKey: globeStyleKey) ?? userDefaults.string(forKey: globeStyleKey),
            let style = GlobeStyle(rawValue: raw) {
@@ -161,6 +175,14 @@ class GlobeState: ObservableObject {
 
         userDefaults.set(isDarkMode, forKey: isDarkModeKey)
         iCloudStore.set(isDarkMode, forKey: isDarkModeKey)
+
+        let citiesDict = checkedCities.mapValues { Array($0) }
+        userDefaults.set(citiesDict, forKey: checkedCitiesKey)
+        iCloudStore.set(citiesDict, forKey: checkedCitiesKey)
+
+        let attractionsDict = checkedAttractions.mapValues { Array($0) }
+        userDefaults.set(attractionsDict, forKey: checkedAttractionsKey)
+        iCloudStore.set(attractionsDict, forKey: checkedAttractionsKey)
 
         iCloudStore.synchronize()
     }
@@ -216,6 +238,28 @@ class GlobeState: ObservableObject {
         wishlistCountries.contains(name)
     }
 
+    func checkedCitiesForCountry(_ name: String) -> Set<String> {
+        checkedCities[name] ?? []
+    }
+
+    func checkedAttractionsForCountry(_ name: String) -> Set<String> {
+        checkedAttractions[name] ?? []
+    }
+
+    func toggleCheckedCity(_ city: String, for country: String) {
+        var set = checkedCities[country] ?? []
+        if set.contains(city) { set.remove(city) } else { set.insert(city) }
+        checkedCities[country] = set.isEmpty ? nil : set
+        saveData()
+    }
+
+    func toggleCheckedAttraction(_ attraction: String, for country: String) {
+        var set = checkedAttractions[country] ?? []
+        if set.contains(attraction) { set.remove(attraction) } else { set.insert(attraction) }
+        checkedAttractions[country] = set.isEmpty ? nil : set
+        saveData()
+    }
+
     func deselectCountry() {
         selectedCountry = nil
         targetCountryCenter = nil
@@ -234,6 +278,8 @@ class GlobeState: ObservableObject {
         selectedCountries.removeAll()
         visitedCountries.removeAll()
         wishlistCountries.removeAll()
+        checkedCities.removeAll()
+        checkedAttractions.removeAll()
         targetCountryCenter = nil
         isAutoRotating = true
         saveData()
@@ -253,6 +299,15 @@ class GlobeState: ObservableObject {
             return flagEmoji(from: code)
         }
         return "🌍" // Generic globe emoji as fallback
+    }
+
+    private func mergeDictionaries(_ local: [String: [String]], _ cloud: [String: [String]]) -> [String: Set<String>] {
+        var result: [String: Set<String>] = [:]
+        for key in Set(local.keys).union(cloud.keys) {
+            let merged = Set(local[key] ?? []).union(Set(cloud[key] ?? []))
+            if !merged.isEmpty { result[key] = merged }
+        }
+        return result
     }
 
     private func flagEmoji(from countryCode: String) -> String {

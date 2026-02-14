@@ -60,7 +60,13 @@ Run `testGlobeAndMapCountryConsistency` to verify map and globe are in sync.
 
 ### Data Storage
 
-Visited/wishlist countries are stored as country name strings in UserDefaults + iCloud. Data is independent of `globe.scn`.
+Visited/wishlist countries and checked cities/attractions are stored in UserDefaults + iCloud. Data is independent of `globe.scn`.
+
+### Country Highlights Data
+
+`country_highlights.json` contains 1-5 top cities and 1-5 top attractions for all 206 countries/territories. The data was compiled by cross-referencing at least 3 sources per country (Lonely Planet, TripAdvisor, Touropia, PlanetWare, Atlas Obscura, Culture Trip, Wikipedia tourism pages, official tourism boards, and regional travel blogs).
+
+Cities were selected by tourist relevance rather than population, and the number of entries scales with the country's tourism profile (5 for major destinations, 1-2 for microstates and remote territories). The data was reviewed continent by continent before finalizing.
 
 ## Support
 

@@ -26,6 +26,7 @@ struct StarryBackground: View {
 struct HomeView: View {
     @ObservedObject var globeState: GlobeState
     @State private var showingCountryList = false
+    @State private var showingExplore = false
 
     var body: some View {
         ZStack {
@@ -76,6 +77,11 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingCountryList) {
             CountryListView(globeState: globeState)
+        }
+        .sheet(isPresented: $showingExplore) {
+            if let country = globeState.selectedCountry {
+                CountryExploreView(globeState: globeState, countryName: country)
+            }
         }
     }
 
@@ -143,75 +149,98 @@ struct HomeView: View {
                             .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
                     }
 
-                    HStack(spacing: 12) {
-                        // Add/Remove Visit button
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                if globeState.isVisited(country) {
-                                    globeState.removeVisit(country)
-                                } else {
-                                    globeState.addVisit(country)
+                    VStack(spacing: 8) {
+                        HStack(spacing: 8) {
+                            // Add/Remove Visit button
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    if globeState.isVisited(country) {
+                                        globeState.removeVisit(country)
+                                    } else {
+                                        globeState.addVisit(country)
+                                    }
                                 }
-                            }
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: globeState.isVisited(country) ? "checkmark.circle.fill" : "plus.circle")
-                                    .font(.system(size: 16, weight: .medium))
-                                Text(globeState.isVisited(country) ? "Visited" : "Add Visit")
-                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(
-                                Capsule()
-                                    .fill(globeState.isVisited(country) ?
-                                          AppColors.buttonVisited :
-                                          AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
-                            )
-                        }
-
-                        // Add/Remove Wishlist button
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                if globeState.isInWishlist(country) {
-                                    globeState.removeFromWishlist(country)
-                                } else {
-                                    globeState.addToWishlist(country)
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: globeState.isVisited(country) ? "checkmark.circle.fill" : "plus.circle")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text(globeState.isVisited(country) ? "Visited" : "Add Visit")
+                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
                                 }
-                            }
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: globeState.isInWishlist(country) ? "heart.fill" : "heart")
-                                    .font(.system(size: 16, weight: .medium))
-                                Text(globeState.isInWishlist(country) ? "Wishlist" : "Add Wish")
-                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(
-                                Capsule()
-                                    .fill(globeState.isInWishlist(country) ?
-                                          AppColors.wishlist :
-                                          AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
-                            )
-                        }
-
-                        // Close button
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                globeState.deselectCountry()
-                            }
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(globeState.isDarkMode ? .white : AppColors.closeButtonText)
-                                .frame(width: 36, height: 36)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
                                 .background(
-                                    Circle()
-                                        .fill(globeState.isDarkMode ? AppColors.closeButtonDark : AppColors.closeButtonLight)
+                                    Capsule()
+                                        .fill(globeState.isVisited(country) ?
+                                              AppColors.buttonVisited :
+                                              AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
                                 )
+                            }
+
+                            // Add/Remove Wishlist button
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    if globeState.isInWishlist(country) {
+                                        globeState.removeFromWishlist(country)
+                                    } else {
+                                        globeState.addToWishlist(country)
+                                    }
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: globeState.isInWishlist(country) ? "heart.fill" : "heart")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text(globeState.isInWishlist(country) ? "Wishlist" : "Add Wish")
+                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(
+                                    Capsule()
+                                        .fill(globeState.isInWishlist(country) ?
+                                              AppColors.wishlist :
+                                              AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                                )
+                            }
+                        }
+
+                        HStack(spacing: 8) {
+                            // Explore button
+                            Button(action: {
+                                showingExplore = true
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "binoculars.fill")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("Explore")
+                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(
+                                    Capsule()
+                                        .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                                )
+                            }
+
+                            // Close button
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    globeState.deselectCountry()
+                                }
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(globeState.isDarkMode ? .white : AppColors.closeButtonText)
+                                    .frame(width: 36, height: 36)
+                                    .background(
+                                        Circle()
+                                            .fill(globeState.isDarkMode ? AppColors.closeButtonDark : AppColors.closeButtonLight)
+                                    )
+                            }
                         }
                     }
                 }

@@ -86,7 +86,22 @@ When modifying colors or selection logic, always update both files together.
 ## Data Files
 
 - `world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
+- `country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
 - `globe.scn` - Pre-built 3D globe cache (regenerate with GlobeCacheGenerator)
+
+## Country Highlights Data
+
+`country_highlights.json` contains 1-5 top cities and 1-5 top attractions for all 206 countries/territories. The data was compiled by cross-referencing at least 3 sources per country to ensure accuracy and reduce bias.
+
+**Sources used:** Lonely Planet, TripAdvisor, Touropia, PlanetWare, Atlas Obscura, Culture Trip, Rough Guides, Wikipedia (tourism pages), official national tourism boards, and regional travel blogs.
+
+**Selection criteria:**
+- **Cities** were chosen by tourist relevance, not population size (e.g., Livingstone over Lusaka for Zambia, Siem Reap over Phnom Penh for Cambodia).
+- **Attractions** prioritize landmarks, natural wonders, national parks, historical sites, and cultural sites that tourists actually visit.
+- **Major destinations** (e.g., France, Japan, USA) have the full 5 cities + 5 attractions.
+- **Small/less-visited countries** (e.g., Nauru, Tuvalu, Falkland Islands) have appropriately reduced entries (1-2 per list).
+- **Conflict zones** (e.g., Syria, Yemen) include historically significant sites known pre-conflict.
+- The data was reviewed continent by continent before finalizing.
 
 ## Globe Cache Generation
 

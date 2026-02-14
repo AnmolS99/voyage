@@ -1,0 +1,826 @@
+{
+  "DZ": {
+    "cities": ["Algiers", "Oran", "Constantine", "Ghardaia"],
+    "attractions": ["Timgad Roman Ruins", "Tassili n'Ajjer", "Casbah of Algiers", "Djemila", "Sahara Desert"]
+  },
+  "AO": {
+    "cities": ["Luanda", "Lubango", "Benguela"],
+    "attractions": ["Kalandula Falls", "Tundavala Fissure", "Iona National Park", "Mbanza-Kongo"]
+  },
+  "BJ": {
+    "cities": ["Cotonou", "Ouidah", "Porto-Novo", "Abomey"],
+    "attractions": ["Ganvie Lake Village", "Royal Palaces of Abomey", "Pendjari National Park", "Python Temple"]
+  },
+  "BW": {
+    "cities": ["Maun", "Kasane", "Gaborone"],
+    "attractions": ["Okavango Delta", "Chobe National Park", "Makgadikgadi Pans", "Moremi Game Reserve", "Kalahari Desert"]
+  },
+  "BF": {
+    "cities": ["Ouagadougou", "Bobo-Dioulasso", "Banfora"],
+    "attractions": ["Sindou Peaks", "Reserve de Nazinga", "Karfiguela Waterfalls", "Mare aux Hippopotames"]
+  },
+  "BI": {
+    "cities": ["Bujumbura", "Gitega"],
+    "attractions": ["Lake Tanganyika", "Gishora Drum Sanctuary", "Kibira National Park", "Ruvubu National Park"]
+  },
+  "CM": {
+    "cities": ["Douala", "Yaounde", "Limbe", "Kribi"],
+    "attractions": ["Mount Cameroon", "Waza National Park", "Lobe Waterfalls", "Foumban Royal Palace"]
+  },
+  "CV": {
+    "cities": ["Mindelo", "Praia", "Santa Maria"],
+    "attractions": ["Pico do Fogo", "Cidade Velha", "Pedra do Lume Salt Crater", "Paul Valley"]
+  },
+  "CF": {
+    "cities": ["Bangui", "Berberati"],
+    "attractions": ["Dzanga-Sangha Reserve", "Boali Falls", "Manovo-Gounda St Floris National Park"]
+  },
+  "TD": {
+    "cities": ["N'Djamena", "Abeche"],
+    "attractions": ["Zakouma National Park", "Ennedi Plateau", "Tibesti Mountains", "Lake Chad"]
+  },
+  "KM": {
+    "cities": ["Moroni", "Mutsamudu"],
+    "attractions": ["Mount Karthala", "Moheli Marine Park", "Iconi Beach"]
+  },
+  "CI": {
+    "cities": ["Abidjan", "Yamoussoukro", "Grand-Bassam", "Man"],
+    "attractions": ["Basilica of Our Lady of Peace", "Tai National Park", "Comoe National Park", "Grand-Bassam Colonial Town"]
+  },
+  "CD": {
+    "cities": ["Kinshasa", "Goma", "Bukavu"],
+    "attractions": ["Virunga National Park", "Mount Nyiragongo", "Kahuzi-Biega National Park", "Lola Ya Bonobo Sanctuary"]
+  },
+  "DJ": {
+    "cities": ["Djibouti City", "Tadjoura"],
+    "attractions": ["Lake Assal", "Lake Abbe", "Day Forest National Park", "Gulf of Tadjoura"]
+  },
+  "EG": {
+    "cities": ["Cairo", "Luxor", "Aswan", "Alexandria", "Hurghada"],
+    "attractions": ["Pyramids of Giza", "Valley of the Kings", "Karnak Temple", "Abu Simbel", "Egyptian Museum"]
+  },
+  "GQ": {
+    "cities": ["Malabo", "Bata"],
+    "attractions": ["Iladyi Waterfalls", "Arena Blanca Beach", "Cathedral of Santa Isabel", "Moka Valley"]
+  },
+  "ER": {
+    "cities": ["Asmara", "Massawa", "Keren"],
+    "attractions": ["Asmara Art Deco Architecture", "Dahlak Archipelago", "Danakil Depression", "Debre Bizen Monastery"]
+  },
+  "SZ": {
+    "cities": ["Mbabane", "Manzini", "Lobamba"],
+    "attractions": ["Hlane Royal National Park", "Mlilwane Wildlife Sanctuary", "Mantenga Cultural Village", "Ezulwini Valley"]
+  },
+  "ET": {
+    "cities": ["Addis Ababa", "Lalibela", "Gondar", "Harar", "Axum"],
+    "attractions": ["Rock-Hewn Churches of Lalibela", "Simien Mountains", "Danakil Depression", "Omo Valley", "Fasil Ghebbi"]
+  },
+  "GA": {
+    "cities": ["Libreville", "Port-Gentil", "Franceville"],
+    "attractions": ["Lope National Park", "Ivindo National Park", "Point Denis", "Kongou Falls"]
+  },
+  "GM": {
+    "cities": ["Banjul", "Serrekunda"],
+    "attractions": ["Kunta Kinteh Island", "Abuko Nature Reserve", "Wassu Stone Circles", "Bijilo Forest Park"]
+  },
+  "GH": {
+    "cities": ["Accra", "Kumasi", "Cape Coast"],
+    "attractions": ["Cape Coast Castle", "Kakum National Park", "Kwame Nkrumah Memorial", "Elmina Castle", "Wli Waterfalls"]
+  },
+  "GN": {
+    "cities": ["Conakry", "Kindia", "Labe"],
+    "attractions": ["Fouta Djallon Highlands", "Iles de Los", "Mount Nimba", "Grand Mosque of Conakry"]
+  },
+  "GW": {
+    "cities": ["Bissau", "Bolama"],
+    "attractions": ["Bijagos Archipelago", "Orango Islands National Park", "Cacheu Fort"]
+  },
+  "KE": {
+    "cities": ["Nairobi", "Mombasa", "Lamu", "Nakuru", "Diani"],
+    "attractions": ["Maasai Mara", "Mount Kenya", "Amboseli National Park", "Tsavo National Park", "Lake Nakuru"]
+  },
+  "LS": {
+    "cities": ["Maseru", "Semonkong"],
+    "attractions": ["Maletsunyane Falls", "Sani Pass", "Thaba Bosiu", "Afriski Mountain Resort"]
+  },
+  "LR": {
+    "cities": ["Monrovia", "Robertsport", "Buchanan"],
+    "attractions": ["Sapo National Park", "Providence Island", "Mount Nimba", "Kpatawee Waterfall"]
+  },
+  "LY": {
+    "cities": ["Tripoli", "Ghadames", "Benghazi"],
+    "attractions": ["Leptis Magna", "Sabratha", "Cyrene", "Ghadames Old Town", "Akakus Mountains"]
+  },
+  "MG": {
+    "cities": ["Antananarivo", "Nosy Be", "Antsirabe", "Morondava"],
+    "attractions": ["Avenue of the Baobabs", "Tsingy de Bemaraha", "Ranomafana National Park", "Andasibe-Mantadia National Park", "Ile Sainte-Marie"]
+  },
+  "MW": {
+    "cities": ["Lilongwe", "Blantyre", "Zomba"],
+    "attractions": ["Lake Malawi", "Mount Mulanje", "Liwonde National Park", "Majete Wildlife Reserve"]
+  },
+  "ML": {
+    "cities": ["Bamako", "Timbuktu", "Djenne", "Mopti"],
+    "attractions": ["Great Mosque of Djenne", "Bandiagara Escarpment", "Tomb of Askia", "Niger River"]
+  },
+  "MR": {
+    "cities": ["Nouakchott", "Atar", "Chinguetti"],
+    "attractions": ["Banc d'Arguin National Park", "Richat Structure", "Terjit Oasis", "Ancient Ksour of Chinguetti"]
+  },
+  "MU": {
+    "cities": ["Port Louis", "Grand Baie", "Flic en Flac"],
+    "attractions": ["Le Morne Brabant", "Chamarel Seven Coloured Earth", "Pamplemousses Botanical Garden", "Ile aux Cerfs", "Black River Gorges National Park"]
+  },
+  "MA": {
+    "cities": ["Marrakech", "Fez", "Chefchaouen", "Casablanca", "Essaouira"],
+    "attractions": ["Jemaa el-Fnaa", "Hassan II Mosque", "Ait Benhaddou", "Sahara Desert (Erg Chebbi)", "Fez Medina"]
+  },
+  "MZ": {
+    "cities": ["Maputo", "Vilanculos", "Inhambane", "Pemba"],
+    "attractions": ["Bazaruto Archipelago", "Island of Mozambique", "Gorongosa National Park", "Quirimbas Archipelago"]
+  },
+  "NA": {
+    "cities": ["Windhoek", "Swakopmund", "Walvis Bay"],
+    "attractions": ["Sossusvlei", "Etosha National Park", "Fish River Canyon", "Skeleton Coast", "Deadvlei"]
+  },
+  "NE": {
+    "cities": ["Niamey", "Agadez", "Zinder"],
+    "attractions": ["W National Park", "Air and Tenere Natural Reserves", "Agadez Mosque", "Sultan's Palace of Zinder"]
+  },
+  "NG": {
+    "cities": ["Lagos", "Abuja", "Calabar", "Ibadan"],
+    "attractions": ["Yankari National Park", "Zuma Rock", "Nike Art Gallery", "Olumo Rock", "Obudu Mountain Resort"]
+  },
+  "CG": {
+    "cities": ["Brazzaville", "Pointe-Noire"],
+    "attractions": ["Odzala-Kokoua National Park", "Lesio-Louna Gorilla Reserve", "Loufoulakari Falls", "Brazza Mausoleum"]
+  },
+  "RW": {
+    "cities": ["Kigali", "Rubavu", "Huye"],
+    "attractions": ["Volcanoes National Park", "Nyungwe Forest", "Akagera National Park", "Kigali Genocide Memorial", "Lake Kivu"]
+  },
+  "ST": {
+    "cities": ["Sao Tome"],
+    "attractions": ["Pico Cao Grande", "Obo National Park", "Jale Beach"]
+  },
+  "SN": {
+    "cities": ["Dakar", "Saint-Louis", "Saly", "Ziguinchor"],
+    "attractions": ["Goree Island", "Lake Retba", "Djoudj Bird Sanctuary", "Bandia Wildlife Reserve", "African Renaissance Monument"]
+  },
+  "SC": {
+    "cities": ["Victoria", "Beau Vallon"],
+    "attractions": ["Anse Source d'Argent", "Vallee de Mai", "Beau Vallon Beach", "Curieuse Island", "Morne Seychellois National Park"]
+  },
+  "SL": {
+    "cities": ["Freetown", "Bo"],
+    "attractions": ["Tacugama Chimpanzee Sanctuary", "River Number Two Beach", "Tiwai Island", "Bunce Island"]
+  },
+  "SO": {
+    "cities": ["Mogadishu", "Hargeisa"],
+    "attractions": ["Laas Geel Cave Paintings", "Liido Beach", "Mogadishu Old Town"]
+  },
+  "ZA": {
+    "cities": ["Cape Town", "Johannesburg", "Durban", "Pretoria", "Stellenbosch"],
+    "attractions": ["Table Mountain", "Kruger National Park", "Robben Island", "Garden Route", "Victoria & Alfred Waterfront"]
+  },
+  "SS": {
+    "cities": ["Juba", "Wau"],
+    "attractions": ["Boma National Park", "Bandingilo National Park", "Sudd Wetlands"]
+  },
+  "SD": {
+    "cities": ["Khartoum", "Port Sudan", "Omdurman"],
+    "attractions": ["Pyramids of Meroe", "Jebel Barkal", "Naqa Temples", "National Museum of Sudan"]
+  },
+  "TZ": {
+    "cities": ["Dar es Salaam", "Arusha", "Zanzibar City", "Moshi", "Mwanza"],
+    "attractions": ["Serengeti National Park", "Mount Kilimanjaro", "Ngorongoro Crater", "Zanzibar Stone Town", "Tarangire National Park"]
+  },
+  "TG": {
+    "cities": ["Lome", "Kpalime", "Kara"],
+    "attractions": ["Koutammakou", "Akodessewa Fetish Market", "Mount Agou", "Cascade de Wome"]
+  },
+  "TN": {
+    "cities": ["Tunis", "Sousse", "Hammamet", "Djerba", "Tozeur"],
+    "attractions": ["Carthage Ruins", "Amphitheatre of El Jem", "Bardo National Museum", "Dougga", "Sidi Bou Said"]
+  },
+  "UG": {
+    "cities": ["Kampala", "Entebbe", "Jinja", "Fort Portal"],
+    "attractions": ["Bwindi Impenetrable Forest", "Murchison Falls", "Queen Elizabeth National Park", "Lake Bunyonyi", "Source of the Nile"]
+  },
+  "EH": {
+    "cities": ["Dakhla", "Laayoune"],
+    "attractions": ["Dakhla Lagoon", "White Dune"]
+  },
+  "ZM": {
+    "cities": ["Lusaka", "Livingstone"],
+    "attractions": ["Victoria Falls", "South Luangwa National Park", "Lower Zambezi National Park", "Kafue National Park", "Lake Kariba"]
+  },
+  "ZW": {
+    "cities": ["Victoria Falls", "Harare", "Bulawayo", "Masvingo"],
+    "attractions": ["Victoria Falls", "Hwange National Park", "Great Zimbabwe Ruins", "Mana Pools National Park", "Lake Kariba"]
+  },
+  "AF": {
+    "cities": ["Kabul", "Bamyan", "Mazar-i-Sharif", "Herat"],
+    "attractions": ["Band-e-Amir National Park", "Buddhas of Bamiyan", "Blue Mosque", "Minaret of Jam", "Panjshir Valley"]
+  },
+  "AM": {
+    "cities": ["Yerevan", "Gyumri", "Dilijan", "Goris"],
+    "attractions": ["Tatev Monastery", "Geghard Monastery", "Lake Sevan", "Garni Temple", "Noravank Monastery"]
+  },
+  "AZ": {
+    "cities": ["Baku", "Sheki", "Ganja", "Gabala"],
+    "attractions": ["Old City (Icherisheher)", "Flame Towers", "Gobustan Rock Art", "Heydar Aliyev Center", "Sheki Khan's Palace"]
+  },
+  "BH": {
+    "cities": ["Manama", "Muharraq"],
+    "attractions": ["Bahrain Fort", "Al Fateh Grand Mosque", "Tree of Life", "Bahrain National Museum", "Pearling Path"]
+  },
+  "BD": {
+    "cities": ["Dhaka", "Cox's Bazar", "Sylhet", "Chittagong"],
+    "attractions": ["Sundarbans", "Cox's Bazar Beach", "Sixty Dome Mosque", "Lalbagh Fort", "Srimangal Tea Gardens"]
+  },
+  "BT": {
+    "cities": ["Paro", "Thimphu", "Punakha", "Bumthang"],
+    "attractions": ["Tiger's Nest Monastery", "Punakha Dzong", "Buddha Dordenma", "Phobjikha Valley", "Trashi Chhoe Dzong"]
+  },
+  "BN": {
+    "cities": ["Bandar Seri Begawan"],
+    "attractions": ["Omar Ali Saifuddien Mosque", "Kampong Ayer", "Ulu Temburong National Park", "Istana Nurul Iman"]
+  },
+  "KH": {
+    "cities": ["Siem Reap", "Phnom Penh", "Battambang", "Kampot"],
+    "attractions": ["Angkor Wat", "Bayon Temple", "Royal Palace", "Tonle Sap Lake", "Koh Rong"]
+  },
+  "CN": {
+    "cities": ["Beijing", "Shanghai", "Xi'an", "Chengdu", "Guilin"],
+    "attractions": ["Great Wall of China", "Forbidden City", "Terracotta Warriors", "Li River", "Giant Panda Base"]
+  },
+  "CY": {
+    "cities": ["Paphos", "Limassol", "Larnaca", "Ayia Napa", "Nicosia"],
+    "attractions": ["Kourion", "Troodos Mountains", "Tombs of the Kings", "Nissi Beach", "Kykkos Monastery"]
+  },
+  "GE": {
+    "cities": ["Tbilisi", "Batumi", "Mestia", "Kazbegi", "Sighnaghi"],
+    "attractions": ["Gergeti Trinity Church", "Old Town Tbilisi", "Ushguli", "Vardzia Cave Monastery", "Prometheus Cave"]
+  },
+  "IN": {
+    "cities": ["Delhi", "Agra", "Jaipur", "Varanasi", "Mumbai"],
+    "attractions": ["Taj Mahal", "Golden Temple", "Red Fort", "Kerala Backwaters", "Amber Fort"]
+  },
+  "ID": {
+    "cities": ["Bali", "Jakarta", "Yogyakarta", "Ubud", "Labuan Bajo"],
+    "attractions": ["Borobudur Temple", "Komodo National Park", "Mount Bromo", "Raja Ampat", "Uluwatu Temple"]
+  },
+  "IR": {
+    "cities": ["Tehran", "Isfahan", "Shiraz", "Yazd", "Kashan"],
+    "attractions": ["Persepolis", "Naqsh-e Jahan Square", "Nasir al-Mulk Mosque", "Golestan Palace", "Tabiat Bridge"]
+  },
+  "IQ": {
+    "cities": ["Baghdad", "Erbil", "Basra", "Najaf"],
+    "attractions": ["Erbil Citadel", "Babylon Ruins", "Ziggurat of Ur", "Great Mosque of Samarra", "Al-Kadhimiya Mosque"]
+  },
+  "IL": {
+    "cities": ["Jerusalem", "Tel Aviv", "Haifa", "Nazareth"],
+    "attractions": ["Western Wall", "Dead Sea", "Masada", "Church of the Holy Sepulchre", "Baha'i Gardens"]
+  },
+  "JP": {
+    "cities": ["Tokyo", "Kyoto", "Osaka", "Hiroshima", "Nara"],
+    "attractions": ["Mount Fuji", "Fushimi Inari Shrine", "Kinkaku-ji", "Itsukushima Shrine", "Senso-ji Temple"]
+  },
+  "JO": {
+    "cities": ["Amman", "Aqaba", "Madaba", "Jerash"],
+    "attractions": ["Petra", "Wadi Rum", "Dead Sea", "Jerash Ruins", "Mount Nebo"]
+  },
+  "KZ": {
+    "cities": ["Almaty", "Astana", "Turkestan", "Shymkent"],
+    "attractions": ["Charyn Canyon", "Baikonur Cosmodrome", "Kolsai Lakes", "Mausoleum of Khoja Ahmed Yasawi", "Big Almaty Lake"]
+  },
+  "KW": {
+    "cities": ["Kuwait City"],
+    "attractions": ["Kuwait Towers", "Grand Mosque", "Souk Al-Mubarakiya", "Al Shaheed Park", "Sheikh Jaber Cultural Centre"]
+  },
+  "KG": {
+    "cities": ["Bishkek", "Karakol", "Osh"],
+    "attractions": ["Issyk-Kul Lake", "Ala Archa National Park", "Song Kol Lake", "Tash Rabat", "Arslanbob Walnut Forest"]
+  },
+  "LA": {
+    "cities": ["Luang Prabang", "Vientiane", "Vang Vieng", "Pakse"],
+    "attractions": ["Kuang Si Waterfall", "Wat Xieng Thong", "Plain of Jars", "Pha That Luang", "Si Phan Don"]
+  },
+  "LB": {
+    "cities": ["Beirut", "Byblos", "Tripoli", "Tyre"],
+    "attractions": ["Baalbek Temples", "Jeita Grotto", "Beiteddine Palace", "Cedars of God", "Pigeon Rocks"]
+  },
+  "MY": {
+    "cities": ["Kuala Lumpur", "George Town", "Melaka", "Kota Kinabalu", "Langkawi"],
+    "attractions": ["Petronas Twin Towers", "Batu Caves", "Mount Kinabalu", "Cameron Highlands", "Perhentian Islands"]
+  },
+  "MV": {
+    "cities": ["Male", "Maafushi"],
+    "attractions": ["Coral Reefs", "Banana Reef", "Vaadhoo Glowing Beach", "National Museum", "Hulhumale Beach"]
+  },
+  "MN": {
+    "cities": ["Ulaanbaatar", "Karakorum"],
+    "attractions": ["Gobi Desert", "Lake Khovsgol", "Terelj National Park", "Erdene Zuu Monastery", "Genghis Khan Statue Complex"]
+  },
+  "MM": {
+    "cities": ["Yangon", "Bagan", "Mandalay", "Inle Lake"],
+    "attractions": ["Shwedagon Pagoda", "Bagan Temples", "U Bein Bridge", "Golden Rock", "Ngapali Beach"]
+  },
+  "NP": {
+    "cities": ["Kathmandu", "Pokhara", "Bhaktapur", "Lumbini", "Chitwan"],
+    "attractions": ["Mount Everest", "Swayambhunath", "Chitwan National Park", "Pashupatinath Temple", "Phewa Lake"]
+  },
+  "KP": {
+    "cities": ["Pyongyang", "Kaesong"],
+    "attractions": ["Mansudae Grand Monument", "Arch of Triumph", "Mount Kumgang", "Juche Tower", "DMZ"]
+  },
+  "OM": {
+    "cities": ["Muscat", "Nizwa", "Salalah", "Sur"],
+    "attractions": ["Sultan Qaboos Grand Mosque", "Wahiba Sands", "Wadi Shab", "Nizwa Fort", "Jebel Akhdar"]
+  },
+  "PK": {
+    "cities": ["Lahore", "Islamabad", "Karachi", "Hunza", "Swat"],
+    "attractions": ["Badshahi Mosque", "Mohenjo-daro", "Faisal Mosque", "Fairy Meadows", "Lahore Fort"]
+  },
+  "PS": {
+    "cities": ["Bethlehem", "Ramallah", "Jericho", "Nablus", "Hebron"],
+    "attractions": ["Church of the Nativity", "Dead Sea", "Hisham's Palace", "Cave of the Patriarchs", "Mount of Temptation"]
+  },
+  "PH": {
+    "cities": ["Manila", "Cebu City", "Puerto Princesa", "Boracay"],
+    "attractions": ["El Nido", "Chocolate Hills", "Banaue Rice Terraces", "Tubbataha Reef", "Mayon Volcano"]
+  },
+  "QA": {
+    "cities": ["Doha"],
+    "attractions": ["Museum of Islamic Art", "Souq Waqif", "The Pearl-Qatar", "Katara Cultural Village", "Khor Al Adaid"]
+  },
+  "RU": {
+    "cities": ["Moscow", "St. Petersburg", "Kazan", "Sochi", "Vladivostok"],
+    "attractions": ["Red Square & Kremlin", "Hermitage Museum", "Lake Baikal", "Trans-Siberian Railway", "St. Basil's Cathedral"]
+  },
+  "SA": {
+    "cities": ["Riyadh", "Jeddah", "Mecca", "Medina", "AlUla"],
+    "attractions": ["Masjid al-Haram", "Madain Saleh", "Edge of the World", "Al-Balad Historic District", "Diriyah"]
+  },
+  "SG": {
+    "cities": ["Singapore"],
+    "attractions": ["Marina Bay Sands", "Gardens by the Bay", "Sentosa Island", "Singapore Botanic Gardens", "Orchard Road"]
+  },
+  "KR": {
+    "cities": ["Seoul", "Busan", "Gyeongju", "Jeju", "Incheon"],
+    "attractions": ["Gyeongbokgung Palace", "Bukchon Hanok Village", "Jeju Hallasan", "Bulguksa Temple", "DMZ"]
+  },
+  "LK": {
+    "cities": ["Colombo", "Kandy", "Galle", "Ella", "Sigiriya"],
+    "attractions": ["Sigiriya Rock Fortress", "Temple of the Tooth", "Galle Fort", "Nine Arches Bridge", "Adam's Peak"]
+  },
+  "SY": {
+    "cities": ["Damascus", "Aleppo", "Palmyra", "Latakia"],
+    "attractions": ["Umayyad Mosque", "Aleppo Citadel", "Palmyra Ruins", "Krak des Chevaliers", "Bosra Amphitheatre"]
+  },
+  "TW": {
+    "cities": ["Taipei", "Kaohsiung", "Tainan", "Hualien", "Taichung"],
+    "attractions": ["Taipei 101", "Taroko Gorge", "Sun Moon Lake", "Jiufen Old Street", "Alishan"]
+  },
+  "TJ": {
+    "cities": ["Dushanbe", "Khujand"],
+    "attractions": ["Pamir Highway", "Fann Mountains", "Iskanderkul Lake", "Hissar Fortress", "Seven Lakes"]
+  },
+  "TH": {
+    "cities": ["Bangkok", "Chiang Mai", "Phuket", "Krabi", "Pattaya"],
+    "attractions": ["Grand Palace", "Wat Pho", "Phang Nga Bay", "Ayutthaya", "Doi Inthanon"]
+  },
+  "TL": {
+    "cities": ["Dili", "Baucau"],
+    "attractions": ["Cristo Rei Statue", "Atauro Island", "Mount Ramelau", "Jaco Island"]
+  },
+  "TR": {
+    "cities": ["Istanbul", "Antalya", "Izmir", "Goreme", "Bodrum"],
+    "attractions": ["Hagia Sophia", "Cappadocia", "Pamukkale", "Ephesus", "Topkapi Palace"]
+  },
+  "TM": {
+    "cities": ["Ashgabat", "Mary"],
+    "attractions": ["Darvaza Gas Crater", "Ancient Merv", "Kunya-Urgench", "Yangykala Canyon", "Nisa Ruins"]
+  },
+  "AE": {
+    "cities": ["Dubai", "Abu Dhabi", "Sharjah", "Ras Al Khaimah"],
+    "attractions": ["Burj Khalifa", "Sheikh Zayed Grand Mosque", "Palm Jumeirah", "Dubai Mall", "Louvre Abu Dhabi"]
+  },
+  "UZ": {
+    "cities": ["Samarkand", "Bukhara", "Khiva", "Tashkent"],
+    "attractions": ["Registan Square", "Itchan Kala", "Ark Fortress", "Shah-i-Zinda", "Chorsu Bazaar"]
+  },
+  "VN": {
+    "cities": ["Hanoi", "Ho Chi Minh City", "Hoi An", "Da Nang", "Hue"],
+    "attractions": ["Halong Bay", "Cu Chi Tunnels", "Hoi An Ancient Town", "Phong Nha Caves", "Imperial City of Hue"]
+  },
+  "YE": {
+    "cities": ["Sana'a", "Shibam", "Aden"],
+    "attractions": ["Old City of Sana'a", "Socotra Island", "Shibam Skyscrapers", "Dar al-Hajar", "Great Mosque of Sana'a"]
+  },
+  "AL": {
+    "cities": ["Tirana", "Berat", "Gjirokaster", "Saranda", "Vlora"],
+    "attractions": ["Butrint National Park", "Albanian Alps", "Blue Eye Spring", "Ksamil Beach", "Llogara Pass"]
+  },
+  "AD": {
+    "cities": ["Andorra la Vella"],
+    "attractions": ["Grandvalira Ski Resort", "Casa de la Vall"]
+  },
+  "AT": {
+    "cities": ["Vienna", "Salzburg", "Innsbruck", "Hallstatt", "Graz"],
+    "attractions": ["Schonbrunn Palace", "Hofburg Palace", "Wachau Valley", "Belvedere Palace", "Grossglockner High Alpine Road"]
+  },
+  "BY": {
+    "cities": ["Minsk", "Brest", "Grodno", "Vitebsk"],
+    "attractions": ["Mir Castle", "Nesvizh Castle", "Brest Fortress", "Belovezhskaya Pushcha National Park"]
+  },
+  "BE": {
+    "cities": ["Brussels", "Bruges", "Antwerp", "Ghent", "Liege"],
+    "attractions": ["Grand Place", "Bruges Belfry", "Atomium", "Gravensteen Castle", "Cathedral of Our Lady"]
+  },
+  "BA": {
+    "cities": ["Sarajevo", "Mostar", "Banja Luka"],
+    "attractions": ["Stari Most", "Bascarsija", "Una National Park", "Sutjeska National Park", "Kravica Waterfall"]
+  },
+  "BG": {
+    "cities": ["Sofia", "Plovdiv", "Veliko Tarnovo", "Varna", "Burgas"],
+    "attractions": ["Alexander Nevsky Cathedral", "Rila Monastery", "Tsarevets Fortress", "Ancient Roman Theatre of Plovdiv", "Seven Rila Lakes"]
+  },
+  "HR": {
+    "cities": ["Dubrovnik", "Split", "Zagreb", "Zadar", "Rovinj"],
+    "attractions": ["Plitvice Lakes National Park", "Diocletian's Palace", "Dubrovnik City Walls", "Krka National Park", "Hvar Island"]
+  },
+  "CZ": {
+    "cities": ["Prague", "Cesky Krumlov", "Brno", "Karlovy Vary", "Kutna Hora"],
+    "attractions": ["Prague Castle", "Charles Bridge", "Old Town Square", "Prague Astronomical Clock", "Sedlec Ossuary"]
+  },
+  "DK": {
+    "cities": ["Copenhagen", "Aarhus", "Odense", "Aalborg"],
+    "attractions": ["Tivoli Gardens", "The Little Mermaid", "Nyhavn", "Christiansborg Palace", "Legoland Billund"]
+  },
+  "EE": {
+    "cities": ["Tallinn", "Tartu", "Parnu"],
+    "attractions": ["Tallinn Old Town", "Kadriorg Palace", "Saaremaa Island", "Lahemaa National Park", "Alexander Nevsky Cathedral"]
+  },
+  "FI": {
+    "cities": ["Helsinki", "Rovaniemi", "Turku", "Tampere"],
+    "attractions": ["Suomenlinna Fortress", "Santa Claus Village", "Northern Lights in Lapland", "Nuuksio National Park", "Helsinki Cathedral"]
+  },
+  "FR": {
+    "cities": ["Paris", "Lyon", "Nice", "Marseille", "Strasbourg"],
+    "attractions": ["Eiffel Tower", "Louvre Museum", "Mont Saint-Michel", "Palace of Versailles", "Chateau de Chambord"]
+  },
+  "DE": {
+    "cities": ["Berlin", "Munich", "Hamburg", "Cologne", "Frankfurt"],
+    "attractions": ["Brandenburg Gate", "Neuschwanstein Castle", "Cologne Cathedral", "Berlin Wall Memorial", "Miniatur Wunderland"]
+  },
+  "GR": {
+    "cities": ["Athens", "Santorini", "Crete", "Thessaloniki", "Rhodes"],
+    "attractions": ["Acropolis", "Meteora", "Delphi", "Palace of Knossos", "Samaria Gorge"]
+  },
+  "HU": {
+    "cities": ["Budapest", "Eger", "Pecs", "Debrecen"],
+    "attractions": ["Hungarian Parliament Building", "Buda Castle", "Szechenyi Thermal Bath", "Fisherman's Bastion", "St. Stephen's Basilica"]
+  },
+  "IS": {
+    "cities": ["Reykjavik", "Akureyri", "Vik"],
+    "attractions": ["Blue Lagoon", "Golden Circle", "Gullfoss Waterfall", "Thingvellir National Park", "Jokulsarlon Glacier Lagoon"]
+  },
+  "IE": {
+    "cities": ["Dublin", "Galway", "Cork", "Killarney", "Limerick"],
+    "attractions": ["Cliffs of Moher", "Ring of Kerry", "Killarney National Park", "Trinity College Library", "Giant's Causeway"]
+  },
+  "IT": {
+    "cities": ["Rome", "Florence", "Venice", "Milan", "Naples"],
+    "attractions": ["Colosseum", "Amalfi Coast", "Cinque Terre", "Uffizi Gallery", "Pompeii"]
+  },
+  "XK": {
+    "cities": ["Pristina", "Prizren", "Peja"],
+    "attractions": ["Gracanica Monastery", "Prizren Fortress", "Rugova Canyon", "Patriarchate of Pec"]
+  },
+  "LV": {
+    "cities": ["Riga", "Jurmala", "Sigulda"],
+    "attractions": ["Riga Old Town", "Gauja National Park", "Turaida Castle", "House of the Blackheads", "Rundale Palace"]
+  },
+  "LI": {
+    "cities": ["Vaduz"],
+    "attractions": ["Vaduz Castle", "Liechtenstein National Museum"]
+  },
+  "LT": {
+    "cities": ["Vilnius", "Kaunas", "Klaipeda", "Trakai"],
+    "attractions": ["Vilnius Old Town", "Hill of Crosses", "Trakai Island Castle", "Curonian Spit", "Gediminas Tower"]
+  },
+  "LU": {
+    "cities": ["Luxembourg City", "Vianden", "Echternach"],
+    "attractions": ["Bock Casemates", "Vianden Castle", "Grand Ducal Palace", "Chemin de la Corniche", "Mullerthal Trail"]
+  },
+  "MT": {
+    "cities": ["Valletta", "Mdina", "Sliema"],
+    "attractions": ["St. John's Co-Cathedral", "Hagar Qim Temples", "Blue Grotto", "Upper Barrakka Gardens", "Megalithic Temples of Malta"]
+  },
+  "MD": {
+    "cities": ["Chisinau", "Orheiul Vechi"],
+    "attractions": ["Orheiul Vechi Monastery", "Milestii Mici Wine Cellar", "Nativity Cathedral", "Cricova Winery"]
+  },
+  "MC": {
+    "cities": ["Monte Carlo"],
+    "attractions": ["Monte Carlo Casino", "Prince's Palace of Monaco"]
+  },
+  "ME": {
+    "cities": ["Kotor", "Budva", "Podgorica", "Tivat"],
+    "attractions": ["Bay of Kotor", "Durmitor National Park", "Sveti Stefan", "Tara River Canyon", "Ostrog Monastery"]
+  },
+  "NL": {
+    "cities": ["Amsterdam", "Rotterdam", "The Hague", "Utrecht", "Delft"],
+    "attractions": ["Rijksmuseum", "Anne Frank House", "Van Gogh Museum", "Keukenhof Gardens", "Zaanse Schans"]
+  },
+  "MK": {
+    "cities": ["Skopje", "Ohrid", "Bitola"],
+    "attractions": ["Lake Ohrid", "Matka Canyon", "Mavrovo National Park", "Church of St. John at Kaneo", "Old Bazaar of Skopje"]
+  },
+  "NO": {
+    "cities": ["Oslo", "Bergen", "Tromso", "Stavanger", "Trondheim"],
+    "attractions": ["Geirangerfjord", "Sognefjord", "Bryggen", "Preikestolen", "Northern Lights in Tromso"]
+  },
+  "PL": {
+    "cities": ["Warsaw", "Krakow", "Gdansk", "Wroclaw", "Poznan"],
+    "attractions": ["Wawel Castle", "Wieliczka Salt Mine", "Auschwitz-Birkenau Memorial", "Bialowieza Forest", "Malbork Castle"]
+  },
+  "PT": {
+    "cities": ["Lisbon", "Porto", "Faro", "Sintra", "Funchal"],
+    "attractions": ["Tower of Belem", "Pena Palace", "Algarve Coast", "Jeronimos Monastery", "Douro Valley"]
+  },
+  "RO": {
+    "cities": ["Bucharest", "Brasov", "Sibiu", "Cluj-Napoca", "Timisoara"],
+    "attractions": ["Bran Castle", "Peles Castle", "Transfagarasan Highway", "Painted Monasteries of Bucovina", "Palace of the Parliament"]
+  },
+  "SM": {
+    "cities": ["San Marino City"],
+    "attractions": ["Three Towers of San Marino", "Palazzo Pubblico"]
+  },
+  "RS": {
+    "cities": ["Belgrade", "Novi Sad", "Nis", "Subotica"],
+    "attractions": ["Belgrade Fortress", "Temple of Saint Sava", "Petrovaradin Fortress", "Drina River House", "Studenica Monastery"]
+  },
+  "SK": {
+    "cities": ["Bratislava", "Kosice", "Banska Bystrica", "Trnava"],
+    "attractions": ["Bratislava Castle", "High Tatras", "Spis Castle", "Demanovska Cave", "Slovak Paradise National Park"]
+  },
+  "SI": {
+    "cities": ["Ljubljana", "Maribor", "Bled", "Piran"],
+    "attractions": ["Lake Bled", "Postojna Cave", "Predjama Castle", "Triglav National Park", "Ljubljana Castle"]
+  },
+  "ES": {
+    "cities": ["Barcelona", "Madrid", "Seville", "Granada", "Valencia"],
+    "attractions": ["Sagrada Familia", "Alhambra", "Park Guell", "Royal Palace of Madrid", "Plaza de Espana"]
+  },
+  "SE": {
+    "cities": ["Stockholm", "Gothenburg", "Malmo", "Uppsala"],
+    "attractions": ["Vasa Museum", "Gamla Stan", "Drottningholm Palace", "Icehotel in Jukkasjarvi", "Stockholm Archipelago"]
+  },
+  "CH": {
+    "cities": ["Zurich", "Lucerne", "Geneva", "Interlaken", "Zermatt"],
+    "attractions": ["Matterhorn", "Jungfraujoch", "Chapel Bridge", "Lake Geneva", "Rhine Falls"]
+  },
+  "UA": {
+    "cities": ["Kyiv", "Lviv", "Odessa", "Kharkiv"],
+    "attractions": ["Kyiv Pechersk Lavra", "Saint Sophia Cathedral", "Lviv Old Town", "Odessa Opera House", "Chernobyl Exclusion Zone"]
+  },
+  "GB": {
+    "cities": ["London", "Edinburgh", "Bath", "Oxford", "York"],
+    "attractions": ["Big Ben", "Tower of London", "Buckingham Palace", "Stonehenge", "Edinburgh Castle"]
+  },
+  "VA": {
+    "cities": ["Vatican City"],
+    "attractions": ["St. Peter's Basilica", "Sistine Chapel"]
+  },
+  "AG": {
+    "cities": ["St. John's", "English Harbour"],
+    "attractions": ["Nelson's Dockyard", "Shirley Heights", "Dickenson Bay Beach", "Frigate Bird Sanctuary", "Stingray City"]
+  },
+  "BB": {
+    "cities": ["Bridgetown", "Speightstown", "Holetown"],
+    "attractions": ["Harrison's Cave", "Animal Flower Cave", "Mount Gay Rum Distillery", "Carlisle Bay", "Bathsheba"]
+  },
+  "BZ": {
+    "cities": ["San Pedro", "Belize City", "San Ignacio", "Placencia"],
+    "attractions": ["Great Blue Hole", "Belize Barrier Reef", "Xunantunich", "Actun Tunichil Muknal Cave", "Caracol"]
+  },
+  "BM": {
+    "cities": ["Hamilton", "St. George's"],
+    "attractions": ["Horseshoe Bay Beach", "Crystal Cave", "Royal Naval Dockyard", "Gibbs Hill Lighthouse", "National Museum of Bermuda"]
+  },
+  "CA": {
+    "cities": ["Toronto", "Vancouver", "Montreal", "Quebec City", "Ottawa"],
+    "attractions": ["Niagara Falls", "Banff National Park", "CN Tower", "Old Quebec", "Stanley Park"]
+  },
+  "CR": {
+    "cities": ["San Jose", "La Fortuna", "Monteverde", "Manuel Antonio", "Tamarindo"],
+    "attractions": ["Arenal Volcano National Park", "Manuel Antonio National Park", "Monteverde Cloud Forest", "Corcovado National Park", "Tortuguero National Park"]
+  },
+  "CU": {
+    "cities": ["Havana", "Trinidad", "Varadero", "Santiago de Cuba", "Cienfuegos"],
+    "attractions": ["Old Havana", "Vinales Valley", "Varadero Beach", "El Morro Castle", "Bay of Pigs"]
+  },
+  "DM": {
+    "cities": ["Roseau"],
+    "attractions": ["Morne Trois Pitons National Park", "Boiling Lake", "Trafalgar Falls", "Champagne Reef", "Titou Gorge"]
+  },
+  "DO": {
+    "cities": ["Santo Domingo", "Punta Cana", "Puerto Plata", "La Romana", "Samana"],
+    "attractions": ["Colonial Zone", "Isla Saona", "Los Haitises National Park", "Playa Bavaro", "Whale Watching in Samana Bay"]
+  },
+  "SV": {
+    "cities": ["San Salvador", "Santa Ana", "Suchitoto"],
+    "attractions": ["Santa Ana Volcano", "Joya de Ceren", "Ruta de las Flores", "El Tunco Beach", "El Imposible National Park"]
+  },
+  "GL": {
+    "cities": ["Nuuk", "Ilulissat"],
+    "attractions": ["Ilulissat Icefjord", "Greenland Ice Sheet", "Disko Island", "Northern Lights", "Uunartoq Hot Springs"]
+  },
+  "GD": {
+    "cities": ["St. George's"],
+    "attractions": ["Grand Anse Beach", "Underwater Sculpture Park", "Grand Etang Lake", "Fort George", "River Antoine Rum Distillery"]
+  },
+  "GT": {
+    "cities": ["Antigua Guatemala", "Guatemala City", "Flores", "Panajachel"],
+    "attractions": ["Tikal", "Lake Atitlan", "Semuc Champey", "Chichicastenango Market", "Pacaya Volcano"]
+  },
+  "HT": {
+    "cities": ["Port-au-Prince", "Cap-Haitien", "Jacmel"],
+    "attractions": ["Citadelle Laferriere", "Sans Souci Palace", "Labadee", "Bassin Bleu", "Saut-Mathurine"]
+  },
+  "HN": {
+    "cities": ["Tegucigalpa", "San Pedro Sula", "Roatan", "La Ceiba"],
+    "attractions": ["Copan Ruins", "Roatan Barrier Reef", "Pulhapanzak Waterfall", "Lake Yojoa", "Pico Bonito National Park"]
+  },
+  "JM": {
+    "cities": ["Kingston", "Montego Bay", "Ocho Rios", "Negril", "Port Antonio"],
+    "attractions": ["Dunn's River Falls", "Blue Mountains", "Seven Mile Beach", "Bob Marley Museum", "Blue Lagoon"]
+  },
+  "MX": {
+    "cities": ["Mexico City", "Cancun", "Oaxaca", "San Miguel de Allende", "Guadalajara"],
+    "attractions": ["Chichen Itza", "Teotihuacan", "Tulum Ruins", "Copper Canyon", "Cenotes of Yucatan"]
+  },
+  "NI": {
+    "cities": ["Granada", "Leon", "San Juan del Sur", "Managua"],
+    "attractions": ["Ometepe Island", "Masaya Volcano", "Cerro Negro Volcano", "Corn Islands", "Somoto Canyon"]
+  },
+  "PA": {
+    "cities": ["Panama City", "Bocas del Toro", "Boquete", "El Valle de Anton"],
+    "attractions": ["Panama Canal", "Casco Viejo", "San Blas Islands", "Coiba National Park", "Amador Causeway"]
+  },
+  "PR": {
+    "cities": ["San Juan", "Ponce", "Rincon"],
+    "attractions": ["Old San Juan", "El Yunque National Forest", "Castillo San Felipe del Morro", "Playa Flamenco", "Bioluminescent Mosquito Bay"]
+  },
+  "KN": {
+    "cities": ["Basseterre", "Charlestown"],
+    "attractions": ["Brimstone Hill Fortress", "St. Kitts Scenic Railway", "Mount Liamuiga", "Pinney's Beach", "Romney Manor"]
+  },
+  "LC": {
+    "cities": ["Castries", "Soufriere"],
+    "attractions": ["The Pitons", "Sulphur Springs", "Pigeon Island", "Diamond Falls Botanical Gardens", "Reduit Beach"]
+  },
+  "VC": {
+    "cities": ["Kingstown", "Bequia"],
+    "attractions": ["La Soufriere Volcano", "Tobago Cays Marine Park", "Botanical Gardens", "Dark View Falls", "Wallilabou Bay"]
+  },
+  "BS": {
+    "cities": ["Nassau", "Freeport"],
+    "attractions": ["Atlantis Paradise Island", "Exuma Cays", "Thunderball Grotto", "Blue Lagoon Island", "Dean's Blue Hole"]
+  },
+  "TT": {
+    "cities": ["Port of Spain", "Scarborough", "San Fernando"],
+    "attractions": ["Maracas Beach", "Pigeon Point Beach", "Pitch Lake", "Buccoo Reef", "Caroni Bird Sanctuary"]
+  },
+  "US": {
+    "cities": ["New York City", "Los Angeles", "Las Vegas", "Orlando", "San Francisco"],
+    "attractions": ["Grand Canyon", "Statue of Liberty", "Yellowstone National Park", "Walt Disney World", "Golden Gate Bridge"]
+  },
+  "AR": {
+    "cities": ["Buenos Aires", "Mendoza", "Bariloche", "Ushuaia", "Salta"],
+    "attractions": ["Iguazu Falls", "Perito Moreno Glacier", "Patagonia", "Tierra del Fuego National Park", "Peninsula Valdes"]
+  },
+  "BO": {
+    "cities": ["La Paz", "Sucre", "Uyuni", "Potosi"],
+    "attractions": ["Salar de Uyuni", "Lake Titicaca", "Madidi National Park", "Death Road"]
+  },
+  "BR": {
+    "cities": ["Rio de Janeiro", "Sao Paulo", "Salvador", "Florianopolis", "Foz do Iguacu"],
+    "attractions": ["Christ the Redeemer", "Copacabana Beach", "Amazon Rainforest", "Iguazu Falls", "Sugarloaf Mountain"]
+  },
+  "CL": {
+    "cities": ["Santiago", "Valparaiso", "San Pedro de Atacama", "Punta Arenas", "Puerto Varas"],
+    "attractions": ["Torres del Paine", "Atacama Desert", "Easter Island", "Marble Caves", "Valle de la Luna"]
+  },
+  "CO": {
+    "cities": ["Cartagena", "Medellin", "Bogota", "Santa Marta", "Cali"],
+    "attractions": ["Tayrona National Park", "Coffee Triangle", "Ciudad Perdida", "Rosario Islands", "Cocora Valley"]
+  },
+  "EC": {
+    "cities": ["Quito", "Cuenca", "Guayaquil", "Banos", "Otavalo"],
+    "attractions": ["Galapagos Islands", "Cotopaxi Volcano", "Amazon Rainforest", "Quilotoa Lagoon", "Ingapirca Ruins"]
+  },
+  "FK": {
+    "cities": ["Stanley"],
+    "attractions": ["Penguin Colonies", "Christ Church Cathedral"]
+  },
+  "GF": {
+    "cities": ["Cayenne", "Kourou"],
+    "attractions": ["Guiana Space Centre", "Iles du Salut"]
+  },
+  "GY": {
+    "cities": ["Georgetown", "Bartica"],
+    "attractions": ["Kaieteur Falls", "Iwokrama Rainforest", "Shell Beach"]
+  },
+  "PY": {
+    "cities": ["Asuncion", "Encarnacion", "Ciudad del Este"],
+    "attractions": ["Jesuit Missions of Trinidad", "Itaipu Dam", "Ybycui National Park"]
+  },
+  "PE": {
+    "cities": ["Lima", "Cusco", "Arequipa", "Puno", "Ica"],
+    "attractions": ["Machu Picchu", "Sacred Valley", "Lake Titicaca", "Nazca Lines", "Colca Canyon"]
+  },
+  "SR": {
+    "cities": ["Paramaribo", "Brownsberg"],
+    "attractions": ["Central Suriname Nature Reserve", "Fort Zeelandia", "Galibi Nature Reserve"]
+  },
+  "UY": {
+    "cities": ["Montevideo", "Punta del Este", "Colonia del Sacramento"],
+    "attractions": ["Colonia Historic Quarter", "Casapueblo", "Cabo Polonio"]
+  },
+  "VE": {
+    "cities": ["Caracas", "Merida", "Ciudad Bolivar", "Isla Margarita"],
+    "attractions": ["Angel Falls", "Los Roques Archipelago", "Mount Roraima", "Canaima National Park"]
+  },
+  "AU": {
+    "cities": ["Sydney", "Melbourne", "Brisbane", "Cairns", "Perth"],
+    "attractions": ["Great Barrier Reef", "Sydney Opera House", "Uluru", "Bondi Beach", "Great Ocean Road"]
+  },
+  "NZ": {
+    "cities": ["Auckland", "Queenstown", "Wellington", "Rotorua", "Christchurch"],
+    "attractions": ["Milford Sound", "Tongariro Alpine Crossing", "Hobbiton", "Franz Josef Glacier", "Waitomo Glowworm Caves"]
+  },
+  "FJ": {
+    "cities": ["Nadi", "Suva", "Denarau"],
+    "attractions": ["Mamanuca Islands", "Rainbow Reef", "Garden of the Sleeping Giant", "Natadola Beach"]
+  },
+  "NC": {
+    "cities": ["Noumea", "Bourail"],
+    "attractions": ["Heart of Voh", "Amedee Lighthouse Island", "Tjibaou Cultural Centre"]
+  },
+  "PG": {
+    "cities": ["Port Moresby", "Lae", "Madang"],
+    "attractions": ["Kokoda Trail", "Mount Wilhelm", "Sepik River", "Tufi Dive Resort"]
+  },
+  "VU": {
+    "cities": ["Port Vila", "Luganville"],
+    "attractions": ["Mount Yasur Volcano", "SS President Coolidge Wreck", "Champagne Beach"]
+  },
+  "SB": {
+    "cities": ["Honiara", "Gizo"],
+    "attractions": ["Marovo Lagoon", "Bonegi Beach WWII Wrecks", "Mataniko Falls"]
+  },
+  "WS": {
+    "cities": ["Apia", "Savai'i"],
+    "attractions": ["To Sua Ocean Trench", "Piula Cave Pool", "Lalomanu Beach"]
+  },
+  "TO": {
+    "cities": ["Nuku'alofa", "Neiafu"],
+    "attractions": ["Mapu'a 'a Vaea Blowholes", "Ha'amonga 'a Maui Trilithon", "Humpback Whale Watching"]
+  },
+  "PW": {
+    "cities": ["Koror"],
+    "attractions": ["Jellyfish Lake", "Rock Islands", "Blue Corner Dive Site", "Milky Way Lagoon"]
+  },
+  "FM": {
+    "cities": ["Palikir", "Kolonia"],
+    "attractions": ["Nan Madol Ruins", "Ant Atoll", "Kepirohi Waterfall"]
+  },
+  "MH": {
+    "cities": ["Majuro"],
+    "attractions": ["Bikini Atoll", "Laura Beach"]
+  },
+  "KI": {
+    "cities": ["South Tarawa"],
+    "attractions": ["Battle of Tarawa Sites", "Phoenix Islands Protected Area"]
+  },
+  "NR": {
+    "cities": ["Yaren"],
+    "attractions": ["Buada Lagoon", "Moqua Well Cave"]
+  },
+  "TV": {
+    "cities": ["Funafuti"],
+    "attractions": ["Funafuti Conservation Area", "Funafuti Lagoon"]
+  },
+  "AQ": {
+    "cities": ["McMurdo Station"],
+    "attractions": ["Ross Ice Shelf", "Mount Erebus", "Antarctic Peninsula"]
+  },
+  "TF": {
+    "cities": ["Port-aux-Francais"],
+    "attractions": ["Kerguelen Islands Wildlife", "Glaciers of Kerguelen"]
+  }
+}

@@ -14,5 +14,10 @@ final class CountryDataCache {
         Set(countries.map { $0.name })
     }()
 
+    /// Cached country highlights keyed by ISO code
+    private(set) lazy var countryHighlights: [String: CountryHighlights] = {
+        CountryHighlightsParser.loadHighlights()
+    }()
+
     private init() {}
 }

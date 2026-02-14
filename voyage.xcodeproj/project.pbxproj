@@ -36,6 +36,8 @@
 		E81234560031 /* CountryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550031 /* CountryListView.swift */; };
 		E81234560032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550032 /* HomeView.swift */; };
 		E81234560033 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
+		E81234560034 /* CountryExploreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550034 /* CountryExploreView.swift */; };
+		E81234560035 /* country_highlights.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550035 /* country_highlights.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +83,8 @@
 		E81234550030 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		E81234550031 /* CountryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryListView.swift; sourceTree = "<group>"; };
 		E81234550032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		E81234550034 /* CountryExploreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryExploreView.swift; sourceTree = "<group>"; };
+		E81234550035 /* country_highlights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = country_highlights.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +133,7 @@
 				E81234550032 /* HomeView.swift */,
 				E81234550014 /* SettingsView.swift */,
 				E81234550031 /* CountryListView.swift */,
+				E81234550034 /* CountryExploreView.swift */,
 				E81234550003 /* GlobeView.swift */,
 				E81234550011 /* MapView.swift */,
 				E81234550004 /* GlobeScene.swift */,
@@ -144,6 +149,7 @@
 				E81234550027 /* TipJar.storekit */,
 				E81234550006 /* Assets.xcassets */,
 				E81234550010 /* world.geojson */,
+				E81234550035 /* country_highlights.json */,
 				E81234550019 /* globe.scn */,
 			);
 			path = voyage;
@@ -283,6 +289,7 @@
 				E81234560010 /* world.geojson in Resources */,
 				E81234560019 /* globe.scn in Resources */,
 				E81234560027 /* TipJar.storekit in Resources */,
+				E81234560035 /* country_highlights.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -319,6 +326,7 @@
 				E81234560026 /* TipJarManager.swift in Sources */,
 				E81234560031 /* CountryListView.swift in Sources */,
 				E81234560032 /* HomeView.swift in Sources */,
+				E81234560034 /* CountryExploreView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
