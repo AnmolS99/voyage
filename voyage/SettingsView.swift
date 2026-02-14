@@ -43,10 +43,27 @@ struct SettingsView: View {
                         .pickerStyle(.menu)
                     }
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+
+                    HStack {
+                        Image(systemName: "map")
+                            .foregroundColor(globeState.isDarkMode ? AppColors.buttonDark : AppColors.buttonLight)
+
+                        Text("Map Style")
+
+                        Spacer()
+
+                        Picker("", selection: $globeState.mapStyle) {
+                            ForEach(GlobeStyle.allCases, id: \.self) { style in
+                                Text(style.displayName).tag(style)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } header: {
                     Text("Appearance")
                 } footer: {
-                    Text("Choose a globe texture style.")
+                    Text("Choose texture styles for the globe and map views.")
                 }
 
                 Section {
@@ -121,6 +138,9 @@ struct SettingsView: View {
             }
             .onChange(of: globeState.globeStyle) { _, newStyle in
                 globeState.setGlobeStyle(newStyle)
+            }
+            .onChange(of: globeState.mapStyle) { _, newStyle in
+                globeState.setMapStyle(newStyle)
             }
             .scrollContentBackground(.hidden)
             .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))

@@ -65,6 +65,7 @@ class GlobeState: ObservableObject {
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
     @Published var viewMode: ViewMode = .globe
     @Published var globeStyle: GlobeStyle = .realistic
+    @Published var mapStyle: GlobeStyle = .realistic
     let totalUNCountries = 195
 
     // Flag codes loaded from GeoJSON
@@ -95,6 +96,7 @@ class GlobeState: ObservableObject {
     private let visitedCountriesKey = "visitedCountries"
     private let wishlistCountriesKey = "wishlistCountries"
     private let globeStyleKey = "globeStyle"
+    private let mapStyleKey = "mapStyle"
     private let isDarkModeKey = "isDarkMode"
     private let checkedCitiesKey = "checkedCities"
     private let checkedAttractionsKey = "checkedAttractions"
@@ -149,6 +151,12 @@ class GlobeState: ObservableObject {
             globeStyle = style
         }
 
+        // Load map style (prefer iCloud, fall back to local)
+        if let raw = iCloudStore.string(forKey: mapStyleKey) ?? userDefaults.string(forKey: mapStyleKey),
+           let style = GlobeStyle(rawValue: raw) {
+            mapStyle = style
+        }
+
         // Load dark mode
         if userDefaults.object(forKey: isDarkModeKey) != nil || iCloudStore.object(forKey: isDarkModeKey) != nil {
             isDarkMode = iCloudStore.bool(forKey: isDarkModeKey) || userDefaults.bool(forKey: isDarkModeKey)
@@ -173,6 +181,9 @@ class GlobeState: ObservableObject {
         userDefaults.set(globeStyle.rawValue, forKey: globeStyleKey)
         iCloudStore.set(globeStyle.rawValue, forKey: globeStyleKey)
 
+        userDefaults.set(mapStyle.rawValue, forKey: mapStyleKey)
+        iCloudStore.set(mapStyle.rawValue, forKey: mapStyleKey)
+
         userDefaults.set(isDarkMode, forKey: isDarkModeKey)
         iCloudStore.set(isDarkMode, forKey: isDarkModeKey)
 
@@ -189,6 +200,11 @@ class GlobeState: ObservableObject {
 
     func setGlobeStyle(_ style: GlobeStyle) {
         globeStyle = style
+        saveData()
+    }
+
+    func setMapStyle(_ style: GlobeStyle) {
+        mapStyle = style
         saveData()
     }
 

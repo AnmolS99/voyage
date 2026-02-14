@@ -16,7 +16,7 @@ struct MapView: View {
             let verticalOffset = (geometry.size.height - mapHeight) / 2
 
             Canvas { context, size in
-                // Draw ocean background
+                // Draw ocean background (fallback under texture)
                 let oceanColor = globeState.isDarkMode ? AppColors.oceanDark : AppColors.oceanMap
                 context.fill(
                     Path(CGRect(origin: .zero, size: size)),
@@ -28,6 +28,21 @@ struct MapView: View {
                 transform = transform.translatedBy(x: size.width / 2 + offset.width, y: size.height / 2 + offset.height)
                 transform = transform.scaledBy(x: scale, y: scale)
                 transform = transform.translatedBy(x: -size.width / 2, y: -size.height / 2)
+
+                // Draw map texture background
+                var hasTexture = false
+                if let textureImage = UIImage(named: globeState.mapStyle.textureName) {
+                    let topLeft = CGPoint(x: 0, y: verticalOffset).applying(transform)
+                    let bottomRight = CGPoint(x: mapWidth, y: verticalOffset + mapHeight).applying(transform)
+                    let textureRect = CGRect(
+                        x: topLeft.x, y: topLeft.y,
+                        width: bottomRight.x - topLeft.x,
+                        height: bottomRight.y - topLeft.y
+                    )
+                    let resolved = context.resolve(Image(uiImage: textureImage))
+                    context.draw(resolved, in: textureRect)
+                    hasTexture = true
+                }
 
                 // Draw countries
                 for country in countries {
@@ -57,17 +72,25 @@ struct MapView: View {
                             endPoint: CGPoint(x: dotRect.maxX, y: dotRect.minY))
 
                         if isSelected {
-                            fillShading = .color(AppColors.land)
-                            if isBoth { borderShading = gradientShading }
-                            else if isVisited { borderShading = .color(AppColors.visited) }
-                            else if isWishlist { borderShading = .color(AppColors.wishlist) }
-                            else { borderShading = .color(.black) }
+                            if isBoth {
+                                fillShading = gradientShading
+                                borderShading = .color(.white)
+                            } else if isVisited {
+                                fillShading = .color(AppColors.visited)
+                                borderShading = .color(.white)
+                            } else if isWishlist {
+                                fillShading = .color(AppColors.wishlist)
+                                borderShading = .color(.white)
+                            } else {
+                                fillShading = hasTexture ? .color(Color.white.opacity(0.3)) : .color(AppColors.land)
+                                borderShading = .color(.black)
+                            }
                         } else {
                             borderShading = .color(.black)
                             if isBoth { fillShading = gradientShading }
                             else if isVisited { fillShading = .color(AppColors.visited) }
                             else if isWishlist { fillShading = .color(AppColors.wishlist) }
-                            else { fillShading = .color(AppColors.land) }
+                            else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
                         }
 
                         let dotPath = Path(ellipseIn: dotRect)
@@ -95,17 +118,25 @@ struct MapView: View {
                         }
 
                         if isSelected {
-                            fillShading = .color(AppColors.land)
-                            if isBoth { borderShading = countryGradient() }
-                            else if isVisited { borderShading = .color(AppColors.visited) }
-                            else if isWishlist { borderShading = .color(AppColors.wishlist) }
-                            else { borderShading = .color(.black) }
+                            if isBoth {
+                                fillShading = countryGradient()
+                                borderShading = .color(.white)
+                            } else if isVisited {
+                                fillShading = .color(AppColors.visited)
+                                borderShading = .color(.white)
+                            } else if isWishlist {
+                                fillShading = .color(AppColors.wishlist)
+                                borderShading = .color(.white)
+                            } else {
+                                fillShading = hasTexture ? .color(Color.white.opacity(0.3)) : .color(AppColors.land)
+                                borderShading = .color(.black)
+                            }
                         } else {
                             borderShading = .color(.black)
                             if isBoth { fillShading = countryGradient() }
                             else if isVisited { fillShading = .color(AppColors.visited) }
                             else if isWishlist { fillShading = .color(AppColors.wishlist) }
-                            else { fillShading = .color(AppColors.land) }
+                            else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
                         }
 
                         // Draw all polygons with the determined shading
