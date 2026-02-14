@@ -72,19 +72,11 @@ struct MapView: View {
                             endPoint: CGPoint(x: dotRect.maxX, y: dotRect.minY))
 
                         if isSelected {
-                            if isBoth {
-                                fillShading = gradientShading
-                                borderShading = .color(.white)
-                            } else if isVisited {
-                                fillShading = .color(AppColors.visited)
-                                borderShading = .color(.white)
-                            } else if isWishlist {
-                                fillShading = .color(AppColors.wishlist)
-                                borderShading = .color(.white)
-                            } else {
-                                fillShading = hasTexture ? .color(Color.white.opacity(0.3)) : .color(AppColors.land)
-                                borderShading = .color(.black)
-                            }
+                            fillShading = hasTexture ? .color(.clear) : .color(AppColors.land)
+                            if isBoth { borderShading = gradientShading }
+                            else if isVisited { borderShading = .color(AppColors.visited) }
+                            else if isWishlist { borderShading = .color(AppColors.wishlist) }
+                            else { borderShading = .color(.black) }
                         } else {
                             borderShading = .color(.black)
                             if isBoth { fillShading = gradientShading }
@@ -118,19 +110,11 @@ struct MapView: View {
                         }
 
                         if isSelected {
-                            if isBoth {
-                                fillShading = countryGradient()
-                                borderShading = .color(.white)
-                            } else if isVisited {
-                                fillShading = .color(AppColors.visited)
-                                borderShading = .color(.white)
-                            } else if isWishlist {
-                                fillShading = .color(AppColors.wishlist)
-                                borderShading = .color(.white)
-                            } else {
-                                fillShading = hasTexture ? .color(Color.white.opacity(0.3)) : .color(AppColors.land)
-                                borderShading = .color(.black)
-                            }
+                            fillShading = hasTexture ? .color(.clear) : .color(AppColors.land)
+                            if isBoth { borderShading = countryGradient() }
+                            else if isVisited { borderShading = .color(AppColors.visited) }
+                            else if isWishlist { borderShading = .color(AppColors.wishlist) }
+                            else { borderShading = .color(.black) }
                         } else {
                             borderShading = .color(.black)
                             if isBoth { fillShading = countryGradient() }
