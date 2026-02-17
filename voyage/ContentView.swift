@@ -10,6 +10,11 @@ struct ContentView: View {
                     Label("Home", systemImage: "globe")
                 }
 
+            ChallengeCalendarView(globeState: globeState)
+                .tabItem {
+                    Label("Daily", systemImage: "calendar")
+                }
+
             AchievementsView(globeState: globeState)
                 .tabItem {
                     Label("Achievements", systemImage: "trophy.fill")
@@ -327,15 +332,19 @@ class GlobeState: ObservableObject {
     }
 
     private func flagEmoji(from countryCode: String) -> String {
-        let base: UInt32 = 127397
-        var emoji = ""
-        for scalar in countryCode.uppercased().unicodeScalars {
-            if let scalar = UnicodeScalar(base + scalar.value) {
-                emoji.append(Character(scalar))
-            }
-        }
-        return emoji
+        flagEmojiFromCode(countryCode)
     }
+}
+
+func flagEmojiFromCode(_ countryCode: String) -> String {
+    let base: UInt32 = 127397
+    var emoji = ""
+    for scalar in countryCode.uppercased().unicodeScalars {
+        if let scalar = UnicodeScalar(base + scalar.value) {
+            emoji.append(Character(scalar))
+        }
+    }
+    return emoji
 }
 
 #Preview {

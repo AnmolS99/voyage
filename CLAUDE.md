@@ -24,11 +24,20 @@ Examples:
 
 ```bash
 # Build
-xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6' -configuration Debug build
+xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' -configuration Debug build
 
 # Run in simulator
-xcrun simctl install "iPhone 16 Pro" ~/Library/Developer/Xcode/DerivedData/voyage-*/Build/Products/Debug-iphonesimulator/voyage.app
-xcrun simctl launch "iPhone 16 Pro" com.anmol.voyage
+xcrun simctl install "iPhone 17 Pro" ~/Library/Developer/Xcode/DerivedData/voyage-*/Build/Products/Debug-iphonesimulator/voyage.app
+xcrun simctl launch "iPhone 17 Pro" com.anmol.voyage
+```
+
+## Setup
+
+Supabase credentials are stored in `Secrets.xcconfig` (gitignored). To set up:
+
+```bash
+cp Secrets.xcconfig.example Secrets.xcconfig
+# Edit Secrets.xcconfig with your Supabase URL and publishable key
 ```
 
 ## Architecture
@@ -36,6 +45,7 @@ xcrun simctl launch "iPhone 16 Pro" com.anmol.voyage
 - **SwiftUI** for UI
 - **SceneKit** for 3D globe rendering
 - **GeoJSON** for country boundary data
+- **Supabase** for daily challenge backend
 
 ## Key Files
 
@@ -47,6 +57,7 @@ xcrun simctl launch "iPhone 16 Pro" com.anmol.voyage
 | `GeoJSONParser.swift`       | Parses world.geojson into country data            |
 | `MapView.swift`             | 2D flat map view alternative                      |
 | `ContentView.swift`         | Main app container with UI controls               |
+| `DailyChallenge/`           | Daily geography quiz feature (see below)          |
 
 ## Globe Rendering
 
@@ -69,6 +80,49 @@ The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain 
 - Capital star markers
 
 When modifying colors or selection logic, always update both files together.
+
+## Daily Challenge
+
+A daily geography quiz feature powered by Supabase. The `daily_challenges` table holds 365 pre-seeded questions.
+
+### Challenge Types
+
+| Type              | Clue shown                    | User guesses | Answer validated against         |
+| ----------------- | ----------------------------- | ------------ | -------------------------------- |
+| `is_guess_country` | Country silhouette (outline) | Country name | `GeoJSONCountry.name` via ISO code |
+| `is_guess_capital` | Country name + flag          | Capital city | `GeoJSONCountry.capital.name`    |
+| `is_guess_flag`    | Flag emoji                   | Country name | `GeoJSONCountry.name` via ISO code |
+
+### Flow
+
+1. User opens the **Daily** tab → `ChallengeCalendarView` shows a month grid.
+2. Available challenge dates are fetched from Supabase on appear and cached.
+3. Past and today's dates are tappable; future dates are locked (dimmed + lock icon).
+4. Tapping a date opens `ChallengePlayView` as a sheet.
+5. The view model fetches the challenge from Supabase by date, resolves the `answer` ISO code to a `GeoJSONCountry` via `CountryDataCache`.
+6. User types guesses into `ChallengeSearchField` (filtered dropdown of all country names or capitals).
+7. Each guess is validated case-insensitively. Wrong guesses show red; correct shows green.
+8. Max 5 attempts. Game ends on correct guess or 5 failures → `ChallengeResultView`.
+9. Progress is saved to `ChallengeStore` (UserDefaults) after every guess, so mid-game state persists if the user leaves.
+10. Completed challenges show a green checkmark (solved) or red X (failed) on the calendar.
+
+### Key Files
+
+| File                              | Purpose                                      |
+| --------------------------------- | -------------------------------------------- |
+| `DailyChallenge.swift`            | Models: `DailyChallenge`, `QuestionType`, `ChallengeResult` |
+| `SupabaseClient.swift`            | Network layer (reads credentials from `Secrets.xcconfig` via Info.plist) |
+| `ChallengeStore.swift`            | Local persistence (UserDefaults)             |
+| `DailyChallengeViewModel.swift`   | State management for the quiz flow           |
+| `ChallengeCalendarView.swift`     | Month grid calendar (main tab view)          |
+| `ChallengePlayView.swift`         | Quiz UI with clue, search, and guess list    |
+| `ChallengeSearchField.swift`      | TextField with filtered dropdown suggestions |
+| `CountrySilhouetteView.swift`     | Canvas-based country outline renderer        |
+| `ChallengeResultView.swift`       | Post-completion result card                  |
+
+### Supabase Schema
+
+The `daily_challenges` table has columns: `id` (uuid), `date` (date), `is_guess_country` (bool), `is_guess_capital` (bool), `is_guess_flag` (bool), `answer` (text — ISO 3166-1 alpha-2 code), `created_at`, `updated_at`. Only one boolean is true per row.
 
 ## Color Palette
 

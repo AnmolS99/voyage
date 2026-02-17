@@ -15,10 +15,11 @@ An interactive iOS app to track your adventures across Earth.
 
 ## Features
 
-- Interactive 3D globe with multiple selectable textures,
-- 2D map view alternative.
-- Track visited/wishlist countries with a single tap.
-- All 193 UN member states + 2 observer states (Vatican City, Palestine).
+- Interactive 3D globe with multiple selectable textures
+- 2D map view alternative
+- Track visited/wishlist countries with a single tap
+- All 193 UN member states + 2 observer states (Vatican City, Palestine)
+- Daily geography quiz — guess countries by outline, flag, or capital
 - Dark mode (of course)
 - Data syncs across devices via iCloud
 
@@ -29,6 +30,8 @@ An interactive iOS app to track your adventures across Earth.
 ```bash
 git clone https://github.com/AnmolS99/voyage.git
 cd voyage
+cp Secrets.xcconfig.example Secrets.xcconfig
+# Edit Secrets.xcconfig with your Supabase URL and publishable key
 open voyage.xcodeproj
 ```
 
@@ -42,6 +45,7 @@ Build and run on iOS 17.0+ simulator or device.
 | `MapView.swift`        | 2D flat map alternative                        |
 | `GlobeScene.swift`     | Scene setup (globe, lighting, camera)          |
 | `GeoJSONParser.swift`  | Parses country data from `world.geojson` (polygons + point markers) |
+| `DailyChallenge/`      | Daily geography quiz feature (Supabase-backed)                      |
 
 ### Globe Bundling
 

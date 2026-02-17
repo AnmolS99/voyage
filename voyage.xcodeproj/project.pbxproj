@@ -38,6 +38,15 @@
 		E81234560033 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
 		E81234560034 /* CountryExploreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550034 /* CountryExploreView.swift */; };
 		E81234560035 /* country_highlights.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550035 /* country_highlights.json */; };
+		E81234560036 /* DailyChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550036 /* DailyChallenge.swift */; };
+		E81234560037 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550037 /* SupabaseClient.swift */; };
+		E81234560038 /* ChallengeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550038 /* ChallengeStore.swift */; };
+		E81234560039 /* DailyChallengeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550039 /* DailyChallengeViewModel.swift */; };
+		E81234560040 /* CountrySilhouetteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550040 /* CountrySilhouetteView.swift */; };
+		E81234560041 /* ChallengeSearchField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550041 /* ChallengeSearchField.swift */; };
+		E81234560042 /* ChallengePlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550042 /* ChallengePlayView.swift */; };
+		E81234560043 /* ChallengeResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550043 /* ChallengeResultView.swift */; };
+		E81234560044 /* ChallengeCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550044 /* ChallengeCalendarView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +60,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E81234550050 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
 		B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryDataCache.swift; sourceTree = "<group>"; };
 		E81234540001 /* voyage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voyage.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -85,6 +95,15 @@
 		E81234550032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		E81234550034 /* CountryExploreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryExploreView.swift; sourceTree = "<group>"; };
 		E81234550035 /* country_highlights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = country_highlights.json; sourceTree = "<group>"; };
+		E81234550036 /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallenge.swift; sourceTree = "<group>"; };
+		E81234550037 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
+		E81234550038 /* ChallengeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeStore.swift; sourceTree = "<group>"; };
+		E81234550039 /* DailyChallengeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallengeViewModel.swift; sourceTree = "<group>"; };
+		E81234550040 /* CountrySilhouetteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountrySilhouetteView.swift; sourceTree = "<group>"; };
+		E81234550041 /* ChallengeSearchField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeSearchField.swift; sourceTree = "<group>"; };
+		E81234550042 /* ChallengePlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengePlayView.swift; sourceTree = "<group>"; };
+		E81234550043 /* ChallengeResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeResultView.swift; sourceTree = "<group>"; };
+		E81234550044 /* ChallengeCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCalendarView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +138,7 @@
 				E81234520003 /* voyageTests */,
 				E81234520004 /* GlobeCacheGenerator */,
 				E81234520002 /* Products */,
+				E81234550050 /* Secrets.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -145,6 +165,7 @@
 				B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */,
 				6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */,
 				E81234550022 /* ContinentData.swift */,
+				E81234520005 /* DailyChallenge */,
 				E81234550026 /* TipJarManager.swift */,
 				E81234550027 /* TipJar.storekit */,
 				E81234550006 /* Assets.xcassets */,
@@ -182,6 +203,22 @@
 				E81234550030 /* main.swift */,
 			);
 			path = GlobeCacheGenerator;
+			sourceTree = "<group>";
+		};
+		E81234520005 /* DailyChallenge */ = {
+			isa = PBXGroup;
+			children = (
+				E81234550036 /* DailyChallenge.swift */,
+				E81234550037 /* SupabaseClient.swift */,
+				E81234550038 /* ChallengeStore.swift */,
+				E81234550039 /* DailyChallengeViewModel.swift */,
+				E81234550040 /* CountrySilhouetteView.swift */,
+				E81234550041 /* ChallengeSearchField.swift */,
+				E81234550042 /* ChallengePlayView.swift */,
+				E81234550043 /* ChallengeResultView.swift */,
+				E81234550044 /* ChallengeCalendarView.swift */,
+			);
+			path = DailyChallenge;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -327,6 +364,15 @@
 				E81234560031 /* CountryListView.swift in Sources */,
 				E81234560032 /* HomeView.swift in Sources */,
 				E81234560034 /* CountryExploreView.swift in Sources */,
+				E81234560036 /* DailyChallenge.swift in Sources */,
+				E81234560037 /* SupabaseClient.swift in Sources */,
+				E81234560038 /* ChallengeStore.swift in Sources */,
+				E81234560039 /* DailyChallengeViewModel.swift in Sources */,
+				E81234560040 /* CountrySilhouetteView.swift in Sources */,
+				E81234560041 /* ChallengeSearchField.swift in Sources */,
+				E81234560042 /* ChallengePlayView.swift in Sources */,
+				E81234560043 /* ChallengeResultView.swift in Sources */,
+				E81234560044 /* ChallengeCalendarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -486,6 +532,7 @@
 		};
 		E81234580003 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E81234550050 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -495,6 +542,7 @@
 				DEVELOPMENT_TEAM = LP4YVQGGQL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = voyage/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = voyage;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -516,6 +564,7 @@
 		};
 		E81234580004 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E81234550050 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -525,6 +574,7 @@
 				DEVELOPMENT_TEAM = LP4YVQGGQL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = voyage/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = voyage;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
