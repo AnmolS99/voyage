@@ -25,7 +25,7 @@ struct ChallengeSearchField: View {
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.words)
-                    .onChange(of: searchText) { _ in
+                    .onChange(of: searchText) {
                         showSuggestions = !searchText.isEmpty
                     }
 
