@@ -60,7 +60,6 @@ final class DailyChallengeViewModel: ObservableObject {
               attemptsUsed < maxAttempts,
               let country = answerCountry else { return }
 
-        // Don't allow duplicate guesses
         if guesses.contains(where: { $0.caseInsensitiveCompare(guess) == .orderedSame }) { return }
 
         attemptsUsed += 1

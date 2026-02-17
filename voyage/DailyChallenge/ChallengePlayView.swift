@@ -101,6 +101,7 @@ struct ChallengePlayView: View {
                     ChallengeSearchField(
                         searchText: $searchText,
                         suggestions: viewModel.suggestions,
+                        guessedItems: Set(viewModel.guesses),
                         isDarkMode: isDarkMode,
                         onSubmit: { guess in
                             viewModel.submitGuess(guess)

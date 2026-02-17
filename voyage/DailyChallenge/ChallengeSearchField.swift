@@ -3,6 +3,7 @@ import SwiftUI
 struct ChallengeSearchField: View {
     @Binding var searchText: String
     let suggestions: [String]
+    let guessedItems: Set<String>
     let isDarkMode: Bool
     let onSubmit: (String) -> Void
 
@@ -11,6 +12,10 @@ struct ChallengeSearchField: View {
     private var filtered: [String] {
         guard !searchText.isEmpty else { return [] }
         return suggestions.filter { $0.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    private func isGuessed(_ item: String) -> Bool {
+        guessedItems.contains(where: { $0.caseInsensitiveCompare(item) == .orderedSame })
     }
 
     var body: some View {
@@ -51,6 +56,7 @@ struct ChallengeSearchField: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(filtered.prefix(5), id: \.self) { suggestion in
+                            let guessed = isGuessed(suggestion)
                             Button {
                                 searchText = suggestion
                                 showSuggestions = false
@@ -59,12 +65,20 @@ struct ChallengeSearchField: View {
                                 HStack {
                                     Text(suggestion)
                                         .font(.system(size: 15, design: .rounded))
-                                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                                        .foregroundColor(guessed
+                                            ? AppColors.textMuted(isDarkMode: isDarkMode)
+                                            : AppColors.textPrimary(isDarkMode: isDarkMode))
                                     Spacer()
+                                    if guessed {
+                                        Text("Guessed")
+                                            .font(.system(size: 12, design: .rounded))
+                                            .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                                    }
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 14)
                             }
+                            .disabled(guessed)
                             if suggestion != filtered.prefix(5).last {
                                 Divider()
                                     .padding(.leading, 16)
