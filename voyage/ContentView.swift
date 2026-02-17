@@ -2,31 +2,51 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var globeState = GlobeState()
+    @State private var selectedTab = 0
+    @State private var showDailyBadge = false
+
+    private static let badgeDateKey = "dailyBadgeNextDate"
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             HomeView(globeState: globeState)
                 .tabItem {
                     Label("Home", systemImage: "globe")
                 }
+                .tag(0)
 
             ChallengeCalendarView(globeState: globeState)
                 .tabItem {
                     Label("Daily", systemImage: "calendar")
                 }
+                .tag(1)
+                .badge(showDailyBadge ? "!" : nil)
 
             AchievementsView(globeState: globeState)
                 .tabItem {
                     Label("Achievements", systemImage: "trophy.fill")
                 }
+                .tag(2)
 
             SettingsView(globeState: globeState)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
+                .tag(3)
         }
         .tint(globeState.isDarkMode ? AppColors.buttonDark : AppColors.buttonLight)
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .onAppear {
+            let nextDate = UserDefaults.standard.object(forKey: Self.badgeDateKey) as? Date ?? .distantPast
+            showDailyBadge = Date() >= nextDate
+        }
+        .onChange(of: selectedTab) {
+            if selectedTab == 1 {
+                showDailyBadge = false
+                let tomorrow = Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: 1, to: Date())!)
+                UserDefaults.standard.set(tomorrow, forKey: Self.badgeDateKey)
+            }
+        }
     }
 }
 
