@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var globeState = GlobeState()
     @State private var selectedTab = 0
     @State private var showDailyBadge = false
+    @State private var showDailyToast = false
 
     private static let badgeDateKey = "dailyBadgeNextDate"
 
@@ -36,13 +37,50 @@ struct ContentView: View {
         }
         .tint(globeState.isDarkMode ? AppColors.buttonDark : AppColors.buttonLight)
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .overlay(alignment: .bottom) {
+            if showDailyToast {
+                Button {
+                    withAnimation { showDailyToast = false }
+                    selectedTab = 1
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "calendar.badge.exclamationmark")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("New daily challenge available!")
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(
+                        Capsule()
+                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+                    )
+                }
+                .padding(.bottom, 60)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .onAppear {
             let nextDate = UserDefaults.standard.object(forKey: Self.badgeDateKey) as? Date ?? .distantPast
-            showDailyBadge = Date() >= nextDate
+            let shouldShow = Date() >= nextDate
+            showDailyBadge = shouldShow
+            if shouldShow {
+                withAnimation(.easeOut(duration: 0.3).delay(0.5)) {
+                    showDailyToast = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                    withAnimation(.easeIn(duration: 0.3)) {
+                        showDailyToast = false
+                    }
+                }
+            }
         }
         .onChange(of: selectedTab) {
             if selectedTab == 1 {
                 showDailyBadge = false
+                withAnimation { showDailyToast = false }
                 let tomorrow = Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: 1, to: Date())!)
                 UserDefaults.standard.set(tomorrow, forKey: Self.badgeDateKey)
             }
