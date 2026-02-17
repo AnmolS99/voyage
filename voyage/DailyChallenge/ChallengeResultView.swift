@@ -56,15 +56,22 @@ struct ChallengeResultView: View {
 
     private var answerCard: some View {
         VStack(spacing: 16) {
-            // Flag + country name
-            if let flagCode = country.flagCode {
-                Text(flagEmojiFromCode(flagCode))
-                    .font(.system(size: 60))
+            // Country name + flag
+            HStack(spacing: 10) {
+                if let flagCode = country.flagCode {
+                    Text(flagEmojiFromCode(flagCode))
+                        .font(.system(size: 32))
+                }
+                Text(country.name)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             }
 
-            Text(country.name)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+            // Country outline
+            if let flagCode = country.flagCode {
+                CountrySilhouetteView(flagCode: flagCode, isDarkMode: isDarkMode)
+                    .frame(height: 100)
+            }
 
             // Details
             VStack(spacing: 8) {

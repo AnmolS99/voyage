@@ -183,7 +183,7 @@ struct ChallengePlayView: View {
             ForEach(0..<5, id: \.self) { index in
                 Circle()
                     .fill(attemptColor(for: index))
-                    .frame(width: 12, height: 12)
+                    .frame(width: 16, height: 16)
             }
         }
     }
