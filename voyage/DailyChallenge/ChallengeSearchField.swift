@@ -40,7 +40,7 @@ struct ChallengeSearchField: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(AppColors.cardBackground(isDarkMode: isDarkMode))
@@ -63,7 +63,7 @@ struct ChallengeSearchField: View {
                                     Spacer()
                                 }
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
+                                .padding(.vertical, 14)
                             }
                             if suggestion != filtered.prefix(5).last {
                                 Divider()
