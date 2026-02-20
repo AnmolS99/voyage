@@ -47,6 +47,7 @@
 		E81234560042 /* ChallengePlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550042 /* ChallengePlayView.swift */; };
 		E81234560043 /* ChallengeResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550043 /* ChallengeResultView.swift */; };
 		E81234560044 /* ChallengeCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550044 /* ChallengeCalendarView.swift */; };
+		E81234560045 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550045 /* ConfettiView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +105,7 @@
 		E81234550042 /* ChallengePlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengePlayView.swift; sourceTree = "<group>"; };
 		E81234550043 /* ChallengeResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeResultView.swift; sourceTree = "<group>"; };
 		E81234550044 /* ChallengeCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCalendarView.swift; sourceTree = "<group>"; };
+		E81234550045 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -217,6 +219,7 @@
 				E81234550042 /* ChallengePlayView.swift */,
 				E81234550043 /* ChallengeResultView.swift */,
 				E81234550044 /* ChallengeCalendarView.swift */,
+				E81234550045 /* ConfettiView.swift */,
 			);
 			path = DailyChallenge;
 			sourceTree = "<group>";
@@ -373,6 +376,7 @@
 				E81234560042 /* ChallengePlayView.swift in Sources */,
 				E81234560043 /* ChallengeResultView.swift in Sources */,
 				E81234560044 /* ChallengeCalendarView.swift in Sources */,
+				E81234560045 /* ConfettiView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

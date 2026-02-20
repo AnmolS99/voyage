@@ -5,6 +5,7 @@ struct ChallengePlayView: View {
     let isDarkMode: Bool
     @StateObject private var viewModel = DailyChallengeViewModel()
     @State private var searchText = ""
+    @State private var showConfetti = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -39,6 +40,7 @@ struct ChallengePlayView: View {
                     }
                 }
             }
+            .overlay { if showConfetti { ConfettiView() } }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -51,6 +53,15 @@ struct ChallengePlayView: View {
         }
         .task {
             await viewModel.loadChallenge(for: date)
+        }
+        .onChange(of: viewModel.viewState) { oldState, newState in
+            if case .completed = newState, case .playing = oldState, viewModel.solved {
+                showConfetti = true
+                Task {
+                    try? await Task.sleep(for: .seconds(3))
+                    showConfetti = false
+                }
+            }
         }
     }
 
