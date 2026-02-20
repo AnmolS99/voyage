@@ -220,9 +220,18 @@ struct ChallengePlayView: View {
                         .font(.system(size: 15, design: .rounded))
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     Spacer()
-                    Text("Attempt \(index + 1)")
-                        .font(.system(size: 12, design: .rounded))
+                    if isCorrectGuess(guess) {
+                        EmptyView()
+                    } else if let hint = guessHint(for: guess) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 11, weight: .semibold))
+                                .rotationEffect(.degrees(hint.bearing))
+                            Text(hint.distance)
+                                .font(.system(size: 12, design: .rounded))
+                        }
                         .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -245,5 +254,56 @@ struct ChallengePlayView: View {
         case nil:
             return false
         }
+    }
+
+    private func guessHint(for guess: String) -> (distance: String, bearing: Double)? {
+        guard let answerCapital = viewModel.answerCountry?.capital else { return nil }
+
+        let guessedCountry: GeoJSONCountry?
+        switch viewModel.challenge?.questionType {
+        case .country, .flag:
+            guessedCountry = CountryDataCache.shared.countries.first {
+                $0.name.caseInsensitiveCompare(guess) == .orderedSame
+            }
+        case .capital:
+            guessedCountry = CountryDataCache.shared.countries.first {
+                $0.capital?.name.caseInsensitiveCompare(guess) == .orderedSame
+            }
+        case nil:
+            return nil
+        }
+
+        guard let guessedCapital = guessedCountry?.capital else { return nil }
+
+        let dist = haversineKm(
+            lat1: guessedCapital.lat, lon1: guessedCapital.lon,
+            lat2: answerCapital.lat, lon2: answerCapital.lon
+        )
+        let bearing = compassBearing(
+            lat1: guessedCapital.lat, lon1: guessedCapital.lon,
+            lat2: answerCapital.lat, lon2: answerCapital.lon
+        )
+
+        let km = Int(dist.rounded())
+        let distStr = km >= 1000 ? "\(km / 1000),\(String(format: "%03d", km % 1000)) km" : "\(km) km"
+        return (distStr, bearing)
+    }
+
+    private func haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
+        let r = 6371.0
+        let dLat = (lat2 - lat1) * .pi / 180
+        let dLon = (lon2 - lon1) * .pi / 180
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) * sin(dLon / 2) * sin(dLon / 2)
+        return r * 2 * atan2(sqrt(a), sqrt(1 - a))
+    }
+
+    private func compassBearing(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
+        let lat1R = lat1 * .pi / 180
+        let lat2R = lat2 * .pi / 180
+        let dLon = (lon2 - lon1) * .pi / 180
+        let y = sin(dLon) * cos(lat2R)
+        let x = cos(lat1R) * sin(lat2R) - sin(lat1R) * cos(lat2R) * cos(dLon)
+        return atan2(y, x) * 180 / .pi
     }
 }
