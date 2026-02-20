@@ -43,6 +43,9 @@ struct ChallengeCalendarView: View {
                             .padding(.horizontal, 20)
                     }
 
+                    // Streak
+                    streakCard
+
                     // Stats summary
                     statsSummary
                 }
@@ -198,6 +201,33 @@ struct ChallengeCalendarView: View {
             return AppColors.textPrimary(isDarkMode: globeState.isDarkMode)
         }
         return AppColors.textMuted(isDarkMode: globeState.isDarkMode)
+    }
+
+    // MARK: - Streak Card
+
+    private var streakCard: some View {
+        let streak = store.currentStreak
+        return HStack(spacing: 12) {
+            Text("🔥")
+                .font(.system(size: 36))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(streak) day\(streak == 1 ? "" : "s")")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
+                Text("Current Streak")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(AppColors.textTertiary(isDarkMode: globeState.isDarkMode))
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+                .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
+        )
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Stats Summary
