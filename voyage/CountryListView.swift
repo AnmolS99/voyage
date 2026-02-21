@@ -73,6 +73,8 @@ struct CountryRow: View {
     @ObservedObject var globeState: GlobeState
     let onSelect: () -> Void
 
+    @State private var showingExplore = false
+
     private var isVisited: Bool { globeState.isVisited(country.name) }
     private var isWishlist: Bool { globeState.isInWishlist(country.name) }
 
@@ -101,10 +103,20 @@ struct CountryRow: View {
                         .foregroundColor(isWishlist ? AppColors.wishlist : AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
                 }
                 .buttonStyle(.plain)
+
+                Button { showingExplore = true } label: {
+                    Image(systemName: "binoculars.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                }
+                .buttonStyle(.plain)
             }
         }
         .contentShape(Rectangle())
         .onTapGesture { onSelect() }
+        .sheet(isPresented: $showingExplore) {
+            CountryExploreView(globeState: globeState, countryName: country.name)
+        }
     }
 
     private func toggleVisited() {
