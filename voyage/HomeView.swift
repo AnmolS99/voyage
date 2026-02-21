@@ -175,8 +175,8 @@ struct HomeView: View {
                 .transition(.scale.combined(with: .opacity))
             }
 
-            // Progress bar (hidden when a country is selected)
-            if globeState.selectedCountry == nil {
+            // Progress bar (hidden when a country is selected or in map view)
+            if globeState.selectedCountry == nil && globeState.viewMode == .globe {
             VStack(spacing: 8) {
                 HStack {
                     Text("\(globeState.visitedUNCountries.count) of \(globeState.totalUNCountries) countries")
