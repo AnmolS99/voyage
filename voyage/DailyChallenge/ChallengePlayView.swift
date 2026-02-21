@@ -108,21 +108,23 @@ struct ChallengePlayView: View {
                     if !viewModel.guesses.isEmpty {
                         guessList
                     }
-
-                    // Search field
-                    ChallengeSearchField(
-                        searchText: $searchText,
-                        suggestions: viewModel.suggestions,
-                        guessedItems: Set(viewModel.guesses),
-                        isDarkMode: isDarkMode,
-                        onSubmit: { guess in
-                            viewModel.submitGuess(guess)
-                            searchText = ""
-                        }
-                    )
-                    .padding(.horizontal, 20)
                 }
                 .padding(.vertical, 24)
+            }
+            .safeAreaInset(edge: .bottom) {
+                ChallengeSearchField(
+                    searchText: $searchText,
+                    suggestions: viewModel.suggestions,
+                    guessedItems: Set(viewModel.guesses),
+                    isDarkMode: isDarkMode,
+                    onSubmit: { guess in
+                        viewModel.submitGuess(guess)
+                        searchText = ""
+                    }
+                )
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(AppColors.pageBackground(isDarkMode: isDarkMode))
             }
         }
     }
