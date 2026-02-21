@@ -6,6 +6,7 @@ struct ChallengeResultView: View {
     let solved: Bool
     let attempts: Int
     let guesses: [String]
+    let streak: Int
     let isDarkMode: Bool
     let onDismiss: () -> Void
 
@@ -144,17 +145,59 @@ struct ChallengeResultView: View {
     }
 
     private var footerButton: some View {
-        Button(action: onDismiss) {
-            Text("Back to Calendar")
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(AppColors.buttonColor(isDarkMode: isDarkMode))
-                )
+        VStack(spacing: 12) {
+            ShareLink(item: shareText) {
+                Label("Share Result", systemImage: "square.and.arrow.up")
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundColor(AppColors.buttonColor(isDarkMode: isDarkMode))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(AppColors.buttonColor(isDarkMode: isDarkMode), lineWidth: 2)
+                    )
+            }
+
+            Button(action: onDismiss) {
+                Text("Back to Calendar")
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(AppColors.buttonColor(isDarkMode: isDarkMode))
+                    )
+            }
         }
+    }
+
+    private var shareText: String {
+        let parseFormatter = DateFormatter()
+        parseFormatter.dateFormat = "yyyy-MM-dd"
+        let shareFormatter = DateFormatter()
+        shareFormatter.dateFormat = "dd.MM.yy"
+
+        let dateStr: String
+        if let parsedDate = parseFormatter.date(from: challenge.date) {
+            dateStr = shareFormatter.string(from: parsedDate)
+        } else {
+            dateStr = challenge.date
+        }
+
+        let dots = guesses.enumerated().map { index, _ in
+            (index == guesses.count - 1 && solved) ? "🟢" : "🔴"
+        }.joined()
+
+        var text = "#voyage 🌍 \(challenge.questionType.title) (\(dateStr)) \(attempts)/5\n\(dots)\n"
+
+        if streak > 0 {
+            text += "\nMy streak: \(streak) 🔥\n"
+        }
+
+        text += "\nGet voyage 🌍 for free: https://apps.apple.com/no/app/voyage-track-your-journey/id6758411779?l=nb"
+
+        return text
     }
 
     private func isCorrect(_ guess: String) -> Bool {

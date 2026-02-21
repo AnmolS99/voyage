@@ -34,6 +34,7 @@ struct ChallengePlayView: View {
                             solved: viewModel.solved,
                             attempts: viewModel.attemptsUsed,
                             guesses: viewModel.guesses,
+                            streak: ChallengeStore.shared.currentStreak,
                             isDarkMode: isDarkMode,
                             onDismiss: { dismiss() }
                         )
