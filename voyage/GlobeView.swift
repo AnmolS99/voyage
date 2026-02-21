@@ -399,6 +399,8 @@ struct GlobeView: UIViewRepresentable {
             guard let sceneView = sceneView,
                   let globeNode = globeNode else { return }
 
+            stopInertia()
+
             let location = gesture.location(in: sceneView)
             let hitResults = sceneView.hitTest(location, options: nil)
 
