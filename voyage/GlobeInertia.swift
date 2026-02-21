@@ -7,7 +7,7 @@ final class GlobeInertia {
     var velocityY: Float = 0   // rad/s — globe spin (horizontal drag)
 
     /// Fraction of velocity remaining after 1 second (controls how long the spin coasts).
-    private let damping: Float = 0.15
+    private let damping: Float = 0.05
 
     var isActive: Bool {
         abs(velocityX) > 0.001 || abs(velocityY) > 0.001
