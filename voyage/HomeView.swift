@@ -92,8 +92,15 @@ struct HomeView: View {
                     globeState.viewMode = globeState.viewMode == .globe ? .map : .globe
                 }
             }) {
-                Text(globeState.viewMode == .globe ? "🗺️" : "🌍")
-                    .font(.system(size: 32))
+                Image(systemName: globeState.viewMode == .globe ? "map" : "globe.europe.africa.fill")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                    )
+                    .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
             }
 
             Spacer()
