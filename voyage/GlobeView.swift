@@ -67,11 +67,19 @@ struct GlobeView: UIViewRepresentable {
         private var doubleTapDragStartDistance: Float = 0
         private var lastGlobeStyle: GlobeStyle?
 
+        private let inertia = GlobeInertia()
+        private var displayLink: CADisplayLink?
+        private var lastInertiaTime: CFTimeInterval = 0
+
         init(globeState: GlobeState) {
             self.globeState = globeState
             super.init()
             // Cache countries data once
             self.cachedCountries = CountryDataCache.shared.countries
+        }
+
+        deinit {
+            stopInertia()
         }
 
         func zoomIn() {
@@ -225,46 +233,91 @@ struct GlobeView: UIViewRepresentable {
             guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                   let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
 
-            // Stop auto-rotation when user drags
-            if gesture.state == .began {
+            // Scale rotation speed based on camera distance (zoom level)
+            let cameraDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
+                                      cameraNode.position.y * cameraNode.position.y +
+                                      cameraNode.position.z * cameraNode.position.z)
+            let baseRotationSpeed: Float = 0.005
+            let referenceDistance: Float = 4.0
+            let distanceRatio = cameraDistance / referenceDistance
+            let rotationSpeed = baseRotationSpeed * distanceRatio * distanceRatio
+
+            switch gesture.state {
+            case .began:
+                stopInertia()
                 // Sync rotation state with actual visual position before stopping auto-rotation
                 let currentActualRotationY = globeNode.presentation.eulerAngles.y
                 currentRotationY = currentActualRotationY
                 globeNode.eulerAngles.y = currentActualRotationY
                 globeNode.removeAction(forKey: "autoRotation")
                 globeState.isAutoRotating = false
+
+            case .changed:
+                let translation = gesture.translation(in: sceneView)
+                currentRotationY += Float(translation.x) * rotationSpeed
+                globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
+                currentRotationX += Float(translation.y) * rotationSpeed
+                currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX))
+                cameraNode.position = SCNVector3(
+                    0,
+                    cameraDistance * sin(currentRotationX),
+                    cameraDistance * cos(currentRotationX)
+                )
+                cameraNode.look(at: SCNVector3(0, 0, 0))
+                gesture.setTranslation(.zero, in: sceneView)
+
+            case .ended, .cancelled:
+                let velocity = gesture.velocity(in: sceneView)
+                inertia.velocityY = Float(velocity.x) * rotationSpeed
+                inertia.velocityX = Float(velocity.y) * rotationSpeed
+                if inertia.isActive { startInertia() }
+
+            default:
+                break
+            }
+        }
+
+        private func startInertia() {
+            displayLink?.invalidate()
+            lastInertiaTime = 0
+            displayLink = CADisplayLink(target: self, selector: #selector(inertiaStep(_:)))
+            displayLink?.add(to: .main, forMode: .common)
+        }
+
+        private func stopInertia() {
+            displayLink?.invalidate()
+            displayLink = nil
+            inertia.reset()
+        }
+
+        @objc private func inertiaStep(_ link: CADisplayLink) {
+            guard lastInertiaTime > 0 else {
+                lastInertiaTime = link.timestamp
+                return
             }
 
-            let translation = gesture.translation(in: sceneView)
+            let dt = Float(link.timestamp - lastInertiaTime)
+            lastInertiaTime = link.timestamp
 
-            // Scale rotation speed based on camera distance (zoom level)
-            // When zoomed in (closer), use slower rotation for finer control
-            let cameraDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
-                                      cameraNode.position.y * cameraNode.position.y +
-                                      cameraNode.position.z * cameraNode.position.z)
-            let baseRotationSpeed: Float = 0.005
-            let referenceDistance: Float = 4.0  // Default camera distance
-            let distanceRatio = cameraDistance / referenceDistance
-            // Use squared ratio for more aggressive scaling when zoomed in
-            let rotationSpeed = baseRotationSpeed * distanceRatio * distanceRatio
+            let (dx, dy) = inertia.step(dt: dt)
+            currentRotationY += dy
+            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX + dx))
 
-            // Horizontal drag: rotate globe around Y-axis
-            currentRotationY += Float(translation.x) * rotationSpeed
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else {
+                stopInertia()
+                return
+            }
+
             globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
 
-            // Vertical drag: orbit camera up/down while looking at globe
-            currentRotationX += Float(translation.y) * rotationSpeed
-            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX))
-
-            // Keep camera at current distance from globe center
-            cameraNode.position = SCNVector3(
-                0,
-                cameraDistance * sin(currentRotationX),
-                cameraDistance * cos(currentRotationX)
-            )
+            let dist = sqrt(cameraNode.position.x * cameraNode.position.x +
+                            cameraNode.position.y * cameraNode.position.y +
+                            cameraNode.position.z * cameraNode.position.z)
+            cameraNode.position = SCNVector3(0, dist * sin(currentRotationX), dist * cos(currentRotationX))
             cameraNode.look(at: SCNVector3(0, 0, 0))
 
-            gesture.setTranslation(.zero, in: sceneView)
+            if !inertia.isActive { stopInertia() }
         }
 
         @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
