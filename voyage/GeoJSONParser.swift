@@ -3,7 +3,8 @@ import UIKit
 
 struct GeoJSONCountry {
     let name: String
-    let polygons: [[[Double]]] // Array of polygons, each polygon is array of [lon, lat] coordinates (empty for point countries)
+    let polygons: [[[Double]]] // Array of outer rings, each ring is array of [lon, lat] coordinates (empty for point countries)
+    let holes: [[[Double]]]    // Inner rings (holes) — e.g., the Lesotho enclave inside South Africa
     let color: UIColor
     let continent: String?
     let isPointCountry: Bool
@@ -59,6 +60,7 @@ class GeoJSONParser {
                     let country = GeoJSONCountry(
                         name: name,
                         polygons: [],
+                        holes: [],
                         color: GeoJSONCountry.landColor(),
                         continent: continent,
                         isPointCountry: true,
@@ -71,12 +73,16 @@ class GeoJSONParser {
             } else {
                 // Polygon or MultiPolygon country
                 var polygons: [[[Double]]] = []
+                var holes: [[[Double]]] = []
 
                 if type == "Polygon" {
                     if let coords = coordinates as? [[[Double]]] {
-                        // Take only the outer ring (first element)
+                        // First ring is the outer boundary; subsequent rings are holes (e.g., enclaves)
                         if let outerRing = coords.first {
                             polygons.append(outerRing)
+                        }
+                        if coords.count > 1 {
+                            holes.append(contentsOf: coords.dropFirst())
                         }
                     }
                 } else if type == "MultiPolygon" {
@@ -84,6 +90,9 @@ class GeoJSONParser {
                         for polygon in multiCoords {
                             if let outerRing = polygon.first {
                                 polygons.append(outerRing)
+                            }
+                            if polygon.count > 1 {
+                                holes.append(contentsOf: polygon.dropFirst())
                             }
                         }
                     }
@@ -93,6 +102,7 @@ class GeoJSONParser {
                     let country = GeoJSONCountry(
                         name: name,
                         polygons: polygons,
+                        holes: holes,
                         color: GeoJSONCountry.landColor(),
                         continent: continent,
                         isPointCountry: isPointCountry,

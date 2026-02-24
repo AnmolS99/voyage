@@ -44,7 +44,8 @@ class PolygonTriangulator {
 
     // Create country fill geometry using adaptive grid-based point-in-polygon fill.
     // Large cells cover the interior; cells near borders subdivide to finer resolution.
-    static func createCountryGeometry(polygons: [[[Double]]], radius: Float = 1.003) -> SCNGeometry? {
+    // holes: inner ring coordinates to exclude from the fill (e.g., the Lesotho enclave in South Africa).
+    static func createCountryGeometry(polygons: [[[Double]]], holes: [[[Double]]] = [], radius: Float = 1.003) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
 
@@ -106,10 +107,16 @@ class PolygonTriangulator {
             }
 
             func addCell(lat: Double, lon: Double, size: Double) {
-                let centerIn = isPointInPolygon(lon: lon + size / 2, lat: lat + size / 2, polygon: coords)
+                let centerLon = lon + size / 2
+                let centerLat = lat + size / 2
+                let centerIn = isPointInPolygon(lon: centerLon, lat: centerLat, polygon: coords)
 
                 if size <= minSize {
-                    if centerIn { emitCell(lat: lat, lon: lon, size: size) }
+                    if centerIn {
+                        // Exclude cells whose center falls inside a hole (e.g., Lesotho within South Africa)
+                        let inHole = holes.contains { isPointInPolygon(lon: centerLon, lat: centerLat, polygon: $0) }
+                        if !inHole { emitCell(lat: lat, lon: lon, size: size) }
+                    }
                     return
                 }
 
@@ -126,7 +133,24 @@ class PolygonTriangulator {
                                   isPointInPolygon(lon: lon + half, lat: lat + size, polygon: coords) &&
                                   isPointInPolygon(lon: lon, lat: lat + half, polygon: coords)
                     if edgesIn {
-                        emitCell(lat: lat, lon: lon, size: size)
+                        // Before emitting, check whether a hole overlaps this cell.
+                        // A hole overlaps if its center lands inside, or any hole vertex is within the cell bounds.
+                        let holeOverlaps = !holes.isEmpty && holes.contains { hole in
+                            isPointInPolygon(lon: centerLon, lat: centerLat, polygon: hole) ||
+                            hole.contains { coord in
+                                coord[0] >= lon && coord[0] <= lon + size &&
+                                coord[1] >= lat && coord[1] <= lat + size
+                            }
+                        }
+                        if holeOverlaps {
+                            // Subdivide so the hole boundary is respected at finer resolution
+                            addCell(lat: lat, lon: lon, size: half)
+                            addCell(lat: lat, lon: lon + half, size: half)
+                            addCell(lat: lat + half, lon: lon, size: half)
+                            addCell(lat: lat + half, lon: lon + half, size: half)
+                        } else {
+                            emitCell(lat: lat, lon: lon, size: size)
+                        }
                     } else {
                         // Edge crosses concavity — subdivide
                         addCell(lat: lat, lon: lon, size: half)

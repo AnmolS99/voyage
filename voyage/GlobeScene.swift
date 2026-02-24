@@ -16,6 +16,10 @@ class GlobeScene {
             // Rebuild the countryNodes and originalColors dictionaries from cached nodes
             rebuildCoordinatorData(from: bundledGlobe, coordinator: coordinator)
 
+            // Patch any countries whose cached geometry was built without hole support
+            // (e.g., South Africa's fill incorrectly covered the Lesotho enclave)
+            patchHoleCountries(in: bundledGlobe)
+
             // Start facing Europe/Africa (~15°E longitude)
             bundledGlobe.eulerAngles.y = -.pi / 2 - .pi / 12
 
@@ -105,6 +109,22 @@ class GlobeScene {
         return globeNode
     }
 
+    /// Replace fill geometry for countries whose cached .scn was built without hole support.
+    private static func patchHoleCountries(in globeNode: SCNNode) {
+        for country in CountryDataCache.shared.countries where !country.holes.isEmpty {
+            guard let node = globeNode.childNode(withName: country.name, recursively: true) else { continue }
+            if let newGeometry = PolygonTriangulator.createCountryGeometry(
+                polygons: country.polygons,
+                holes: country.holes
+            ) {
+                if let existingMaterials = node.geometry?.materials {
+                    newGeometry.materials = existingMaterials
+                }
+                node.geometry = newGeometry
+            }
+        }
+    }
+
     private static func rebuildCoordinatorData(from globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let landColor = AppColors.landUI
 
@@ -171,7 +191,7 @@ class GlobeScene {
                 coordinator.originalColors[country.name] = landColor
             } else {
                 // Render as polygon (regular countries)
-                if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons) {
+                if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons, holes: country.holes) {
                     let material = SCNMaterial()
                     material.diffuse.contents = country.color
                     material.specular.contents = UIColor.clear
