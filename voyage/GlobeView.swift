@@ -211,22 +211,34 @@ struct GlobeView: UIViewRepresentable {
             }
 
             // Calculate center for polygon countries
-            var totalLat = 0.0
-            var totalLon = 0.0
-            var count = 0
+            var lats: [Double] = []
+            var lons: [Double] = []
 
             for polygon in country.polygons {
                 for coord in polygon {
                     if coord.count >= 2 {
-                        totalLon += coord[0]
-                        totalLat += coord[1]
-                        count += 1
+                        lons.append(coord[0])
+                        lats.append(coord[1])
                     }
                 }
             }
 
-            guard count > 0 else { return nil }
-            return (lat: totalLat / Double(count), lon: totalLon / Double(count))
+            guard !lats.isEmpty else { return nil }
+
+            // Handle antimeridian-crossing countries (e.g. Fiji): if the longitude
+            // range exceeds 180°, shift negative longitudes by +360° before averaging.
+            let minLon = lons.min()!
+            let maxLon = lons.max()!
+            var avgLon: Double
+            if maxLon - minLon > 180 {
+                let adjusted = lons.map { $0 < 0 ? $0 + 360 : $0 }
+                avgLon = adjusted.reduce(0, +) / Double(adjusted.count)
+                if avgLon > 180 { avgLon -= 360 }
+            } else {
+                avgLon = lons.reduce(0, +) / Double(lons.count)
+            }
+
+            return (lat: lats.reduce(0, +) / Double(lats.count), lon: avgLon)
         }
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
