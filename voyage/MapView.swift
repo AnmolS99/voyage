@@ -123,18 +123,21 @@ struct MapView: View {
                             else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
                         }
 
-                        // Draw all polygons with the determined shading
+                        // Draw all polygons with the determined shading.
+                        // Outer rings and hole rings are combined into one path; using the
+                        // even-odd fill rule punches out holes (e.g., Lesotho inside South Africa).
+                        var outerPaths: [Path] = []
+                        var combinedFillPath = Path()
+
                         for polygon in country.polygons {
                             var path = Path()
                             var firstPoint = true
-
                             for coord in polygon {
                                 guard coord.count >= 2 else { continue }
                                 let point = CGPoint(
                                     x: (coord[0] + 180) / 360 * mapWidth,
                                     y: (90 - coord[1]) / 180 * mapHeight + verticalOffset
                                 ).applying(transform)
-
                                 if firstPoint {
                                     path.move(to: point)
                                     firstPoint = false
@@ -143,8 +146,35 @@ struct MapView: View {
                                 }
                             }
                             path.closeSubpath()
+                            outerPaths.append(path)
+                            combinedFillPath.addPath(path)
+                        }
 
-                            context.fill(path, with: fillShading)
+                        for hole in country.holes {
+                            var path = Path()
+                            var firstPoint = true
+                            for coord in hole {
+                                guard coord.count >= 2 else { continue }
+                                let point = CGPoint(
+                                    x: (coord[0] + 180) / 360 * mapWidth,
+                                    y: (90 - coord[1]) / 180 * mapHeight + verticalOffset
+                                ).applying(transform)
+                                if firstPoint {
+                                    path.move(to: point)
+                                    firstPoint = false
+                                } else {
+                                    path.addLine(to: point)
+                                }
+                            }
+                            path.closeSubpath()
+                            combinedFillPath.addPath(path)
+                        }
+
+                        // Even-odd fill: hole sub-paths toggle the winding count, leaving
+                        // enclave areas (Lesotho) transparent so the underlying country shows through.
+                        context.fill(combinedFillPath, with: fillShading, style: FillStyle(eoFill: true))
+                        // Only stroke outer country borders; enclave borders belong to the enclave country.
+                        for path in outerPaths {
                             context.stroke(path, with: borderShading, lineWidth: borderWidth)
                         }
                     }

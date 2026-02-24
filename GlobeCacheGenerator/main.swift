@@ -6,6 +6,7 @@ import SceneKit
 struct GeoJSONCountry {
     let name: String
     let polygons: [[[Double]]]
+    let holes: [[[Double]]]
     let isPointCountry: Bool
     let pointCoordinate: (lat: Double, lon: Double)?
 
@@ -43,6 +44,7 @@ func loadCountries(from geojsonPath: String) -> [GeoJSONCountry] {
                 let country = GeoJSONCountry(
                     name: name,
                     polygons: [],
+                    holes: [],
                     isPointCountry: true,
                     pointCoordinate: (lat: lat, lon: lon)
                 )
@@ -50,11 +52,16 @@ func loadCountries(from geojsonPath: String) -> [GeoJSONCountry] {
             }
         } else {
             var polygons: [[[Double]]] = []
+            var holes: [[[Double]]] = []
 
             if type == "Polygon" {
                 if let coords = coordinates as? [[[Double]]] {
+                    // First ring is the outer boundary; subsequent rings are holes (e.g., enclaves)
                     if let outerRing = coords.first {
                         polygons.append(outerRing)
+                    }
+                    if coords.count > 1 {
+                        holes.append(contentsOf: coords.dropFirst())
                     }
                 }
             } else if type == "MultiPolygon" {
@@ -62,6 +69,9 @@ func loadCountries(from geojsonPath: String) -> [GeoJSONCountry] {
                     for polygon in multiCoords {
                         if let outerRing = polygon.first {
                             polygons.append(outerRing)
+                        }
+                        if polygon.count > 1 {
+                            holes.append(contentsOf: polygon.dropFirst())
                         }
                     }
                 }
@@ -71,6 +81,7 @@ func loadCountries(from geojsonPath: String) -> [GeoJSONCountry] {
                 let country = GeoJSONCountry(
                     name: name,
                     polygons: polygons,
+                    holes: holes,
                     isPointCountry: isPointCountry,
                     pointCoordinate: nil
                 )
@@ -158,7 +169,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
             globeNode.addChildNode(outlineNode)
             globeNode.addChildNode(node)
         } else {
-            if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons) {
+            if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons, holes: country.holes) {
                 let material = SCNMaterial()
                 material.diffuse.contents = landColor
                 material.specular.contents = NSColor.clear

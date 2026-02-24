@@ -35,6 +35,10 @@ struct CountrySilhouetteView: View {
 
                 let fillColor = isDarkMode ? Color.white : Color(red: 0.2, green: 0.15, blue: 0.1)
 
+                // Build one combined path with outer rings and hole rings.
+                // Even-odd fill punches out enclave holes (e.g., Lesotho in South Africa).
+                var combinedPath = Path()
+
                 for polygon in country.polygons {
                     guard polygon.count >= 3 else { continue }
                     var path = Path()
@@ -49,8 +53,27 @@ struct CountrySilhouetteView: View {
                         }
                     }
                     path.closeSubpath()
-                    context.fill(path, with: .color(fillColor))
+                    combinedPath.addPath(path)
                 }
+
+                for hole in country.holes {
+                    guard hole.count >= 3 else { continue }
+                    var path = Path()
+                    for (i, coord) in hole.enumerated() {
+                        guard coord.count >= 2 else { continue }
+                        let x = (coord[0] - minLon) * scale + offsetX
+                        let y = (maxLat - coord[1]) * scale + offsetY
+                        if i == 0 {
+                            path.move(to: CGPoint(x: x, y: y))
+                        } else {
+                            path.addLine(to: CGPoint(x: x, y: y))
+                        }
+                    }
+                    path.closeSubpath()
+                    combinedPath.addPath(path)
+                }
+
+                context.fill(combinedPath, with: .color(fillColor), style: FillStyle(eoFill: true))
             }
         } else {
             Image(systemName: "questionmark.square.dashed")
