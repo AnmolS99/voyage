@@ -86,26 +86,82 @@ struct HomeView: View {
     }
 
     private var header: some View {
-        HStack {
-            Button(action: {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    globeState.viewMode = globeState.viewMode == .globe ? .map : .globe
+        HStack(alignment: .top) {
+            if #available(iOS 26, *) {
+                // Map/Globe toggle — standalone circle
+                GlassEffectContainer {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            globeState.viewMode = globeState.viewMode == .globe ? .map : .globe
+                        }
+                    }) {
+                        Image(systemName: globeState.viewMode == .globe ? "map" : "globe.europe.africa.fill")
+                            .font(.system(size: 17, weight: .medium))
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
                 }
-            }) {
-                Image(systemName: globeState.viewMode == .globe ? "map" : "globe.europe.africa.fill")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(
-                        Circle()
-                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
-                    )
-                    .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
+            } else {
+                legacyToggleButton
             }
 
             Spacer()
 
-            // Dark mode toggle
+            if #available(iOS 26, *) {
+                // Dark mode + country list — side by side circles that merge into a pill
+                GlassEffectContainer(spacing: 8) {
+                    HStack(spacing: 0) {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                globeState.toggleDarkMode()
+                            }
+                        }) {
+                            Image(systemName: globeState.isDarkMode ? "sun.max.fill" : "moon.fill")
+                                .font(.system(size: 17, weight: .medium))
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+
+                        Button(action: {
+                            showingCountryList = true
+                        }) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 17, weight: .medium))
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                    }
+                }
+            } else {
+                legacyRightButtons
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+    }
+
+    // Fallbacks for iOS < 26
+    private var legacyToggleButton: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                globeState.viewMode = globeState.viewMode == .globe ? .map : .globe
+            }
+        }) {
+            Image(systemName: globeState.viewMode == .globe ? "map" : "globe.europe.africa.fill")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.white)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode)))
+                .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
+        }
+    }
+
+    private var legacyRightButtons: some View {
+        HStack(spacing: 8) {
             Button(action: {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                     globeState.toggleDarkMode()
@@ -115,31 +171,18 @@ struct HomeView: View {
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
-                    .background(
-                        Circle()
-                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
-                    )
+                    .background(Circle().fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode)))
                     .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
             }
-
-            // Add Country button (plus)
-            Button(action: {
-                showingCountryList = true
-            }) {
+            Button(action: { showingCountryList = true }) {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
-                    .background(
-                        Circle()
-                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
-                    )
+                    .background(Circle().fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode)))
                     .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
     }
 
     private var bottomPanel: some View {
