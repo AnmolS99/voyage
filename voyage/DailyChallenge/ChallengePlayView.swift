@@ -84,7 +84,7 @@ struct ChallengePlayView: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(AppColors.buttonColor(isDarkMode: isDarkMode))
+                    .fill(AppColors.buttonColor)
             )
         }
         .padding(32)
@@ -133,7 +133,7 @@ struct ChallengePlayView: View {
         VStack(spacing: 6) {
             Image(systemName: type.icon)
                 .font(.system(size: 24))
-                .foregroundColor(AppColors.buttonColor(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.buttonColor)
             Text(type.title)
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))

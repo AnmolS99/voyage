@@ -35,7 +35,6 @@ struct ContentView: View {
                 }
                 .tag(3)
         }
-        .tint(globeState.isDarkMode ? AppColors.buttonDark : AppColors.buttonLight)
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
         .overlay(alignment: .bottom) {
             if showDailyToast {
@@ -54,7 +53,7 @@ struct ContentView: View {
                     .padding(.vertical, 10)
                     .background(
                         Capsule()
-                            .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                            .fill(AppColors.buttonColor)
                             .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
                     )
                 }

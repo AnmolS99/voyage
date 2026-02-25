@@ -29,7 +29,7 @@ struct SettingsView: View {
                 Section {
                     HStack {
                         Image(systemName: "globe.americas")
-                            .foregroundColor(globeState.isDarkMode ? AppColors.buttonDark : AppColors.buttonLight)
+                            .foregroundColor(AppColors.buttonColor)
 
                         Text("Globe Style")
 
@@ -46,7 +46,7 @@ struct SettingsView: View {
 
                     HStack {
                         Image(systemName: "map")
-                            .foregroundColor(globeState.isDarkMode ? AppColors.buttonDark : AppColors.buttonLight)
+                            .foregroundColor(AppColors.buttonColor)
 
                         Text("Map Style")
 

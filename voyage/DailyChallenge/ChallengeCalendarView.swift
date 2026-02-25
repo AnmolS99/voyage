@@ -76,7 +76,7 @@ struct ChallengeCalendarView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                    .foregroundColor(AppColors.buttonColor)
             }
 
             Spacer()
@@ -92,7 +92,7 @@ struct ChallengeCalendarView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                    .foregroundColor(AppColors.buttonColor)
             }
         }
         .padding(.horizontal, 24)
@@ -155,7 +155,7 @@ struct ChallengeCalendarView: View {
                 // Border for today
                 if isToday {
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(AppColors.buttonColor(isDarkMode: globeState.isDarkMode), lineWidth: 2)
+                        .stroke(AppColors.buttonColor, lineWidth: 2)
                 }
 
                 VStack(spacing: 2) {
@@ -188,7 +188,7 @@ struct ChallengeCalendarView: View {
                 : Color.red.opacity(globeState.isDarkMode ? 0.15 : 0.1)
         }
         if hasChallenge && !isFuture {
-            return AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.1)
+            return AppColors.buttonColor.opacity(0.1)
         }
         return .clear
     }

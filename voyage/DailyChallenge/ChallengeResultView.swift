@@ -102,7 +102,7 @@ struct ChallengeResultView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 14))
-                .foregroundColor(AppColors.buttonColor(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.buttonColor)
                 .frame(width: 20)
             Text(label)
                 .font(.system(size: 14, weight: .medium, design: .rounded))
@@ -149,12 +149,12 @@ struct ChallengeResultView: View {
             ShareLink(item: shareText) {
                 Label("Share Result", systemImage: "square.and.arrow.up")
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundColor(AppColors.buttonColor(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.buttonColor)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(AppColors.buttonColor(isDarkMode: isDarkMode), lineWidth: 2)
+                            .stroke(AppColors.buttonColor, lineWidth: 2)
                     )
             }
 
@@ -166,7 +166,7 @@ struct ChallengeResultView: View {
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
-                            .fill(AppColors.buttonColor(isDarkMode: isDarkMode))
+                            .fill(AppColors.buttonColor)
                     )
             }
         }

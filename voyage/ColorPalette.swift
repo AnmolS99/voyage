@@ -61,11 +61,8 @@ enum AppColors {
 
     // MARK: - UI Button Colors
 
-    /// Primary button color (light mode) - warm orange
-    static let buttonLight = Color(red: 0.85, green: 0.55, blue: 0.35)
-
-    /// Primary button color (dark mode) - muted purple
-    static let buttonDark = Color(red: 0.4, green: 0.35, blue: 0.6)
+    /// Primary button color - warm orange
+    static let buttonColor = Color(red: 0.85, green: 0.55, blue: 0.35)
 
     /// Visited/success button green
     static let buttonVisited = Color(red: 0.3, green: 0.7, blue: 0.4)
@@ -148,10 +145,6 @@ enum AppColors {
 
     // MARK: - Helper Functions
 
-    /// Returns the appropriate button color based on dark mode
-    static func buttonColor(isDarkMode: Bool) -> Color {
-        isDarkMode ? buttonDark : buttonLight
-    }
 
     /// Returns the appropriate text color based on dark mode
     static func textPrimary(isDarkMode: Bool) -> Color {

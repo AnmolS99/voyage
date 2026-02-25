@@ -156,8 +156,8 @@ struct HomeView: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.white)
                 .frame(width: 44, height: 44)
-                .background(Circle().fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode)))
-                .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
+                .background(Circle().fill(AppColors.buttonColor))
+                .shadow(color: AppColors.buttonColor.opacity(0.4), radius: 8, y: 4)
         }
     }
 
@@ -172,16 +172,16 @@ struct HomeView: View {
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode)))
-                    .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
+                    .background(Circle().fill(AppColors.buttonColor))
+                    .shadow(color: AppColors.buttonColor.opacity(0.4), radius: 8, y: 4)
             }
             Button(action: { showingCountryList = true }) {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode)))
-                    .shadow(color: AppColors.buttonColor(isDarkMode: globeState.isDarkMode).opacity(0.4), radius: 8, y: 4)
+                    .background(Circle().fill(AppColors.buttonColor))
+                    .shadow(color: AppColors.buttonColor.opacity(0.4), radius: 8, y: 4)
             }
         }
     }
@@ -231,7 +231,7 @@ struct HomeView: View {
 
                     Text("\(Int(Double(globeState.visitedUNCountries.count) / Double(globeState.totalUNCountries) * 100))%")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(globeState.isDarkMode ? AppColors.progressDarkStart : AppColors.buttonLight)
+                        .foregroundColor(AppColors.buttonColor)
                 }
 
                 GeometryReader { geometry in
@@ -242,15 +242,7 @@ struct HomeView: View {
 
                         // Progress fill
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(
-                                LinearGradient(
-                                    colors: globeState.isDarkMode ?
-                                        [AppColors.progressDarkStart, AppColors.progressDarkEnd] :
-                                        [AppColors.progressLightStart, AppColors.progressLightEnd],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
+                            .fill(AppColors.buttonColor)
                             .frame(width: max(0, geometry.size.width * CGFloat(globeState.visitedUNCountries.count) / CGFloat(globeState.totalUNCountries)))
                             .animation(.spring(response: 0.4, dampingFraction: 0.8), value: globeState.visitedUNCountries.count)
                     }
@@ -332,7 +324,7 @@ struct HomeView: View {
                     Capsule()
                         .fill(globeState.isVisited(country) ?
                               AppColors.buttonVisited :
-                              AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                              AppColors.buttonColor)
                 )
                 .animation(nil, value: globeState.visitedCountries)
             }
@@ -368,7 +360,7 @@ struct HomeView: View {
                     Capsule()
                         .fill(globeState.isInWishlist(country) ?
                               AppColors.wishlist :
-                              AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                              AppColors.buttonColor)
                 )
                 .animation(nil, value: globeState.wishlistCountries)
             }
@@ -388,7 +380,7 @@ struct HomeView: View {
                 .padding(.vertical, 8)
                 .background(
                     Capsule()
-                        .fill(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                        .fill(AppColors.buttonColor)
                 )
             }
         }

@@ -104,7 +104,7 @@ struct ChecklistSection: View {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AppColors.buttonColor(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.buttonColor)
                 Text(title)
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
@@ -131,7 +131,7 @@ struct ChecklistSection: View {
                             if item == capitalName {
                                 Image(systemName: "building.columns.fill")
                                     .font(.system(size: 13))
-                                    .foregroundColor(AppColors.buttonColor(isDarkMode: isDarkMode))
+                                    .foregroundColor(AppColors.buttonColor)
                             }
 
                             Spacer()

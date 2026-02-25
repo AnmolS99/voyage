@@ -144,7 +144,7 @@ struct AchievementCard: View {
                         .stroke(
                             achievement.isCompleted ?
                                 AppColors.buttonVisited :
-                                AppColors.buttonColor(isDarkMode: isDarkMode),
+                                AppColors.buttonColor,
                             style: StrokeStyle(lineWidth: 4, lineCap: .round)
                         )
                         .rotationEffect(.degrees(-90))
@@ -175,7 +175,7 @@ struct AchievementCard: View {
                         .foregroundColor(
                             achievement.isCompleted ?
                                 AppColors.buttonVisited :
-                                AppColors.buttonColor(isDarkMode: isDarkMode)
+                                AppColors.buttonColor
                         )
 
                     Image(systemName: "chevron.down")

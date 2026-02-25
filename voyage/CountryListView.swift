@@ -93,21 +93,21 @@ struct CountryRow: View {
                 Button(action: toggleVisited) {
                     Image(systemName: isVisited ? "checkmark.circle.fill" : "plus.circle")
                         .font(.system(size: 20))
-                        .foregroundColor(isVisited ? AppColors.buttonVisited : AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                        .foregroundColor(isVisited ? AppColors.buttonVisited : AppColors.buttonColor)
                 }
                 .buttonStyle(.plain)
 
                 Button(action: toggleWishlist) {
                     Image(systemName: isWishlist ? "heart.fill" : "heart")
                         .font(.system(size: 20))
-                        .foregroundColor(isWishlist ? AppColors.wishlist : AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                        .foregroundColor(isWishlist ? AppColors.wishlist : AppColors.buttonColor)
                 }
                 .buttonStyle(.plain)
 
                 Button { showingExplore = true } label: {
                     Image(systemName: "binoculars.fill")
                         .font(.system(size: 20))
-                        .foregroundColor(AppColors.buttonColor(isDarkMode: globeState.isDarkMode))
+                        .foregroundColor(AppColors.buttonColor)
                 }
                 .buttonStyle(.plain)
             }
