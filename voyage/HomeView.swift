@@ -101,7 +101,6 @@ struct HomeView: View {
                     }
                     .buttonStyle(.glass)
                     .buttonBorderShape(.circle)
-                    .tint(globeState.isDarkMode ? .white : nil)
                 }
             } else {
                 legacyToggleButton
@@ -124,8 +123,7 @@ struct HomeView: View {
                         }
                         .buttonStyle(.glass)
                         .buttonBorderShape(.circle)
-                        .tint(globeState.isDarkMode ? .white : nil)
-
+    
                         Button(action: {
                             showingCountryList = true
                         }) {
@@ -135,8 +133,7 @@ struct HomeView: View {
                         }
                         .buttonStyle(.glass)
                         .buttonBorderShape(.circle)
-                        .tint(globeState.isDarkMode ? .white : nil)
-                    }
+                        }
                 }
             } else {
                 legacyRightButtons
@@ -145,6 +142,7 @@ struct HomeView: View {
         .padding(.horizontal, 24)
         .padding(.top, 16)
         .padding(.bottom, 12)
+        .tint(nil)
     }
 
     // Fallbacks for iOS < 26
