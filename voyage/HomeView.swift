@@ -101,6 +101,7 @@ struct HomeView: View {
                     }
                     .buttonStyle(.glass)
                     .buttonBorderShape(.circle)
+                    .tint(globeState.isDarkMode ? .white : nil)
                 }
             } else {
                 legacyToggleButton
@@ -123,6 +124,7 @@ struct HomeView: View {
                         }
                         .buttonStyle(.glass)
                         .buttonBorderShape(.circle)
+                        .tint(globeState.isDarkMode ? .white : nil)
 
                         Button(action: {
                             showingCountryList = true
@@ -133,6 +135,7 @@ struct HomeView: View {
                         }
                         .buttonStyle(.glass)
                         .buttonBorderShape(.circle)
+                        .tint(globeState.isDarkMode ? .white : nil)
                     }
                 }
             } else {
