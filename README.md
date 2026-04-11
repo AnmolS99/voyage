@@ -26,7 +26,6 @@
 - Interactive 3D globe with multiple selectable textures
 - 2D map view alternative
 - Track visited/wishlist countries with a single tap
-- All 193 UN member states + 2 observer states (Vatican City, Palestine)
 - Daily geography quiz — guess countries by outline, flag, or capital
 - Dark mode (of course)
 - Data syncs across devices via iCloud
