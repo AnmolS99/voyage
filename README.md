@@ -1,11 +1,19 @@
-# voyage 🌍
+<p align="center">
+  <a href="https://apple.co/4t7gZ4Y" target="_blank"><img src=".github/app_store_icon.png" alt="Download voyage on the App Store" height="200"></a>
+</p>
 
-An interactive iOS app to track your adventures across Earth.
+<h1 align="center">voyage</h1>
 
-![iOS](https://img.shields.io/badge/iOS-17.0+-blue)
-![Swift](https://img.shields.io/badge/Swift-5.0-orange)
+<p align="center">A free, interactive, iOS-native app to track your voyages across Earth.</p>
 
-<a href="https://apple.co/4t7gZ4Y" target="_blank"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="40"></a>&nbsp;&nbsp;<a href="https://www.buymeacoffee.com/anmols99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40"></a>
+<p align="center">
+  <img src="https://img.shields.io/badge/iOS-17.0+-blue" alt="iOS">
+  <img src="https://img.shields.io/badge/Swift-5.0-orange" alt="Swift">
+</p>
+
+<p align="center">
+  <a href="https://apple.co/4t7gZ4Y" target="_blank"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="40"></a>&nbsp;&nbsp;<a href="https://www.buymeacoffee.com/anmols99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40"></a>
+</p>
 
 ## Why voyage?
 
