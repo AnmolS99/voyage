@@ -195,7 +195,7 @@ struct ChallengeResultView: View {
             text += "\nMy streak: \(streak) 🔥\n"
         }
 
-        text += "\nGet voyage 🌍 for free: https://apps.apple.com/no/app/voyage-track-your-journey/id6758411779?l=nb"
+        text += "\nGet voyage 🌍 for free: https://apple.co/4t7gZ4Y"
 
         return text
     }
