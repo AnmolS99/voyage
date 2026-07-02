@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # voyage
 
 An iOS app that displays an interactive 3D globe where users can explore and track countries they've visited.
@@ -18,7 +22,7 @@ Examples:
 - `fix/globe-rotation-reset`
 - `refactor/country-data-parsing`
 
-## Build & Run
+## Build, Run & Test
 
 **Always build and run the simulator after making larger changes to verify the implementation works correctly.**
 
@@ -29,7 +33,18 @@ xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pr
 # Run in simulator
 xcrun simctl install "iPhone 17 Pro" ~/Library/Developer/Xcode/DerivedData/voyage-*/Build/Products/Debug-iphonesimulator/voyage.app
 xcrun simctl launch "iPhone 17 Pro" com.anmol.voyage
+
+# Run the full test suite (voyageTests target)
+xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test
+
+# Run a single test class or method
+xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test \
+  -only-testing:voyageTests/AchievementCompletionTests
+xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test \
+  -only-testing:voyageTests/voyageTests/testGlobeAndMapCountryConsistency
 ```
+
+`voyageTests/testGlobeAndMapCountryConsistency` specifically guards the invariant described in [Globe and Map Consistency](#globe-and-map-consistency) — run it after touching either rendering path.
 
 ## Setup
 
@@ -47,16 +62,29 @@ cp Secrets.xcconfig.example Secrets.xcconfig
 - **GeoJSON** for country boundary data
 - **Supabase** for daily challenge backend
 
+The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and dark mode. `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
+
+### Data persistence
+
+`GlobeState` persists to both `UserDefaults` (local) and `NSUbiquitousKeyValueStore` (iCloud KV store), unioning the two on load and re-saving the merge so multi-device edits don't clobber each other. It observes `NSUbiquitousKeyValueStore.didChangeExternallyNotification` to pick up remote changes live. The Daily Challenge feature persists separately via `ChallengeStore` (UserDefaults only, keyed by date).
+
+### Country data loading
+
+`CountryDataCache` (singleton) lazily parses `world.geojson` (via `GeoJSONParser`) and `country_highlights.json` once and caches the result — call sites should go through `CountryDataCache.shared` rather than re-parsing.
+
 ## Key Files
 
 | File                        | Purpose                                           |
 | --------------------------- | ------------------------------------------------- |
+| `ContentView.swift`         | Tab container + `GlobeState` (shared app state)   |
 | `GlobeView.swift`           | Main 3D globe view with SceneKit integration      |
 | `GlobeScene.swift`          | Creates the 3D scene (globe, countries, lighting) |
 | `PolygonTriangulator.swift` | Converts GeoJSON polygons to 3D geometry          |
 | `GeoJSONParser.swift`       | Parses world.geojson into country data            |
+| `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights   |
 | `MapView.swift`             | 2D flat map view alternative                      |
-| `ContentView.swift`         | Main app container with UI controls               |
+| `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
+| `Achievement.swift` / `ContinentData.swift` | Achievement progress model + continent groupings |
 | `DailyChallenge/`           | Daily geography quiz feature (see below)          |
 
 ## Globe Rendering
@@ -109,7 +137,7 @@ A daily geography quiz feature powered by Supabase. The `daily_challenges` table
 ### Key Files
 
 | File                              | Purpose                                      |
-| --------------------------------- | -------------------------------------------- |
+| --------------------------------- | --------------------------------------------- |
 | `DailyChallenge.swift`            | Models: `DailyChallenge`, `QuestionType`, `ChallengeResult` |
 | `SupabaseClient.swift`            | Network layer (reads credentials from `Secrets.xcconfig` via Info.plist) |
 | `ChallengeStore.swift`            | Local persistence (UserDefaults)             |
@@ -118,11 +146,14 @@ A daily geography quiz feature powered by Supabase. The `daily_challenges` table
 | `ChallengePlayView.swift`         | Quiz UI with clue, search, and guess list    |
 | `ChallengeSearchField.swift`      | TextField with filtered dropdown suggestions |
 | `CountrySilhouetteView.swift`     | Canvas-based country outline renderer        |
+| `ConfettiView.swift`              | Success celebration animation                |
 | `ChallengeResultView.swift`       | Post-completion result card                  |
 
 ### Supabase Schema
 
 The `daily_challenges` table has columns: `id` (uuid), `date` (date), `is_guess_country` (bool), `is_guess_capital` (bool), `is_guess_flag` (bool), `answer` (text — ISO 3166-1 alpha-2 code), `created_at`, `updated_at`. Only one boolean is true per row.
+
+Schema and migrations live in `supabase/schemas/` and `supabase/migrations/`; `supabase/seed.sql` seeds the 365 daily challenges.
 
 ## Color Palette
 
@@ -136,6 +167,8 @@ The `daily_challenges` table has columns: `id` (uuid), `date` (date), `is_guess_
 | Wishlist             | -       | (0.6, 0.4, 0.8)       |
 | Wishlist + selected  | -       | (0.75, 0.55, 0.95)    |
 | Buttons (light mode) | #D98C59 | (0.85, 0.55, 0.35)    |
+
+All colors are defined once in `ColorPalette.swift` (`AppColors`) and referenced throughout — don't hardcode hex/RGB values elsewhere.
 
 ## Data Files
 
