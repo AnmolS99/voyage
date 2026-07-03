@@ -1,0 +1,45 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build voyage and upload a new build to TestFlight"
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    increment_build_number(
+      build_number: ENV["GITHUB_RUN_NUMBER"],
+      xcodeproj: "voyage.xcodeproj"
+    )
+
+    match(
+      type: "appstore",
+      api_key: api_key,
+      readonly: false
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "voyage.xcodeproj",
+      team_id: "LP4YVQGGQL",
+      code_sign_identity: "Apple Distribution",
+      profile_name: ENV["sigh_com.anmol.voyage_appstore_profile-name"],
+      bundle_identifier: "com.anmol.voyage",
+      targets: ["voyage"]
+    )
+
+    build_app(
+      scheme: "voyage",
+      configuration: "Release",
+      export_method: "app-store"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
