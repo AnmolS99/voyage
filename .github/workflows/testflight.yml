@@ -1,0 +1,57 @@
+name: TestFlight Build
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: testflight-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install Ruby gems
+        run: bundle install
+
+      - name: Write Secrets.xcconfig
+        env:
+          SECRETS_XCCONFIG: ${{ secrets.SECRETS_XCCONFIG }}
+        run: printf '%s\n' "$SECRETS_XCCONFIG" > Secrets.xcconfig
+
+      - name: Compute match git auth
+        id: match_auth
+        env:
+          MATCH_GIT_USERNAME: ${{ secrets.MATCH_GIT_USERNAME }}
+          MATCH_GIT_PAT: ${{ secrets.MATCH_GIT_PAT }}
+        run: |
+          AUTH=$(printf '%s' "$MATCH_GIT_USERNAME:$MATCH_GIT_PAT" | base64 | tr -d '\n')
+          echo "::add-mask::$AUTH"
+          echo "auth=$AUTH" >> "$GITHUB_OUTPUT"
+
+      - name: Build and upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ steps.match_auth.outputs.auth }}
+        run: bundle exec fastlane beta
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastlane-logs
+          path: |
+            ~/Library/Logs/gym
+            fastlane/report.xml
