@@ -52,6 +52,17 @@ struct GlobeView: UIViewRepresentable {
         var countryNodes: [String: SCNNode] = [:]
         var originalColors: [String: UIColor] = [:]
         var cachedCountries: [GeoJSONCountry] = []
+        var outlineMaterials: [String: SCNMaterial] = [:]
+
+        // Outline thickness (world units) at the default camera distance. Zoomed in,
+        // the shader uniform is scaled down so outlines keep a constant on-screen width
+        // instead of drowning small countries in black.
+        static let baseOutlineThickness: Float = 0.0015
+        static let selectedOutlineFactor: Float = 5.0 / 3.0   // matches the old 0.0025 selected width
+        static let selectedOutlineRaise: Float = 0.001        // lift above neighbours' outlines
+        private static let referenceCameraDistance: Float = 4.0
+
+        private var currentOutlineScale: Float = 1.0
 
         private var lastPanLocation: CGPoint = .zero
         private var currentRotationX: Float = 0
@@ -61,8 +72,6 @@ struct GlobeView: UIViewRepresentable {
         private var hasAnimatedToCountry: Bool = false
         private var lastAnimatedCountry: String?
         private var capitalStarNode: SCNNode?
-        private var normalOutlineGeometries: [String: SCNGeometry] = [:]
-        private var thickOutlineGeometries: [String: SCNGeometry] = [:]
         private var doubleTapDragStartY: CGFloat = 0
         private var doubleTapDragStartDistance: Float = 0
         private var lastGlobeStyle: GlobeStyle?
@@ -87,6 +96,7 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
             cameraNode.position.z = max(1.2, cameraNode.position.z - 0.5)
+            updateOutlineThickness(cameraDistance: Float(cameraNode.position.z))
             SCNTransaction.commit()
         }
 
@@ -95,6 +105,7 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
             cameraNode.position.z = min(10.0, cameraNode.position.z + 0.5)
+            updateOutlineThickness(cameraDistance: Float(cameraNode.position.z))
             SCNTransaction.commit()
         }
 
@@ -109,7 +120,23 @@ struct GlobeView: UIViewRepresentable {
                 cameraDistance * cos(currentRotationX)
             )
             cameraNode.look(at: SCNVector3(0, 0, 0))
+            updateOutlineThickness(cameraDistance: cameraDistance)
             SCNTransaction.commit()
+        }
+
+        /// Scales outline thickness with camera distance so borders keep a constant
+        /// on-screen width. At the default distance (4.0) outlines render at their
+        /// base thickness; zoomed all the way in they thin to ~1/6 of it. Runs inside
+        /// the caller's SCNTransaction, so animated zooms animate the width too.
+        func updateOutlineThickness(cameraDistance: Float) {
+            let scale = max(1.0 / 6.0, min(1.0, (cameraDistance - 1.0) / (Self.referenceCameraDistance - 1.0)))
+            guard abs(scale - currentOutlineScale) > 0.005 else { return }
+            currentOutlineScale = scale
+
+            for (name, material) in outlineMaterials {
+                let factor: Float = globeState.selectedCountry == name ? Self.selectedOutlineFactor : 1.0
+                material.setValue(Self.baseOutlineThickness * scale * factor, forKey: "outlineThickness")
+            }
         }
 
         func updateAutoRotation() {
@@ -198,47 +225,13 @@ struct GlobeView: UIViewRepresentable {
                 zoomDistance * cos(currentRotationX)
             )
             cameraNode.look(at: SCNVector3(0, 0, 0))
+            updateOutlineThickness(cameraDistance: zoomDistance)
 
             SCNTransaction.commit()
         }
 
         func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
-            guard let country = cachedCountries.first(where: { $0.name == name }) else { return nil }
-
-            // Point countries have their center stored directly
-            if country.isPointCountry, let coord = country.pointCoordinate {
-                return coord
-            }
-
-            // Calculate center for polygon countries
-            var lats: [Double] = []
-            var lons: [Double] = []
-
-            for polygon in country.polygons {
-                for coord in polygon {
-                    if coord.count >= 2 {
-                        lons.append(coord[0])
-                        lats.append(coord[1])
-                    }
-                }
-            }
-
-            guard !lats.isEmpty else { return nil }
-
-            // Handle antimeridian-crossing countries (e.g. Fiji): if the longitude
-            // range exceeds 180°, shift negative longitudes by +360° before averaging.
-            let minLon = lons.min()!
-            let maxLon = lons.max()!
-            var avgLon: Double
-            if maxLon - minLon > 180 {
-                let adjusted = lons.map { $0 < 0 ? $0 + 360 : $0 }
-                avgLon = adjusted.reduce(0, +) / Double(adjusted.count)
-                if avgLon > 180 { avgLon -= 360 }
-            } else {
-                avgLon = lons.reduce(0, +) / Double(lons.count)
-            }
-
-            return (lat: lats.reduce(0, +) / Double(lats.count), lon: avgLon)
+            CountryHitTester.shared.center(of: name)
         }
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
@@ -362,6 +355,7 @@ struct GlobeView: UIViewRepresentable {
                     newDistance * cos(currentRotationX)
                 )
                 cameraNode.look(at: SCNVector3(0, 0, 0))
+                updateOutlineThickness(cameraDistance: newDistance)
 
                 gesture.scale = 1
             }
@@ -401,6 +395,7 @@ struct GlobeView: UIViewRepresentable {
                     newDistance * cos(currentRotationX)
                 )
                 cameraNode.look(at: SCNVector3(0, 0, 0))
+                updateOutlineThickness(cameraDistance: newDistance)
 
             default:
                 break
@@ -450,72 +445,7 @@ struct GlobeView: UIViewRepresentable {
         }
 
         func findCountryAt(lat: Double, lon: Double) -> String? {
-            // First check point countries (small island nations and microstates)
-            let pointHitRadius: Double = 0.8
-            for country in cachedCountries where country.isPointCountry {
-                guard let coord = country.pointCoordinate else { continue }
-                let distance = sqrt(pow(lat - coord.lat, 2) + pow(lon - coord.lon, 2))
-                if distance < pointHitRadius {
-                    return country.name
-                }
-            }
-
-            // Then try exact location for polygon countries
-            if let country = findCountryAtExact(lat: lat, lon: lon) {
-                return country
-            }
-
-            // If not found, search in expanding radius for small countries
-            let searchRadii: [Double] = [0.5, 1.0, 2.0, 3.0]
-            let pointsPerRadius = 8
-
-            for radius in searchRadii {
-                for i in 0..<pointsPerRadius {
-                    let angle = Double(i) * (2.0 * .pi / Double(pointsPerRadius))
-                    let searchLat = lat + radius * sin(angle)
-                    let searchLon = lon + radius * cos(angle)
-
-                    if let country = findCountryAtExact(lat: searchLat, lon: searchLon) {
-                        return country
-                    }
-                }
-            }
-
-            return nil
-        }
-
-        func findCountryAtExact(lat: Double, lon: Double) -> String? {
-            for country in cachedCountries {
-                for polygon in country.polygons {
-                    if isPointInPolygon(lon: lon, lat: lat, polygon: polygon) {
-                        return country.name
-                    }
-                }
-            }
-            return nil
-        }
-
-        // Ray casting algorithm for point-in-polygon test
-        func isPointInPolygon(lon: Double, lat: Double, polygon: [[Double]]) -> Bool {
-            var inside = false
-            var j = polygon.count - 1
-
-            for i in 0..<polygon.count {
-                guard polygon[i].count >= 2 && polygon[j].count >= 2 else {
-                    j = i
-                    continue
-                }
-                let xi = polygon[i][0], yi = polygon[i][1]
-                let xj = polygon[j][0], yj = polygon[j][1]
-
-                if ((yi > lat) != (yj > lat)) &&
-                    (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
-                    inside = !inside
-                }
-                j = i
-            }
-
-            return inside
+            CountryHitTester.shared.findCountry(lat: lat, lon: lon)
         }
 
         func updateGlobeStyle() {
@@ -594,27 +524,12 @@ struct GlobeView: UIViewRepresentable {
                             disc.materials = [material]
                             outlineNode.geometry = disc
                         }
-                    } else {
-                        // Swap border geometry between normal and thick based on selection
-                        if isSelected {
-                            if thickOutlineGeometries[name] == nil,
-                               let country = cachedCountries.first(where: { $0.name == name }),
-                               let thickGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons, radius: 1.006, thickness: 0.0025) {
-                                let material = SCNMaterial()
-                                material.lightingModel = .constant
-                                material.isDoubleSided = true
-                                thickGeometry.materials = [material]
-                                thickOutlineGeometries[name] = thickGeometry
-                            }
-                            if normalOutlineGeometries[name] == nil {
-                                normalOutlineGeometries[name] = outlineNode.geometry
-                            }
-                            if let thickGeometry = thickOutlineGeometries[name] {
-                                outlineNode.geometry = thickGeometry
-                            }
-                        } else if let normalGeometry = normalOutlineGeometries[name] {
-                            outlineNode.geometry = normalGeometry
-                        }
+                    } else if let material = outlineMaterials[name] {
+                        // Selected outlines render thicker and slightly raised above
+                        // neighbouring outlines, via the outline shader uniforms
+                        let factor: Float = isSelected ? Self.selectedOutlineFactor : 1.0
+                        material.setValue(Self.baseOutlineThickness * currentOutlineScale * factor, forKey: "outlineThickness")
+                        material.setValue(isSelected ? Self.selectedOutlineRaise : Float(0), forKey: "outlineRaise")
                     }
 
                     // Border color: status color when selected, black otherwise
