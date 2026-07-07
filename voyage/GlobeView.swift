@@ -12,6 +12,8 @@ struct GlobeView: UIViewRepresentable {
         sceneView.allowsCameraControl = false
         sceneView.antialiasingMode = .multisampling4X
         sceneView.autoenablesDefaultLighting = false
+        // Per-frame far-side outline culling + drag/inertia motion (see renderer(_:updateAtTime:))
+        sceneView.delegate = context.coordinator
 
         // Add gesture recognizers
         let panGesture = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
@@ -52,6 +54,39 @@ struct GlobeView: UIViewRepresentable {
         var countryNodes: [String: SCNNode] = [:]
         var originalColors: [String: UIColor] = [:]
         var cachedCountries: [GeoJSONCountry] = []
+        /// Material shared by all outline sector nodes (one uniform update per zoom change)
+        var sharedOutlineMaterial: SCNMaterial?
+        /// Overlay node drawing the selected country's outline (thicker, colored, raised)
+        private var selectedOutlineNode: SCNNode?
+        private var selectedOutlineGeometries: [String: SCNGeometry] = [:]
+
+        /// Outline sector nodes with precomputed bounding spheres, culled per frame
+        /// when beyond the globe's horizon (see renderer(_:updateAtTime:))
+        private struct OutlineSector {
+            let node: SCNNode
+            let center: simd_float3   // bounding sphere center, globe-local
+            let radius: Float
+        }
+        private var outlineSectors: [OutlineSector] = []
+
+        func registerOutlineSectors(_ nodes: [SCNNode]) {
+            outlineSectors = nodes.map { node in
+                let sphere = node.boundingSphere
+                return OutlineSector(node: node,
+                                     center: simd_float3(Float(sphere.center.x), Float(sphere.center.y), Float(sphere.center.z)),
+                                     radius: Float(sphere.radius))
+            }
+        }
+
+        // Outline thickness (world units) at the default camera distance. Zoomed in,
+        // the shader uniform is scaled down so outlines keep a constant on-screen width
+        // instead of drowning small countries in black.
+        static let baseOutlineThickness: Float = 0.0015
+        static let selectedOutlineFactor: Float = 5.0 / 3.0   // matches the old 0.0025 selected width
+        static let selectedOutlineRaise: Float = 0.001        // lift above neighbours' outlines
+        private static let referenceCameraDistance: Float = 4.0
+
+        private var currentOutlineScale: Float = 1.0
 
         private var lastPanLocation: CGPoint = .zero
         private var currentRotationX: Float = 0
@@ -61,15 +96,17 @@ struct GlobeView: UIViewRepresentable {
         private var hasAnimatedToCountry: Bool = false
         private var lastAnimatedCountry: String?
         private var capitalStarNode: SCNNode?
-        private var normalOutlineGeometries: [String: SCNGeometry] = [:]
-        private var thickOutlineGeometries: [String: SCNGeometry] = [:]
         private var doubleTapDragStartY: CGFloat = 0
         private var doubleTapDragStartDistance: Float = 0
         private var lastGlobeStyle: GlobeStyle?
 
-        private let inertia = GlobeInertia()
-        private var displayLink: CADisplayLink?
-        private var lastInertiaTime: CFTimeInterval = 0
+        // Interactive spin state, applied on the render thread (renderer(_:updateAtTime:))
+        // and fed from main-thread gesture handlers — guarded by motionLock.
+        let motionLock = NSLock()
+        let inertia = GlobeInertia()
+        var pendingDragX: Float = 0
+        var pendingDragY: Float = 0
+        var lastRenderTime: TimeInterval = 0
 
         init(globeState: GlobeState) {
             self.globeState = globeState
@@ -87,6 +124,7 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
             cameraNode.position.z = max(1.2, cameraNode.position.z - 0.5)
+            updateOutlineThickness(cameraDistance: Float(cameraNode.position.z))
             SCNTransaction.commit()
         }
 
@@ -95,6 +133,7 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
             cameraNode.position.z = min(10.0, cameraNode.position.z + 0.5)
+            updateOutlineThickness(cameraDistance: Float(cameraNode.position.z))
             SCNTransaction.commit()
         }
 
@@ -109,7 +148,25 @@ struct GlobeView: UIViewRepresentable {
                 cameraDistance * cos(currentRotationX)
             )
             cameraNode.look(at: SCNVector3(0, 0, 0))
+            updateOutlineThickness(cameraDistance: cameraDistance)
             SCNTransaction.commit()
+        }
+
+        /// Scales outline thickness with camera distance so borders keep a constant
+        /// on-screen width. At the default distance (4.0) outlines render at their
+        /// base thickness; zoomed all the way in they thin to ~1/6 of it. Runs inside
+        /// the caller's SCNTransaction, so animated zooms animate the width too.
+        func updateOutlineThickness(cameraDistance: Float) {
+            let scale = max(1.0 / 6.0, min(1.0, (cameraDistance - 1.0) / (Self.referenceCameraDistance - 1.0)))
+            guard abs(scale - currentOutlineScale) > 0.005 else { return }
+            currentOutlineScale = scale
+
+            sharedOutlineMaterial?.setValue(Self.baseOutlineThickness * scale, forKey: "outlineThickness")
+            if let selectedGeometry = selectedOutlineNode?.geometry {
+                for material in selectedGeometry.materials {
+                    material.setValue(Self.baseOutlineThickness * scale * Self.selectedOutlineFactor, forKey: "outlineThickness")
+                }
+            }
         }
 
         func updateAutoRotation() {
@@ -198,47 +255,13 @@ struct GlobeView: UIViewRepresentable {
                 zoomDistance * cos(currentRotationX)
             )
             cameraNode.look(at: SCNVector3(0, 0, 0))
+            updateOutlineThickness(cameraDistance: zoomDistance)
 
             SCNTransaction.commit()
         }
 
         func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
-            guard let country = cachedCountries.first(where: { $0.name == name }) else { return nil }
-
-            // Point countries have their center stored directly
-            if country.isPointCountry, let coord = country.pointCoordinate {
-                return coord
-            }
-
-            // Calculate center for polygon countries
-            var lats: [Double] = []
-            var lons: [Double] = []
-
-            for polygon in country.polygons {
-                for coord in polygon {
-                    if coord.count >= 2 {
-                        lons.append(coord[0])
-                        lats.append(coord[1])
-                    }
-                }
-            }
-
-            guard !lats.isEmpty else { return nil }
-
-            // Handle antimeridian-crossing countries (e.g. Fiji): if the longitude
-            // range exceeds 180°, shift negative longitudes by +360° before averaging.
-            let minLon = lons.min()!
-            let maxLon = lons.max()!
-            var avgLon: Double
-            if maxLon - minLon > 180 {
-                let adjusted = lons.map { $0 < 0 ? $0 + 360 : $0 }
-                avgLon = adjusted.reduce(0, +) / Double(adjusted.count)
-                if avgLon > 180 { avgLon -= 360 }
-            } else {
-                avgLon = lons.reduce(0, +) / Double(lons.count)
-            }
-
-            return (lat: lats.reduce(0, +) / Double(lats.count), lon: avgLon)
+            CountryHitTester.shared.center(of: name)
         }
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
@@ -254,6 +277,10 @@ struct GlobeView: UIViewRepresentable {
             let distanceRatio = cameraDistance / referenceDistance
             let rotationSpeed = baseRotationSpeed * distanceRatio * distanceRatio
 
+            // Gestures only accumulate rotation deltas; the render delegate applies them
+            // once per rendered frame. Setting node transforms from main-thread gesture
+            // events (~120Hz) lets the render thread sample one or two steps per frame at
+            // random — visible judder while spinning, no matter how fast the GPU is.
             switch gesture.state {
             case .began:
                 stopInertia()
@@ -263,73 +290,34 @@ struct GlobeView: UIViewRepresentable {
                 globeNode.eulerAngles.y = currentActualRotationY
                 globeNode.removeAction(forKey: "autoRotation")
                 globeState.isAutoRotating = false
+                sceneView?.rendersContinuously = true
 
             case .changed:
                 let translation = gesture.translation(in: sceneView)
-                currentRotationY += Float(translation.x) * rotationSpeed
-                globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
-                currentRotationX += Float(translation.y) * rotationSpeed
-                currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX))
-                cameraNode.position = SCNVector3(
-                    0,
-                    cameraDistance * sin(currentRotationX),
-                    cameraDistance * cos(currentRotationX)
-                )
-                cameraNode.look(at: SCNVector3(0, 0, 0))
+                motionLock.lock()
+                pendingDragY += Float(translation.x) * rotationSpeed
+                pendingDragX += Float(translation.y) * rotationSpeed
+                motionLock.unlock()
                 gesture.setTranslation(.zero, in: sceneView)
 
             case .ended, .cancelled:
                 let velocity = gesture.velocity(in: sceneView)
+                motionLock.lock()
                 inertia.velocityY = Float(velocity.x) * rotationSpeed
                 inertia.velocityX = Float(velocity.y) * rotationSpeed
-                if inertia.isActive { startInertia() }
+                motionLock.unlock()
 
             default:
                 break
             }
         }
 
-        private func startInertia() {
-            displayLink?.invalidate()
-            lastInertiaTime = 0
-            displayLink = CADisplayLink(target: self, selector: #selector(inertiaStep(_:)))
-            displayLink?.add(to: .main, forMode: .common)
-        }
-
         private func stopInertia() {
-            displayLink?.invalidate()
-            displayLink = nil
+            motionLock.lock()
             inertia.reset()
-        }
-
-        @objc private func inertiaStep(_ link: CADisplayLink) {
-            guard lastInertiaTime > 0 else {
-                lastInertiaTime = link.timestamp
-                return
-            }
-
-            let dt = Float(link.timestamp - lastInertiaTime)
-            lastInertiaTime = link.timestamp
-
-            let (dx, dy) = inertia.step(dt: dt)
-            currentRotationY += dy
-            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX + dx))
-
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else {
-                stopInertia()
-                return
-            }
-
-            globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
-
-            let dist = sqrt(cameraNode.position.x * cameraNode.position.x +
-                            cameraNode.position.y * cameraNode.position.y +
-                            cameraNode.position.z * cameraNode.position.z)
-            cameraNode.position = SCNVector3(0, dist * sin(currentRotationX), dist * cos(currentRotationX))
-            cameraNode.look(at: SCNVector3(0, 0, 0))
-
-            if !inertia.isActive { stopInertia() }
+            pendingDragX = 0
+            pendingDragY = 0
+            motionLock.unlock()
         }
 
         @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
@@ -362,6 +350,7 @@ struct GlobeView: UIViewRepresentable {
                     newDistance * cos(currentRotationX)
                 )
                 cameraNode.look(at: SCNVector3(0, 0, 0))
+                updateOutlineThickness(cameraDistance: newDistance)
 
                 gesture.scale = 1
             }
@@ -401,6 +390,7 @@ struct GlobeView: UIViewRepresentable {
                     newDistance * cos(currentRotationX)
                 )
                 cameraNode.look(at: SCNVector3(0, 0, 0))
+                updateOutlineThickness(cameraDistance: newDistance)
 
             default:
                 break
@@ -450,72 +440,7 @@ struct GlobeView: UIViewRepresentable {
         }
 
         func findCountryAt(lat: Double, lon: Double) -> String? {
-            // First check point countries (small island nations and microstates)
-            let pointHitRadius: Double = 0.8
-            for country in cachedCountries where country.isPointCountry {
-                guard let coord = country.pointCoordinate else { continue }
-                let distance = sqrt(pow(lat - coord.lat, 2) + pow(lon - coord.lon, 2))
-                if distance < pointHitRadius {
-                    return country.name
-                }
-            }
-
-            // Then try exact location for polygon countries
-            if let country = findCountryAtExact(lat: lat, lon: lon) {
-                return country
-            }
-
-            // If not found, search in expanding radius for small countries
-            let searchRadii: [Double] = [0.5, 1.0, 2.0, 3.0]
-            let pointsPerRadius = 8
-
-            for radius in searchRadii {
-                for i in 0..<pointsPerRadius {
-                    let angle = Double(i) * (2.0 * .pi / Double(pointsPerRadius))
-                    let searchLat = lat + radius * sin(angle)
-                    let searchLon = lon + radius * cos(angle)
-
-                    if let country = findCountryAtExact(lat: searchLat, lon: searchLon) {
-                        return country
-                    }
-                }
-            }
-
-            return nil
-        }
-
-        func findCountryAtExact(lat: Double, lon: Double) -> String? {
-            for country in cachedCountries {
-                for polygon in country.polygons {
-                    if isPointInPolygon(lon: lon, lat: lat, polygon: polygon) {
-                        return country.name
-                    }
-                }
-            }
-            return nil
-        }
-
-        // Ray casting algorithm for point-in-polygon test
-        func isPointInPolygon(lon: Double, lat: Double, polygon: [[Double]]) -> Bool {
-            var inside = false
-            var j = polygon.count - 1
-
-            for i in 0..<polygon.count {
-                guard polygon[i].count >= 2 && polygon[j].count >= 2 else {
-                    j = i
-                    continue
-                }
-                let xi = polygon[i][0], yi = polygon[i][1]
-                let xj = polygon[j][0], yj = polygon[j][1]
-
-                if ((yi > lat) != (yj > lat)) &&
-                    (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
-                    inside = !inside
-                }
-                j = i
-            }
-
-            return inside
+            CountryHitTester.shared.findCountry(lat: lat, lon: lon)
         }
 
         func updateGlobeStyle() {
@@ -569,77 +494,106 @@ struct GlobeView: UIViewRepresentable {
                     node.isHidden = true
                 }
 
-                // Update outline visibility, color, and thickness
-                if let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                // Point countries have their own outline node (dot ring/disc); polygon
+                // countries share one merged outline node, with the selected country's
+                // outline drawn by a separate overlay node (see updateSelectedOutline)
+                if isPointCountry,
+                   let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                    let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false) {
                     outlineNode.isHidden = false
 
-                    // Point countries: swap outline geometry based on status and selection
-                    if isPointCountry {
-                        if isSelected || !hasStatus {
-                            // Ring (border only) — fill is hidden
-                            let outerRadius: CGFloat = isSelected ? 0.0155 : 0.014
-                            let ring = SCNTube(innerRadius: 0.012, outerRadius: outerRadius, height: 0.0005)
-                            let material = SCNMaterial()
-                            material.lightingModel = .constant
-                            material.isDoubleSided = true
-                            ring.materials = [material]
-                            outlineNode.geometry = ring
-                        } else {
-                            // Disc (behind visible fill overlay)
-                            let disc = SCNCylinder(radius: 0.014, height: 0.0005)
-                            let material = SCNMaterial()
-                            material.lightingModel = .constant
-                            material.isDoubleSided = true
-                            disc.materials = [material]
-                            outlineNode.geometry = disc
-                        }
+                    // Swap outline geometry based on status and selection
+                    if isSelected || !hasStatus {
+                        // Ring (border only) — fill is hidden
+                        let outerRadius: CGFloat = isSelected ? 0.0155 : 0.014
+                        let ring = SCNTube(innerRadius: 0.012, outerRadius: outerRadius, height: 0.0005)
+                        let material = SCNMaterial()
+                        material.lightingModel = .constant
+                        material.isDoubleSided = true
+                        ring.materials = [material]
+                        outlineNode.geometry = ring
                     } else {
-                        // Swap border geometry between normal and thick based on selection
-                        if isSelected {
-                            if thickOutlineGeometries[name] == nil,
-                               let country = cachedCountries.first(where: { $0.name == name }),
-                               let thickGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons, radius: 1.006, thickness: 0.0025) {
-                                let material = SCNMaterial()
-                                material.lightingModel = .constant
-                                material.isDoubleSided = true
-                                thickGeometry.materials = [material]
-                                thickOutlineGeometries[name] = thickGeometry
-                            }
-                            if normalOutlineGeometries[name] == nil {
-                                normalOutlineGeometries[name] = outlineNode.geometry
-                            }
-                            if let thickGeometry = thickOutlineGeometries[name] {
-                                outlineNode.geometry = thickGeometry
-                            }
-                        } else if let normalGeometry = normalOutlineGeometries[name] {
-                            outlineNode.geometry = normalGeometry
-                        }
+                        // Disc (behind visible fill overlay)
+                        let disc = SCNCylinder(radius: 0.014, height: 0.0005)
+                        let material = SCNMaterial()
+                        material.lightingModel = .constant
+                        material.isDoubleSided = true
+                        disc.materials = [material]
+                        outlineNode.geometry = disc
                     }
 
                     // Border color: status color when selected, black otherwise
                     if let outlineGeometry = outlineNode.geometry {
-                        let borderContents: Any = {
-                            if isSelected {
-                                if isVisited && isWishlist {
-                                    return AppColors.visitedWishlistGradient
-                                } else if isVisited {
-                                    return AppColors.visitedUI
-                                } else if isWishlist {
-                                    return AppColors.wishlistUI
-                                }
-                            }
-                            return UIColor.black
-                        }()
                         for material in outlineGeometry.materials {
-                            material.diffuse.contents = borderContents
+                            material.diffuse.contents = borderColor(isSelected: isSelected, isVisited: isVisited, isWishlist: isWishlist)
                         }
                     }
                 }
             }
 
+            updateSelectedOutline()
+
             // Update capital star
             updateCapitalStar()
+        }
+
+        private func borderColor(isSelected: Bool, isVisited: Bool, isWishlist: Bool) -> Any {
+            if isSelected {
+                if isVisited && isWishlist {
+                    return AppColors.visitedWishlistGradient
+                } else if isVisited {
+                    return AppColors.visitedUI
+                } else if isWishlist {
+                    return AppColors.wishlistUI
+                }
+            }
+            return UIColor.black
+        }
+
+        /// Shows the selected polygon country's outline as an overlay node: thicker,
+        /// status-colored, and raised above the merged black outlines.
+        private func updateSelectedOutline() {
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+
+            guard let name = globeState.selectedCountry,
+                  let country = cachedCountries.first(where: { $0.name == name }),
+                  !country.isPointCountry else {
+                selectedOutlineNode?.isHidden = true
+                return
+            }
+
+            let geometry: SCNGeometry
+            if let cached = selectedOutlineGeometries[name] {
+                geometry = cached
+            } else {
+                guard let built = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) else {
+                    selectedOutlineNode?.isHidden = true
+                    return
+                }
+                built.materials = [GlobeScene.makeOutlineMaterial()]
+                selectedOutlineGeometries[name] = built
+                geometry = built
+            }
+
+            let node: SCNNode
+            if let existing = selectedOutlineNode {
+                node = existing
+            } else {
+                node = SCNNode()
+                node.name = "selected_outline"
+                globeNode.addChildNode(node)
+                selectedOutlineNode = node
+            }
+            node.geometry = geometry
+            node.isHidden = false
+
+            let isVisited = globeState.visitedCountries.contains(name)
+            let isWishlist = globeState.wishlistCountries.contains(name)
+            for material in geometry.materials {
+                material.diffuse.contents = borderColor(isSelected: true, isVisited: isVisited, isWishlist: isWishlist)
+                material.setValue(Self.baseOutlineThickness * currentOutlineScale * Self.selectedOutlineFactor, forKey: "outlineThickness")
+                material.setValue(Self.selectedOutlineRaise, forKey: "outlineRaise")
+            }
         }
 
         func updateCapitalStar() {
@@ -701,6 +655,93 @@ struct GlobeView: UIViewRepresentable {
             node.runAction(SCNAction.repeatForever(pulse))
 
             return node
+        }
+    }
+}
+
+extension GlobeView.Coordinator: SCNSceneRendererDelegate {
+    /// Runs once per rendered frame, on the render thread. Applies interactive spin
+    /// (drag deltas + inertia) and then hides far-side outline sectors.
+    ///
+    /// Motion is applied here rather than in gesture handlers because main-thread
+    /// transform writes are sampled by the render thread at random phase — some frames
+    /// see one gesture step, some two — which shows as judder while spinning. Applying
+    /// exactly one integration step per rendered frame makes motion even by construction
+    /// (the auto-rotation SCNAction is smooth for the same reason).
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        applyInteractiveSpin(atTime: time)
+        cullFarSideOutlineSectors()
+    }
+
+    private func applyInteractiveSpin(atTime time: TimeInterval) {
+        let dt = lastRenderTime > 0 ? Float(min(max(time - lastRenderTime, 0), 0.1)) : 0
+        lastRenderTime = time
+
+        motionLock.lock()
+        var dx = pendingDragX
+        var dy = pendingDragY
+        pendingDragX = 0
+        pendingDragY = 0
+        let coasting = inertia.isActive
+        if coasting && dt > 0 {
+            let step = inertia.step(dt: dt)
+            dx += step.dx
+            dy += step.dy
+        }
+        let coastingEnded = coasting && !inertia.isActive
+        motionLock.unlock()
+
+        if dx != 0 || dy != 0,
+           let globeNode = globeNode,
+           let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: false) {
+            currentRotationY += dy
+            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX + dx))
+
+            globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
+
+            let position = cameraNode.position
+            let distance = sqrt(position.x * position.x + position.y * position.y + position.z * position.z)
+            cameraNode.position = SCNVector3(0, distance * sin(currentRotationX), distance * cos(currentRotationX))
+            cameraNode.look(at: SCNVector3(0, 0, 0))
+        }
+
+        if coastingEnded {
+            // Momentum finished: stop forcing continuous rendering (the auto-rotation
+            // action, when enabled, drives rendering by itself)
+            DispatchQueue.main.async { [weak self] in
+                self?.sceneView?.rendersContinuously = false
+            }
+        }
+    }
+
+    /// Hides outline sectors that are entirely beyond the globe's horizon. The outline
+    /// mesh dominates the scene's vertex count, and frustum culling never removes the
+    /// far side (the whole globe fits the frustum except at close zoom), so without
+    /// this every border vertex is processed every frame.
+    ///
+    /// A point p on the unit sphere is visible from a camera at distance d iff
+    /// dot(p, camDir) >= 1/d (the horizon). For a sector with bounding sphere
+    /// (center c, radius r), dot(p, camDir) <= dot(c, camDir) + r for all its points,
+    /// so the sector is safely hidden when dot(c, camDir) + r < 1/d - margin.
+    private func cullFarSideOutlineSectors() {
+        guard !outlineSectors.isEmpty,
+              let cameraNode = sceneView?.pointOfView,
+              let globeNode = globeNode else { return }
+
+        let cameraWorld = cameraNode.presentation.worldPosition
+        let cameraLocal = globeNode.presentation.convertPosition(cameraWorld, from: nil)
+        let camera = simd_float3(Float(cameraLocal.x), Float(cameraLocal.y), Float(cameraLocal.z))
+        let distance = simd_length(camera)
+        guard distance > 1.0 else { return }
+
+        let cameraDirection = camera / distance
+        let horizon = 1.0 / distance - 0.02 // small margin against popping at the limb
+
+        for sector in outlineSectors {
+            let hidden = simd_dot(sector.center, cameraDirection) + sector.radius < horizon
+            if sector.node.isHidden != hidden {
+                sector.node.isHidden = hidden
+            }
         }
     }
 }

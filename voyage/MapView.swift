@@ -7,6 +7,68 @@ struct MapView: View {
     @State private var offset: CGSize = .zero
     @State private var lastScale: CGFloat = 1.0
     @State private var lastOffset: CGSize = .zero
+    @State private var pathCache = PathCache()
+
+    /// Per-country paths prebuilt in base map space (lon/lat projected at scale 1, no pan/zoom),
+    /// so the per-frame Canvas pass only applies a transform instead of re-projecting ~170k
+    /// boundary points. Reference type: lazily (re)built inside the Canvas closure without
+    /// invalidating the view.
+    private final class PathCache {
+        struct Entry {
+            let name: String
+            let fillPath: Path      // outer rings + hole rings combined for even-odd fill
+            let outerPaths: [Path]  // outer rings only (stroked borders)
+            let bounds: CGRect      // base-space bounding box (gradient shading)
+        }
+
+        private(set) var mapWidth: CGFloat = 0
+        private(set) var entries: [Entry] = []
+
+        func rebuildIfNeeded(countries: [GeoJSONCountry], mapWidth: CGFloat) {
+            let polygonCountries = countries.filter { !$0.isPointCountry }
+            guard mapWidth != self.mapWidth || polygonCountries.count != entries.count else { return }
+            self.mapWidth = mapWidth
+            let mapHeight = mapWidth / 2
+
+            func project(_ coord: [Double]) -> CGPoint {
+                CGPoint(x: (coord[0] + 180) / 360 * mapWidth,
+                        y: (90 - coord[1]) / 180 * mapHeight)
+            }
+
+            func ringPath(_ ring: [[Double]]) -> Path {
+                var path = Path()
+                var firstPoint = true
+                for coord in ring where coord.count >= 2 {
+                    let point = project(coord)
+                    if firstPoint {
+                        path.move(to: point)
+                        firstPoint = false
+                    } else {
+                        path.addLine(to: point)
+                    }
+                }
+                path.closeSubpath()
+                return path
+            }
+
+            entries = polygonCountries.map { country in
+                var fillPath = Path()
+                var outerPaths: [Path] = []
+                for polygon in country.polygons {
+                    let path = ringPath(polygon)
+                    outerPaths.append(path)
+                    fillPath.addPath(path)
+                }
+                for hole in country.holes {
+                    fillPath.addPath(ringPath(hole))
+                }
+                return Entry(name: country.name,
+                             fillPath: fillPath,
+                             outerPaths: outerPaths,
+                             bounds: fillPath.boundingRect)
+            }
+        }
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -44,8 +106,59 @@ struct MapView: View {
                     hasTexture = true
                 }
 
-                // Draw countries
-                for country in countries {
+                // Draw polygon countries from the path cache through a canvas-level
+                // transform (pan/zoom), so paths are built once instead of per frame.
+                pathCache.rebuildIfNeeded(countries: countries, mapWidth: mapWidth)
+
+                var mapContext = context
+                mapContext.translateBy(x: size.width / 2 + offset.width, y: size.height / 2 + offset.height)
+                mapContext.scaleBy(x: scale, y: scale)
+                mapContext.translateBy(x: -size.width / 2, y: -size.height / 2)
+                mapContext.translateBy(x: 0, y: verticalOffset)
+
+                for entry in pathCache.entries {
+                    let isVisited = globeState.visitedCountries.contains(entry.name)
+                    let isWishlist = globeState.wishlistCountries.contains(entry.name)
+                    let isSelected = globeState.selectedCountry == entry.name
+                    // Divide by scale: the canvas transform magnifies strokes, border width stays constant on screen
+                    let borderWidth: CGFloat = (isSelected ? 1.5 : 0.5) / scale
+                    let isBoth = isVisited && isWishlist
+
+                    let fillShading: GraphicsContext.Shading
+                    let borderShading: GraphicsContext.Shading
+
+                    // Gradient shading from the cached base-space bounding box when both visited+wishlist
+                    let gradientShading: GraphicsContext.Shading = .linearGradient(
+                        Gradient(colors: [AppColors.visited, AppColors.wishlist]),
+                        startPoint: CGPoint(x: entry.bounds.minX, y: entry.bounds.maxY),
+                        endPoint: CGPoint(x: entry.bounds.maxX, y: entry.bounds.minY))
+
+                    if isSelected {
+                        fillShading = hasTexture ? .color(.clear) : .color(AppColors.land)
+                        if isBoth { borderShading = gradientShading }
+                        else if isVisited { borderShading = .color(AppColors.visited) }
+                        else if isWishlist { borderShading = .color(AppColors.wishlist) }
+                        else { borderShading = .color(.black) }
+                    } else {
+                        borderShading = .color(.black)
+                        if isBoth { fillShading = gradientShading }
+                        else if isVisited { fillShading = .color(AppColors.visited) }
+                        else if isWishlist { fillShading = .color(AppColors.wishlist) }
+                        else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
+                    }
+
+                    // Even-odd fill: hole sub-paths toggle the winding count, leaving
+                    // enclave areas (Lesotho) transparent so the underlying country shows through.
+                    mapContext.fill(entry.fillPath, with: fillShading, style: FillStyle(eoFill: true))
+                    // Only stroke outer country borders; enclave borders belong to the enclave country.
+                    for path in entry.outerPaths {
+                        mapContext.stroke(path, with: borderShading, lineWidth: borderWidth)
+                    }
+                }
+
+                // Draw point countries (small island nations and microstates) as fixed-size
+                // dots in screen space, so they stay visible and tappable at any zoom.
+                for country in countries where country.isPointCountry {
                     let isVisited = globeState.visitedCountries.contains(country.name)
                     let isWishlist = globeState.wishlistCountries.contains(country.name)
                     let isSelected = globeState.selectedCountry == country.name
@@ -56,128 +169,36 @@ struct MapView: View {
                     let fillShading: GraphicsContext.Shading
                     let borderShading: GraphicsContext.Shading
 
-                    if country.isPointCountry {
-                        // Point country: compute bounding box from dot position
-                        guard let coord = country.pointCoordinate else { continue }
-                        let x = (coord.lon + 180) / 360 * mapWidth
-                        let y = (90 - coord.lat) / 180 * mapHeight + verticalOffset
-                        let center = CGPoint(x: x, y: y).applying(transform)
-                        let dotRadius: CGFloat = 5
-                        let dotRect = CGRect(x: center.x - dotRadius, y: center.y - dotRadius,
-                                             width: dotRadius * 2, height: dotRadius * 2)
+                    guard let coord = country.pointCoordinate else { continue }
+                    let x = (coord.lon + 180) / 360 * mapWidth
+                    let y = (90 - coord.lat) / 180 * mapHeight + verticalOffset
+                    let center = CGPoint(x: x, y: y).applying(transform)
+                    let dotRadius: CGFloat = 5
+                    let dotRect = CGRect(x: center.x - dotRadius, y: center.y - dotRadius,
+                                         width: dotRadius * 2, height: dotRadius * 2)
 
-                        let gradientShading: GraphicsContext.Shading = .linearGradient(
-                            Gradient(colors: [AppColors.visited, AppColors.wishlist]),
-                            startPoint: CGPoint(x: dotRect.minX, y: dotRect.maxY),
-                            endPoint: CGPoint(x: dotRect.maxX, y: dotRect.minY))
+                    let gradientShading: GraphicsContext.Shading = .linearGradient(
+                        Gradient(colors: [AppColors.visited, AppColors.wishlist]),
+                        startPoint: CGPoint(x: dotRect.minX, y: dotRect.maxY),
+                        endPoint: CGPoint(x: dotRect.maxX, y: dotRect.minY))
 
-                        if isSelected {
-                            fillShading = hasTexture ? .color(.clear) : .color(AppColors.land)
-                            if isBoth { borderShading = gradientShading }
-                            else if isVisited { borderShading = .color(AppColors.visited) }
-                            else if isWishlist { borderShading = .color(AppColors.wishlist) }
-                            else { borderShading = .color(.black) }
-                        } else {
-                            borderShading = .color(.black)
-                            if isBoth { fillShading = gradientShading }
-                            else if isVisited { fillShading = .color(AppColors.visited) }
-                            else if isWishlist { fillShading = .color(AppColors.wishlist) }
-                            else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
-                        }
-
-                        let dotPath = Path(ellipseIn: dotRect)
-                        context.fill(dotPath, with: fillShading)
-                        context.stroke(dotPath, with: borderShading, lineWidth: borderWidth)
+                    if isSelected {
+                        fillShading = hasTexture ? .color(.clear) : .color(AppColors.land)
+                        if isBoth { borderShading = gradientShading }
+                        else if isVisited { borderShading = .color(AppColors.visited) }
+                        else if isWishlist { borderShading = .color(AppColors.wishlist) }
+                        else { borderShading = .color(.black) }
                     } else {
-                        // Polygon country: compute gradient shading from bounding box when both visited+wishlist
-                        func countryGradient() -> GraphicsContext.Shading {
-                            var minX = CGFloat.infinity, maxX = -CGFloat.infinity
-                            var minY = CGFloat.infinity, maxY = -CGFloat.infinity
-                            for polygon in country.polygons {
-                                for coord in polygon where coord.count >= 2 {
-                                    let pt = CGPoint(
-                                        x: (coord[0] + 180) / 360 * mapWidth,
-                                        y: (90 - coord[1]) / 180 * mapHeight + verticalOffset
-                                    ).applying(transform)
-                                    minX = min(minX, pt.x); maxX = max(maxX, pt.x)
-                                    minY = min(minY, pt.y); maxY = max(maxY, pt.y)
-                                }
-                            }
-                            return .linearGradient(
-                                Gradient(colors: [AppColors.visited, AppColors.wishlist]),
-                                startPoint: CGPoint(x: minX, y: maxY),
-                                endPoint: CGPoint(x: maxX, y: minY))
-                        }
-
-                        if isSelected {
-                            fillShading = hasTexture ? .color(.clear) : .color(AppColors.land)
-                            if isBoth { borderShading = countryGradient() }
-                            else if isVisited { borderShading = .color(AppColors.visited) }
-                            else if isWishlist { borderShading = .color(AppColors.wishlist) }
-                            else { borderShading = .color(.black) }
-                        } else {
-                            borderShading = .color(.black)
-                            if isBoth { fillShading = countryGradient() }
-                            else if isVisited { fillShading = .color(AppColors.visited) }
-                            else if isWishlist { fillShading = .color(AppColors.wishlist) }
-                            else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
-                        }
-
-                        // Draw all polygons with the determined shading.
-                        // Outer rings and hole rings are combined into one path; using the
-                        // even-odd fill rule punches out holes (e.g., Lesotho inside South Africa).
-                        var outerPaths: [Path] = []
-                        var combinedFillPath = Path()
-
-                        for polygon in country.polygons {
-                            var path = Path()
-                            var firstPoint = true
-                            for coord in polygon {
-                                guard coord.count >= 2 else { continue }
-                                let point = CGPoint(
-                                    x: (coord[0] + 180) / 360 * mapWidth,
-                                    y: (90 - coord[1]) / 180 * mapHeight + verticalOffset
-                                ).applying(transform)
-                                if firstPoint {
-                                    path.move(to: point)
-                                    firstPoint = false
-                                } else {
-                                    path.addLine(to: point)
-                                }
-                            }
-                            path.closeSubpath()
-                            outerPaths.append(path)
-                            combinedFillPath.addPath(path)
-                        }
-
-                        for hole in country.holes {
-                            var path = Path()
-                            var firstPoint = true
-                            for coord in hole {
-                                guard coord.count >= 2 else { continue }
-                                let point = CGPoint(
-                                    x: (coord[0] + 180) / 360 * mapWidth,
-                                    y: (90 - coord[1]) / 180 * mapHeight + verticalOffset
-                                ).applying(transform)
-                                if firstPoint {
-                                    path.move(to: point)
-                                    firstPoint = false
-                                } else {
-                                    path.addLine(to: point)
-                                }
-                            }
-                            path.closeSubpath()
-                            combinedFillPath.addPath(path)
-                        }
-
-                        // Even-odd fill: hole sub-paths toggle the winding count, leaving
-                        // enclave areas (Lesotho) transparent so the underlying country shows through.
-                        context.fill(combinedFillPath, with: fillShading, style: FillStyle(eoFill: true))
-                        // Only stroke outer country borders; enclave borders belong to the enclave country.
-                        for path in outerPaths {
-                            context.stroke(path, with: borderShading, lineWidth: borderWidth)
-                        }
+                        borderShading = .color(.black)
+                        if isBoth { fillShading = gradientShading }
+                        else if isVisited { fillShading = .color(AppColors.visited) }
+                        else if isWishlist { fillShading = .color(AppColors.wishlist) }
+                        else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
                     }
+
+                    let dotPath = Path(ellipseIn: dotRect)
+                    context.fill(dotPath, with: fillShading)
+                    context.stroke(dotPath, with: borderShading, lineWidth: borderWidth)
                 }
 
                 // Draw capital dot for selected country
@@ -281,95 +302,11 @@ struct MapView: View {
     }
 
     private func findCountryAt(lat: Double, lon: Double) -> String? {
-        // First check point countries (small island nations and microstates)
-        let pointHitRadius: Double = 0.8
-        for country in countries where country.isPointCountry {
-            guard let coord = country.pointCoordinate else { continue }
-            let distance = sqrt(pow(lat - coord.lat, 2) + pow(lon - coord.lon, 2))
-            if distance < pointHitRadius {
-                return country.name
-            }
-        }
-
-        // Then check polygon countries
-        for country in countries where !country.isPointCountry {
-            for polygon in country.polygons {
-                if isPointInPolygon(lon: lon, lat: lat, polygon: polygon) {
-                    return country.name
-                }
-            }
-        }
-
-        // Search nearby for small countries
-        let searchRadii: [Double] = [1.0, 2.0, 3.0]
-        let pointsPerRadius = 8
-
-        for radius in searchRadii {
-            for i in 0..<pointsPerRadius {
-                let angle = Double(i) * (2.0 * .pi / Double(pointsPerRadius))
-                let searchLat = lat + radius * sin(angle)
-                let searchLon = lon + radius * cos(angle)
-
-                for country in countries where !country.isPointCountry {
-                    for polygon in country.polygons {
-                        if isPointInPolygon(lon: searchLon, lat: searchLat, polygon: polygon) {
-                            return country.name
-                        }
-                    }
-                }
-            }
-        }
-
-        return nil
-    }
-
-    private func isPointInPolygon(lon: Double, lat: Double, polygon: [[Double]]) -> Bool {
-        var inside = false
-        var j = polygon.count - 1
-
-        for i in 0..<polygon.count {
-            guard polygon[i].count >= 2 && polygon[j].count >= 2 else {
-                j = i
-                continue
-            }
-            let xi = polygon[i][0], yi = polygon[i][1]
-            let xj = polygon[j][0], yj = polygon[j][1]
-
-            if ((yi > lat) != (yj > lat)) &&
-                (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
-                inside = !inside
-            }
-            j = i
-        }
-
-        return inside
+        CountryHitTester.shared.findCountry(lat: lat, lon: lon)
     }
 
     private func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
-        guard let country = countries.first(where: { $0.name == name }) else { return nil }
-
-        // Point countries have their center stored directly
-        if country.isPointCountry, let coord = country.pointCoordinate {
-            return coord
-        }
-
-        // Calculate center for polygon countries
-        var totalLat = 0.0
-        var totalLon = 0.0
-        var count = 0
-
-        for polygon in country.polygons {
-            for coord in polygon {
-                if coord.count >= 2 {
-                    totalLon += coord[0]
-                    totalLat += coord[1]
-                    count += 1
-                }
-            }
-        }
-
-        guard count > 0 else { return nil }
-        return (lat: totalLat / Double(count), lon: totalLon / Double(count))
+        CountryHitTester.shared.center(of: name)
     }
 
     // Clamp offset to prevent dragging outside map bounds

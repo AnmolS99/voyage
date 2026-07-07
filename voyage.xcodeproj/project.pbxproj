@@ -16,6 +16,9 @@
 		E81234560006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E81234550006 /* Assets.xcassets */; };
 		E81234560008 /* GeoJSONParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550008 /* GeoJSONParser.swift */; };
 		E81234560009 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
+		E81234560101 /* Earcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550101 /* Earcut.swift */; };
+		E81234560102 /* Earcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550101 /* Earcut.swift */; };
+		E81234560103 /* CountryHitTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550102 /* CountryHitTester.swift */; };
 		E81234560010 /* world.geojson in Resources */ = {isa = PBXBuildFile; fileRef = E81234550010 /* world.geojson */; };
 		E81234560011 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550011 /* MapView.swift */; };
 		E81234560012 /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550012 /* OrientationManager.swift */; };
@@ -75,6 +78,8 @@
 		E81234550006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E81234550008 /* GeoJSONParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoJSONParser.swift; sourceTree = "<group>"; };
 		E81234550009 /* PolygonTriangulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonTriangulator.swift; sourceTree = "<group>"; };
+		E81234550101 /* Earcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Earcut.swift; sourceTree = "<group>"; };
+		E81234550102 /* CountryHitTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryHitTester.swift; sourceTree = "<group>"; };
 		E81234550010 /* world.geojson */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = world.geojson; sourceTree = "<group>"; };
 		E81234550011 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		E81234550012 /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
@@ -163,6 +168,8 @@
 				E81234550004 /* GlobeScene.swift */,
 				E81234550008 /* GeoJSONParser.swift */,
 				E81234550009 /* PolygonTriangulator.swift */,
+				E81234550101 /* Earcut.swift */,
+				E81234550102 /* CountryHitTester.swift */,
 				E81234550018 /* GlobeCache.swift */,
 				E81234550051 /* GlobeInertia.swift */,
 				E81234550021 /* AchievementsView.swift */,
@@ -360,6 +367,8 @@
 				E81234560004 /* GlobeScene.swift in Sources */,
 				E81234560008 /* GeoJSONParser.swift in Sources */,
 				E81234560009 /* PolygonTriangulator.swift in Sources */,
+				E81234560101 /* Earcut.swift in Sources */,
+				E81234560103 /* CountryHitTester.swift in Sources */,
 				E81234560018 /* GlobeCache.swift in Sources */,
 				E81234560046 /* GlobeInertia.swift in Sources */,
 				E81234560021 /* AchievementsView.swift in Sources */,
@@ -401,6 +410,7 @@
 			files = (
 				E81234560030 /* main.swift in Sources */,
 				E81234560033 /* PolygonTriangulator.swift in Sources */,
+				E81234560102 /* Earcut.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

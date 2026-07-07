@@ -70,7 +70,7 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 
 ### Country data loading
 
-`CountryDataCache` (singleton) lazily parses `world.geojson` (via `GeoJSONParser`) and `country_highlights.json` once and caches the result — call sites should go through `CountryDataCache.shared` rather than re-parsing.
+`CountryDataCache` (singleton) parses `world.geojson` (via `GeoJSONParser`) once on first access of `.shared` (thread-safe) and is prewarmed on a background queue from `voyageApp.init` so parsing overlaps globe.scn loading; `country_highlights.json` stays lazy. Call sites should go through `CountryDataCache.shared` rather than re-parsing.
 
 ## Key Files
 
@@ -80,7 +80,9 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 | `GlobeView.swift`           | Main 3D globe view with SceneKit integration      |
 | `GlobeScene.swift`          | Creates the 3D scene (globe, countries, lighting) |
 | `PolygonTriangulator.swift` | Converts GeoJSON polygons to 3D geometry          |
+| `Earcut.swift`              | Ear-clipping triangulation (port of mapbox/earcut) |
 | `GeoJSONParser.swift`       | Parses world.geojson into country data            |
+| `CountryHitTester.swift`    | Shared tap-to-country lookup (globe + map)        |
 | `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights   |
 | `MapView.swift`             | 2D flat map view alternative                      |
 | `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
@@ -92,9 +94,29 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 Countries are rendered by:
 
 1. Parsing GeoJSON polygon coordinates (lon/lat)
-2. Converting to 3D sphere vertices via `latLonToSphere()`
-3. Triangulating polygons using grid-based fill
-4. Creating SceneKit geometry with materials
+2. Triangulating each polygon (with enclave holes) via earcut in lon/lat space
+3. Subdividing triangles/border segments longer than ~2.5° so they follow sphere curvature
+4. Converting to 3D sphere vertices via `latLonToSphere()`
+5. Creating SceneKit geometry with materials
+
+A legacy grid-based fill remains in `PolygonTriangulator` as an automatic fallback for
+rings earcut cannot triangulate (the current dataset needs no fallbacks).
+
+Border outlines keep a constant on-screen width across zoom levels: outline vertices sit
+on the border centerline with their miter direction stored in the normal attribute, and a
+geometry shader modifier (`PolygonTriangulator.outlineShaderModifier`) widens them by the
+`outlineThickness` uniform. Zoom code (`GlobeView.Coordinator.updateOutlineThickness`)
+scales that uniform with camera distance — no geometry is rebuilt when zooming or when
+selection thickens/raises a country's outline.
+
+All black borders are merged into a few longitude-sector nodes (`outline_sector_N`)
+sharing one material/uniform. The outline mesh dominates the scene's vertex count, so
+`GlobeView.Coordinator.renderer(_:updateAtTime:)` hides sectors beyond the globe's
+horizon each frame (frustum culling alone never removes the far side). Fills and
+outlines are single-sided — winding faces outward so the GPU backface-culls the far
+hemisphere. The selected country's outline is a separate overlay node
+(`selected_outline`, managed by `GlobeView.Coordinator.updateSelectedOutline`) drawn
+thicker, status-colored, and raised above the sector outlines.
 
 The globe has layers: ocean sphere (base) → country polygons → border outlines → atmosphere glow
 
@@ -175,6 +197,28 @@ All colors are defined once in `ColorPalette.swift` (`AppColors`) and referenced
 - `world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
 - `country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
 - `globe.scn` - Pre-built 3D globe cache (regenerate with GlobeCacheGenerator)
+
+### Boundary Data Provenance
+
+Country geometry comes from **Natural Earth 1:10m admin-0 map units**, simplified with
+mapshaper (weighted Visvalingam, ~30% retention, islands < 10 km² dropped, 4-decimal
+coordinates) to ~170k boundary points world-wide. To regenerate or change the detail
+budget, run:
+
+```bash
+./scripts/update_geometry.sh   # downloads NE data, simplifies, merges into world.geojson
+```
+
+Map units splitting one country into several features (GB = England + Scotland + Wales +
+N. Ireland, BE = Flanders + Wallonia + Brussels, PT = mainland + Madeira + Azores, ...)
+are dissolved by ISO code in mapshaper (`-dissolve2`) so countries render as single
+shapes without internal unit borders.
+
+The merge (`scripts/merge_geometry.py`) replaces only feature geometry, matched by ISO
+code; all custom properties (name, continent, capital, `renderAs`) are preserved. Larger
+microstates (CY, LU, WS, CV, KM, MU, ST) are real polygons; the remaining 25 microstates
+stay `Point` features rendered as dots. After regenerating world.geojson, always
+regenerate `globe.scn` (see [Globe Cache Generation](#globe-cache-generation)).
 
 ## Country Highlights Data
 

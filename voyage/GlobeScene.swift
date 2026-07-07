@@ -4,6 +4,23 @@ import UIKit
 
 class GlobeScene {
 
+    // MARK: - Border outline materials
+
+    /// Material for border outlines: width is applied by the geometry shader modifier
+    /// (see PolygonTriangulator.outlineShaderModifier) from the `outlineThickness` uniform,
+    /// which zoom code scales so borders keep a constant on-screen width.
+    /// Single-sided (like the fills), so the GPU culls the globe's back hemisphere.
+    static func makeOutlineMaterial() -> SCNMaterial {
+        let material = SCNMaterial()
+        material.diffuse.contents = UIColor.black
+        material.lightingModel = .constant // Make it always visible
+        material.isDoubleSided = false
+        material.shaderModifiers = [.geometry: PolygonTriangulator.outlineShaderModifier]
+        material.setValue(GlobeView.Coordinator.baseOutlineThickness, forKey: "outlineThickness")
+        material.setValue(Float(0), forKey: "outlineRaise")
+        return material
+    }
+
     static func createScene(globeState: GlobeState, coordinator: GlobeView.Coordinator) -> SCNScene {
         let scene = SCNScene()
         scene.background.contents = UIColor.clear
@@ -15,10 +32,6 @@ class GlobeScene {
 
             // Rebuild the countryNodes and originalColors dictionaries from cached nodes
             rebuildCoordinatorData(from: bundledGlobe, coordinator: coordinator)
-
-            // Patch any countries whose cached geometry was built without hole support
-            // (e.g., South Africa's fill incorrectly covered the Lesotho enclave)
-            patchHoleCountries(in: bundledGlobe)
 
             // Start facing Europe/Africa (~15°E longitude)
             bundledGlobe.eulerAngles.y = -.pi / 2 - .pi / 12
@@ -109,39 +122,37 @@ class GlobeScene {
         return globeNode
     }
 
-    /// Replace fill geometry for countries whose cached .scn was built without hole support.
-    private static func patchHoleCountries(in globeNode: SCNNode) {
-        for country in CountryDataCache.shared.countries where !country.holes.isEmpty {
-            guard let node = globeNode.childNode(withName: country.name, recursively: true) else { continue }
-            if let newGeometry = PolygonTriangulator.createCountryGeometry(
-                polygons: country.polygons,
-                holes: country.holes
-            ) {
-                if let existingMaterials = node.geometry?.materials {
-                    newGeometry.materials = existingMaterials
-                }
-                node.geometry = newGeometry
-            }
-        }
-    }
-
     private static func rebuildCoordinatorData(from globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let landColor = AppColors.landUI
 
-        // Get all country names from GeoJSON (includes both polygon and point countries)
-        let allCountryNames = Set(CountryDataCache.shared.countries.map { $0.name })
-
-        for name in allCountryNames {
-            if let node = globeNode.childNode(withName: name, recursively: true) {
-                coordinator.countryNodes[name] = node
-                coordinator.originalColors[name] = landColor
+        for country in CountryDataCache.shared.countries {
+            if let node = globeNode.childNode(withName: country.name, recursively: true) {
+                coordinator.countryNodes[country.name] = node
+                coordinator.originalColors[country.name] = landColor
             }
+        }
+
+        // Country borders live in a few longitude-sector nodes (culled per frame when on
+        // the globe's far side). All share ONE shader-driven material instance, so zoom
+        // code updates a single uniform — the cached .scn's materials lack the modifier.
+        let material = makeOutlineMaterial()
+        var sectorNodes: [SCNNode] = []
+        globeNode.enumerateChildNodes { node, _ in
+            if node.name?.hasPrefix("outline_sector_") == true {
+                node.geometry?.materials = [material]
+                sectorNodes.append(node)
+            }
+        }
+        if !sectorNodes.isEmpty {
+            coordinator.sharedOutlineMaterial = material
+            coordinator.registerOutlineSectors(sectorNodes)
         }
     }
 
     static func addCountriesFromGeoJSON(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let countries = CountryDataCache.shared.countries
         let landColor = AppColors.landUI
+        var allOutlinePolygons: [[[Double]]] = []
 
         for country in countries {
             if country.isPointCountry {
@@ -196,7 +207,8 @@ class GlobeScene {
                     material.diffuse.contents = country.color
                     material.specular.contents = UIColor.clear
                     material.shininess = 0.2
-                    material.isDoubleSided = true
+                    // Single-sided: fills face outward, so the GPU culls the back hemisphere
+                    material.isDoubleSided = false
                     geometry.materials = [material]
 
                     let node = SCNNode(geometry: geometry)
@@ -205,20 +217,27 @@ class GlobeScene {
                     coordinator.countryNodes[country.name] = node
                     coordinator.originalColors[country.name] = country.color
 
-                    // Add black border outline
-                    if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) {
-                        let outlineMaterial = SCNMaterial()
-                        outlineMaterial.diffuse.contents = UIColor.black
-                        outlineMaterial.lightingModel = .constant // Make it always visible
-                        outlineMaterial.isDoubleSided = true
-                        outlineGeometry.materials = [outlineMaterial]
-
-                        let outlineNode = SCNNode(geometry: outlineGeometry)
-                        outlineNode.name = "\(country.name)_outline"
-                        globeNode.addChildNode(outlineNode)
-                    }
+                    allOutlinePolygons.append(contentsOf: country.polygons)
                 }
             }
+        }
+
+        // Black border outlines merged into a few longitude-sector nodes sharing one
+        // material/uniform; far-side sectors are hidden per frame. The selected
+        // country's colored outline is a separate node managed by
+        // GlobeView.Coordinator, drawn thicker and raised above these.
+        let outlineMaterial = makeOutlineMaterial()
+        var sectorNodes: [SCNNode] = []
+        for (index, outlineGeometry) in PolygonTriangulator.createSectoredOutlineGeometries(polygons: allOutlinePolygons).enumerated() {
+            outlineGeometry.materials = [outlineMaterial]
+            let outlineNode = SCNNode(geometry: outlineGeometry)
+            outlineNode.name = "outline_sector_\(index)"
+            globeNode.addChildNode(outlineNode)
+            sectorNodes.append(outlineNode)
+        }
+        if !sectorNodes.isEmpty {
+            coordinator.sharedOutlineMaterial = outlineMaterial
+            coordinator.registerOutlineSectors(sectorNodes)
         }
     }
 

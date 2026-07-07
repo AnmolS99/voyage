@@ -128,6 +128,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
     globeNode.addChildNode(atmosphereNode)
 
     // Add countries
+    var allOutlinePolygons: [[[Double]]] = []
     for country in countries {
         if country.isPointCountry {
             guard let pointCoord = country.pointCoordinate else { continue }
@@ -174,26 +175,32 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
                 material.diffuse.contents = landColor
                 material.specular.contents = NSColor.clear
                 material.shininess = 0.2
-                material.isDoubleSided = true
+                // Single-sided: fills face outward, so the GPU culls the back hemisphere
+                material.isDoubleSided = false
                 geometry.materials = [material]
 
                 let node = SCNNode(geometry: geometry)
                 node.name = country.name
                 globeNode.addChildNode(node)
 
-                if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) {
-                    let outlineMaterial = SCNMaterial()
-                    outlineMaterial.diffuse.contents = NSColor.black
-                    outlineMaterial.lightingModel = .constant
-                    outlineMaterial.isDoubleSided = true
-                    outlineGeometry.materials = [outlineMaterial]
-
-                    let outlineNode = SCNNode(geometry: outlineGeometry)
-                    outlineNode.name = "\(country.name)_outline"
-                    globeNode.addChildNode(outlineNode)
-                }
+                allOutlinePolygons.append(contentsOf: country.polygons)
             }
         }
+    }
+
+    // Black border outlines merged into a few longitude-sector nodes, so the app can
+    // hide far-side sectors each frame (the outline mesh dominates vertex count).
+    // The app replaces these materials with the shader-driven one at load.
+    for (index, outlineGeometry) in PolygonTriangulator.createSectoredOutlineGeometries(polygons: allOutlinePolygons).enumerated() {
+        let outlineMaterial = SCNMaterial()
+        outlineMaterial.diffuse.contents = NSColor.black
+        outlineMaterial.lightingModel = .constant
+        outlineMaterial.isDoubleSided = false
+        outlineGeometry.materials = [outlineMaterial]
+
+        let outlineNode = SCNNode(geometry: outlineGeometry)
+        outlineNode.name = "outline_sector_\(index)"
+        globeNode.addChildNode(outlineNode)
     }
 
     return globeNode
