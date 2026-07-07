@@ -13,6 +13,10 @@ struct GlobeView: UIViewRepresentable {
         sceneView.antialiasingMode = .multisampling4X
         sceneView.autoenablesDefaultLighting = false
         sceneView.delegate = context.coordinator // per-frame far-side outline culling
+        // Lock the globe to 60 fps: on ProMotion displays the scene otherwise renders
+        // at a rate that oscillates between vsync slots, which reads as judder while
+        // spinning. A fixed 60 divides 120 evenly, giving perfectly even frame pacing.
+        sceneView.preferredFramesPerSecond = 60
 
         // Add gesture recognizers
         let panGesture = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
