@@ -188,9 +188,10 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
         }
     }
 
-    // All black border outlines merged into a single node (one draw call).
-    // The app replaces this material with the shader-driven one at load.
-    if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: allOutlinePolygons) {
+    // Black border outlines merged into a few longitude-sector nodes, so the app can
+    // hide far-side sectors each frame (the outline mesh dominates vertex count).
+    // The app replaces these materials with the shader-driven one at load.
+    for (index, outlineGeometry) in PolygonTriangulator.createSectoredOutlineGeometries(polygons: allOutlinePolygons).enumerated() {
         let outlineMaterial = SCNMaterial()
         outlineMaterial.diffuse.contents = NSColor.black
         outlineMaterial.lightingModel = .constant
@@ -198,7 +199,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
         outlineGeometry.materials = [outlineMaterial]
 
         let outlineNode = SCNNode(geometry: outlineGeometry)
-        outlineNode.name = "all_outlines"
+        outlineNode.name = "outline_sector_\(index)"
         globeNode.addChildNode(outlineNode)
     }
 

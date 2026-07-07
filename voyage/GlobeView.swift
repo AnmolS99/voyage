@@ -12,6 +12,7 @@ struct GlobeView: UIViewRepresentable {
         sceneView.allowsCameraControl = false
         sceneView.antialiasingMode = .multisampling4X
         sceneView.autoenablesDefaultLighting = false
+        sceneView.delegate = context.coordinator // per-frame far-side outline culling
 
         // Add gesture recognizers
         let panGesture = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
@@ -52,11 +53,29 @@ struct GlobeView: UIViewRepresentable {
         var countryNodes: [String: SCNNode] = [:]
         var originalColors: [String: UIColor] = [:]
         var cachedCountries: [GeoJSONCountry] = []
-        /// Material of the single merged node holding every country's black outline
+        /// Material shared by all outline sector nodes (one uniform update per zoom change)
         var sharedOutlineMaterial: SCNMaterial?
         /// Overlay node drawing the selected country's outline (thicker, colored, raised)
         private var selectedOutlineNode: SCNNode?
         private var selectedOutlineGeometries: [String: SCNGeometry] = [:]
+
+        /// Outline sector nodes with precomputed bounding spheres, culled per frame
+        /// when beyond the globe's horizon (see renderer(_:updateAtTime:))
+        private struct OutlineSector {
+            let node: SCNNode
+            let center: simd_float3   // bounding sphere center, globe-local
+            let radius: Float
+        }
+        private var outlineSectors: [OutlineSector] = []
+
+        func registerOutlineSectors(_ nodes: [SCNNode]) {
+            outlineSectors = nodes.map { node in
+                let sphere = node.boundingSphere
+                return OutlineSector(node: node,
+                                     center: simd_float3(Float(sphere.center.x), Float(sphere.center.y), Float(sphere.center.z)),
+                                     radius: Float(sphere.radius))
+            }
+        }
 
         // Outline thickness (world units) at the default camera distance. Zoomed in,
         // the shader uniform is scaled down so outlines keep a constant on-screen width
@@ -666,6 +685,39 @@ struct GlobeView: UIViewRepresentable {
             node.runAction(SCNAction.repeatForever(pulse))
 
             return node
+        }
+    }
+}
+
+extension GlobeView.Coordinator: SCNSceneRendererDelegate {
+    /// Hides outline sectors that are entirely beyond the globe's horizon. The outline
+    /// mesh dominates the scene's vertex count, and frustum culling never removes the
+    /// far side (the whole globe fits the frustum except at close zoom), so without
+    /// this every border vertex is processed every frame.
+    ///
+    /// A point p on the unit sphere is visible from a camera at distance d iff
+    /// dot(p, camDir) >= 1/d (the horizon). For a sector with bounding sphere
+    /// (center c, radius r), dot(p, camDir) <= dot(c, camDir) + r for all its points,
+    /// so the sector is safely hidden when dot(c, camDir) + r < 1/d - margin.
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        guard !outlineSectors.isEmpty,
+              let cameraNode = renderer.pointOfView,
+              let globeNode = globeNode else { return }
+
+        let cameraWorld = cameraNode.presentation.worldPosition
+        let cameraLocal = globeNode.presentation.convertPosition(cameraWorld, from: nil)
+        let camera = simd_float3(Float(cameraLocal.x), Float(cameraLocal.y), Float(cameraLocal.z))
+        let distance = simd_length(camera)
+        guard distance > 1.0 else { return }
+
+        let cameraDirection = camera / distance
+        let horizon = 1.0 / distance - 0.02 // small margin against popping at the limb
+
+        for sector in outlineSectors {
+            let hidden = simd_dot(sector.center, cameraDirection) + sector.radius < horizon
+            if sector.node.isHidden != hidden {
+                sector.node.isHidden = hidden
+            }
         }
     }
 }

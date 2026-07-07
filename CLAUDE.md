@@ -109,11 +109,14 @@ geometry shader modifier (`PolygonTriangulator.outlineShaderModifier`) widens th
 scales that uniform with camera distance — no geometry is rebuilt when zooming or when
 selection thickens/raises a country's outline.
 
-All black borders live in a single merged node (`all_outlines`: one draw call, one
-material/uniform for ~335k outline triangles). The selected country's outline is a
-separate overlay node (`selected_outline`, managed by
-`GlobeView.Coordinator.updateSelectedOutline`) drawn thicker, status-colored, and raised
-above the merged outlines.
+All black borders are merged into a few longitude-sector nodes (`outline_sector_N`)
+sharing one material/uniform. The outline mesh dominates the scene's vertex count, so
+`GlobeView.Coordinator.renderer(_:updateAtTime:)` hides sectors beyond the globe's
+horizon each frame (frustum culling alone never removes the far side). Fills and
+outlines are single-sided — winding faces outward so the GPU backface-culls the far
+hemisphere. The selected country's outline is a separate overlay node
+(`selected_outline`, managed by `GlobeView.Coordinator.updateSelectedOutline`) drawn
+thicker, status-colored, and raised above the sector outlines.
 
 The globe has layers: ocean sphere (base) → country polygons → border outlines → atmosphere glow
 

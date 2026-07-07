@@ -438,6 +438,23 @@ class PolygonTriangulator {
                             + normalize(_geometry.position.xyz) * outlineRaise;
     """
 
+    /// Buckets outline rings into longitude sectors and builds one outline geometry per
+    /// sector. Per-frame horizon culling can then skip sectors on the globe's far side —
+    /// the outline mesh dominates the scene's vertex count, and as a single geometry it
+    /// would be fully vertex-processed every frame regardless of what faces the camera.
+    /// Rings are assigned whole (by centroid longitude), so wide rings simply make their
+    /// sector's bounding volume larger and it culls less often.
+    static func createSectoredOutlineGeometries(polygons: [[[Double]]], sectors: Int = 12) -> [SCNGeometry] {
+        var buckets: [[[[Double]]]] = Array(repeating: [], count: sectors)
+        for polygon in polygons {
+            guard let cleaned = cleanRing(polygon) else { continue }
+            let centroidLon = cleaned.reduce(0.0) { $0 + $1[0] } / Double(cleaned.count)
+            let index = min(sectors - 1, max(0, Int((centroidLon + 180.0) / 360.0 * Double(sectors))))
+            buckets[index].append(polygon)
+        }
+        return buckets.compactMap { $0.isEmpty ? nil : createBorderOutlineGeometry(polygons: $0) }
+    }
+
     // Create border outline as a continuous quad strip with shared vertices at joins.
     // Width is applied by outlineShaderModifier at render time (see above); without the
     // modifier this geometry is degenerate (zero width).

@@ -132,13 +132,20 @@ class GlobeScene {
             }
         }
 
-        // All country borders live in one merged node (one draw call for ~335k outline
-        // triangles). Give it a fresh shader-driven material — the cached .scn's
-        // materials lack the width shader modifier.
-        if let outlinesNode = globeNode.childNode(withName: "all_outlines", recursively: true) {
-            let material = makeOutlineMaterial()
-            outlinesNode.geometry?.materials = [material]
+        // Country borders live in a few longitude-sector nodes (culled per frame when on
+        // the globe's far side). All share ONE shader-driven material instance, so zoom
+        // code updates a single uniform — the cached .scn's materials lack the modifier.
+        let material = makeOutlineMaterial()
+        var sectorNodes: [SCNNode] = []
+        globeNode.enumerateChildNodes { node, _ in
+            if node.name?.hasPrefix("outline_sector_") == true {
+                node.geometry?.materials = [material]
+                sectorNodes.append(node)
+            }
+        }
+        if !sectorNodes.isEmpty {
             coordinator.sharedOutlineMaterial = material
+            coordinator.registerOutlineSectors(sectorNodes)
         }
     }
 
@@ -215,18 +222,22 @@ class GlobeScene {
             }
         }
 
-        // All black border outlines merged into a single node/geometry/material:
-        // one draw call, and zoom code adjusts every border via one uniform.
-        // The selected country's colored outline is a separate node managed by
-        // GlobeView.Coordinator, drawn thicker and raised above this one.
-        if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: allOutlinePolygons) {
-            let outlineMaterial = makeOutlineMaterial()
+        // Black border outlines merged into a few longitude-sector nodes sharing one
+        // material/uniform; far-side sectors are hidden per frame. The selected
+        // country's colored outline is a separate node managed by
+        // GlobeView.Coordinator, drawn thicker and raised above these.
+        let outlineMaterial = makeOutlineMaterial()
+        var sectorNodes: [SCNNode] = []
+        for (index, outlineGeometry) in PolygonTriangulator.createSectoredOutlineGeometries(polygons: allOutlinePolygons).enumerated() {
             outlineGeometry.materials = [outlineMaterial]
-            coordinator.sharedOutlineMaterial = outlineMaterial
-
             let outlineNode = SCNNode(geometry: outlineGeometry)
-            outlineNode.name = "all_outlines"
+            outlineNode.name = "outline_sector_\(index)"
             globeNode.addChildNode(outlineNode)
+            sectorNodes.append(outlineNode)
+        }
+        if !sectorNodes.isEmpty {
+            coordinator.sharedOutlineMaterial = outlineMaterial
+            coordinator.registerOutlineSectors(sectorNodes)
         }
     }
 
