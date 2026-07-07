@@ -175,7 +175,8 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
                 material.diffuse.contents = landColor
                 material.specular.contents = NSColor.clear
                 material.shininess = 0.2
-                material.isDoubleSided = true
+                // Single-sided: fills face outward, so the GPU culls the back hemisphere
+                material.isDoubleSided = false
                 geometry.materials = [material]
 
                 let node = SCNNode(geometry: geometry)
@@ -193,7 +194,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
         let outlineMaterial = SCNMaterial()
         outlineMaterial.diffuse.contents = NSColor.black
         outlineMaterial.lightingModel = .constant
-        outlineMaterial.isDoubleSided = true
+        outlineMaterial.isDoubleSided = false
         outlineGeometry.materials = [outlineMaterial]
 
         let outlineNode = SCNNode(geometry: outlineGeometry)

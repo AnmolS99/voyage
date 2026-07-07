@@ -8,13 +8,13 @@ class GlobeScene {
 
     /// Material for border outlines: width is applied by the geometry shader modifier
     /// (see PolygonTriangulator.outlineShaderModifier) from the `outlineThickness` uniform,
-    /// which zoom code scales so borders keep a constant on-screen width. Each country
-    /// gets its own instance because selection recolors and thickens outlines per country.
+    /// which zoom code scales so borders keep a constant on-screen width.
+    /// Single-sided (like the fills), so the GPU culls the globe's back hemisphere.
     static func makeOutlineMaterial() -> SCNMaterial {
         let material = SCNMaterial()
         material.diffuse.contents = UIColor.black
         material.lightingModel = .constant // Make it always visible
-        material.isDoubleSided = true
+        material.isDoubleSided = false
         material.shaderModifiers = [.geometry: PolygonTriangulator.outlineShaderModifier]
         material.setValue(GlobeView.Coordinator.baseOutlineThickness, forKey: "outlineThickness")
         material.setValue(Float(0), forKey: "outlineRaise")
@@ -200,7 +200,8 @@ class GlobeScene {
                     material.diffuse.contents = country.color
                     material.specular.contents = UIColor.clear
                     material.shininess = 0.2
-                    material.isDoubleSided = true
+                    // Single-sided: fills face outward, so the GPU culls the back hemisphere
+                    material.isDoubleSided = false
                     geometry.materials = [material]
 
                     let node = SCNNode(geometry: geometry)
