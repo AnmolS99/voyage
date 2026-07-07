@@ -23,6 +23,7 @@ final class voyageTests: XCTestCase {
             if let name = node.name,
                !name.isEmpty,
                !name.hasSuffix("_outline"),
+               !name.hasPrefix("outline_sector_"),
                name != "ocean",
                name != "atmosphere" {
                 globeCountries.insert(name)

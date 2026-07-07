@@ -17,8 +17,8 @@ final class AchievementCompletionTests: XCTestCase {
             let achievement = Achievement(
                 name: "Explorer of \(continent.rawValue)",
                 medal: continent.medal,
-                current: visitedInContinent.count,
-                total: countries.count
+                visitedCountries: Array(visitedInContinent),
+                remainingCountries: countries.filter { !visitedInContinent.contains($0) }
             )
 
             XCTAssertTrue(achievement.isCompleted,
@@ -40,8 +40,8 @@ final class AchievementCompletionTests: XCTestCase {
             let achievement = Achievement(
                 name: "Explorer of \(continent.rawValue)",
                 medal: continent.medal,
-                current: visitedInContinent.count,
-                total: countries.count
+                visitedCountries: Array(visitedInContinent),
+                remainingCountries: countries.filter { !visitedInContinent.contains($0) }
             )
 
             XCTAssertFalse(achievement.isCompleted,
@@ -80,7 +80,7 @@ final class AchievementCompletionTests: XCTestCase {
         let visited: Set<String> = Set(Array(Continent.europe.countries.prefix(3)))
         let totalCountries = 195
 
-        let achievement = Achievement(
+        let achievement = Achievement.forTesting(
             name: "World Traveler",
             medal: "🌍",
             current: visited.count,
@@ -94,7 +94,7 @@ final class AchievementCompletionTests: XCTestCase {
     func testWorldTravelerAchievementCompletedWithAllCountries() {
         let totalCountries = 195
 
-        let achievement = Achievement(
+        let achievement = Achievement.forTesting(
             name: "World Traveler",
             medal: "🌍",
             current: 195,
@@ -110,7 +110,7 @@ final class AchievementCompletionTests: XCTestCase {
 
         let stages = [10, 50, 100, 150, 195]
         for count in stages {
-            let achievement = Achievement(
+            let achievement = Achievement.forTesting(
                 name: "World Traveler",
                 medal: "🌍",
                 current: count,
@@ -160,8 +160,8 @@ final class AchievementCompletionTests: XCTestCase {
         let europeAchievement = Achievement(
             name: "Explorer of Europe",
             medal: Continent.europe.medal,
-            current: europeVisited.count,
-            total: Continent.europe.countries.count
+            visitedCountries: Array(europeVisited),
+            remainingCountries: Continent.europe.countries.filter { !europeVisited.contains($0) }
         )
 
         XCTAssertEqual(europeVisited.count, 3, "Should have 3 European countries")
@@ -193,8 +193,8 @@ final class AchievementCompletionTests: XCTestCase {
         let achievement = Achievement(
             name: "Explorer of Europe",
             medal: Continent.europe.medal,
-            current: europeVisited.count,
-            total: Continent.europe.countries.count
+            visitedCountries: Array(europeVisited),
+            remainingCountries: Continent.europe.countries.filter { !europeVisited.contains($0) }
         )
 
         XCTAssertEqual(achievement.current, 1)
@@ -217,8 +217,8 @@ final class AchievementCompletionTests: XCTestCase {
         let achievement = Achievement(
             name: "Explorer of Asia",
             medal: Continent.asia.medal,
-            current: asiaVisited.count,
-            total: Continent.asia.countries.count
+            visitedCountries: Array(asiaVisited),
+            remainingCountries: Continent.asia.countries.filter { !asiaVisited.contains($0) }
         )
 
         XCTAssertEqual(achievement.current, 1)
