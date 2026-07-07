@@ -12,11 +12,8 @@ struct GlobeView: UIViewRepresentable {
         sceneView.allowsCameraControl = false
         sceneView.antialiasingMode = .multisampling4X
         sceneView.autoenablesDefaultLighting = false
-        sceneView.delegate = context.coordinator // per-frame far-side outline culling
-        // Lock the globe to 60 fps: on ProMotion displays the scene otherwise renders
-        // at a rate that oscillates between vsync slots, which reads as judder while
-        // spinning. A fixed 60 divides 120 evenly, giving perfectly even frame pacing.
-        sceneView.preferredFramesPerSecond = 60
+        // Per-frame far-side outline culling + drag/inertia motion (see renderer(_:updateAtTime:))
+        sceneView.delegate = context.coordinator
 
         // Add gesture recognizers
         let panGesture = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
@@ -103,9 +100,13 @@ struct GlobeView: UIViewRepresentable {
         private var doubleTapDragStartDistance: Float = 0
         private var lastGlobeStyle: GlobeStyle?
 
-        private let inertia = GlobeInertia()
-        private var displayLink: CADisplayLink?
-        private var lastInertiaTime: CFTimeInterval = 0
+        // Interactive spin state, applied on the render thread (renderer(_:updateAtTime:))
+        // and fed from main-thread gesture handlers — guarded by motionLock.
+        let motionLock = NSLock()
+        let inertia = GlobeInertia()
+        var pendingDragX: Float = 0
+        var pendingDragY: Float = 0
+        var lastRenderTime: TimeInterval = 0
 
         init(globeState: GlobeState) {
             self.globeState = globeState
@@ -276,6 +277,10 @@ struct GlobeView: UIViewRepresentable {
             let distanceRatio = cameraDistance / referenceDistance
             let rotationSpeed = baseRotationSpeed * distanceRatio * distanceRatio
 
+            // Gestures only accumulate rotation deltas; the render delegate applies them
+            // once per rendered frame. Setting node transforms from main-thread gesture
+            // events (~120Hz) lets the render thread sample one or two steps per frame at
+            // random — visible judder while spinning, no matter how fast the GPU is.
             switch gesture.state {
             case .began:
                 stopInertia()
@@ -285,73 +290,34 @@ struct GlobeView: UIViewRepresentable {
                 globeNode.eulerAngles.y = currentActualRotationY
                 globeNode.removeAction(forKey: "autoRotation")
                 globeState.isAutoRotating = false
+                sceneView?.rendersContinuously = true
 
             case .changed:
                 let translation = gesture.translation(in: sceneView)
-                currentRotationY += Float(translation.x) * rotationSpeed
-                globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
-                currentRotationX += Float(translation.y) * rotationSpeed
-                currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX))
-                cameraNode.position = SCNVector3(
-                    0,
-                    cameraDistance * sin(currentRotationX),
-                    cameraDistance * cos(currentRotationX)
-                )
-                cameraNode.look(at: SCNVector3(0, 0, 0))
+                motionLock.lock()
+                pendingDragY += Float(translation.x) * rotationSpeed
+                pendingDragX += Float(translation.y) * rotationSpeed
+                motionLock.unlock()
                 gesture.setTranslation(.zero, in: sceneView)
 
             case .ended, .cancelled:
                 let velocity = gesture.velocity(in: sceneView)
+                motionLock.lock()
                 inertia.velocityY = Float(velocity.x) * rotationSpeed
                 inertia.velocityX = Float(velocity.y) * rotationSpeed
-                if inertia.isActive { startInertia() }
+                motionLock.unlock()
 
             default:
                 break
             }
         }
 
-        private func startInertia() {
-            displayLink?.invalidate()
-            lastInertiaTime = 0
-            displayLink = CADisplayLink(target: self, selector: #selector(inertiaStep(_:)))
-            displayLink?.add(to: .main, forMode: .common)
-        }
-
         private func stopInertia() {
-            displayLink?.invalidate()
-            displayLink = nil
+            motionLock.lock()
             inertia.reset()
-        }
-
-        @objc private func inertiaStep(_ link: CADisplayLink) {
-            guard lastInertiaTime > 0 else {
-                lastInertiaTime = link.timestamp
-                return
-            }
-
-            let dt = Float(link.timestamp - lastInertiaTime)
-            lastInertiaTime = link.timestamp
-
-            let (dx, dy) = inertia.step(dt: dt)
-            currentRotationY += dy
-            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX + dx))
-
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else {
-                stopInertia()
-                return
-            }
-
-            globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
-
-            let dist = sqrt(cameraNode.position.x * cameraNode.position.x +
-                            cameraNode.position.y * cameraNode.position.y +
-                            cameraNode.position.z * cameraNode.position.z)
-            cameraNode.position = SCNVector3(0, dist * sin(currentRotationX), dist * cos(currentRotationX))
-            cameraNode.look(at: SCNVector3(0, 0, 0))
-
-            if !inertia.isActive { stopInertia() }
+            pendingDragX = 0
+            pendingDragY = 0
+            motionLock.unlock()
         }
 
         @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
@@ -694,6 +660,60 @@ struct GlobeView: UIViewRepresentable {
 }
 
 extension GlobeView.Coordinator: SCNSceneRendererDelegate {
+    /// Runs once per rendered frame, on the render thread. Applies interactive spin
+    /// (drag deltas + inertia) and then hides far-side outline sectors.
+    ///
+    /// Motion is applied here rather than in gesture handlers because main-thread
+    /// transform writes are sampled by the render thread at random phase — some frames
+    /// see one gesture step, some two — which shows as judder while spinning. Applying
+    /// exactly one integration step per rendered frame makes motion even by construction
+    /// (the auto-rotation SCNAction is smooth for the same reason).
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        applyInteractiveSpin(atTime: time)
+        cullFarSideOutlineSectors()
+    }
+
+    private func applyInteractiveSpin(atTime time: TimeInterval) {
+        let dt = lastRenderTime > 0 ? Float(min(max(time - lastRenderTime, 0), 0.1)) : 0
+        lastRenderTime = time
+
+        motionLock.lock()
+        var dx = pendingDragX
+        var dy = pendingDragY
+        pendingDragX = 0
+        pendingDragY = 0
+        let coasting = inertia.isActive
+        if coasting && dt > 0 {
+            let step = inertia.step(dt: dt)
+            dx += step.dx
+            dy += step.dy
+        }
+        let coastingEnded = coasting && !inertia.isActive
+        motionLock.unlock()
+
+        if dx != 0 || dy != 0,
+           let globeNode = globeNode,
+           let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: false) {
+            currentRotationY += dy
+            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX + dx))
+
+            globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
+
+            let position = cameraNode.position
+            let distance = sqrt(position.x * position.x + position.y * position.y + position.z * position.z)
+            cameraNode.position = SCNVector3(0, distance * sin(currentRotationX), distance * cos(currentRotationX))
+            cameraNode.look(at: SCNVector3(0, 0, 0))
+        }
+
+        if coastingEnded {
+            // Momentum finished: stop forcing continuous rendering (the auto-rotation
+            // action, when enabled, drives rendering by itself)
+            DispatchQueue.main.async { [weak self] in
+                self?.sceneView?.rendersContinuously = false
+            }
+        }
+    }
+
     /// Hides outline sectors that are entirely beyond the globe's horizon. The outline
     /// mesh dominates the scene's vertex count, and frustum culling never removes the
     /// far side (the whole globe fits the frustum except at close zoom), so without
@@ -703,9 +723,9 @@ extension GlobeView.Coordinator: SCNSceneRendererDelegate {
     /// dot(p, camDir) >= 1/d (the horizon). For a sector with bounding sphere
     /// (center c, radius r), dot(p, camDir) <= dot(c, camDir) + r for all its points,
     /// so the sector is safely hidden when dot(c, camDir) + r < 1/d - margin.
-    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+    private func cullFarSideOutlineSectors() {
         guard !outlineSectors.isEmpty,
-              let cameraNode = renderer.pointOfView,
+              let cameraNode = sceneView?.pointOfView,
               let globeNode = globeNode else { return }
 
         let cameraWorld = cameraNode.presentation.worldPosition
