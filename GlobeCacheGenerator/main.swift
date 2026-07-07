@@ -128,6 +128,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
     globeNode.addChildNode(atmosphereNode)
 
     // Add countries
+    var allOutlinePolygons: [[[Double]]] = []
     for country in countries {
         if country.isPointCountry {
             guard let pointCoord = country.pointCoordinate else { continue }
@@ -181,19 +182,23 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
                 node.name = country.name
                 globeNode.addChildNode(node)
 
-                if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) {
-                    let outlineMaterial = SCNMaterial()
-                    outlineMaterial.diffuse.contents = NSColor.black
-                    outlineMaterial.lightingModel = .constant
-                    outlineMaterial.isDoubleSided = true
-                    outlineGeometry.materials = [outlineMaterial]
-
-                    let outlineNode = SCNNode(geometry: outlineGeometry)
-                    outlineNode.name = "\(country.name)_outline"
-                    globeNode.addChildNode(outlineNode)
-                }
+                allOutlinePolygons.append(contentsOf: country.polygons)
             }
         }
+    }
+
+    // All black border outlines merged into a single node (one draw call).
+    // The app replaces this material with the shader-driven one at load.
+    if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: allOutlinePolygons) {
+        let outlineMaterial = SCNMaterial()
+        outlineMaterial.diffuse.contents = NSColor.black
+        outlineMaterial.lightingModel = .constant
+        outlineMaterial.isDoubleSided = true
+        outlineGeometry.materials = [outlineMaterial]
+
+        let outlineNode = SCNNode(geometry: outlineGeometry)
+        outlineNode.name = "all_outlines"
+        globeNode.addChildNode(outlineNode)
     }
 
     return globeNode

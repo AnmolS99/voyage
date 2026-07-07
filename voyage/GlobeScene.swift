@@ -130,21 +130,22 @@ class GlobeScene {
                 coordinator.countryNodes[country.name] = node
                 coordinator.originalColors[country.name] = landColor
             }
+        }
 
-            // Give each polygon-country outline a fresh shader-driven material (the
-            // cached .scn's materials lack the width shader modifier)
-            if !country.isPointCountry,
-               let outlineNode = globeNode.childNode(withName: "\(country.name)_outline", recursively: true) {
-                let material = makeOutlineMaterial()
-                outlineNode.geometry?.materials = [material]
-                coordinator.outlineMaterials[country.name] = material
-            }
+        // All country borders live in one merged node (one draw call for ~335k outline
+        // triangles). Give it a fresh shader-driven material — the cached .scn's
+        // materials lack the width shader modifier.
+        if let outlinesNode = globeNode.childNode(withName: "all_outlines", recursively: true) {
+            let material = makeOutlineMaterial()
+            outlinesNode.geometry?.materials = [material]
+            coordinator.sharedOutlineMaterial = material
         }
     }
 
     static func addCountriesFromGeoJSON(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let countries = CountryDataCache.shared.countries
         let landColor = AppColors.landUI
+        var allOutlinePolygons: [[[Double]]] = []
 
         for country in countries {
             if country.isPointCountry {
@@ -208,18 +209,23 @@ class GlobeScene {
                     coordinator.countryNodes[country.name] = node
                     coordinator.originalColors[country.name] = country.color
 
-                    // Add black border outline (shader-driven, zoom-dependent width)
-                    if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) {
-                        let outlineMaterial = makeOutlineMaterial()
-                        outlineGeometry.materials = [outlineMaterial]
-                        coordinator.outlineMaterials[country.name] = outlineMaterial
-
-                        let outlineNode = SCNNode(geometry: outlineGeometry)
-                        outlineNode.name = "\(country.name)_outline"
-                        globeNode.addChildNode(outlineNode)
-                    }
+                    allOutlinePolygons.append(contentsOf: country.polygons)
                 }
             }
+        }
+
+        // All black border outlines merged into a single node/geometry/material:
+        // one draw call, and zoom code adjusts every border via one uniform.
+        // The selected country's colored outline is a separate node managed by
+        // GlobeView.Coordinator, drawn thicker and raised above this one.
+        if let outlineGeometry = PolygonTriangulator.createBorderOutlineGeometry(polygons: allOutlinePolygons) {
+            let outlineMaterial = makeOutlineMaterial()
+            outlineGeometry.materials = [outlineMaterial]
+            coordinator.sharedOutlineMaterial = outlineMaterial
+
+            let outlineNode = SCNNode(geometry: outlineGeometry)
+            outlineNode.name = "all_outlines"
+            globeNode.addChildNode(outlineNode)
         }
     }
 

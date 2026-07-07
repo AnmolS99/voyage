@@ -52,7 +52,11 @@ struct GlobeView: UIViewRepresentable {
         var countryNodes: [String: SCNNode] = [:]
         var originalColors: [String: UIColor] = [:]
         var cachedCountries: [GeoJSONCountry] = []
-        var outlineMaterials: [String: SCNMaterial] = [:]
+        /// Material of the single merged node holding every country's black outline
+        var sharedOutlineMaterial: SCNMaterial?
+        /// Overlay node drawing the selected country's outline (thicker, colored, raised)
+        private var selectedOutlineNode: SCNNode?
+        private var selectedOutlineGeometries: [String: SCNGeometry] = [:]
 
         // Outline thickness (world units) at the default camera distance. Zoomed in,
         // the shader uniform is scaled down so outlines keep a constant on-screen width
@@ -133,9 +137,11 @@ struct GlobeView: UIViewRepresentable {
             guard abs(scale - currentOutlineScale) > 0.005 else { return }
             currentOutlineScale = scale
 
-            for (name, material) in outlineMaterials {
-                let factor: Float = globeState.selectedCountry == name ? Self.selectedOutlineFactor : 1.0
-                material.setValue(Self.baseOutlineThickness * scale * factor, forKey: "outlineThickness")
+            sharedOutlineMaterial?.setValue(Self.baseOutlineThickness * scale, forKey: "outlineThickness")
+            if let selectedGeometry = selectedOutlineNode?.geometry {
+                for material in selectedGeometry.materials {
+                    material.setValue(Self.baseOutlineThickness * scale * Self.selectedOutlineFactor, forKey: "outlineThickness")
+                }
             }
         }
 
@@ -499,62 +505,106 @@ struct GlobeView: UIViewRepresentable {
                     node.isHidden = true
                 }
 
-                // Update outline visibility, color, and thickness
-                if let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                // Point countries have their own outline node (dot ring/disc); polygon
+                // countries share one merged outline node, with the selected country's
+                // outline drawn by a separate overlay node (see updateSelectedOutline)
+                if isPointCountry,
+                   let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                    let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false) {
                     outlineNode.isHidden = false
 
-                    // Point countries: swap outline geometry based on status and selection
-                    if isPointCountry {
-                        if isSelected || !hasStatus {
-                            // Ring (border only) — fill is hidden
-                            let outerRadius: CGFloat = isSelected ? 0.0155 : 0.014
-                            let ring = SCNTube(innerRadius: 0.012, outerRadius: outerRadius, height: 0.0005)
-                            let material = SCNMaterial()
-                            material.lightingModel = .constant
-                            material.isDoubleSided = true
-                            ring.materials = [material]
-                            outlineNode.geometry = ring
-                        } else {
-                            // Disc (behind visible fill overlay)
-                            let disc = SCNCylinder(radius: 0.014, height: 0.0005)
-                            let material = SCNMaterial()
-                            material.lightingModel = .constant
-                            material.isDoubleSided = true
-                            disc.materials = [material]
-                            outlineNode.geometry = disc
-                        }
-                    } else if let material = outlineMaterials[name] {
-                        // Selected outlines render thicker and slightly raised above
-                        // neighbouring outlines, via the outline shader uniforms
-                        let factor: Float = isSelected ? Self.selectedOutlineFactor : 1.0
-                        material.setValue(Self.baseOutlineThickness * currentOutlineScale * factor, forKey: "outlineThickness")
-                        material.setValue(isSelected ? Self.selectedOutlineRaise : Float(0), forKey: "outlineRaise")
+                    // Swap outline geometry based on status and selection
+                    if isSelected || !hasStatus {
+                        // Ring (border only) — fill is hidden
+                        let outerRadius: CGFloat = isSelected ? 0.0155 : 0.014
+                        let ring = SCNTube(innerRadius: 0.012, outerRadius: outerRadius, height: 0.0005)
+                        let material = SCNMaterial()
+                        material.lightingModel = .constant
+                        material.isDoubleSided = true
+                        ring.materials = [material]
+                        outlineNode.geometry = ring
+                    } else {
+                        // Disc (behind visible fill overlay)
+                        let disc = SCNCylinder(radius: 0.014, height: 0.0005)
+                        let material = SCNMaterial()
+                        material.lightingModel = .constant
+                        material.isDoubleSided = true
+                        disc.materials = [material]
+                        outlineNode.geometry = disc
                     }
 
                     // Border color: status color when selected, black otherwise
                     if let outlineGeometry = outlineNode.geometry {
-                        let borderContents: Any = {
-                            if isSelected {
-                                if isVisited && isWishlist {
-                                    return AppColors.visitedWishlistGradient
-                                } else if isVisited {
-                                    return AppColors.visitedUI
-                                } else if isWishlist {
-                                    return AppColors.wishlistUI
-                                }
-                            }
-                            return UIColor.black
-                        }()
                         for material in outlineGeometry.materials {
-                            material.diffuse.contents = borderContents
+                            material.diffuse.contents = borderColor(isSelected: isSelected, isVisited: isVisited, isWishlist: isWishlist)
                         }
                     }
                 }
             }
 
+            updateSelectedOutline()
+
             // Update capital star
             updateCapitalStar()
+        }
+
+        private func borderColor(isSelected: Bool, isVisited: Bool, isWishlist: Bool) -> Any {
+            if isSelected {
+                if isVisited && isWishlist {
+                    return AppColors.visitedWishlistGradient
+                } else if isVisited {
+                    return AppColors.visitedUI
+                } else if isWishlist {
+                    return AppColors.wishlistUI
+                }
+            }
+            return UIColor.black
+        }
+
+        /// Shows the selected polygon country's outline as an overlay node: thicker,
+        /// status-colored, and raised above the merged black outlines.
+        private func updateSelectedOutline() {
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+
+            guard let name = globeState.selectedCountry,
+                  let country = cachedCountries.first(where: { $0.name == name }),
+                  !country.isPointCountry else {
+                selectedOutlineNode?.isHidden = true
+                return
+            }
+
+            let geometry: SCNGeometry
+            if let cached = selectedOutlineGeometries[name] {
+                geometry = cached
+            } else {
+                guard let built = PolygonTriangulator.createBorderOutlineGeometry(polygons: country.polygons) else {
+                    selectedOutlineNode?.isHidden = true
+                    return
+                }
+                built.materials = [GlobeScene.makeOutlineMaterial()]
+                selectedOutlineGeometries[name] = built
+                geometry = built
+            }
+
+            let node: SCNNode
+            if let existing = selectedOutlineNode {
+                node = existing
+            } else {
+                node = SCNNode()
+                node.name = "selected_outline"
+                globeNode.addChildNode(node)
+                selectedOutlineNode = node
+            }
+            node.geometry = geometry
+            node.isHidden = false
+
+            let isVisited = globeState.visitedCountries.contains(name)
+            let isWishlist = globeState.wishlistCountries.contains(name)
+            for material in geometry.materials {
+                material.diffuse.contents = borderColor(isSelected: true, isVisited: isVisited, isWishlist: isWishlist)
+                material.setValue(Self.baseOutlineThickness * currentOutlineScale * Self.selectedOutlineFactor, forKey: "outlineThickness")
+                material.setValue(Self.selectedOutlineRaise, forKey: "outlineRaise")
+            }
         }
 
         func updateCapitalStar() {

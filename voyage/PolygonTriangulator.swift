@@ -498,11 +498,11 @@ class PolygonTriangulator {
 
         guard !allVertices.isEmpty && !allIndices.isEmpty else { return nil }
 
+        // No texcoord source: outlines render as flat color, never textured
         let vertexSource = SCNGeometrySource(vertices: allVertices)
         let miterSource = SCNGeometrySource(normals: allMiters)
-        let texCoordSource = SCNGeometrySource(textureCoordinates: computeTexCoords(vertices: allVertices, polygons: polygons))
         let element = SCNGeometryElement(indices: allIndices, primitiveType: .triangles)
 
-        return SCNGeometry(sources: [vertexSource, miterSource, texCoordSource], elements: [element])
+        return SCNGeometry(sources: [vertexSource, miterSource], elements: [element])
     }
 }
