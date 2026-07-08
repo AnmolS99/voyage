@@ -40,6 +40,15 @@ struct AchievementsView: View {
             itemLabel: "capitals"
         ))
 
+        // Seven wonders achievement
+        list.append(Achievement(
+            name: "Seven wonders of the world",
+            medal: "⭐️",
+            visitedCountries: SevenWonders.visited(from: globeState.checkedAttractions),
+            remainingCountries: SevenWonders.remaining(from: globeState.checkedAttractions),
+            itemLabel: "wonders"
+        ))
+
         // Continent achievements
         for continent in Continent.allCases where continent != .antarctica {
             let countries = continent.countries

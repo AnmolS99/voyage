@@ -138,6 +138,74 @@ final class AchievementCompletionTests: XCTestCase {
             "Should have most countries defined across all continents")
     }
 
+    // MARK: - Seven Wonders Achievement Tests
+
+    private func makeSevenWondersAchievement(checked: [String: Set<String>]) -> Achievement {
+        Achievement(
+            name: "Seven wonders of the world",
+            medal: "⭐️",
+            visitedCountries: SevenWonders.visited(from: checked),
+            remainingCountries: SevenWonders.remaining(from: checked),
+            itemLabel: "wonders"
+        )
+    }
+
+    func testSevenWondersAchievementCompletedWhenAllChecked() {
+        var checked: [String: Set<String>] = [:]
+        for wonder in SevenWonders.wonders {
+            checked[wonder.country, default: []].insert(wonder.attraction)
+        }
+
+        let achievement = makeSevenWondersAchievement(checked: checked)
+        XCTAssertEqual(achievement.total, 7)
+        XCTAssertTrue(achievement.isCompleted,
+            "Checking all seven wonders should complete the achievement")
+        XCTAssertEqual(achievement.percentage, 100)
+    }
+
+    func testSevenWondersAchievementPartialProgress() {
+        let checked: [String: Set<String>] = [
+            "Peru": ["Machu Picchu"],
+            "Italy": ["Colosseum"],
+        ]
+
+        let achievement = makeSevenWondersAchievement(checked: checked)
+        XCTAssertEqual(achievement.current, 2)
+        XCTAssertEqual(achievement.total, 7)
+        XCTAssertFalse(achievement.isCompleted)
+    }
+
+    func testSevenWondersIgnoresOtherCheckedAttractions() {
+        // A non-wonder attraction in a wonder country must not count
+        let checked: [String: Set<String>] = [
+            "Italy": ["Pompeii"],
+            "China": ["Great Wall of China"],
+        ]
+
+        let achievement = makeSevenWondersAchievement(checked: checked)
+        XCTAssertEqual(achievement.current, 1)
+        XCTAssertEqual(achievement.visitedCountries, ["Great Wall of China"])
+    }
+
+    func testSevenWondersMatchCountryHighlightsData() {
+        // Each wonder must reference a real country and an attraction that exists
+        // in that country's checklist, otherwise it can never be checked off.
+        let countries = GeoJSONParser.loadCountries()
+        let highlights = CountryHighlightsParser.loadHighlights()
+
+        for wonder in SevenWonders.wonders {
+            guard let country = countries.first(where: { $0.name == wonder.country }),
+                  let code = country.flagCode else {
+                XCTFail("Seven wonders country \(wonder.country) not found in world.geojson")
+                continue
+            }
+
+            let attractions = highlights[code]?.attractions ?? []
+            XCTAssertTrue(attractions.contains(wonder.attraction),
+                "\(wonder.attraction) missing from \(wonder.country)'s attractions in country_highlights.json")
+        }
+    }
+
     // MARK: - Cross-view Consistency Tests
 
     func testAchievementConsistencyBetweenViews() {
