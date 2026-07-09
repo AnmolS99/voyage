@@ -233,6 +233,18 @@ struct AchievementDetailSection: View {
                 .frame(height: 1)
                 .padding(.horizontal, 16)
 
+            VStack(spacing: 4) {
+                Medal3DView(emoji: achievement.medal, isCompleted: achievement.isCompleted)
+                    .frame(height: 180)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel("\(achievement.name) medal, \(achievement.isCompleted ? "earned" : "not yet earned")")
+
+                Text("Drag to spin")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+            }
+            .padding(.horizontal, 16)
+
             if !achievement.visitedCountries.isEmpty {
                 CountryListSection(
                     title: "Visited",
