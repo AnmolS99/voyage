@@ -29,6 +29,7 @@
 		E81234560019 /* globe.scn in Resources */ = {isa = PBXBuildFile; fileRef = E81234550019 /* globe.scn */; };
 		E81234560020 /* voyageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550020 /* voyageTests.swift */; };
 		E81234560021 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550021 /* AchievementsView.swift */; };
+		E812345600F1 /* Medal3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E812345500F1 /* Medal3DView.swift */; };
 		E81234560022 /* ContinentData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550022 /* ContinentData.swift */; };
 		E81234560023 /* AchievementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550023 /* AchievementTests.swift */; };
 		E81234560024 /* ContinentDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550024 /* ContinentDataTests.swift */; };
@@ -91,6 +92,7 @@
 		E81234550019 /* globe.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = globe.scn; sourceTree = "<group>"; };
 		E81234550020 /* voyageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageTests.swift; sourceTree = "<group>"; };
 		E81234550021 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
+		E812345500F1 /* Medal3DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Medal3DView.swift; sourceTree = "<group>"; };
 		E81234550022 /* ContinentData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentData.swift; sourceTree = "<group>"; };
 		E81234550023 /* AchievementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementTests.swift; sourceTree = "<group>"; };
 		E81234550024 /* ContinentDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinentDataTests.swift; sourceTree = "<group>"; };
@@ -173,6 +175,7 @@
 				E81234550018 /* GlobeCache.swift */,
 				E81234550051 /* GlobeInertia.swift */,
 				E81234550021 /* AchievementsView.swift */,
+				E812345500F1 /* Medal3DView.swift */,
 				E81234550028 /* Achievement.swift */,
 				B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */,
 				6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */,
@@ -372,6 +375,7 @@
 				E81234560018 /* GlobeCache.swift in Sources */,
 				E81234560046 /* GlobeInertia.swift in Sources */,
 				E81234560021 /* AchievementsView.swift in Sources */,
+				E812345600F1 /* Medal3DView.swift in Sources */,
 				E81234560028 /* Achievement.swift in Sources */,
 				2A8624B82500CE1AE3C92F34 /* CountryDataCache.swift in Sources */,
 				409A1AEDFDF8E44EBF23A179 /* ColorPalette.swift in Sources */,
