@@ -147,9 +147,23 @@ struct GlobeView: UIViewRepresentable {
                 cameraDistance * sin(currentRotationX),
                 cameraDistance * cos(currentRotationX)
             )
-            cameraNode.look(at: SCNVector3(0, 0, 0))
+            aimCameraAtGlobeCenter(cameraNode)
             updateOutlineThickness(cameraDistance: cameraDistance)
             SCNTransaction.commit()
+        }
+
+        /// Points the camera at the globe's center with zero roll.
+        ///
+        /// Always passes an explicit world up: the parameterless `look(at:)` reuses the
+        /// camera's *current* worldUp, so one aggressive drag/inertia frame that steps
+        /// rotation X past ~90° (the clamp allows a 144° swing in a single frame) leaves
+        /// that stale up pointing away from the new view direction — the resulting roll
+        /// gets baked into the camera and every later `look(at:)` preserves it, making
+        /// the globe's axis appear permanently tilted. A fixed up keeps the orientation
+        /// deterministic (rotation X is clamped to ±72°, so the view direction never
+        /// degenerates against +Y) and self-corrects any roll picked up earlier.
+        func aimCameraAtGlobeCenter(_ cameraNode: SCNNode) {
+            cameraNode.look(at: SCNVector3(0, 0, 0), up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 0, -1))
         }
 
         /// Scales outline thickness with camera distance so borders keep a constant
@@ -254,7 +268,7 @@ struct GlobeView: UIViewRepresentable {
                 zoomDistance * sin(currentRotationX),
                 zoomDistance * cos(currentRotationX)
             )
-            cameraNode.look(at: SCNVector3(0, 0, 0))
+            aimCameraAtGlobeCenter(cameraNode)
             updateOutlineThickness(cameraDistance: zoomDistance)
 
             SCNTransaction.commit()
@@ -349,7 +363,7 @@ struct GlobeView: UIViewRepresentable {
                     newDistance * sin(currentRotationX),
                     newDistance * cos(currentRotationX)
                 )
-                cameraNode.look(at: SCNVector3(0, 0, 0))
+                aimCameraAtGlobeCenter(cameraNode)
                 updateOutlineThickness(cameraDistance: newDistance)
 
                 gesture.scale = 1
@@ -389,7 +403,7 @@ struct GlobeView: UIViewRepresentable {
                     newDistance * sin(currentRotationX),
                     newDistance * cos(currentRotationX)
                 )
-                cameraNode.look(at: SCNVector3(0, 0, 0))
+                aimCameraAtGlobeCenter(cameraNode)
                 updateOutlineThickness(cameraDistance: newDistance)
 
             default:
@@ -702,7 +716,7 @@ extension GlobeView.Coordinator: SCNSceneRendererDelegate {
             let position = cameraNode.position
             let distance = sqrt(position.x * position.x + position.y * position.y + position.z * position.z)
             cameraNode.position = SCNVector3(0, distance * sin(currentRotationX), distance * cos(currentRotationX))
-            cameraNode.look(at: SCNVector3(0, 0, 0))
+            aimCameraAtGlobeCenter(cameraNode)
         }
 
         if coastingEnded {
