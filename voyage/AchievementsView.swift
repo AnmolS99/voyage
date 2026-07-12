@@ -3,6 +3,8 @@ import SwiftUI
 struct AchievementsView: View {
     @ObservedObject var globeState: GlobeState
     @State private var expandedAchievementID: String? = nil
+    @State private var medalAchievement: Achievement? = nil
+    @State private var medalSourceFrames: [String: CGRect] = [:]
 
     private var achievements: [Achievement] {
         var list: [Achievement] = []
@@ -72,40 +74,55 @@ struct AchievementsView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Summary header
-                    summaryCard
+        ZStack {
+            NavigationStack {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Summary header
+                        summaryCard
 
-                    // Achievements list
-                    VStack(spacing: 12) {
-                        ForEach(achievements) { achievement in
-                            Button {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    if expandedAchievementID == achievement.id {
-                                        expandedAchievementID = nil
-                                    } else {
-                                        expandedAchievementID = achievement.id
+                        // Achievements list
+                        VStack(spacing: 12) {
+                            ForEach(achievements) { achievement in
+                                Button {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        if expandedAchievementID == achievement.id {
+                                            expandedAchievementID = nil
+                                        } else {
+                                            expandedAchievementID = achievement.id
+                                        }
                                     }
+                                } label: {
+                                    AchievementCard(
+                                        achievement: achievement,
+                                        isDarkMode: globeState.isDarkMode,
+                                        isExpanded: expandedAchievementID == achievement.id,
+                                        isMedalPresented: medalAchievement?.id == achievement.id,
+                                        onMedalTap: { medalAchievement = achievement },
+                                        onMedalFrameChange: { medalSourceFrames[achievement.id] = $0 }
+                                    )
                                 }
-                            } label: {
-                                AchievementCard(
-                                    achievement: achievement,
-                                    isDarkMode: globeState.isDarkMode,
-                                    isExpanded: expandedAchievementID == achievement.id
-                                )
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
                 }
-                .padding(.vertical, 16)
+                .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
+                .navigationTitle("Achievements")
+                .navigationBarTitleDisplayMode(.inline)
             }
-            .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
-            .navigationTitle("Achievements")
-            .navigationBarTitleDisplayMode(.inline)
+
+            if let achievement = medalAchievement {
+                MedalOverlayView(
+                    achievement: achievement,
+                    isDarkMode: globeState.isDarkMode,
+                    sourceFrame: medalSourceFrames[achievement.id] ?? .zero,
+                    onDismissed: { medalAchievement = nil }
+                )
+                .zIndex(1)
+            }
         }
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
     }
@@ -135,6 +152,9 @@ struct AchievementCard: View {
     let achievement: Achievement
     let isDarkMode: Bool
     let isExpanded: Bool
+    let isMedalPresented: Bool
+    let onMedalTap: () -> Void
+    let onMedalFrameChange: (CGRect) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -159,12 +179,20 @@ struct AchievementCard: View {
                         .rotationEffect(.degrees(-90))
                         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: achievement.progress)
 
-                    Text(achievement.medal)
-                        .font(.system(size: 24))
-                        .grayscale(achievement.isCompleted ? 0 : 0.8)
-                        .opacity(achievement.isCompleted ? 1 : 0.5)
+                    MedalSceneView(achievement: achievement, interactive: false)
+                        // Hidden while the 3D medal overlay is up: the overlay's
+                        // coin starts exactly on this spot, so it reads as the
+                        // small medal itself enlarging
+                        .opacity(isMedalPresented ? 0 : 1)
                 }
                 .frame(width: 56, height: 56)
+                .contentShape(Circle())
+                .onTapGesture { onMedalTap() }
+                .onGeometryChange(for: CGRect.self) { proxy in
+                    proxy.frame(in: .global)
+                } action: { frame in
+                    onMedalFrameChange(frame)
+                }
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(achievement.name)
@@ -232,18 +260,6 @@ struct AchievementDetailSection: View {
                 .fill(isDarkMode ? AppColors.closeButtonDark : AppColors.trackLight)
                 .frame(height: 1)
                 .padding(.horizontal, 16)
-
-            VStack(spacing: 4) {
-                Medal3DView(emoji: achievement.medal, isCompleted: achievement.isCompleted)
-                    .frame(height: 180)
-                    .frame(maxWidth: .infinity)
-                    .accessibilityLabel("\(achievement.name) medal, \(achievement.isCompleted ? "earned" : "not yet earned")")
-
-                Text("Drag to spin")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
-            }
-            .padding(.horizontal, 16)
 
             if !achievement.visitedCountries.isEmpty {
                 CountryListSection(
