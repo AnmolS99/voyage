@@ -87,7 +87,7 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 | `MapView.swift`             | 2D flat map view alternative                      |
 | `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
 | `Achievement.swift` / `ContinentData.swift` | Achievement progress model + continent groupings |
-| `Medal3DView.swift`         | Interactive SceneKit 3D medal (expanded achievement card) |
+| `MedalOverlayView.swift`    | Tap a card's 3D medal → full-screen blur overlay with a Y-axis-spinnable coin |
 | `DailyChallenge/`           | Daily geography quiz feature (see below)          |
 
 ## Globe Rendering

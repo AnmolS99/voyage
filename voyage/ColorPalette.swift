@@ -143,6 +143,18 @@ enum AppColors {
     /// Badge text (light mode)
     static let badgeTextLight = Color(red: 0.3, green: 0.25, blue: 0.2)
 
+    // MARK: - Medal Colors (3D achievement medals)
+
+    /// Gold face gradient (unlocked medal)
+    static let medalGoldCenterUI = UIColor(red: 1.0, green: 0.87, blue: 0.42, alpha: 1.0)
+    static let medalGoldEdgeUI = UIColor(red: 0.78, green: 0.56, blue: 0.15, alpha: 1.0)
+    static let medalGoldRimUI = UIColor(red: 0.65, green: 0.45, blue: 0.1, alpha: 1.0)
+
+    /// Silver face gradient (locked medal)
+    static let medalSilverCenterUI = UIColor(red: 0.82, green: 0.82, blue: 0.84, alpha: 1.0)
+    static let medalSilverEdgeUI = UIColor(red: 0.55, green: 0.55, blue: 0.58, alpha: 1.0)
+    static let medalSilverRimUI = UIColor(red: 0.45, green: 0.45, blue: 0.48, alpha: 1.0)
+
     // MARK: - Helper Functions
 
 
