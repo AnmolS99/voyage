@@ -101,9 +101,10 @@ struct MedalOverlayView: View {
 /// Static front-facing coin shown inside each achievement card. Displays a
 /// cached offscreen snapshot instead of hosting a live `SCNView`, and never
 /// renders on the main thread: on a cache miss (the tab opened before the
-/// launch-time prewarm reached this medal) it shows the plain emoji and swaps
-/// in the coin when the background render finishes. Rendering medal artwork
-/// synchronously in the first frame is what made the tab take ~1s to open.
+/// launch-time prewarm reached this medal) it shows a flat 2D coin face and
+/// crossfades to the 3D snapshot when the background render finishes.
+/// Rendering medal artwork synchronously in the first frame is what made the
+/// tab take ~1s to open.
 struct MedalCardView: View {
     let achievement: Achievement
     @State private var renderedSnapshot: UIImage?
@@ -119,16 +120,65 @@ struct MedalCardView: View {
                 Image(uiImage: snapshot)
                     .resizable()
                     .scaledToFit()
+                    .transition(.opacity)
             } else {
-                Text(achievement.medal)
-                    .font(.system(size: 28))
+                FlatCoinFaceView(medal: achievement.medal, completed: achievement.isCompleted)
+                    .transition(.opacity)
             }
         }
         .task(id: achievement.isCompleted) {
-            renderedSnapshot = await MedalSceneView.cardSnapshot(
+            let image = await MedalSceneView.cardSnapshot(
                 medal: achievement.medal,
                 completed: achievement.isCompleted
             )
+            withAnimation(.easeIn(duration: 0.2)) {
+                renderedSnapshot = image
+            }
+        }
+    }
+}
+
+/// Flat 2D stand-in for the coin, mirroring the 3D cap artwork: same radial
+/// gradient, embossed ring, and (desaturated when locked) emoji, sized to
+/// match the coin's footprint in the snapshot (~60% of the slot) so the
+/// crossfade to the real coin barely registers.
+private struct FlatCoinFaceView: View {
+    let medal: String
+    let completed: Bool
+
+    var body: some View {
+        GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
+            let coin = side * 0.6
+
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(completed ? AppColors.medalGoldCenterUI : AppColors.medalSilverCenterUI),
+                                Color(completed ? AppColors.medalGoldEdgeUI : AppColors.medalSilverEdgeUI),
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: coin / 2
+                        )
+                    )
+                    .frame(width: coin, height: coin)
+
+                Circle()
+                    .stroke(
+                        Color(completed ? AppColors.medalGoldRimUI : AppColors.medalSilverRimUI),
+                        lineWidth: coin * 0.02
+                    )
+                    .frame(width: coin * 0.9, height: coin * 0.9)
+
+                Text(medal)
+                    .font(.system(size: coin * 0.5))
+                    .saturation(completed ? 1 : 0)
+                    .opacity(completed ? 1 : 0.55)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 }
