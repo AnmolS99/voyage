@@ -99,16 +99,37 @@ struct MedalOverlayView: View {
 }
 
 /// Static front-facing coin shown inside each achievement card. Displays a
-/// cached offscreen snapshot instead of hosting a live `SCNView` — the tab
-/// shows one coin per achievement, and creating that many SceneKit views at
-/// once made the Achievements tab take ~1s to open.
+/// cached offscreen snapshot instead of hosting a live `SCNView`, and never
+/// renders on the main thread: on a cache miss (the tab opened before the
+/// launch-time prewarm reached this medal) it shows the plain emoji and swaps
+/// in the coin when the background render finishes. Rendering medal artwork
+/// synchronously in the first frame is what made the tab take ~1s to open.
 struct MedalCardView: View {
     let achievement: Achievement
+    @State private var renderedSnapshot: UIImage?
+
+    private var snapshot: UIImage? {
+        MedalSceneView.cachedCardSnapshot(medal: achievement.medal, completed: achievement.isCompleted)
+            ?? renderedSnapshot
+    }
 
     var body: some View {
-        Image(uiImage: MedalSceneView.cardSnapshot(medal: achievement.medal, completed: achievement.isCompleted))
-            .resizable()
-            .scaledToFit()
+        ZStack {
+            if let snapshot {
+                Image(uiImage: snapshot)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Text(achievement.medal)
+                    .font(.system(size: 28))
+            }
+        }
+        .task(id: achievement.isCompleted) {
+            renderedSnapshot = await MedalSceneView.cardSnapshot(
+                medal: achievement.medal,
+                completed: achievement.isCompleted
+            )
+        }
     }
 }
 
@@ -353,10 +374,36 @@ struct MedalSceneView: UIViewRepresentable {
     /// Card coins render into a 56pt slot; 224px covers 3x displays with headroom.
     private static let snapshotSide: CGFloat = 224
 
+    private static func snapshotKey(medal: String, completed: Bool) -> String {
+        "coin|\(medal)|\(completed)"
+    }
+
+    /// Non-blocking cache lookup for a card snapshot — safe to call from the
+    /// main thread during view body evaluation. Never renders.
+    static func cachedCardSnapshot(medal: String, completed: Bool) -> UIImage? {
+        artworkLock.lock()
+        defer { artworkLock.unlock() }
+        return artworkCache[snapshotKey(medal: medal, completed: completed)]
+    }
+
+    /// The card's coin snapshot, rendering it off the calling thread on a
+    /// cache miss.
+    static func cardSnapshot(medal: String, completed: Bool) async -> UIImage {
+        if let hit = cachedCardSnapshot(medal: medal, completed: completed) {
+            return hit
+        }
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: renderCardSnapshot(medal: medal, completed: completed))
+            }
+        }
+    }
+
     /// A one-off offscreen render of the front-facing coin, cached per medal
     /// and completion state. Cards display this instead of a live `SCNView`.
-    static func cardSnapshot(medal: String, completed: Bool) -> UIImage {
-        cachedArtwork(key: "coin|\(medal)|\(completed)") {
+    /// Blocking — never call on the main thread.
+    private static func renderCardSnapshot(medal: String, completed: Bool) -> UIImage {
+        cachedArtwork(key: snapshotKey(medal: medal, completed: completed)) {
             snapshotRendererLock.lock()
             defer { snapshotRendererLock.unlock() }
             let scene = buildScene(medal: medal, completed: completed)
@@ -389,9 +436,13 @@ struct MedalSceneView: UIViewRepresentable {
     /// desaturation expensive.
     private static let ciContext = CIContext()
 
-    /// Renders and caches every medal's textures and card snapshot in both
-    /// locked and unlocked variants on a background queue. Call once at app
-    /// launch.
+    /// Renders and caches every medal's card snapshot in both locked and
+    /// unlocked variants on a background queue (each snapshot transitively
+    /// renders and caches the cap and symbol textures the overlay coin needs
+    /// too). Call once at app launch. Runs at .userInitiated so it usually
+    /// finishes before the user can reach the Achievements tab — but the tab
+    /// no longer depends on winning that race, since `MedalCardView` falls
+    /// back to an async render on a cache miss.
     static func prewarmArtwork(medals: [String]) {
         artworkLock.lock()
         let alreadyPrewarmed = didPrewarm
@@ -399,14 +450,10 @@ struct MedalSceneView: UIViewRepresentable {
         artworkLock.unlock()
         guard !alreadyPrewarmed else { return }
 
-        DispatchQueue.global(qos: .utility).async {
-            _ = goldCapImage
-            _ = silverCapImage
+        DispatchQueue.global(qos: .userInitiated).async {
             for medal in medals {
                 for completed in [false, true] {
-                    _ = symbolImage(medal: medal, front: true, completed: completed)
-                    _ = symbolImage(medal: medal, front: false, completed: completed)
-                    _ = cardSnapshot(medal: medal, completed: completed)
+                    _ = renderCardSnapshot(medal: medal, completed: completed)
                 }
             }
         }
