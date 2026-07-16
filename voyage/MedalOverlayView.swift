@@ -1,6 +1,7 @@
 import SwiftUI
 import SceneKit
 import CoreImage
+import Metal
 
 /// Full-screen overlay shown when the user taps an achievement's small medal.
 /// The 3D coin starts at the small medal's on-screen frame (`sourceFrame`) and
@@ -97,13 +98,26 @@ struct MedalOverlayView: View {
     }
 }
 
+/// Static front-facing coin shown inside each achievement card. Displays a
+/// cached offscreen snapshot instead of hosting a live `SCNView` — the tab
+/// shows one coin per achievement, and creating that many SceneKit views at
+/// once made the Achievements tab take ~1s to open.
+struct MedalCardView: View {
+    let achievement: Achievement
+
+    var body: some View {
+        Image(uiImage: MedalSceneView.cardSnapshot(medal: achievement.medal, completed: achievement.isCompleted))
+            .resizable()
+            .scaledToFit()
+    }
+}
+
 /// SceneKit view rendering a procedural coin medal with the achievement's emoji
-/// on the face. When `interactive`, horizontal drags spin it around the Y axis
-/// with inertia and it auto-spins slowly when idle, like the globe; otherwise
-/// it renders as a static coin (used as the small medal inside each card).
+/// on the face. Horizontal drags spin it around the Y axis with inertia and it
+/// auto-spins slowly when idle, like the globe. Used only for the full-screen
+/// overlay coin; the small coin inside each card is a `MedalCardView` snapshot.
 struct MedalSceneView: UIViewRepresentable {
     let achievement: Achievement
-    var interactive: Bool = true
     /// While true the coin stops spinning and eases back to front-facing,
     /// synchronized with the overlay's collapse so it lands matching the
     /// static small medal exactly.
@@ -115,20 +129,15 @@ struct MedalSceneView: UIViewRepresentable {
         let sceneView = SCNView()
         sceneView.backgroundColor = .clear
         sceneView.antialiasingMode = .multisampling4X
-        sceneView.scene = Self.buildScene(for: achievement)
+        sceneView.scene = Self.buildScene(medal: achievement.medal, completed: achievement.isCompleted)
         context.coordinator.isCompleted = achievement.isCompleted
         context.coordinator.isSettling = isSettling
 
-        if interactive {
-            context.coordinator.spinNode = sceneView.scene?.rootNode.childNode(withName: "spin", recursively: true)
-            let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
-            sceneView.addGestureRecognizer(pan)
-            if !isSettling {
-                context.coordinator.startAutoSpin()
-            }
-        } else {
-            // Let taps fall through to the card's tap gesture
-            sceneView.isUserInteractionEnabled = false
+        context.coordinator.spinNode = sceneView.scene?.rootNode.childNode(withName: "spin", recursively: true)
+        let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
+        sceneView.addGestureRecognizer(pan)
+        if !isSettling {
+            context.coordinator.startAutoSpin()
         }
         return sceneView
     }
@@ -138,16 +147,14 @@ struct MedalSceneView: UIViewRepresentable {
         // unlocked (gold) — e.g. the user checks off the final country
         if context.coordinator.isCompleted != achievement.isCompleted {
             context.coordinator.isCompleted = achievement.isCompleted
-            uiView.scene = Self.buildScene(for: achievement)
-            if interactive {
-                context.coordinator.spinNode = uiView.scene?.rootNode.childNode(withName: "spin", recursively: true)
-                if !isSettling {
-                    context.coordinator.startAutoSpin()
-                }
+            uiView.scene = Self.buildScene(medal: achievement.medal, completed: achievement.isCompleted)
+            context.coordinator.spinNode = uiView.scene?.rootNode.childNode(withName: "spin", recursively: true)
+            if !isSettling {
+                context.coordinator.startAutoSpin()
             }
         }
 
-        if interactive && context.coordinator.isSettling != isSettling {
+        if context.coordinator.isSettling != isSettling {
             context.coordinator.isSettling = isSettling
             if isSettling {
                 context.coordinator.settleToFront()
@@ -256,11 +263,12 @@ struct MedalSceneView: UIViewRepresentable {
 
     // MARK: - Scene construction
 
-    private static func buildScene(for achievement: Achievement) -> SCNScene {
+    private static func buildScene(medal: String, completed: Bool) -> SCNScene {
         let scene = SCNScene()
         scene.background.contents = UIColor.clear
 
         let cameraNode = SCNNode()
+        cameraNode.name = "camera"
         cameraNode.camera = SCNCamera()
         cameraNode.position = SCNVector3(0, 0, 3.2)
         scene.rootNode.addChildNode(cameraNode)
@@ -289,7 +297,6 @@ struct MedalSceneView: UIViewRepresentable {
         tiltNode.addChildNode(spinNode)
 
         let coin = SCNCylinder(radius: 1.1, height: 0.12)
-        let completed = achievement.isCompleted
 
         let rim = SCNMaterial()
         rim.diffuse.contents = completed ? AppColors.medalGoldRimUI : AppColors.medalSilverRimUI
@@ -315,11 +322,11 @@ struct MedalSceneView: UIViewRepresentable {
 
         // Emoji on the front, star on the back, on thin planes just above the
         // caps — SCNPlane UVs are upright and unmirrored, unlike cylinder caps.
-        let frontNode = symbolPlaneNode(image: symbolImage(medal: achievement.medal, front: true, completed: completed))
+        let frontNode = symbolPlaneNode(image: symbolImage(medal: medal, front: true, completed: completed))
         frontNode.position.z = 0.065
         spinNode.addChildNode(frontNode)
 
-        let backNode = symbolPlaneNode(image: symbolImage(medal: achievement.medal, front: false, completed: completed))
+        let backNode = symbolPlaneNode(image: symbolImage(medal: medal, front: false, completed: completed))
         backNode.position.z = -0.065
         backNode.eulerAngles.y = .pi
         spinNode.addChildNode(backNode)
@@ -337,12 +344,43 @@ struct MedalSceneView: UIViewRepresentable {
         return SCNNode(geometry: plane)
     }
 
+    // MARK: - Card snapshots
+
+    /// Shared offscreen renderer for card snapshots; use is serialized by
+    /// `snapshotRendererLock`.
+    private static let snapshotRenderer = SCNRenderer(device: MTLCreateSystemDefaultDevice(), options: nil)
+    private static let snapshotRendererLock = NSLock()
+    /// Card coins render into a 56pt slot; 224px covers 3x displays with headroom.
+    private static let snapshotSide: CGFloat = 224
+
+    /// A one-off offscreen render of the front-facing coin, cached per medal
+    /// and completion state. Cards display this instead of a live `SCNView`.
+    static func cardSnapshot(medal: String, completed: Bool) -> UIImage {
+        cachedArtwork(key: "coin|\(medal)|\(completed)") {
+            snapshotRendererLock.lock()
+            defer { snapshotRendererLock.unlock() }
+            let scene = buildScene(medal: medal, completed: completed)
+            snapshotRenderer.scene = scene
+            // SCNRenderer doesn't reliably adopt the scene's camera on its own
+            // the way SCNView does
+            snapshotRenderer.pointOfView = scene.rootNode.childNode(withName: "camera", recursively: false)
+            let image = snapshotRenderer.snapshot(
+                atTime: 0,
+                with: CGSize(width: snapshotSide, height: snapshotSide),
+                antialiasingMode: .multisampling4X
+            )
+            snapshotRenderer.scene = nil
+            return image
+        }
+    }
+
     // MARK: - Artwork cache
 
     /// Rendering a symbol image costs ~100ms (mostly Core Image desaturation),
-    /// and nine card coins are built when the Achievements tab first appears.
-    /// All rendered artwork is cached here, and `prewarmArtwork` fills the
-    /// cache off the main thread at app launch so the tab opens instantly.
+    /// and one card coin per achievement is needed when the Achievements tab
+    /// first appears. All rendered artwork — symbol textures and finished coin
+    /// snapshots — is cached here, and `prewarmArtwork` fills the cache off the
+    /// main thread at app launch so the tab opens instantly.
     private static var artworkCache: [String: UIImage] = [:]
     private static let artworkLock = NSLock()
     private static var didPrewarm = false
@@ -351,8 +389,9 @@ struct MedalSceneView: UIViewRepresentable {
     /// desaturation expensive.
     private static let ciContext = CIContext()
 
-    /// Renders and caches every medal front/back in both locked and unlocked
-    /// variants on a background queue. Call once at app launch.
+    /// Renders and caches every medal's textures and card snapshot in both
+    /// locked and unlocked variants on a background queue. Call once at app
+    /// launch.
     static func prewarmArtwork(medals: [String]) {
         artworkLock.lock()
         let alreadyPrewarmed = didPrewarm
@@ -367,6 +406,7 @@ struct MedalSceneView: UIViewRepresentable {
                 for completed in [false, true] {
                     _ = symbolImage(medal: medal, front: true, completed: completed)
                     _ = symbolImage(medal: medal, front: false, completed: completed)
+                    _ = cardSnapshot(medal: medal, completed: completed)
                 }
             }
         }
