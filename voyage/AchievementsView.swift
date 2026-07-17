@@ -179,7 +179,7 @@ struct AchievementCard: View {
                         .rotationEffect(.degrees(-90))
                         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: achievement.progress)
 
-                    MedalSceneView(achievement: achievement, interactive: false)
+                    MedalCardView(achievement: achievement)
                         // Hidden while the 3D medal overlay is up: the overlay's
                         // coin starts exactly on this spot, so it reads as the
                         // small medal itself enlarging
