@@ -42,9 +42,9 @@ struct AchievementsView: View {
             itemLabel: "capitals"
         ))
 
-        // Seven wonders achievement
+        // New 7 Wonders of the World achievement
         list.append(Achievement(
-            name: "Seven wonders of the world",
+            name: "New Wonders of the World",
             medal: "⭐️",
             visitedCountries: SevenWonders.visited(from: globeState.checkedAttractions),
             remainingCountries: SevenWonders.remaining(from: globeState.checkedAttractions),
