@@ -142,7 +142,7 @@ final class AchievementCompletionTests: XCTestCase {
 
     private func makeSevenWondersAchievement(checked: [String: Set<String>]) -> Achievement {
         Achievement(
-            name: "Seven wonders of the world",
+            name: "New Wonders of the World",
             medal: "⭐️",
             visitedCountries: SevenWonders.visited(from: checked),
             remainingCountries: SevenWonders.remaining(from: checked),
