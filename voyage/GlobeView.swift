@@ -4,6 +4,9 @@ import UIKit
 
 struct GlobeView: UIViewRepresentable {
     @ObservedObject var globeState: GlobeState
+    /// When set, tapping a country calls this instead of selecting it —
+    /// used by challenge games to treat taps as guesses.
+    var onCountryTapped: ((String) -> Void)? = nil
 
     func makeUIView(context: Context) -> SCNView {
         let sceneView = SCNView()
@@ -37,18 +40,21 @@ struct GlobeView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {
+        context.coordinator.onCountryTapped = onCountryTapped
         context.coordinator.updateGlobeStyle()
         context.coordinator.updateHighlights()
         context.coordinator.updateAutoRotation()
         context.coordinator.centerOnSelectedCountry()
+        context.coordinator.applyPendingCameraTarget()
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(globeState: globeState)
+        Coordinator(globeState: globeState, onCountryTapped: onCountryTapped)
     }
 
     class Coordinator: NSObject {
         var globeState: GlobeState
+        var onCountryTapped: ((String) -> Void)?
         weak var sceneView: SCNView?
         var globeNode: SCNNode?
         var countryNodes: [String: SCNNode] = [:]
@@ -108,8 +114,9 @@ struct GlobeView: UIViewRepresentable {
         var pendingDragY: Float = 0
         var lastRenderTime: TimeInterval = 0
 
-        init(globeState: GlobeState) {
+        init(globeState: GlobeState, onCountryTapped: ((String) -> Void)? = nil) {
             self.globeState = globeState
+            self.onCountryTapped = onCountryTapped
             super.init()
             // Cache countries data once
             self.cachedCountries = CountryDataCache.shared.countries
@@ -211,9 +218,7 @@ struct GlobeView: UIViewRepresentable {
         }
 
         func centerOnSelectedCountry() {
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true),
-                  let center = globeState.targetCountryCenter,
+            guard let center = globeState.targetCountryCenter,
                   let selectedCountry = globeState.selectedCountry else { return }
 
             // Check if this is a new country selection
@@ -226,6 +231,25 @@ struct GlobeView: UIViewRepresentable {
             hasAnimatedToCountry = true
             lastAnimatedCountry = selectedCountry
 
+            flyTo(lat: center.lat, lon: center.lon, distance: 2.8)
+        }
+
+        /// Consumes a one-shot camera flight request (e.g. a challenge game
+        /// focusing its region at start).
+        func applyPendingCameraTarget() {
+            guard let target = globeState.pendingCameraTarget else { return }
+            flyTo(lat: target.lat, lon: target.lon, distance: target.distance)
+            DispatchQueue.main.async { [weak self] in
+                self?.globeState.pendingCameraTarget = nil
+            }
+        }
+
+        /// Animates the globe rotation and camera so the given lat/lon is centered
+        /// at the given camera distance.
+        func flyTo(lat: Double, lon: Double, distance: Float) {
+            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
+                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+
             // Capture the current actual rotation from the presentation node
             let currentActualRotationY = globeNode.presentation.eulerAngles.y
 
@@ -236,7 +260,7 @@ struct GlobeView: UIViewRepresentable {
             // Camera is at (0,0,z) looking at origin, so country needs to be on +Z side
             // lon=0 is at +X, lon=90 is at -Z, lon=-90 is at +Z
             // To center lon L: rotate by -(L + 90) degrees
-            var targetRotationY = Float(-center.lon - 90) * .pi / 180.0
+            var targetRotationY = Float(-lon - 90) * .pi / 180.0
 
             // Normalize target rotation to take the shortest path from current rotation
             // Adjust target to be within -π to +π of current rotation
@@ -252,24 +276,22 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.animationDuration = 0.8
             SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
 
-            // Rotate globe to center the country horizontally
+            // Rotate globe to center the location horizontally
             currentRotationY = targetRotationY
             globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
 
             // Move camera to appropriate latitude
             // Positive lat (North) = camera moves up to look down at it
-            let targetCameraX = Float(center.lat) * .pi / 180.0
+            let targetCameraX = Float(lat) * .pi / 180.0
             currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, targetCameraX))
 
-            // Zoom in closer
-            let zoomDistance: Float = 2.8
             cameraNode.position = SCNVector3(
                 0,
-                zoomDistance * sin(currentRotationX),
-                zoomDistance * cos(currentRotationX)
+                distance * sin(currentRotationX),
+                distance * cos(currentRotationX)
             )
             aimCameraAtGlobeCenter(cameraNode)
-            updateOutlineThickness(cameraDistance: zoomDistance)
+            updateOutlineThickness(cameraDistance: distance)
 
             SCNTransaction.commit()
         }
@@ -445,9 +467,13 @@ struct GlobeView: UIViewRepresentable {
 
                 // Find which country contains this point
                 if let countryName = findCountryAt(lat: lat, lon: lon) {
-                    let center = getCountryCenter(name: countryName)
-                    self.globeState.selectCountry(countryName, center: center)
-                    self.updateHighlights()
+                    if let onCountryTapped = onCountryTapped {
+                        onCountryTapped(countryName)
+                    } else {
+                        let center = getCountryCenter(name: countryName)
+                        self.globeState.selectCountry(countryName, center: center)
+                        self.updateHighlights()
+                    }
                 }
                 return
             }
@@ -481,7 +507,8 @@ struct GlobeView: UIViewRepresentable {
 
                 let isVisited = globeState.visitedCountries.contains(name)
                 let isWishlist = globeState.wishlistCountries.contains(name)
-                let hasStatus = isVisited || isWishlist
+                let highlightOverride = globeState.countryHighlightColors[name]
+                let hasStatus = isVisited || isWishlist || highlightOverride != nil
                 let isSelected = globeState.selectedCountry == name
                 let isPointCountry = geometry is SCNCylinder
 
@@ -490,7 +517,11 @@ struct GlobeView: UIViewRepresentable {
                     node.isHidden = false
                     for material in geometry.materials {
                         material.transparency = 1.0
-                        if isVisited && isWishlist {
+                        if let highlightOverride = highlightOverride {
+                            material.lightingModel = .blinn
+                            material.diffuse.contents = highlightOverride
+                            material.emission.contents = highlightOverride.withAlphaComponent(0.15)
+                        } else if isVisited && isWishlist {
                             material.lightingModel = .constant
                             material.diffuse.contents = AppColors.visitedWishlistGradient
                             material.emission.contents = UIColor.black
@@ -539,7 +570,7 @@ struct GlobeView: UIViewRepresentable {
                     // Border color: status color when selected, black otherwise
                     if let outlineGeometry = outlineNode.geometry {
                         for material in outlineGeometry.materials {
-                            material.diffuse.contents = borderColor(isSelected: isSelected, isVisited: isVisited, isWishlist: isWishlist)
+                            material.diffuse.contents = borderColor(isSelected: isSelected, isVisited: isVisited, isWishlist: isWishlist, highlightOverride: highlightOverride)
                         }
                     }
                 }
@@ -551,8 +582,11 @@ struct GlobeView: UIViewRepresentable {
             updateCapitalStar()
         }
 
-        private func borderColor(isSelected: Bool, isVisited: Bool, isWishlist: Bool) -> Any {
+        private func borderColor(isSelected: Bool, isVisited: Bool, isWishlist: Bool, highlightOverride: UIColor? = nil) -> Any {
             if isSelected {
+                if let highlightOverride = highlightOverride {
+                    return highlightOverride
+                }
                 if isVisited && isWishlist {
                     return AppColors.visitedWishlistGradient
                 } else if isVisited {
@@ -604,7 +638,7 @@ struct GlobeView: UIViewRepresentable {
             let isVisited = globeState.visitedCountries.contains(name)
             let isWishlist = globeState.wishlistCountries.contains(name)
             for material in geometry.materials {
-                material.diffuse.contents = borderColor(isSelected: true, isVisited: isVisited, isWishlist: isWishlist)
+                material.diffuse.contents = borderColor(isSelected: true, isVisited: isVisited, isWishlist: isWishlist, highlightOverride: globeState.countryHighlightColors[name])
                 material.setValue(Self.baseOutlineThickness * currentOutlineScale * Self.selectedOutlineFactor, forKey: "outlineThickness")
                 material.setValue(Self.selectedOutlineRaise, forKey: "outlineRaise")
             }

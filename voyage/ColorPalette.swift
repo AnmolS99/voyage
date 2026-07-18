@@ -143,6 +143,28 @@ enum AppColors {
     /// Badge text (light mode)
     static let badgeTextLight = Color(red: 0.3, green: 0.25, blue: 0.2)
 
+    // MARK: - Trophy Colors (challenge trophies)
+
+    /// Bronze trophy gradient
+    static let trophyBronzeLight = Color(red: 0.85, green: 0.56, blue: 0.30)
+    static let trophyBronzeDark = Color(red: 0.55, green: 0.33, blue: 0.15)
+
+    /// Silver/gold trophy gradients reuse the 3D medal palette
+    static let trophySilverLight = Color(medalSilverCenterUI)
+    static let trophySilverDark = Color(medalSilverEdgeUI)
+    static let trophyGoldLight = Color(medalGoldCenterUI)
+    static let trophyGoldDark = Color(medalGoldEdgeUI)
+
+    // MARK: - Challenge Game Colors
+
+    /// Correct guess fill (deep green, distinct from unvisited land)
+    static let challengeCorrect = Color(red: 0.1, green: 0.55, blue: 0.25)
+    static let challengeCorrectUI = UIColor(red: 0.1, green: 0.55, blue: 0.25, alpha: 1.0)
+
+    /// Missed country fill and wrong-guess/reveal banners (red)
+    static let challengeWrong = Color(red: 0.85, green: 0.25, blue: 0.2)
+    static let challengeWrongUI = UIColor(red: 0.85, green: 0.25, blue: 0.2, alpha: 1.0)
+
     // MARK: - Medal Colors (3D achievement medals)
 
     /// Gold face gradient (unlocked medal)

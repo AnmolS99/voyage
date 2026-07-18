@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @StateObject private var globeState = GlobeState()
@@ -23,17 +24,23 @@ struct ContentView: View {
                 .tag(1)
                 .badge(showDailyBadge ? "!" : nil)
 
+            ChallengesView(globeState: globeState)
+                .tabItem {
+                    Label("Challenges", systemImage: "gamecontroller.fill")
+                }
+                .tag(2)
+
             AchievementsView(globeState: globeState)
                 .tabItem {
                     Label("Achievements", systemImage: "trophy.fill")
                 }
-                .tag(2)
+                .tag(3)
 
             SettingsView(globeState: globeState)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
-                .tag(3)
+                .tag(4)
         }
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
         .overlay(alignment: .bottom) {
@@ -115,7 +122,18 @@ enum GlobeStyle: String, CaseIterable {
 }
 
 class GlobeState: ObservableObject {
+    /// A one-shot camera flight request, consumed by the globe coordinator.
+    struct CameraTarget: Equatable {
+        let lat: Double
+        let lon: Double
+        let distance: Float
+    }
+
     @Published var selectedCountry: String?
+    @Published var pendingCameraTarget: CameraTarget?
+    /// Temporary per-country fill colors (challenge games); takes precedence
+    /// over visited/wishlist coloring on the globe. Not persisted.
+    @Published var countryHighlightColors: [String: UIColor] = [:]
     @Published var selectedCountries: Set<String> = []
     @Published var visitedCountries: Set<String> = []
     @Published var wishlistCountries: Set<String> = []
@@ -155,6 +173,9 @@ class GlobeState: ObservableObject {
 
     private let iCloudStore = NSUbiquitousKeyValueStore.default
     private let userDefaults = UserDefaults.standard
+    /// False for throwaway instances (e.g. challenge games): nothing is loaded
+    /// from or saved to UserDefaults/iCloud.
+    private let isPersistent: Bool
     private let visitedCountriesKey = "visitedCountries"
     private let wishlistCountriesKey = "wishlistCountries"
     private let globeStyleKey = "globeStyle"
@@ -163,8 +184,11 @@ class GlobeState: ObservableObject {
     private let checkedCitiesKey = "checkedCities"
     private let checkedAttractionsKey = "checkedAttractions"
 
-    init() {
+    init(inMemory: Bool = false) {
+        isPersistent = !inMemory
         loadFlagCodes()
+
+        guard isPersistent else { return }
         loadData()
 
         NotificationCenter.default.addObserver(
@@ -232,6 +256,7 @@ class GlobeState: ObservableObject {
     }
 
     private func saveData() {
+        guard isPersistent else { return }
         let visitedArray = Array(visitedCountries)
         userDefaults.set(visitedArray, forKey: visitedCountriesKey)
         iCloudStore.set(visitedArray, forKey: visitedCountriesKey)
@@ -338,10 +363,23 @@ class GlobeState: ObservableObject {
         saveData()
     }
 
-    func deselectCountry() {
+    func deselectCountry(resumeAutoRotation: Bool = true) {
         selectedCountry = nil
         targetCountryCenter = nil
-        isAutoRotating = true
+        if resumeAutoRotation {
+            isAutoRotating = true
+        }
+    }
+
+    /// Sets or clears a temporary fill color for a country.
+    func setCountryHighlight(_ color: UIColor?, for name: String) {
+        countryHighlightColors[name] = color
+    }
+
+    /// Requests a one-shot camera flight to the given location.
+    func flyTo(_ target: CameraTarget) {
+        isAutoRotating = false
+        pendingCameraTarget = target
     }
 
     func resetSelection() {
@@ -358,6 +396,7 @@ class GlobeState: ObservableObject {
         wishlistCountries.removeAll()
         checkedCities.removeAll()
         checkedAttractions.removeAll()
+        countryHighlightColors.removeAll()
         targetCountryCenter = nil
         isAutoRotating = true
         saveData()
