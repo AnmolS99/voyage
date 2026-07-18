@@ -20,7 +20,47 @@ final class ClickCountryGameTests: XCTestCase {
         ChallengeStatsStore(userDefaults: userDefaults)
     }
 
+    /// Performs a full guess: a first tap to mark the country, then a
+    /// confirming second tap. Returns the confirmation outcome (or the first
+    /// tap's outcome when it didn't mark, e.g. `.ignored`).
+    @discardableResult
+    private func guess(_ viewModel: ClickCountryGameViewModel, _ country: String) -> ClickCountryGameViewModel.TapOutcome {
+        let first = viewModel.handleTap(on: country)
+        guard case .marked = first else { return first }
+        return viewModel.handleTap(on: country)
+    }
+
     // MARK: - Game flow
+
+    func testFirstTapMarksAndSecondConfirms() {
+        let viewModel = ClickCountryGameViewModel(
+            region: .europe,
+            countries: ["France"],
+            statsStore: makeStore()
+        )
+
+        // First tap only marks — nothing is scored or consumed
+        guard case .marked = viewModel.handleTap(on: "Germany") else {
+            return XCTFail("Expected marked outcome")
+        }
+        XCTAssertEqual(viewModel.pendingGuess, "Germany")
+        XCTAssertEqual(viewModel.triesLeft, 3)
+        XCTAssertEqual(viewModel.score, 0)
+
+        // Tapping a different country moves the mark instead of guessing
+        guard case .marked = viewModel.handleTap(on: "France") else {
+            return XCTFail("Expected marked outcome")
+        }
+        XCTAssertEqual(viewModel.pendingGuess, "France")
+        XCTAssertEqual(viewModel.triesLeft, 3)
+
+        // The confirming tap submits the guess
+        guard case .correct(let points) = viewModel.handleTap(on: "France") else {
+            return XCTFail("Expected correct outcome")
+        }
+        XCTAssertEqual(points, 3)
+        XCTAssertNil(viewModel.pendingGuess)
+    }
 
     func testGradedScoringThroughFullSweep() {
         let store = makeStore()
@@ -32,27 +72,27 @@ final class ClickCountryGameTests: XCTestCase {
 
         // First target: found on first try = 3 points
         XCTAssertEqual(viewModel.currentTarget, "France")
-        guard case .correct(let points1) = viewModel.handleTap(on: "France") else {
+        guard case .correct(let points1) = guess(viewModel, "France") else {
             return XCTFail("Expected correct outcome")
         }
         XCTAssertEqual(points1, 3)
 
         // Second target: one miss, then found = 2 points
         XCTAssertEqual(viewModel.currentTarget, "Germany")
-        guard case .wrong(let remaining) = viewModel.handleTap(on: "Norway") else {
+        guard case .wrong(let remaining) = guess(viewModel, "Norway") else {
             return XCTFail("Expected wrong outcome")
         }
         XCTAssertEqual(remaining, 2)
-        guard case .correct(let points2) = viewModel.handleTap(on: "Germany") else {
+        guard case .correct(let points2) = guess(viewModel, "Germany") else {
             return XCTFail("Expected correct outcome")
         }
         XCTAssertEqual(points2, 2)
 
         // Third target: three misses = reveal for 0 points
         XCTAssertEqual(viewModel.currentTarget, "Spain")
-        _ = viewModel.handleTap(on: "Norway")
-        _ = viewModel.handleTap(on: "Italy")
-        guard case .reveal = viewModel.handleTap(on: "Portugal") else {
+        guess(viewModel, "Norway")
+        guess(viewModel, "Italy")
+        guard case .reveal = guess(viewModel, "Portugal") else {
             return XCTFail("Expected reveal outcome")
         }
         XCTAssertEqual(viewModel.phase, .revealing)
@@ -84,7 +124,7 @@ final class ClickCountryGameTests: XCTestCase {
             statsStore: makeStore()
         )
 
-        _ = viewModel.handleTap(on: "France")
+        guess(viewModel, "France")
 
         // A stray tap on the already-found country costs no tries
         guard case .ignored = viewModel.handleTap(on: "France") else {
@@ -106,11 +146,15 @@ final class ClickCountryGameTests: XCTestCase {
         // No guess yet: opening a game is not an attempt
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 0)
 
-        // First guess (right or wrong) counts the attempt, exactly once
+        // Marking a country is not a guess yet
+        _ = viewModel.handleTap(on: "Norway")
+        XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 0)
+
+        // The first confirmed guess (right or wrong) counts the attempt, exactly once
         _ = viewModel.handleTap(on: "Norway")
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 1)
-        _ = viewModel.handleTap(on: "France")
-        _ = viewModel.handleTap(on: "Germany")
+        guess(viewModel, "France")
+        guess(viewModel, "Germany")
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 1)
 
         // The completed run counts once in both statistics
@@ -128,7 +172,7 @@ final class ClickCountryGameTests: XCTestCase {
         )
 
         // Guess once, then restart mid-run: attempt recorded, nothing completed
-        _ = viewModel.handleTap(on: "France")
+        guess(viewModel, "France")
         viewModel.restart()
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 1)
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).gamesPlayed, 0)
@@ -143,7 +187,7 @@ final class ClickCountryGameTests: XCTestCase {
             countries: ["France", "Germany"],
             statsStore: store
         )
-        _ = abandoned.handleTap(on: "Norway")
+        guess(abandoned, "Norway")
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 2)
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).gamesPlayed, 0)
     }
@@ -209,13 +253,13 @@ final class ClickCountryGameTests: XCTestCase {
 
         // First flawless sweep earns the trophy
         let first = ClickCountryGameViewModel(region: .oceania, countries: ["Fiji"], statsStore: store)
-        _ = first.handleTap(on: "Fiji")
+        guess(first, "Fiji")
         XCTAssertEqual(first.phase, .finished)
         XCTAssertTrue(first.didEarnTrophy)
 
         // A repeat 100% run doesn't re-earn it
         let second = ClickCountryGameViewModel(region: .oceania, countries: ["Fiji"], statsStore: store)
-        _ = second.handleTap(on: "Fiji")
+        guess(second, "Fiji")
         XCTAssertEqual(second.phase, .finished)
         XCTAssertFalse(second.didEarnTrophy)
 
@@ -227,8 +271,8 @@ final class ClickCountryGameTests: XCTestCase {
         let store = makeStore()
         let viewModel = ClickCountryGameViewModel(region: .oceania, countries: ["Fiji"], statsStore: store)
 
-        _ = viewModel.handleTap(on: "Samoa")
-        _ = viewModel.handleTap(on: "Fiji")
+        guess(viewModel, "Samoa")
+        guess(viewModel, "Fiji")
 
         XCTAssertEqual(viewModel.phase, .finished)
         XCTAssertFalse(viewModel.didEarnTrophy)

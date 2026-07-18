@@ -245,10 +245,13 @@ struct GlobeView: UIViewRepresentable {
         }
 
         /// Animates the globe rotation and camera so the given lat/lon is centered
-        /// at the given camera distance.
-        func flyTo(lat: Double, lon: Double, distance: Float) {
+        /// at the given camera distance (nil keeps the current distance).
+        func flyTo(lat: Double, lon: Double, distance: Float?) {
             guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                   let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+
+            let position = cameraNode.position
+            let distance = distance ?? sqrt(position.x * position.x + position.y * position.y + position.z * position.z)
 
             // Capture the current actual rotation from the presentation node
             let currentActualRotationY = globeNode.presentation.eulerAngles.y
@@ -650,6 +653,8 @@ struct GlobeView: UIViewRepresentable {
             // Remove existing star
             capitalStarNode?.removeFromParentNode()
             capitalStarNode = nil
+
+            guard globeState.showsCapitalMarker else { return }
 
             // If a country is selected, show star at its capital
             guard let selectedCountry = globeState.selectedCountry,

@@ -30,6 +30,7 @@ struct ClickCountryGameView: View {
         globe.globeStyle = mainState.globeStyle
         globe.isDarkMode = mainState.isDarkMode
         globe.isAutoRotating = false
+        globe.showsCapitalMarker = false
         _gameGlobe = StateObject(wrappedValue: globe)
     }
 
@@ -52,6 +53,8 @@ struct ClickCountryGameView: View {
                 Spacer()
                 if let feedback = feedback {
                     feedbackBanner(feedback)
+                } else if viewModel.pendingGuess != nil {
+                    confirmHint
                 }
                 statsBar
             }
@@ -92,13 +95,26 @@ struct ClickCountryGameView: View {
 
     private func handleTap(on country: String) {
         switch viewModel.handleTap(on: country) {
+        case .marked:
+            // First tap: outline the country and center it at the player's
+            // current zoom — zooming out here would make small countries hard
+            // to hit again for the confirming tap. The name is deliberately
+            // not shown so marking doesn't reveal the answer.
+            UISelectionFeedbackGenerator().selectionChanged()
+            gameGlobe.selectCountry(country, center: nil)
+            if let center = CountryHitTester.shared.center(of: country) {
+                gameGlobe.flyTo(.init(lat: center.lat, lon: center.lon, distance: nil))
+            }
+
         case .correct(let points):
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+            gameGlobe.deselectCountry(resumeAutoRotation: false)
             gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: country)
             showFeedback(.correct(country: country, points: points))
 
         case .wrong(let remainingTries):
             UINotificationFeedbackGenerator().notificationOccurred(.error)
+            gameGlobe.deselectCountry(resumeAutoRotation: false)
             showFeedback(.wrong(tapped: country, remainingTries: remainingTries))
 
         case .reveal:
@@ -283,6 +299,24 @@ struct ClickCountryGameView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
         }
+    }
+
+    /// Shown while a country is marked. Intentionally neutral: naming the
+    /// marked country would give the answer away before the guess is made.
+    private var confirmHint: some View {
+        glassPill {
+            HStack(spacing: 6) {
+                Image(systemName: "hand.tap.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(AppColors.buttonColor)
+                Text("Tap again to confirm your guess")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private func feedbackBanner(_ feedback: Feedback) -> some View {
