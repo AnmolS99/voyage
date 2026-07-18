@@ -9,7 +9,8 @@ struct ChallengeCalendarView: View {
     @State private var errorMessage: String?
 
     private let calendar = Calendar.current
-    private let store = ChallengeStore.shared
+    // Observed so day cells, streak and stats refresh when results sync in from iCloud
+    @ObservedObject private var store = ChallengeStore.shared
     private let weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
 

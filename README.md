@@ -27,6 +27,7 @@
 - 2D map view alternative
 - Track visited/wishlist countries with a single tap
 - Daily geography quiz — guess countries by outline, flag, or capital
+- Challenges — timed "Click the Country" sweeps of the world or a continent, with stats and bronze/silver/gold trophies
 - Dark mode (of course)
 - Data syncs across devices via iCloud
 
@@ -53,6 +54,7 @@ Build and run on iOS 17.0+ simulator or device.
 | `GlobeScene.swift`     | Scene setup (globe, lighting, camera)          |
 | `GeoJSONParser.swift`  | Parses country data from `world.geojson` (polygons + point markers) |
 | `DailyChallenge/`      | Daily geography quiz feature (Supabase-backed)                      |
+| `Challenges/`          | Challenge game modes ("Click the Country"), stats and trophies      |
 
 ### Globe Bundling
 
@@ -71,7 +73,7 @@ Run `testGlobeAndMapCountryConsistency` to verify map and globe are in sync.
 
 ### Data Storage
 
-Visited/wishlist countries and checked cities/attractions are stored in UserDefaults + iCloud. Data is independent of `globe.scn`.
+Visited/wishlist countries, checked cities/attractions, and daily challenge results are stored in UserDefaults + iCloud (merged across devices). Challenge game statistics and trophies are stored locally only, since their counters can't be merged safely across devices. Data is independent of `globe.scn`.
 
 ### Country Highlights Data
 
