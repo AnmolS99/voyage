@@ -52,7 +52,7 @@ enum QuestionType {
     }
 }
 
-struct ChallengeResult: Codable {
+struct ChallengeResult: Codable, Equatable {
     let date: String
     let attempts: Int
     let solved: Bool
