@@ -81,7 +81,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Data")
                 } footer: {
-                    Text("This will clear all visited countries and wishlist.")
+                    Text("This will clear all visited countries, wishlist and challenge statistics.")
                 }
 
                 Section {
@@ -153,10 +153,11 @@ struct SettingsView: View {
             ) {
                 Button("Reset", role: .destructive) {
                     globeState.resetAllData()
+                    ChallengeStatsStore.shared.resetAll()
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Are you sure you want to reset all data? This will clear all visited countries and cannot be undone.")
+                Text("Are you sure you want to reset all data? This will clear all visited countries, wishlist and challenge statistics. It cannot be undone.")
             }
             .alert("Thank You!", isPresented: .init(
                 get: { tipJarManager.purchaseState == .purchased },

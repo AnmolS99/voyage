@@ -53,6 +53,12 @@
 		E81234560043 /* ChallengeResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550043 /* ChallengeResultView.swift */; };
 		E81234560044 /* ChallengeCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550044 /* ChallengeCalendarView.swift */; };
 		E81234560045 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550045 /* ConfettiView.swift */; };
+		E81234560060 /* ChallengeGameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550060 /* ChallengeGameMode.swift */; };
+		E81234560061 /* ChallengeStatsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550061 /* ChallengeStatsStore.swift */; };
+		E81234560062 /* ClickCountryGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550062 /* ClickCountryGameViewModel.swift */; };
+		E81234560063 /* ClickCountryGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550063 /* ClickCountryGameView.swift */; };
+		E81234560064 /* ChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550064 /* ChallengesView.swift */; };
+		E81234560065 /* ClickCountryGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550065 /* ClickCountryGameTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -115,6 +121,12 @@
 		E81234550043 /* ChallengeResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeResultView.swift; sourceTree = "<group>"; };
 		E81234550044 /* ChallengeCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCalendarView.swift; sourceTree = "<group>"; };
 		E81234550045 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
+		E81234550060 /* ChallengeGameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGameMode.swift; sourceTree = "<group>"; };
+		E81234550061 /* ChallengeStatsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeStatsStore.swift; sourceTree = "<group>"; };
+		E81234550062 /* ClickCountryGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCountryGameViewModel.swift; sourceTree = "<group>"; };
+		E81234550063 /* ClickCountryGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCountryGameView.swift; sourceTree = "<group>"; };
+		E81234550064 /* ChallengesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengesView.swift; sourceTree = "<group>"; };
+		E81234550065 /* ClickCountryGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCountryGameTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -181,6 +193,7 @@
 				6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */,
 				E81234550022 /* ContinentData.swift */,
 				E81234520005 /* DailyChallenge */,
+				E81234520006 /* Challenges */,
 				E81234550026 /* TipJarManager.swift */,
 				E81234550027 /* TipJar.storekit */,
 				E81234550006 /* Assets.xcassets */,
@@ -208,6 +221,7 @@
 				E81234550023 /* AchievementTests.swift */,
 				E81234550024 /* ContinentDataTests.swift */,
 				E81234550025 /* AchievementCompletionTests.swift */,
+				E81234550065 /* ClickCountryGameTests.swift */,
 			);
 			path = voyageTests;
 			sourceTree = "<group>";
@@ -235,6 +249,18 @@
 				E81234550045 /* ConfettiView.swift */,
 			);
 			path = DailyChallenge;
+			sourceTree = "<group>";
+		};
+		E81234520006 /* Challenges */ = {
+			isa = PBXGroup;
+			children = (
+				E81234550060 /* ChallengeGameMode.swift */,
+				E81234550061 /* ChallengeStatsStore.swift */,
+				E81234550062 /* ClickCountryGameViewModel.swift */,
+				E81234550063 /* ClickCountryGameView.swift */,
+				E81234550064 /* ChallengesView.swift */,
+			);
+			path = Challenges;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -394,6 +420,11 @@
 				E81234560043 /* ChallengeResultView.swift in Sources */,
 				E81234560044 /* ChallengeCalendarView.swift in Sources */,
 				E81234560045 /* ConfettiView.swift in Sources */,
+				E81234560060 /* ChallengeGameMode.swift in Sources */,
+				E81234560061 /* ChallengeStatsStore.swift in Sources */,
+				E81234560062 /* ClickCountryGameViewModel.swift in Sources */,
+				E81234560063 /* ClickCountryGameView.swift in Sources */,
+				E81234560064 /* ChallengesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -405,6 +436,7 @@
 				E81234560023 /* AchievementTests.swift in Sources */,
 				E81234560024 /* ContinentDataTests.swift in Sources */,
 				E81234560025 /* AchievementCompletionTests.swift in Sources */,
+				E81234560065 /* ClickCountryGameTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

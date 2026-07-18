@@ -23,6 +23,24 @@ struct StarryBackground: View {
     }
 }
 
+/// Backdrop behind the 3D globe: starry sky in dark mode, warm gradient in light.
+struct GlobeBackdrop: View {
+    let isDarkMode: Bool
+
+    var body: some View {
+        if isDarkMode {
+            StarryBackground()
+        } else {
+            LinearGradient(
+                colors: [AppColors.backgroundLightTop, AppColors.backgroundLightBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        }
+    }
+}
+
 struct HomeView: View {
     @ObservedObject var globeState: GlobeState
     @State private var showingCountryList = false
@@ -32,16 +50,7 @@ struct HomeView: View {
         ZStack {
             // Background - starry or warm gradient based on dark mode (only for globe)
             if globeState.viewMode == .globe {
-                if globeState.isDarkMode {
-                    StarryBackground()
-                } else {
-                    LinearGradient(
-                        colors: [AppColors.backgroundLightTop, AppColors.backgroundLightBottom],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .ignoresSafeArea()
-                }
+                GlobeBackdrop(isDarkMode: globeState.isDarkMode)
             }
 
             // Globe or Map view - fullscreen
