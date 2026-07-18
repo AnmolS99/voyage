@@ -46,6 +46,15 @@ xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pr
 
 `voyageTests/testGlobeAndMapCountryConsistency` specifically guards the invariant described in [Globe and Map Consistency](#globe-and-map-consistency) — run it after touching either rendering path.
 
+### TestFlight Builds
+
+TestFlight builds are created with the existing GitHub Actions workflow (`.github/workflows/testflight.yml`) — never by archiving/uploading locally, since code signing (fastlane match) and `Secrets.xcconfig` live in CI secrets:
+
+```bash
+gh workflow run testflight.yml --ref <branch>   # branch is chosen via the dispatch ref
+gh run watch                                    # monitor the build
+```
+
 ## Setup
 
 Supabase credentials are stored in `Secrets.xcconfig` (gitignored). To set up:
