@@ -171,6 +171,26 @@ class GlobeState: ObservableObject {
         visitedCountries.subtracting(Self.nonUNTerritories)
     }
 
+    /// Countries renamed in the dataset (old → current official name). Saved
+    /// user data — local or synced from devices running older app versions —
+    /// still uses the old names, so it is migrated on load.
+    static let renamedCountries = [
+        "Turkey": "Türkiye",
+        "Cape Verde": "Cabo Verde"
+    ]
+
+    static func migrateRenamedCountries(in names: Set<String>) -> Set<String> {
+        Set(names.map { renamedCountries[$0] ?? $0 })
+    }
+
+    static func migrateRenamedCountries(inKeysOf dict: [String: Set<String>]) -> [String: Set<String>] {
+        var result: [String: Set<String>] = [:]
+        for (country, items) in dict {
+            result[renamedCountries[country] ?? country, default: []].formUnion(items)
+        }
+        return result
+    }
+
     private let iCloudStore = NSUbiquitousKeyValueStore.default
     private let userDefaults = UserDefaults.standard
     /// False for throwaway instances (e.g. challenge games): nothing is loaded
@@ -214,22 +234,24 @@ class GlobeState: ObservableObject {
         // Load visited countries
         let localCountries = Set(userDefaults.stringArray(forKey: visitedCountriesKey) ?? [])
         let cloudCountries = Set(iCloudStore.array(forKey: visitedCountriesKey) as? [String] ?? [])
-        visitedCountries = localCountries.union(cloudCountries)
+        visitedCountries = Self.migrateRenamedCountries(in: localCountries.union(cloudCountries))
 
         // Load wishlist countries
         let localWishlist = Set(userDefaults.stringArray(forKey: wishlistCountriesKey) ?? [])
         let cloudWishlist = Set(iCloudStore.array(forKey: wishlistCountriesKey) as? [String] ?? [])
-        wishlistCountries = localWishlist.union(cloudWishlist)
+        wishlistCountries = Self.migrateRenamedCountries(in: localWishlist.union(cloudWishlist))
 
         // Load checked cities
         let localCities = userDefaults.dictionary(forKey: checkedCitiesKey) as? [String: [String]] ?? [:]
         let cloudCities = iCloudStore.dictionary(forKey: checkedCitiesKey) as? [String: [String]] ?? [:]
-        checkedCities = mergeDictionaries(localCities, cloudCities)
+        let mergedCities = mergeDictionaries(localCities, cloudCities)
+        checkedCities = Self.migrateRenamedCountries(inKeysOf: mergedCities)
 
         // Load checked attractions
         let localAttractions = userDefaults.dictionary(forKey: checkedAttractionsKey) as? [String: [String]] ?? [:]
         let cloudAttractions = iCloudStore.dictionary(forKey: checkedAttractionsKey) as? [String: [String]] ?? [:]
-        checkedAttractions = mergeDictionaries(localAttractions, cloudAttractions)
+        let mergedAttractions = mergeDictionaries(localAttractions, cloudAttractions)
+        checkedAttractions = Self.migrateRenamedCountries(inKeysOf: mergedAttractions)
 
         // Load globe style (prefer iCloud, fall back to local)
         if let raw = iCloudStore.string(forKey: globeStyleKey) ?? userDefaults.string(forKey: globeStyleKey),
@@ -248,9 +270,10 @@ class GlobeState: ObservableObject {
             isDarkMode = iCloudStore.bool(forKey: isDarkModeKey) || userDefaults.bool(forKey: isDarkModeKey)
         }
 
-        // Sync merged data back to both stores
+        // Sync merged (and name-migrated) data back to both stores
         if visitedCountries != localCountries || visitedCountries != cloudCountries ||
-           wishlistCountries != localWishlist || wishlistCountries != cloudWishlist {
+           wishlistCountries != localWishlist || wishlistCountries != cloudWishlist ||
+           checkedCities != mergedCities || checkedAttractions != mergedAttractions {
             saveData()
         }
     }

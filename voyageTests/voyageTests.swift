@@ -121,6 +121,30 @@ final class voyageTests: XCTestCase {
         }
     }
 
+    // Dataset uses current official country names; saved user data with the
+    // old names is migrated on load by GlobeState
+    func testRenamedCountriesUseOfficialNamesAndMigrate() {
+        let names = Set(GeoJSONParser.loadCountries().map { $0.name })
+
+        for (old, current) in GlobeState.renamedCountries {
+            XCTAssertTrue(names.contains(current), "Dataset should use \(current)")
+            XCTAssertFalse(names.contains(old), "Dataset should no longer contain \(old)")
+        }
+
+        XCTAssertEqual(
+            GlobeState.migrateRenamedCountries(in: ["Turkey", "Cape Verde", "France"]),
+            ["Türkiye", "Cabo Verde", "France"]
+        )
+        XCTAssertEqual(
+            GlobeState.migrateRenamedCountries(inKeysOf: [
+                "Turkey": ["Istanbul"],
+                "Türkiye": ["Ankara"],
+                "France": ["Paris"]
+            ]),
+            ["Türkiye": ["Istanbul", "Ankara"], "France": ["Paris"]]
+        )
+    }
+
     // Test finding country at known coordinates
     func testFindCountryAtCoordinates() {
         let countries = GeoJSONParser.loadCountries()
