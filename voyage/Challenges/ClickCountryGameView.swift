@@ -56,7 +56,7 @@ struct ClickCountryGameView: View {
                 } else if viewModel.pendingGuess != nil {
                     confirmHint
                 }
-                statsBar
+                bottomBar
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
@@ -160,44 +160,46 @@ struct ClickCountryGameView: View {
     // MARK: - HUD
 
     private var topBar: some View {
-        HStack {
-            if #available(iOS 26, *) {
-                // Liquid glass buttons, matching the Home tab header
-                GlassEffectContainer(spacing: 8) {
-                    HStack(spacing: 0) {
-                        hudButton(icon: "xmark") {
-                            showQuitConfirmation = true
-                        }
-                        hudButton(icon: "arrow.counterclockwise") {
-                            showRestartConfirmation = true
-                        }
-                    }
-                }
-                .tint(nil)
-            } else {
-                HStack(spacing: 8) {
-                    hudButton(icon: "xmark") {
-                        showQuitConfirmation = true
-                    }
-                    hudButton(icon: "arrow.counterclockwise") {
-                        showRestartConfirmation = true
-                    }
-                }
+        HStack(alignment: .center) {
+            hudButton(icon: "xmark") {
+                showQuitConfirmation = true
             }
 
             Spacer()
 
+            // Time and score together in one pill, top right
             glassPill {
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
                         .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(AppColors.buttonColor)
                     Text(formatGameTime(viewModel.elapsedTime))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                    Text("·")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(AppColors.buttonColor)
+                    Text("\(viewModel.score) pts")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                 }
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
+            }
+        }
+    }
+
+    /// Restart sits bottom trailing, within thumb reach when holding the
+    /// phone one-handed.
+    private var bottomBar: some View {
+        HStack {
+            Spacer()
+            hudButton(icon: "arrow.counterclockwise") {
+                showRestartConfirmation = true
             }
         }
     }
@@ -242,7 +244,7 @@ struct ClickCountryGameView: View {
         Group {
             if let target = viewModel.currentTarget {
                 VStack(spacing: 8) {
-                    Text("Find")
+                    Text("\(viewModel.solvedCount + 1)/\(viewModel.totalCountries)")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                         .textCase(.uppercase)
@@ -274,30 +276,6 @@ struct ClickCountryGameView: View {
                 )
                 .animation(.spring(response: 0.35, dampingFraction: 0.8), value: target)
             }
-        }
-    }
-
-    private var statsBar: some View {
-        HStack {
-            statPill(icon: "checkmark.circle.fill", text: "\(viewModel.solvedCount)/\(viewModel.totalCountries)")
-            Spacer()
-            statPill(icon: "star.fill", text: "\(viewModel.score) pts")
-        }
-    }
-
-    private func statPill(icon: String, text: String) -> some View {
-        glassPill {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(AppColors.buttonColor)
-                Text(text)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
         }
     }
 
