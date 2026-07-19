@@ -84,7 +84,7 @@ struct ContentView: View {
                 tabButton(for: item)
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 4)
         .padding(.vertical, 6)
 
         Group {
@@ -100,7 +100,7 @@ struct ContentView: View {
         }
         .frame(maxWidth: 520)
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 8)
         .padding(.bottom, 4)
         .overlay(alignment: .top) {
             if showDailyToast {
@@ -139,7 +139,7 @@ struct ContentView: View {
                     .font(.system(size: 9, weight: .medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 2)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 9)
