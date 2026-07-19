@@ -16,7 +16,7 @@ struct AchievementsView: View {
         let remainingUN = Array(unCountries.subtracting(globeState.visitedUNCountries)).sorted()
 
         list.append(Achievement(
-            name: "World Traveler",
+            name: "Globetrotter",
             medal: "🌍",
             visitedCountries: visitedUN,
             remainingCountries: remainingUN
