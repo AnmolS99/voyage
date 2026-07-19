@@ -79,7 +79,7 @@ struct ContentView: View {
     /// between items so the selection highlight never crowds its neighbors.
     @ViewBuilder
     private var floatingTabBar: some View {
-        let bar = HStack(spacing: 10) {
+        let bar = HStack(spacing: 4) {
             ForEach(Self.tabBarItems, id: \.tag) { item in
                 tabButton(for: item)
             }
