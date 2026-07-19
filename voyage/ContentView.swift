@@ -79,7 +79,7 @@ struct ContentView: View {
     /// between items so the selection highlight never crowds its neighbors.
     @ViewBuilder
     private var floatingTabBar: some View {
-        let bar = HStack(spacing: 8) {
+        let bar = HStack(spacing: 10) {
             ForEach(Self.tabBarItems, id: \.tag) { item in
                 tabButton(for: item)
             }
@@ -136,9 +136,10 @@ struct ContentView: View {
                         }
                     }
                 Text(item.title)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 9, weight: .medium))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.6)
+                    .padding(.horizontal, 4)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 9)
