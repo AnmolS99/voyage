@@ -1,16 +1,18 @@
 import SwiftUI
 import UIKit
 
-/// Full-screen "Click the Country" game. The target country is shown at the
-/// top and the user taps it on the globe. Found countries stay green, revealed
-/// misses stay red — the game runs on its own in-memory `GlobeState`, so
-/// nothing touches the user's real travel data.
-struct ClickCountryGameView: View {
+/// Full-screen "Name the Capital" game. Each country in the region is shown
+/// on the prompt card (flag + name) while the globe flies to and outlines it;
+/// the player types its capital into a search field. Solved countries stay
+/// green, revealed misses stay red — like Click the Country, the game runs on
+/// its own in-memory `GlobeState`, so nothing touches the user's travel data.
+struct NameCapitalGameView: View {
     let region: ChallengeRegion
     let onDismiss: () -> Void
 
-    @StateObject private var viewModel: ClickCountryGameViewModel
+    @StateObject private var viewModel: NameCapitalGameViewModel
     @StateObject private var gameGlobe: GlobeState
+    @State private var searchText = ""
     @State private var feedback: Feedback?
     @State private var feedbackToken = 0
     @State private var showQuitConfirmation = false
@@ -18,13 +20,16 @@ struct ClickCountryGameView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     private let isDarkMode: Bool
-    private static let revealDuration: TimeInterval = 2.2
+    /// Every capital in the dataset — the search field's suggestion pool, so
+    /// the answer never stands out by being the only nearby suggestion.
+    private let capitalSuggestions: [String]
+    private static let revealDuration: TimeInterval = 2.6
 
     init(region: ChallengeRegion, mainState: GlobeState, onDismiss: @escaping () -> Void) {
         self.region = region
         self.onDismiss = onDismiss
         self.isDarkMode = mainState.isDarkMode
-        _viewModel = StateObject(wrappedValue: ClickCountryGameViewModel(region: region))
+        _viewModel = StateObject(wrappedValue: NameCapitalGameViewModel(region: region))
 
         let globe = GlobeState(inMemory: true)
         globe.globeStyle = mainState.globeStyle
@@ -32,19 +37,23 @@ struct ClickCountryGameView: View {
         globe.isAutoRotating = false
         globe.showsCapitalMarker = false
         _gameGlobe = StateObject(wrappedValue: globe)
+
+        capitalSuggestions = Set(CountryDataCache.shared.countries.compactMap { $0.capital?.name }).sorted()
     }
 
     private enum Feedback: Equatable {
-        case correct(country: String, points: Int)
-        case wrong(tapped: String, remainingTries: Int)
-        case reveal(country: String)
+        case correct(capital: String, points: Int)
+        case wrong(guess: String, remainingTries: Int)
+        case reveal(country: String, capital: String)
     }
 
     var body: some View {
         ZStack {
             GlobeBackdrop(isDarkMode: isDarkMode)
 
-            GlobeView(globeState: gameGlobe, onCountryTapped: handleTap)
+            // The globe is a backdrop showing the asked country — taps on it
+            // are not part of this game
+            GlobeView(globeState: gameGlobe, onCountryTapped: { _ in })
                 .ignoresSafeArea()
 
             VStack(spacing: 12) {
@@ -54,34 +63,36 @@ struct ClickCountryGameView: View {
                 SweepPromptCard(
                     viewModel: viewModel,
                     flagProvider: gameGlobe.flagForCountry,
+                    question: "What's the capital?",
                     isDarkMode: isDarkMode
                 )
                 Spacer()
                 if let feedback = feedback {
                     feedbackBanner(feedback)
-                } else if viewModel.pendingGuess != nil {
-                    confirmHint
                 }
                 bottomBar
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
-            .padding(.bottom, 24)
+            .padding(.bottom, 12)
 
             if viewModel.phase == .finished {
                 SweepResultOverlay(
                     viewModel: viewModel,
                     isDarkMode: isDarkMode,
-                    firstTryLabel: "First-try finds",
-                    missedSummary: viewModel.missedCountries.isEmpty ?
-                        nil : viewModel.missedCountries.joined(separator: ", "),
+                    firstTryLabel: "First-try answers",
+                    missedSummary: missedSummary,
                     onPlayAgain: playAgain,
                     onDismiss: onDismiss
                 )
             }
         }
         .onAppear {
-            gameGlobe.flyTo(region.cameraTarget)
+            focusOnCurrentTarget(distance: region.cameraTarget.distance)
+        }
+        .onChange(of: viewModel.currentTarget) { _, _ in
+            // Fly to each new question's country at the player's current zoom
+            focusOnCurrentTarget(distance: nil)
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
@@ -107,42 +118,46 @@ struct ClickCountryGameView: View {
 
     // MARK: - Game interaction
 
-    private func handleTap(on country: String) {
-        switch viewModel.handleTap(on: country) {
-        case .marked:
-            // First tap: outline the country and center it at the player's
-            // current zoom — zooming out here would make small countries hard
-            // to hit again for the confirming tap. The name is deliberately
-            // not shown so marking doesn't reveal the answer.
-            UISelectionFeedbackGenerator().selectionChanged()
-            gameGlobe.selectCountry(country, center: nil)
-            if let center = CountryHitTester.shared.center(of: country) {
-                gameGlobe.flyTo(.init(lat: center.lat, lon: center.lon, distance: nil))
-            }
+    /// Outlines the current question's country on the globe and flies to it.
+    private func focusOnCurrentTarget(distance: Float?) {
+        guard let target = viewModel.currentTarget else { return }
+        gameGlobe.selectCountry(target, center: nil)
+        if let center = CountryHitTester.shared.center(of: target) {
+            gameGlobe.flyTo(.init(lat: center.lat, lon: center.lon, distance: distance))
+        }
+    }
 
+    private func submit(_ guess: String) {
+        // Captured before submitting: a correct guess advances the target
+        let target = viewModel.currentTarget
+        let capital = viewModel.currentCapital
+
+        switch viewModel.submitGuess(guess) {
         case .correct(let points):
             UINotificationFeedbackGenerator().notificationOccurred(.success)
-            gameGlobe.deselectCountry(resumeAutoRotation: false)
-            gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: country)
-            showFeedback(.correct(country: country, points: points))
+            if let target = target {
+                gameGlobe.deselectCountry(resumeAutoRotation: false)
+                gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: target)
+            }
+            if let capital = capital {
+                showFeedback(.correct(capital: capital, points: points))
+            }
 
         case .wrong(let remainingTries):
             UINotificationFeedbackGenerator().notificationOccurred(.error)
-            gameGlobe.deselectCountry(resumeAutoRotation: false)
-            showFeedback(.wrong(tapped: country, remainingTries: remainingTries))
+            showFeedback(.wrong(guess: guess, remainingTries: remainingTries))
 
         case .reveal:
-            guard let target = viewModel.currentTarget else { return }
+            guard let target = target, let capital = capital else { return }
             UINotificationFeedbackGenerator().notificationOccurred(.error)
-            showFeedback(.reveal(country: target), duration: Self.revealDuration)
+            showFeedback(.reveal(country: target, capital: capital), duration: Self.revealDuration)
             gameGlobe.setCountryHighlight(AppColors.challengeWrongUI, for: target)
-            gameGlobe.selectCountry(target, center: CountryHitTester.shared.center(of: target))
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.revealDuration) {
                 gameGlobe.deselectCountry(resumeAutoRotation: false)
                 viewModel.finishReveal()
             }
 
-        case .ignored:
+        case .marked, .ignored:
             break
         }
     }
@@ -165,58 +180,59 @@ struct ClickCountryGameView: View {
     private func playAgain() {
         feedbackToken += 1
         feedback = nil
+        searchText = ""
         gameGlobe.resetAllData()
         gameGlobe.isAutoRotating = false
-        gameGlobe.flyTo(region.cameraTarget)
         viewModel.restart()
+        focusOnCurrentTarget(distance: region.cameraTarget.distance)
     }
 
     // MARK: - HUD
 
-    /// Restart sits bottom trailing, within thumb reach when holding the
-    /// phone one-handed.
+    /// Search field with restart alongside, both rising with the keyboard.
     private var bottomBar: some View {
-        HStack {
-            Spacer()
+        HStack(alignment: .bottom, spacing: 10) {
+            ChallengeSearchField(
+                searchText: $searchText,
+                suggestions: capitalSuggestions,
+                guessedItems: Set(viewModel.wrongGuesses),
+                isDarkMode: isDarkMode,
+                onSubmit: { guess in
+                    submit(guess)
+                    searchText = ""
+                }
+            )
             SweepHUDButton(icon: "arrow.counterclockwise", isDarkMode: isDarkMode) {
                 showRestartConfirmation = true
             }
         }
     }
 
-    /// Shown while a country is marked. Intentionally neutral: naming the
-    /// marked country would give the answer away before the guess is made.
-    private var confirmHint: some View {
-        GlassPill(isDarkMode: isDarkMode) {
-            HStack(spacing: 6) {
-                Image(systemName: "hand.tap.fill")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(AppColors.buttonColor)
-                Text("Tap again to confirm your guess")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-        }
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-    }
-
     private func feedbackBanner(_ feedback: Feedback) -> some View {
         let text: String
         let color: Color
         switch feedback {
-        case .correct(let country, let points):
-            text = "\(country) +\(points)"
+        case .correct(let capital, let points):
+            text = "\(capital) +\(points)"
             color = AppColors.challengeCorrect
-        case .wrong(let tapped, let remainingTries):
-            text = "That's \(tapped) — \(remainingTries) \(remainingTries == 1 ? "try" : "tries") left"
+        case .wrong(let guess, let remainingTries):
+            text = "Not \(guess) — \(remainingTries) \(remainingTries == 1 ? "try" : "tries") left"
             color = AppColors.challengeWrong
-        case .reveal(let country):
-            text = "\(country) \(gameGlobe.flagForCountry(country)) is here"
+        case .reveal(let country, let capital):
+            text = "The capital of \(country) is \(capital)"
             color = AppColors.challengeWrong
         }
 
         return SweepFeedbackBanner(text: text, color: color)
+    }
+
+    private var missedSummary: String? {
+        guard !viewModel.missedCountries.isEmpty else { return nil }
+        return viewModel.missedCountries.map { country in
+            if let capital = viewModel.capital(of: country) {
+                return "\(country) — \(capital)"
+            }
+            return country
+        }.joined(separator: ", ")
     }
 }
