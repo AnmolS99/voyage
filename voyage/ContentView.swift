@@ -6,68 +6,50 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showDailyBadge = false
     @State private var showDailyToast = false
+    @Namespace private var tabHighlightNamespace
 
     private static let badgeDateKey = "dailyBadgeNextDate"
+
+    private struct TabBarItem {
+        let title: String
+        let icon: String
+        let tag: Int
+    }
+
+    private static let tabBarItems: [TabBarItem] = [
+        TabBarItem(title: "Home", icon: "globe", tag: 0),
+        TabBarItem(title: "Daily", icon: "calendar", tag: 1),
+        TabBarItem(title: "Challenges", icon: "gamecontroller.fill", tag: 2),
+        TabBarItem(title: "Achievements", icon: "trophy.fill", tag: 3),
+        TabBarItem(title: "Settings", icon: "gearshape.fill", tag: 4)
+    ]
 
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView(globeState: globeState)
-                .tabItem {
-                    Label("Home", systemImage: "globe")
-                }
+                .toolbar(.hidden, for: .tabBar)
                 .tag(0)
 
             ChallengeCalendarView(globeState: globeState)
-                .tabItem {
-                    Label("Daily", systemImage: "calendar")
-                }
+                .toolbar(.hidden, for: .tabBar)
                 .tag(1)
-                .badge(showDailyBadge ? "!" : nil)
 
             ChallengesView(globeState: globeState)
-                .tabItem {
-                    Label("Challenges", systemImage: "gamecontroller.fill")
-                }
+                .toolbar(.hidden, for: .tabBar)
                 .tag(2)
 
             AchievementsView(globeState: globeState)
-                .tabItem {
-                    Label("Achievements", systemImage: "trophy.fill")
-                }
+                .toolbar(.hidden, for: .tabBar)
                 .tag(3)
 
             SettingsView(globeState: globeState)
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
-                }
+                .toolbar(.hidden, for: .tabBar)
                 .tag(4)
         }
-        .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
-        .overlay(alignment: .bottom) {
-            if showDailyToast {
-                Button {
-                    withAnimation { showDailyToast = false }
-                    selectedTab = 1
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "calendar.badge.exclamationmark")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("New daily challenge available!")
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        Capsule()
-                            .fill(AppColors.buttonColor)
-                            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
-                    )
-                }
-                .padding(.bottom, 60)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            floatingTabBar
         }
+        .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
         .onAppear {
             let nextDate = UserDefaults.standard.object(forKey: Self.badgeDateKey) as? Date ?? .distantPast
             let shouldShow = Date() >= nextDate
@@ -91,6 +73,109 @@ struct ContentView: View {
                 UserDefaults.standard.set(tomorrow, forKey: Self.badgeDateKey)
             }
         }
+    }
+
+    /// Custom floating tab bar: every item gets the same width, with spacing
+    /// between items so the selection highlight never crowds its neighbors.
+    @ViewBuilder
+    private var floatingTabBar: some View {
+        let bar = HStack(spacing: 8) {
+            ForEach(Self.tabBarItems, id: \.tag) { item in
+                tabButton(for: item)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+
+        Group {
+            if #available(iOS 26, *) {
+                bar.glassEffect()
+            } else {
+                bar.background(
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                        .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
+                )
+            }
+        }
+        .frame(maxWidth: 520)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 4)
+        .overlay(alignment: .top) {
+            if showDailyToast {
+                dailyToast
+                    .offset(y: -52)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+
+    private func tabButton(for item: TabBarItem) -> some View {
+        let isSelected = selectedTab == item.tag
+        return Button {
+            guard selectedTab != item.tag else { return }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                selectedTab = item.tag
+            }
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: item.icon)
+                    .font(.system(size: 19, weight: .medium))
+                    .overlay(alignment: .topTrailing) {
+                        if item.tag == 1 && showDailyBadge {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 14, height: 14)
+                                .overlay(
+                                    Text("!")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(.white)
+                                )
+                                .offset(x: 8, y: -6)
+                        }
+                    }
+                Text(item.title)
+                    .font(.system(size: 10, weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .foregroundStyle(isSelected ? Color.accentColor : Color.primary.opacity(0.85))
+            .background {
+                if isSelected {
+                    Capsule()
+                        .fill(Color.primary.opacity(0.12))
+                        .matchedGeometryEffect(id: "selectedTab", in: tabHighlightNamespace)
+                }
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var dailyToast: some View {
+        Button {
+            withAnimation { showDailyToast = false }
+            selectedTab = 1
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "calendar.badge.exclamationmark")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("New daily challenge available!")
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(AppColors.buttonColor)
+                    .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+            )
+        }
+        .fixedSize()
     }
 }
 
