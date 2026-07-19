@@ -4,6 +4,11 @@ import Foundation
 /// once (shuffled), with three graded tries each (3/2/1 points). After the
 /// third miss the country is revealed for 0 points. The sweep is timed until
 /// the queue is exhausted.
+///
+/// Guesses are confirmed with two taps: the first tap marks a country
+/// (`.marked`), tapping the same country again submits it as the guess.
+/// Tapping a different country moves the mark instead — so a mis-tap never
+/// costs a try.
 final class ClickCountryGameViewModel: ObservableObject {
     enum Phase {
         case playing
@@ -12,6 +17,7 @@ final class ClickCountryGameViewModel: ObservableObject {
     }
 
     enum TapOutcome {
+        case marked      // first tap: country selected, awaiting a confirming tap
         case correct(points: Int)
         case wrong(remainingTries: Int)
         case reveal
@@ -34,6 +40,8 @@ final class ClickCountryGameViewModel: ObservableObject {
     /// True when this game's flawless sweep earned the region's trophy for the
     /// first time (repeat 100% runs don't re-earn it).
     @Published private(set) var didEarnTrophy = false
+    /// Country marked by the first tap, awaiting a confirming second tap.
+    @Published private(set) var pendingGuess: String?
 
     /// Countries found on the first try.
     private(set) var perfectCount = 0
@@ -73,6 +81,14 @@ final class ClickCountryGameViewModel: ObservableObject {
     func handleTap(on country: String) -> TapOutcome {
         guard phase == .playing, let target = currentTarget else { return .ignored }
         guard !solved.contains(country) else { return .ignored }
+
+        // First tap marks the country; only a tap on the marked country
+        // confirms it as the guess (a tap elsewhere moves the mark)
+        guard country == pendingGuess else {
+            pendingGuess = country
+            return .marked
+        }
+        pendingGuess = nil
 
         registerAttemptIfNeeded()
 
@@ -117,6 +133,7 @@ final class ClickCountryGameViewModel: ObservableObject {
         isNewBest = false
         didEarnTrophy = false
         hasRecordedAttempt = false
+        pendingGuess = nil
         phase = queue.isEmpty ? .finished : .playing
         if phase == .playing {
             startTimer()

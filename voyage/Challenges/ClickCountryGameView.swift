@@ -30,6 +30,7 @@ struct ClickCountryGameView: View {
         globe.globeStyle = mainState.globeStyle
         globe.isDarkMode = mainState.isDarkMode
         globe.isAutoRotating = false
+        globe.showsCapitalMarker = false
         _gameGlobe = StateObject(wrappedValue: globe)
     }
 
@@ -52,8 +53,10 @@ struct ClickCountryGameView: View {
                 Spacer()
                 if let feedback = feedback {
                     feedbackBanner(feedback)
+                } else if viewModel.pendingGuess != nil {
+                    confirmHint
                 }
-                statsBar
+                bottomBar
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
@@ -92,13 +95,26 @@ struct ClickCountryGameView: View {
 
     private func handleTap(on country: String) {
         switch viewModel.handleTap(on: country) {
+        case .marked:
+            // First tap: outline the country and center it at the player's
+            // current zoom — zooming out here would make small countries hard
+            // to hit again for the confirming tap. The name is deliberately
+            // not shown so marking doesn't reveal the answer.
+            UISelectionFeedbackGenerator().selectionChanged()
+            gameGlobe.selectCountry(country, center: nil)
+            if let center = CountryHitTester.shared.center(of: country) {
+                gameGlobe.flyTo(.init(lat: center.lat, lon: center.lon, distance: nil))
+            }
+
         case .correct(let points):
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+            gameGlobe.deselectCountry(resumeAutoRotation: false)
             gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: country)
             showFeedback(.correct(country: country, points: points))
 
         case .wrong(let remainingTries):
             UINotificationFeedbackGenerator().notificationOccurred(.error)
+            gameGlobe.deselectCountry(resumeAutoRotation: false)
             showFeedback(.wrong(tapped: country, remainingTries: remainingTries))
 
         case .reveal:
@@ -144,44 +160,46 @@ struct ClickCountryGameView: View {
     // MARK: - HUD
 
     private var topBar: some View {
-        HStack {
-            if #available(iOS 26, *) {
-                // Liquid glass buttons, matching the Home tab header
-                GlassEffectContainer(spacing: 8) {
-                    HStack(spacing: 0) {
-                        hudButton(icon: "xmark") {
-                            showQuitConfirmation = true
-                        }
-                        hudButton(icon: "arrow.counterclockwise") {
-                            showRestartConfirmation = true
-                        }
-                    }
-                }
-                .tint(nil)
-            } else {
-                HStack(spacing: 8) {
-                    hudButton(icon: "xmark") {
-                        showQuitConfirmation = true
-                    }
-                    hudButton(icon: "arrow.counterclockwise") {
-                        showRestartConfirmation = true
-                    }
-                }
+        HStack(alignment: .center) {
+            hudButton(icon: "xmark") {
+                showQuitConfirmation = true
             }
 
             Spacer()
 
+            // Time and score together in one pill, top right
             glassPill {
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
                         .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(AppColors.buttonColor)
                     Text(formatGameTime(viewModel.elapsedTime))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                    Text("·")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(AppColors.buttonColor)
+                    Text("\(viewModel.score) pts")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                 }
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
+            }
+        }
+    }
+
+    /// Restart sits bottom trailing, within thumb reach when holding the
+    /// phone one-handed.
+    private var bottomBar: some View {
+        HStack {
+            Spacer()
+            hudButton(icon: "arrow.counterclockwise") {
+                showRestartConfirmation = true
             }
         }
     }
@@ -226,7 +244,7 @@ struct ClickCountryGameView: View {
         Group {
             if let target = viewModel.currentTarget {
                 VStack(spacing: 8) {
-                    Text("Find")
+                    Text("\(viewModel.solvedCount + 1)/\(viewModel.totalCountries)")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                         .textCase(.uppercase)
@@ -261,28 +279,22 @@ struct ClickCountryGameView: View {
         }
     }
 
-    private var statsBar: some View {
-        HStack {
-            statPill(icon: "checkmark.circle.fill", text: "\(viewModel.solvedCount)/\(viewModel.totalCountries)")
-            Spacer()
-            statPill(icon: "star.fill", text: "\(viewModel.score) pts")
-        }
-    }
-
-    private func statPill(icon: String, text: String) -> some View {
+    /// Shown while a country is marked. Intentionally neutral: naming the
+    /// marked country would give the answer away before the guess is made.
+    private var confirmHint: some View {
         glassPill {
             HStack(spacing: 6) {
-                Image(systemName: icon)
+                Image(systemName: "hand.tap.fill")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(AppColors.buttonColor)
-                Text(text)
+                Text("Tap again to confirm your guess")
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private func feedbackBanner(_ feedback: Feedback) -> some View {

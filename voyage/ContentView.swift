@@ -123,10 +123,11 @@ enum GlobeStyle: String, CaseIterable {
 
 class GlobeState: ObservableObject {
     /// A one-shot camera flight request, consumed by the globe coordinator.
+    /// A nil distance keeps the camera at its current zoom while centering.
     struct CameraTarget: Equatable {
         let lat: Double
         let lon: Double
-        let distance: Float
+        let distance: Float?
     }
 
     @Published var selectedCountry: String?
@@ -134,6 +135,10 @@ class GlobeState: ObservableObject {
     /// Temporary per-country fill colors (challenge games); takes precedence
     /// over visited/wishlist coloring on the globe. Not persisted.
     @Published var countryHighlightColors: [String: UIColor] = [:]
+    /// Whether selecting a country shows its capital marker on the globe.
+    /// Challenge games turn this off — the marker is irrelevant there and
+    /// would hint at the answer. Not persisted.
+    var showsCapitalMarker = true
     @Published var selectedCountries: Set<String> = []
     @Published var visitedCountries: Set<String> = []
     @Published var wishlistCountries: Set<String> = []
