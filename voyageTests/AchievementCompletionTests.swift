@@ -74,14 +74,14 @@ final class AchievementCompletionTests: XCTestCase {
         XCTAssertEqual(asiaVisited.count, 2, "Should have 2 Asian countries")
     }
 
-    // MARK: - World Traveler Achievement Tests
+    // MARK: - Globetrotter Achievement Tests
 
     func testWorldTravelerAchievementNotCompletedWithFewCountries() {
         let visited: Set<String> = Set(Array(Continent.europe.countries.prefix(3)))
         let totalCountries = 195
 
         let achievement = Achievement.forTesting(
-            name: "World Traveler",
+            name: "Globetrotter",
             medal: "🌍",
             current: visited.count,
             total: totalCountries
@@ -95,7 +95,7 @@ final class AchievementCompletionTests: XCTestCase {
         let totalCountries = 195
 
         let achievement = Achievement.forTesting(
-            name: "World Traveler",
+            name: "Globetrotter",
             medal: "🌍",
             current: 195,
             total: totalCountries
@@ -111,7 +111,7 @@ final class AchievementCompletionTests: XCTestCase {
         let stages = [10, 50, 100, 150, 195]
         for count in stages {
             let achievement = Achievement.forTesting(
-                name: "World Traveler",
+                name: "Globetrotter",
                 medal: "🌍",
                 current: count,
                 total: totalCountries
