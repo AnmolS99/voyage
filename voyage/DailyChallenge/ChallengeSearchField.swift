@@ -8,6 +8,11 @@ struct ChallengeSearchField: View {
     let onSubmit: (String) -> Void
 
     @State private var showSuggestions = false
+    /// Measured height of the suggestion list, so the dropdown hugs its rows
+    /// (a ScrollView would otherwise greedily fill the whole height cap).
+    @State private var suggestionsHeight: CGFloat = 0
+
+    private static let maxSuggestionsHeight: CGFloat = 200
 
     private var filtered: [String] {
         guard !searchText.isEmpty else { return [] }
@@ -54,8 +59,13 @@ struct ChallengeSearchField: View {
                             }
                         }
                     }
+                    .onGeometryChange(for: CGFloat.self) { proxy in
+                        proxy.size.height
+                    } action: { height in
+                        suggestionsHeight = height
+                    }
                 }
-                .frame(maxHeight: 200)
+                .frame(height: min(suggestionsHeight, Self.maxSuggestionsHeight))
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(AppColors.cardBackground(isDarkMode: isDarkMode))
