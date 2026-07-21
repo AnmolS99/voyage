@@ -125,6 +125,8 @@ struct NameCapitalGameView: View {
             GlobeView(globeState: gameGlobe, onCountryTapped: { _ in })
                 .ignoresSafeArea()
 
+            // Top HUD pinned to the top, ignoring the keyboard so a growing
+            // suggestion list below never pushes it up
             VStack(spacing: 12) {
                 SweepTopBar(
                     viewModel: viewModel,
@@ -138,7 +140,16 @@ struct NameCapitalGameView: View {
                     flagProvider: gameGlobe.flagForCountry,
                     isDarkMode: isDarkMode
                 )
-                Spacer()
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .ignoresSafeArea(.keyboard)
+
+            // Bottom layer: feedback + suggestions/search, floating up from
+            // the bottom over the globe (independent of the top HUD)
+            VStack(spacing: 12) {
+                Spacer(minLength: 0)
                 if let feedback = feedback {
                     feedbackBanner(feedback)
                 }
@@ -151,7 +162,6 @@ struct NameCapitalGameView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 12)
             .padding(.bottom, 12)
 
             if viewModel.phase == .finished {
