@@ -48,8 +48,18 @@ struct ClickCountryGameView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 12) {
-                topBar
-                promptCard
+                SweepTopBar(
+                    viewModel: viewModel,
+                    isDarkMode: isDarkMode,
+                    buttonSize: ChallengeSearchField.fieldHeight
+                ) {
+                    showQuitConfirmation = true
+                }
+                SweepPromptCard(
+                    viewModel: viewModel,
+                    flagProvider: gameGlobe.flagForCountry,
+                    isDarkMode: isDarkMode
+                )
                 Spacer()
                 if let feedback = feedback {
                     feedbackBanner(feedback)
@@ -63,7 +73,15 @@ struct ClickCountryGameView: View {
             .padding(.bottom, 24)
 
             if viewModel.phase == .finished {
-                resultOverlay
+                SweepResultOverlay(
+                    viewModel: viewModel,
+                    isDarkMode: isDarkMode,
+                    firstTryLabel: "First-try finds",
+                    missedSummary: viewModel.missedCountries.isEmpty ?
+                        nil : viewModel.missedCountries.joined(separator: ", "),
+                    onPlayAgain: playAgain,
+                    onDismiss: onDismiss
+                )
             }
         }
         .onAppear {
@@ -159,122 +177,17 @@ struct ClickCountryGameView: View {
 
     // MARK: - HUD
 
-    private var topBar: some View {
-        HStack(alignment: .center) {
-            hudButton(icon: "xmark") {
-                showQuitConfirmation = true
-            }
-
-            Spacer()
-
-            // Time and score together in one pill, top right
-            glassPill {
-                HStack(spacing: 6) {
-                    Image(systemName: "stopwatch.fill")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(AppColors.buttonColor)
-                    Text(formatGameTime(viewModel.elapsedTime))
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .monospacedDigit()
-                    Text("·")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(AppColors.buttonColor)
-                    Text("\(viewModel.score) pts")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .monospacedDigit()
-                }
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-            }
-        }
-    }
-
     /// Restart sits bottom trailing, within thumb reach when holding the
     /// phone one-handed.
     private var bottomBar: some View {
         HStack {
             Spacer()
-            hudButton(icon: "arrow.counterclockwise") {
+            SweepHUDButton(
+                icon: "arrow.counterclockwise",
+                isDarkMode: isDarkMode,
+                size: ChallengeSearchField.fieldHeight
+            ) {
                 showRestartConfirmation = true
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func hudButton(icon: String, action: @escaping () -> Void) -> some View {
-        if #available(iOS 26, *) {
-            Button(action: action) {
-                Image(systemName: icon)
-                    .font(.system(size: 17, weight: .medium))
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-        } else {
-            Button(action: action) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(isDarkMode ? .white : AppColors.closeButtonText)
-                    .frame(width: 36, height: 36)
-                    .background(
-                        Circle()
-                            .fill(isDarkMode ? AppColors.closeButtonDark : AppColors.closeButtonLight)
-                    )
-            }
-        }
-    }
-
-    /// Liquid glass capsule on iOS 26, translucent card capsule before that.
-    @ViewBuilder
-    private func glassPill<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        if #available(iOS 26, *) {
-            content()
-                .glassEffect()
-        } else {
-            content()
-                .background(Capsule().fill(AppColors.cardBackground(isDarkMode: isDarkMode).opacity(0.9)))
-        }
-    }
-
-    private var promptCard: some View {
-        Group {
-            if let target = viewModel.currentTarget {
-                VStack(spacing: 8) {
-                    Text("\(viewModel.solvedCount + 1)/\(viewModel.totalCountries)")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-                        .textCase(.uppercase)
-
-                    HStack(spacing: 10) {
-                        Text(gameGlobe.flagForCountry(target))
-                            .font(.system(size: 26))
-                        Text(target)
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                    }
-
-                    HStack(spacing: 6) {
-                        ForEach(0..<ClickCountryGameViewModel.maxPointsPerCountry, id: \.self) { index in
-                            Circle()
-                                .fill(index < viewModel.triesLeft ?
-                                      AppColors.buttonColor :
-                                      AppColors.track(isDarkMode: isDarkMode))
-                                .frame(width: 8, height: 8)
-                        }
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(AppColors.cardBackground(isDarkMode: isDarkMode))
-                        .shadow(color: .black.opacity(isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
-                )
-                .animation(.spring(response: 0.35, dampingFraction: 0.8), value: target)
             }
         }
     }
@@ -282,7 +195,7 @@ struct ClickCountryGameView: View {
     /// Shown while a country is marked. Intentionally neutral: naming the
     /// marked country would give the answer away before the guess is made.
     private var confirmHint: some View {
-        glassPill {
+        GlassPill(isDarkMode: isDarkMode) {
             HStack(spacing: 6) {
                 Image(systemName: "hand.tap.fill")
                     .font(.system(size: 12, weight: .medium))
@@ -312,132 +225,6 @@ struct ClickCountryGameView: View {
             color = AppColors.challengeWrong
         }
 
-        return Text(text)
-            .font(.system(size: 14, weight: .semibold, design: .rounded))
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Capsule().fill(color.opacity(0.95)))
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+        return SweepFeedbackBanner(text: text, color: color)
     }
-
-    // MARK: - Result overlay
-
-    private var resultOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.5)
-                .ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                Text(region.emoji)
-                    .font(.system(size: 44))
-
-                Text("Sweep Complete!")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-
-                if viewModel.didEarnTrophy {
-                    VStack(spacing: 6) {
-                        Image(systemName: "trophy.fill")
-                            .font(.system(size: 40))
-                            .foregroundStyle(region.trophy.gradient)
-                            .shadow(color: region.trophy.glowColor.opacity(0.5), radius: 8, y: 2)
-                        Text("\(region.trophy.displayName) Trophy earned!")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                    }
-                }
-
-                if viewModel.isNewBest {
-                    Text("🏆 New Best!")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(Capsule().fill(AppColors.buttonVisited))
-                }
-
-                VStack(spacing: 4) {
-                    Text("\(viewModel.score) / \(viewModel.maxScore)")
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
-                        .foregroundColor(AppColors.buttonColor)
-                    Text("\(scorePercentage)% · \(formatGameTime(viewModel.elapsedTime))")
-                        .font(.system(size: 15, weight: .medium, design: .rounded))
-                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-                }
-
-                VStack(spacing: 8) {
-                    resultRow(icon: "star.circle.fill", label: "First-try finds", value: "\(viewModel.perfectCount)")
-                    resultRow(icon: "eye.fill", label: "Revealed", value: "\(viewModel.missedCountries.count)")
-                }
-                .padding(.top, 4)
-
-                if !viewModel.missedCountries.isEmpty {
-                    Text(viewModel.missedCountries.joined(separator: ", "))
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-                        .lineLimit(3)
-                        .multilineTextAlignment(.center)
-                }
-
-                VStack(spacing: 10) {
-                    Button(action: playAgain) {
-                        Text("Play Again")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.buttonColor))
-                    }
-
-                    Button(action: onDismiss) {
-                        Text("Done")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            .foregroundColor(AppColors.buttonColor)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(AppColors.buttonColor, lineWidth: 2)
-                            )
-                    }
-                }
-                .padding(.top, 8)
-            }
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(AppColors.cardBackground(isDarkMode: isDarkMode))
-                    .shadow(color: .black.opacity(0.3), radius: 20, y: 8)
-            )
-            .padding(.horizontal, 24)
-
-            if viewModel.isNewBest {
-                ConfettiView()
-            }
-        }
-    }
-
-    private func resultRow(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(AppColors.buttonColor)
-                .frame(width: 20)
-            Text(label)
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-            Spacer()
-            Text(value)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-        }
-        .frame(maxWidth: 240)
-    }
-
-    private var scorePercentage: Int {
-        guard viewModel.maxScore > 0 else { return 0 }
-        return Int((Double(viewModel.score) / Double(viewModel.maxScore) * 100).rounded())
-    }
-
 }

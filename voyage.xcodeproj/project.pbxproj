@@ -59,6 +59,11 @@
 		E81234560063 /* ClickCountryGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550063 /* ClickCountryGameView.swift */; };
 		E81234560064 /* ChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550064 /* ChallengesView.swift */; };
 		E81234560065 /* ClickCountryGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550065 /* ClickCountryGameTests.swift */; };
+		E81234560071 /* RegionSweepGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550071 /* RegionSweepGameViewModel.swift */; };
+		E81234560067 /* NameCapitalGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550067 /* NameCapitalGameViewModel.swift */; };
+		E81234560068 /* NameCapitalGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550068 /* NameCapitalGameView.swift */; };
+		E81234560069 /* ChallengeGameHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550069 /* ChallengeGameHUD.swift */; };
+		E81234560070 /* NameCapitalGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550070 /* NameCapitalGameTests.swift */; };
 		E81234560066 /* ChallengeStoreMergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550066 /* ChallengeStoreMergeTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -128,6 +133,11 @@
 		E81234550063 /* ClickCountryGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCountryGameView.swift; sourceTree = "<group>"; };
 		E81234550064 /* ChallengesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengesView.swift; sourceTree = "<group>"; };
 		E81234550065 /* ClickCountryGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCountryGameTests.swift; sourceTree = "<group>"; };
+		E81234550071 /* RegionSweepGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionSweepGameViewModel.swift; sourceTree = "<group>"; };
+		E81234550067 /* NameCapitalGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameViewModel.swift; sourceTree = "<group>"; };
+		E81234550068 /* NameCapitalGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameView.swift; sourceTree = "<group>"; };
+		E81234550069 /* ChallengeGameHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGameHUD.swift; sourceTree = "<group>"; };
+		E81234550070 /* NameCapitalGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameTests.swift; sourceTree = "<group>"; };
 		E81234550066 /* ChallengeStoreMergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeStoreMergeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -224,6 +234,7 @@
 				E81234550024 /* ContinentDataTests.swift */,
 				E81234550025 /* AchievementCompletionTests.swift */,
 				E81234550065 /* ClickCountryGameTests.swift */,
+				E81234550070 /* NameCapitalGameTests.swift */,
 				E81234550066 /* ChallengeStoreMergeTests.swift */,
 			);
 			path = voyageTests;
@@ -259,8 +270,12 @@
 			children = (
 				E81234550060 /* ChallengeGameMode.swift */,
 				E81234550061 /* ChallengeStatsStore.swift */,
+				E81234550071 /* RegionSweepGameViewModel.swift */,
+				E81234550069 /* ChallengeGameHUD.swift */,
 				E81234550062 /* ClickCountryGameViewModel.swift */,
 				E81234550063 /* ClickCountryGameView.swift */,
+				E81234550067 /* NameCapitalGameViewModel.swift */,
+				E81234550068 /* NameCapitalGameView.swift */,
 				E81234550064 /* ChallengesView.swift */,
 			);
 			path = Challenges;
@@ -425,8 +440,12 @@
 				E81234560045 /* ConfettiView.swift in Sources */,
 				E81234560060 /* ChallengeGameMode.swift in Sources */,
 				E81234560061 /* ChallengeStatsStore.swift in Sources */,
+				E81234560071 /* RegionSweepGameViewModel.swift in Sources */,
+				E81234560069 /* ChallengeGameHUD.swift in Sources */,
 				E81234560062 /* ClickCountryGameViewModel.swift in Sources */,
 				E81234560063 /* ClickCountryGameView.swift in Sources */,
+				E81234560067 /* NameCapitalGameViewModel.swift in Sources */,
+				E81234560068 /* NameCapitalGameView.swift in Sources */,
 				E81234560064 /* ChallengesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -440,6 +459,7 @@
 				E81234560024 /* ContinentDataTests.swift in Sources */,
 				E81234560025 /* AchievementCompletionTests.swift in Sources */,
 				E81234560065 /* ClickCountryGameTests.swift in Sources */,
+				E81234560070 /* NameCapitalGameTests.swift in Sources */,
 				E81234560066 /* ChallengeStoreMergeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
