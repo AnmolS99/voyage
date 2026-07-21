@@ -48,7 +48,11 @@ struct ClickCountryGameView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 12) {
-                SweepTopBar(viewModel: viewModel, isDarkMode: isDarkMode) {
+                SweepTopBar(
+                    viewModel: viewModel,
+                    isDarkMode: isDarkMode,
+                    buttonSize: ChallengeSearchField.fieldHeight
+                ) {
                     showQuitConfirmation = true
                 }
                 SweepPromptCard(
@@ -178,7 +182,11 @@ struct ClickCountryGameView: View {
     private var bottomBar: some View {
         HStack {
             Spacer()
-            SweepHUDButton(icon: "arrow.counterclockwise", isDarkMode: isDarkMode) {
+            SweepHUDButton(
+                icon: "arrow.counterclockwise",
+                isDarkMode: isDarkMode,
+                size: ChallengeSearchField.fieldHeight
+            ) {
                 showRestartConfirmation = true
             }
         }

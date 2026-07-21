@@ -17,6 +17,9 @@ struct NameCapitalGameView: View {
     @State private var feedbackToken = 0
     @State private var showQuitConfirmation = false
     @State private var showRestartConfirmation = false
+    /// Mirrors the search field's keyboard focus (pre-iOS 26 fallback bar);
+    /// hides the restart button while typing so the field takes full width.
+    @State private var isSearchFocused = false
     @Environment(\.scenePhase) private var scenePhase
 
     private let isDarkMode: Bool
@@ -48,43 +51,35 @@ struct NameCapitalGameView: View {
     }
 
     var body: some View {
-        ZStack {
-            GlobeBackdrop(isDarkMode: isDarkMode)
-
-            // The globe is a backdrop showing the asked country — taps on it
-            // are not part of this game
-            GlobeView(globeState: gameGlobe, onCountryTapped: { _ in })
-                .ignoresSafeArea()
-
-            VStack(spacing: 12) {
-                SweepTopBar(viewModel: viewModel, isDarkMode: isDarkMode) {
-                    showQuitConfirmation = true
+        Group {
+            if #available(iOS 26, *) {
+                // Native bottom search: the system's liquid-glass field and
+                // the restart toolbar button get the exact `.searchable`
+                // show/hide choreography used on the Home country list.
+                NavigationStack {
+                    gameContent(includesSearchBar: false)
+                        .toolbar(.hidden, for: .navigationBar)
+                        .toolbar {
+                            // Pin the system search field into the bottom
+                            // toolbar (it defaults to the hidden nav bar),
+                            // with restart as a round button beside it
+                            DefaultToolbarItem(kind: .search, placement: .bottomBar)
+                            ToolbarItem(placement: .bottomBar) {
+                                Button {
+                                    showRestartConfirmation = true
+                                } label: {
+                                    Image(systemName: "arrow.counterclockwise")
+                                }
+                            }
+                        }
+                        .searchable(text: $searchText, prompt: "Type your guess...")
+                        .onSubmit(of: .search) {
+                            submit(searchText)
+                            searchText = ""
+                        }
                 }
-                SweepPromptCard(
-                    viewModel: viewModel,
-                    flagProvider: gameGlobe.flagForCountry,
-                    question: "What's the capital?",
-                    isDarkMode: isDarkMode
-                )
-                Spacer()
-                if let feedback = feedback {
-                    feedbackBanner(feedback)
-                }
-                bottomBar
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 12)
-
-            if viewModel.phase == .finished {
-                SweepResultOverlay(
-                    viewModel: viewModel,
-                    isDarkMode: isDarkMode,
-                    firstTryLabel: "First-try answers",
-                    missedSummary: missedSummary,
-                    onPlayAgain: playAgain,
-                    onDismiss: onDismiss
-                )
+            } else {
+                gameContent(includesSearchBar: true)
             }
         }
         .onAppear {
@@ -114,6 +109,82 @@ struct NameCapitalGameView: View {
             Text("Current progress will be lost.")
         }
         .preferredColorScheme(isDarkMode ? .dark : .light)
+    }
+
+    // MARK: - Screen content
+
+    /// The game screen: globe, top HUD, prompt card and feedback banner.
+    /// `includesSearchBar` adds the pre-iOS 26 custom search bar; on iOS 26
+    /// the native `.searchable` field takes its place.
+    private func gameContent(includesSearchBar: Bool) -> some View {
+        ZStack {
+            GlobeBackdrop(isDarkMode: isDarkMode)
+
+            // The globe is a backdrop showing the asked country — taps on it
+            // are not part of this game
+            GlobeView(globeState: gameGlobe, onCountryTapped: { _ in })
+                .ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                SweepTopBar(
+                    viewModel: viewModel,
+                    isDarkMode: isDarkMode,
+                    buttonSize: ChallengeSearchField.fieldHeight
+                ) {
+                    showQuitConfirmation = true
+                }
+                SweepPromptCard(
+                    viewModel: viewModel,
+                    flagProvider: gameGlobe.flagForCountry,
+                    isDarkMode: isDarkMode
+                )
+                Spacer()
+                if let feedback = feedback {
+                    feedbackBanner(feedback)
+                }
+                if includesSearchBar {
+                    bottomBar
+                } else {
+                    // Native path: compact dropdown floating above the
+                    // system search field instead of full-screen suggestions
+                    nativeSearchDropdown
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 12)
+
+            if viewModel.phase == .finished {
+                SweepResultOverlay(
+                    viewModel: viewModel,
+                    isDarkMode: isDarkMode,
+                    firstTryLabel: "First-try answers",
+                    missedSummary: missedSummary,
+                    onPlayAgain: playAgain,
+                    onDismiss: onDismiss
+                )
+            }
+        }
+    }
+
+    /// Compact dropdown floating above the native search field (iOS 26):
+    /// tapping a capital submits it; already-guessed ones are greyed out.
+    @ViewBuilder
+    private var nativeSearchDropdown: some View {
+        let matches = searchText.isEmpty ? [] : capitalSuggestions
+            .filter { $0.localizedCaseInsensitiveContains(searchText) }
+        if !matches.isEmpty {
+            ChallengeSuggestionList(
+                suggestions: matches,
+                guessedItems: Set(viewModel.wrongGuesses),
+                isDarkMode: isDarkMode,
+                usesGlass: true,
+                onSelect: { suggestion in
+                    submit(suggestion)
+                    searchText = ""
+                }
+            )
+        }
     }
 
     // MARK: - Game interaction
@@ -189,7 +260,8 @@ struct NameCapitalGameView: View {
 
     // MARK: - HUD
 
-    /// Search field with restart alongside, both rising with the keyboard.
+    /// Pre-iOS 26 fallback: the custom search field with the restart button
+    /// at its side, hidden while typing so the field takes the full width.
     private var bottomBar: some View {
         HStack(alignment: .bottom, spacing: 10) {
             ChallengeSearchField(
@@ -197,15 +269,28 @@ struct NameCapitalGameView: View {
                 suggestions: capitalSuggestions,
                 guessedItems: Set(viewModel.wrongGuesses),
                 isDarkMode: isDarkMode,
+                usesGlass: true,
+                onFocusChange: { focused in
+                    isSearchFocused = focused
+                },
                 onSubmit: { guess in
                     submit(guess)
                     searchText = ""
                 }
             )
-            SweepHUDButton(icon: "arrow.counterclockwise", isDarkMode: isDarkMode) {
-                showRestartConfirmation = true
+
+            if !isSearchFocused {
+                SweepHUDButton(
+                    icon: "arrow.counterclockwise",
+                    isDarkMode: isDarkMode,
+                    size: ChallengeSearchField.fieldHeight
+                ) {
+                    showRestartConfirmation = true
+                }
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
+        .animation(.bouncy(duration: 0.4), value: isSearchFocused)
     }
 
     private func feedbackBanner(_ feedback: Feedback) -> some View {

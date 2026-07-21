@@ -20,27 +20,42 @@ struct GlassPill<Content: View>: View {
     }
 }
 
-/// Circular glass HUD button (quit, restart).
+/// Circular glass HUD button (quit, restart). `size` overrides the default
+/// diameter, e.g. to match the search field height in Name the Capital.
 struct SweepHUDButton: View {
     let icon: String
     let isDarkMode: Bool
+    var size: CGFloat? = nil
     let action: () -> Void
 
     var body: some View {
         if #available(iOS 26, *) {
-            Button(action: action) {
-                Image(systemName: icon)
-                    .font(.system(size: 17, weight: .medium))
-                    .frame(width: 44, height: 44)
+            if let size = size {
+                // Exact diameter: glass applied to the sized label directly,
+                // since .buttonStyle(.glass) pads beyond the label frame
+                Button(action: action) {
+                    Image(systemName: icon)
+                        .font(.system(size: 17, weight: .medium))
+                        .frame(width: size, height: size)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: .circle)
+            } else {
+                Button(action: action) {
+                    Image(systemName: icon)
+                        .font(.system(size: 17, weight: .medium))
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
         } else {
             Button(action: action) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(isDarkMode ? .white : AppColors.closeButtonText)
-                    .frame(width: 36, height: 36)
+                    .frame(width: size ?? 36, height: size ?? 36)
                     .background(
                         Circle()
                             .fill(isDarkMode ? AppColors.closeButtonDark : AppColors.closeButtonLight)
@@ -54,11 +69,12 @@ struct SweepHUDButton: View {
 struct SweepTopBar: View {
     @ObservedObject var viewModel: RegionSweepGameViewModel
     let isDarkMode: Bool
+    var buttonSize: CGFloat? = nil
     let onQuit: () -> Void
 
     var body: some View {
         HStack(alignment: .center) {
-            SweepHUDButton(icon: "xmark", isDarkMode: isDarkMode, action: onQuit)
+            SweepHUDButton(icon: "xmark", isDarkMode: isDarkMode, size: buttonSize, action: onQuit)
 
             Spacer()
 
@@ -83,6 +99,8 @@ struct SweepTopBar: View {
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
+                // Match the HUD buttons' height when one is specified
+                .frame(height: buttonSize)
             }
         }
     }
