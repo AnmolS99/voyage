@@ -96,6 +96,14 @@ struct NameCapitalGameView: View {
                 viewModel.pause()
             }
         }
+        .onChange(of: viewModel.phase) { _, newPhase in
+            // When the sweep ends, drop keyboard focus so the keyboard and
+            // search field don't cover the result overlay's buttons.
+            if newPhase == .finished {
+                isSearchFocused = false
+                dismissKeyboard()
+            }
+        }
         .confirmationDialog("End this sweep?", isPresented: $showQuitConfirmation, titleVisibility: .visible) {
             Button("End Game", role: .destructive) { onDismiss() }
             Button("Keep Playing", role: .cancel) {}
@@ -153,12 +161,16 @@ struct NameCapitalGameView: View {
                 if let feedback = feedback {
                     feedbackBanner(feedback)
                 }
-                if includesSearchBar {
-                    bottomBar
-                } else {
-                    // Native path: compact dropdown floating above the
-                    // system search field instead of full-screen suggestions
-                    nativeSearchDropdown
+                // Hide the search UI once the sweep is over, so it never sits
+                // over the result overlay
+                if viewModel.phase != .finished {
+                    if includesSearchBar {
+                        bottomBar
+                    } else {
+                        // Native path: compact dropdown floating above the
+                        // system search field instead of full-screen suggestions
+                        nativeSearchDropdown
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -241,6 +253,13 @@ struct NameCapitalGameView: View {
         case .marked, .ignored:
             break
         }
+    }
+
+    /// Resigns the first responder, dismissing the keyboard (works for both
+    /// the native search field and the pre-iOS 26 custom text field).
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                        to: nil, from: nil, for: nil)
     }
 
     private func showFeedback(_ newFeedback: Feedback, duration: TimeInterval = 1.6) {
