@@ -54,6 +54,7 @@ struct NameFlagGameView: View {
     }
 
     var body: some View {
+        ZStack {
         Group {
             if #available(iOS 26, *) {
                 // Native bottom search: the system's liquid-glass field and
@@ -65,18 +66,16 @@ struct NameFlagGameView: View {
                         .toolbar {
                             // Pin the system search field into the bottom
                             // toolbar (it defaults to the hidden nav bar),
-                            // with restart as a round button beside it. Both
-                            // are dropped once the sweep is finished so the
-                            // field can't be re-focused over the result overlay
-                            // (with the nav bar hidden it then has no placement).
-                            if viewModel.phase != .finished {
-                                DefaultToolbarItem(kind: .search, placement: .bottomBar)
-                                ToolbarItem(placement: .bottomBar) {
-                                    Button {
-                                        showRestartConfirmation = true
-                                    } label: {
-                                        Image(systemName: "arrow.counterclockwise")
-                                    }
+                            // with restart as a round button beside it. The
+                            // result overlay is layered above this whole stack,
+                            // so the field is covered (not removed) when the
+                            // sweep finishes.
+                            DefaultToolbarItem(kind: .search, placement: .bottomBar)
+                            ToolbarItem(placement: .bottomBar) {
+                                Button {
+                                    showRestartConfirmation = true
+                                } label: {
+                                    Image(systemName: "arrow.counterclockwise")
                                 }
                             }
                         }
@@ -89,6 +88,25 @@ struct NameFlagGameView: View {
             } else {
                 gameContent(includesSearchBar: true)
             }
+        }
+
+        // Result overlay layered ABOVE the navigation chrome. On iOS 26 the
+        // search field lives inside the NavigationStack's bottom toolbar and
+        // .searchable keeps it there even with no toolbar item, so an overlay
+        // nested inside gameContent would sit under it. Placed here it covers
+        // the field (its dim also swallows taps, so the keyboard can't be
+        // brought back) and ignores the keyboard so the card never shifts.
+        if viewModel.phase == .finished {
+            SweepResultOverlay(
+                viewModel: viewModel,
+                isDarkMode: isDarkMode,
+                firstTryLabel: "First-try answers",
+                missedSummary: missedSummary,
+                onPlayAgain: playAgain,
+                onDismiss: onDismiss
+            )
+            .ignoresSafeArea(.keyboard)
+        }
         }
         .onAppear {
             gameGlobe.flyTo(region.cameraTarget)
@@ -180,17 +198,6 @@ struct NameFlagGameView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 12)
-
-            if viewModel.phase == .finished {
-                SweepResultOverlay(
-                    viewModel: viewModel,
-                    isDarkMode: isDarkMode,
-                    firstTryLabel: "First-try answers",
-                    missedSummary: missedSummary,
-                    onPlayAgain: playAgain,
-                    onDismiss: onDismiss
-                )
-            }
         }
     }
 
