@@ -158,6 +158,51 @@ struct SweepPromptCard: View {
     }
 }
 
+/// Prompt card for "Name the Flag": sweep progress, a large flag, a prompt
+/// line and the tries-left dots. The country name is deliberately omitted —
+/// it's the answer the player is guessing.
+struct SweepFlagPromptCard: View {
+    @ObservedObject var viewModel: RegionSweepGameViewModel
+    let flagProvider: (String) -> String
+    let isDarkMode: Bool
+
+    var body: some View {
+        if let target = viewModel.currentTarget {
+            VStack(spacing: 8) {
+                Text("\(viewModel.solvedCount + 1)/\(viewModel.totalCountries)")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+                    .textCase(.uppercase)
+
+                Text(flagProvider(target))
+                    .font(.system(size: 72))
+
+                Text("Which country?")
+                    .font(.system(size: 14, design: .rounded))
+                    .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+
+                HStack(spacing: 6) {
+                    ForEach(0..<RegionSweepGameViewModel.maxPointsPerCountry, id: \.self) { index in
+                        Circle()
+                            .fill(index < viewModel.triesLeft ?
+                                  AppColors.buttonColor :
+                                  AppColors.track(isDarkMode: isDarkMode))
+                            .frame(width: 8, height: 8)
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(AppColors.cardBackground(isDarkMode: isDarkMode))
+                    .shadow(color: .black.opacity(isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
+            )
+            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: target)
+        }
+    }
+}
+
 /// Capsule banner for correct/wrong/reveal feedback.
 struct SweepFeedbackBanner: View {
     let text: String

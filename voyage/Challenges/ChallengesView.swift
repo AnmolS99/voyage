@@ -52,6 +52,10 @@ struct ChallengesView: View {
                 NameCapitalGameView(region: game.region, mainState: globeState) {
                     activeGame = nil
                 }
+            case .nameFlag:
+                NameFlagGameView(region: game.region, mainState: globeState) {
+                    activeGame = nil
+                }
             }
         }
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)

@@ -41,6 +41,7 @@ enum ChallengeTrophy: String, CaseIterable, Identifiable {
 enum ChallengeGameMode: String, CaseIterable, Identifiable {
     case clickCountry
     case nameCapital
+    case nameFlag
 
     var id: String { rawValue }
 
@@ -48,6 +49,7 @@ enum ChallengeGameMode: String, CaseIterable, Identifiable {
         switch self {
         case .clickCountry: return "Click the Country"
         case .nameCapital: return "Name the Capital"
+        case .nameFlag: return "Name the Flag"
         }
     }
 
@@ -55,6 +57,7 @@ enum ChallengeGameMode: String, CaseIterable, Identifiable {
         switch self {
         case .clickCountry: return "Find every country on the globe"
         case .nameCapital: return "Type the capital of every country"
+        case .nameFlag: return "Name the country from its flag"
         }
     }
 
@@ -62,6 +65,7 @@ enum ChallengeGameMode: String, CaseIterable, Identifiable {
         switch self {
         case .clickCountry: return "scope"
         case .nameCapital: return "building.columns"
+        case .nameFlag: return "flag.fill"
         }
     }
 }

@@ -64,6 +64,9 @@
 		E81234560068 /* NameCapitalGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550068 /* NameCapitalGameView.swift */; };
 		E81234560069 /* ChallengeGameHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550069 /* ChallengeGameHUD.swift */; };
 		E81234560070 /* NameCapitalGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550070 /* NameCapitalGameTests.swift */; };
+		E81234560072 /* NameFlagGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550072 /* NameFlagGameViewModel.swift */; };
+		E81234560073 /* NameFlagGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550073 /* NameFlagGameView.swift */; };
+		E81234560074 /* NameFlagGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550074 /* NameFlagGameTests.swift */; };
 		E81234560066 /* ChallengeStoreMergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550066 /* ChallengeStoreMergeTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -138,6 +141,9 @@
 		E81234550068 /* NameCapitalGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameView.swift; sourceTree = "<group>"; };
 		E81234550069 /* ChallengeGameHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGameHUD.swift; sourceTree = "<group>"; };
 		E81234550070 /* NameCapitalGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameTests.swift; sourceTree = "<group>"; };
+		E81234550072 /* NameFlagGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameFlagGameViewModel.swift; sourceTree = "<group>"; };
+		E81234550073 /* NameFlagGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameFlagGameView.swift; sourceTree = "<group>"; };
+		E81234550074 /* NameFlagGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameFlagGameTests.swift; sourceTree = "<group>"; };
 		E81234550066 /* ChallengeStoreMergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeStoreMergeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -235,6 +241,7 @@
 				E81234550025 /* AchievementCompletionTests.swift */,
 				E81234550065 /* ClickCountryGameTests.swift */,
 				E81234550070 /* NameCapitalGameTests.swift */,
+				E81234550074 /* NameFlagGameTests.swift */,
 				E81234550066 /* ChallengeStoreMergeTests.swift */,
 			);
 			path = voyageTests;
@@ -276,6 +283,8 @@
 				E81234550063 /* ClickCountryGameView.swift */,
 				E81234550067 /* NameCapitalGameViewModel.swift */,
 				E81234550068 /* NameCapitalGameView.swift */,
+				E81234550072 /* NameFlagGameViewModel.swift */,
+				E81234550073 /* NameFlagGameView.swift */,
 				E81234550064 /* ChallengesView.swift */,
 			);
 			path = Challenges;
@@ -446,6 +455,8 @@
 				E81234560063 /* ClickCountryGameView.swift in Sources */,
 				E81234560067 /* NameCapitalGameViewModel.swift in Sources */,
 				E81234560068 /* NameCapitalGameView.swift in Sources */,
+				E81234560072 /* NameFlagGameViewModel.swift in Sources */,
+				E81234560073 /* NameFlagGameView.swift in Sources */,
 				E81234560064 /* ChallengesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -460,6 +471,7 @@
 				E81234560025 /* AchievementCompletionTests.swift in Sources */,
 				E81234560065 /* ClickCountryGameTests.swift in Sources */,
 				E81234560070 /* NameCapitalGameTests.swift in Sources */,
+				E81234560074 /* NameFlagGameTests.swift in Sources */,
 				E81234560066 /* ChallengeStoreMergeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
