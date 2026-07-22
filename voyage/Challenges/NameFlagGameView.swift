@@ -65,13 +65,18 @@ struct NameFlagGameView: View {
                         .toolbar {
                             // Pin the system search field into the bottom
                             // toolbar (it defaults to the hidden nav bar),
-                            // with restart as a round button beside it
-                            DefaultToolbarItem(kind: .search, placement: .bottomBar)
-                            ToolbarItem(placement: .bottomBar) {
-                                Button {
-                                    showRestartConfirmation = true
-                                } label: {
-                                    Image(systemName: "arrow.counterclockwise")
+                            // with restart as a round button beside it. Both
+                            // are dropped once the sweep is finished so the
+                            // field can't be re-focused over the result overlay
+                            // (with the nav bar hidden it then has no placement).
+                            if viewModel.phase != .finished {
+                                DefaultToolbarItem(kind: .search, placement: .bottomBar)
+                                ToolbarItem(placement: .bottomBar) {
+                                    Button {
+                                        showRestartConfirmation = true
+                                    } label: {
+                                        Image(systemName: "arrow.counterclockwise")
+                                    }
                                 }
                             }
                         }
