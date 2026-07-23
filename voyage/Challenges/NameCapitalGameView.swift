@@ -58,29 +58,24 @@ struct NameCapitalGameView: View {
                 // the restart toolbar button get the exact `.searchable`
                 // show/hide choreography used on the Home country list.
                 NavigationStack {
+                    // Shared guess-entry search: the system field pinned into
+                    // the bottom toolbar, with restart as a round button beside
+                    // it. The result overlay is layered above this whole stack,
+                    // so the field is covered (not removed) when the sweep
+                    // finishes.
                     gameContent(includesSearchBar: false)
                         .toolbar(.hidden, for: .navigationBar)
-                        .toolbar {
-                            // Pin the system search field into the bottom
-                            // toolbar (it defaults to the hidden nav bar),
-                            // with restart as a round button beside it. The
-                            // result overlay is layered above this whole stack,
-                            // so the field is covered (not removed) when the
-                            // sweep finishes.
-                            DefaultToolbarItem(kind: .search, placement: .bottomBar)
-                            ToolbarItem(placement: .bottomBar) {
+                        .bottomBarGuessSearch(
+                            text: $searchText,
+                            trailing: {
                                 Button {
                                     showRestartConfirmation = true
                                 } label: {
                                     Image(systemName: "arrow.counterclockwise")
                                 }
-                            }
-                        }
-                        .searchable(text: $searchText, prompt: "Type your guess...")
-                        .onSubmit(of: .search) {
-                            submit(searchText)
-                            searchText = ""
-                        }
+                            },
+                            onSubmit: { submit($0) }
+                        )
                 }
             } else {
                 gameContent(includesSearchBar: true)
@@ -203,21 +198,18 @@ struct NameCapitalGameView: View {
 
     /// Compact dropdown floating above the native search field (iOS 26):
     /// tapping a capital submits it; already-guessed ones are greyed out.
-    @ViewBuilder
     private var nativeSearchDropdown: some View {
-        let matches = capitalSuggestions.rankedMatches(for: searchText)
-        if !matches.isEmpty {
-            ChallengeSuggestionList(
-                suggestions: matches,
-                guessedItems: Set(viewModel.wrongGuesses),
-                isDarkMode: isDarkMode,
-                usesGlass: true,
-                onSelect: { suggestion in
-                    submit(suggestion)
-                    searchText = ""
-                }
-            )
-        }
+        GuessSuggestionDropdown(
+            suggestions: capitalSuggestions,
+            query: searchText,
+            guessedItems: Set(viewModel.wrongGuesses),
+            isDarkMode: isDarkMode,
+            usesGlass: true,
+            onSelect: { suggestion in
+                submit(suggestion)
+                searchText = ""
+            }
+        )
     }
 
     // MARK: - Game interaction
