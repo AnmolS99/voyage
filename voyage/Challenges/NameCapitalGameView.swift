@@ -20,12 +20,21 @@ struct NameCapitalGameView: View {
     /// Mirrors the search field's keyboard focus (pre-iOS 26 fallback bar);
     /// hides the restart button while typing so the field takes full width.
     @State private var isSearchFocused = false
+    /// Full screen width, measured from the root. The native-path suggestion
+    /// dropdown floats alone (its search field lives in the system toolbar, not
+    /// as a sibling), so nothing stretches it; an explicit width is the only
+    /// reliable way to make it span the screen like the field below it.
+    @State private var containerWidth: CGFloat = 0
     @Environment(\.scenePhase) private var scenePhase
 
     private let isDarkMode: Bool
     /// Every capital in the dataset — the search field's suggestion pool, so
     /// the answer never stands out by being the only nearby suggestion.
     private let capitalSuggestions: [String]
+
+    /// Horizontal inset applied to the bottom layer (20pt per side), matched by
+    /// the floating dropdown so it lines up with the field below it.
+    private static let bottomInset: CGFloat = 20
     private static let revealDuration: TimeInterval = 2.6
 
     init(region: ChallengeRegion, mainState: GlobeState, onDismiss: @escaping () -> Void) {
@@ -100,6 +109,7 @@ struct NameCapitalGameView: View {
             .ignoresSafeArea(.keyboard)
         }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
         .onAppear {
             focusOnCurrentTarget(distance: region.cameraTarget.distance)
         }
@@ -210,6 +220,8 @@ struct NameCapitalGameView: View {
                 searchText = ""
             }
         )
+        // Span the screen (minus the bottom layer's inset) to match the field.
+        .frame(width: containerWidth > 0 ? containerWidth - Self.bottomInset * 2 : nil)
     }
 
     // MARK: - Game interaction
