@@ -160,6 +160,7 @@ extension View {
     func bottomBarGuessSearch<Trailing: View>(
         text: Binding<String>,
         prompt: String = "Type your guess...",
+        focused: FocusState<Bool>.Binding? = nil,
         @ViewBuilder trailing: @escaping () -> Trailing,
         onSubmit: @escaping (String) -> Void
     ) -> some View {
@@ -168,7 +169,7 @@ extension View {
                 DefaultToolbarItem(kind: .search, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) { trailing() }
             }
-            .submittableGuessSearch(text: text, prompt: prompt, onSubmit: onSubmit)
+            .submittableGuessSearch(text: text, prompt: prompt, focused: focused, onSubmit: onSubmit)
     }
 
     private func submittableGuessSearch(
