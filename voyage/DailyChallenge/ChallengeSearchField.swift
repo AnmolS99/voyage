@@ -1,5 +1,34 @@
 import SwiftUI
 
+extension String {
+    /// Case-insensitive prefix test used by suggestion ranking, so a typed
+    /// query like "Os" counts "Oslo" as a prefix match but "Buenos Aires" not.
+    func hasCaseInsensitivePrefix(_ prefix: String) -> Bool {
+        range(of: prefix, options: [.caseInsensitive, .anchored]) != nil
+    }
+}
+
+extension Array where Element == String {
+    /// Filters to elements containing `query` (case-insensitive), ranking
+    /// those that *begin* with `query` above interior matches — so typing
+    /// "Os" surfaces "Oslo" before "Buenos Aires". Ties preserve the
+    /// receiver's existing order (callers pass alphabetically sorted lists),
+    /// keeping the sort stable.
+    func rankedMatches(for query: String) -> [String] {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return [] }
+        return enumerated()
+            .filter { $0.element.localizedCaseInsensitiveContains(trimmed) }
+            .sorted { lhs, rhs in
+                let lPrefix = lhs.element.hasCaseInsensitivePrefix(trimmed)
+                let rPrefix = rhs.element.hasCaseInsensitivePrefix(trimmed)
+                if lPrefix != rPrefix { return lPrefix }
+                return lhs.offset < rhs.offset
+            }
+            .map(\.element)
+    }
+}
+
 /// Floating suggestion dropdown: hugs its rows (up to 5 shown), capped at
 /// 200pt where it scrolls. Used by `ChallengeSearchField` and floated above
 /// the native search field in Name the Capital.
@@ -99,8 +128,7 @@ struct ChallengeSearchField: View {
     static let fieldHeight: CGFloat = 46
 
     private var filtered: [String] {
-        guard !searchText.isEmpty else { return [] }
-        return suggestions.filter { $0.localizedCaseInsensitiveContains(searchText) }
+        suggestions.rankedMatches(for: searchText)
     }
 
     var body: some View {

@@ -205,8 +205,7 @@ struct NameCapitalGameView: View {
     /// tapping a capital submits it; already-guessed ones are greyed out.
     @ViewBuilder
     private var nativeSearchDropdown: some View {
-        let matches = searchText.isEmpty ? [] : capitalSuggestions
-            .filter { $0.localizedCaseInsensitiveContains(searchText) }
+        let matches = capitalSuggestions.rankedMatches(for: searchText)
         if !matches.isEmpty {
             ChallengeSuggestionList(
                 suggestions: matches,

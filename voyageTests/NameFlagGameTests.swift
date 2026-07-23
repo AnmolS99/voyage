@@ -176,4 +176,40 @@ final class NameFlagGameTests: XCTestCase {
         XCTAssertFalse(viewModel.didEarnTrophy)
         XCTAssertEqual(store.trophyCount(.silver), 0)
     }
+
+    // MARK: - Suggestion ranking
+
+    func testRankedMatchesPutsPrefixMatchesFirst() {
+        let capitals = ["Buenos Aires", "Moscow", "Nicosia", "Oslo"]
+
+        // "Os" is a prefix of "Oslo" but appears mid-word in the others, so
+        // Oslo must rank first (see the reported search bug).
+        XCTAssertEqual(capitals.rankedMatches(for: "Os").first, "Oslo")
+    }
+
+    func testRankedMatchesPreservesOrderWithinGroups() {
+        let capitals = ["Buenos Aires", "Moscow", "Nicosia", "Oslo"]
+
+        // Prefix match first, then the interior matches in their original
+        // (alphabetical) order.
+        XCTAssertEqual(capitals.rankedMatches(for: "os"),
+                       ["Oslo", "Buenos Aires", "Moscow", "Nicosia"])
+    }
+
+    func testRankedMatchesIsCaseInsensitive() {
+        let names = ["oslo", "OSAKA", "Buenos Aires"]
+
+        XCTAssertEqual(names.rankedMatches(for: "OS"), ["oslo", "OSAKA", "Buenos Aires"])
+    }
+
+    func testRankedMatchesEmptyQueryReturnsNothing() {
+        XCTAssertTrue(["Oslo", "Paris"].rankedMatches(for: "").isEmpty)
+        XCTAssertTrue(["Oslo", "Paris"].rankedMatches(for: "   ").isEmpty)
+    }
+
+    func testRankedMatchesExcludesNonMatches() {
+        let capitals = ["Buenos Aires", "Moscow", "Nicosia", "Oslo"]
+
+        XCTAssertEqual(capitals.rankedMatches(for: "Osl"), ["Oslo"])
+    }
 }
