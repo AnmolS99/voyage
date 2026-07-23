@@ -104,6 +104,7 @@ struct ChallengeSuggestionList: View {
                 measuredHeight = height
             }
         }
+        .frame(maxWidth: .infinity)
         .frame(height: min(measuredHeight, Self.maxHeight))
     }
 }
