@@ -146,11 +146,12 @@ extension View {
     func bottomBarGuessSearch(
         text: Binding<String>,
         prompt: String = "Type your guess...",
+        focused: FocusState<Bool>.Binding? = nil,
         onSubmit: @escaping (String) -> Void
     ) -> some View {
         self
             .toolbar { DefaultToolbarItem(kind: .search, placement: .bottomBar) }
-            .submittableGuessSearch(text: text, prompt: prompt, onSubmit: onSubmit)
+            .submittableGuessSearch(text: text, prompt: prompt, focused: focused, onSubmit: onSubmit)
     }
 
     /// Same as `bottomBarGuessSearch`, plus a `trailing` control pinned beside
@@ -159,6 +160,7 @@ extension View {
     func bottomBarGuessSearch<Trailing: View>(
         text: Binding<String>,
         prompt: String = "Type your guess...",
+        focused: FocusState<Bool>.Binding? = nil,
         @ViewBuilder trailing: @escaping () -> Trailing,
         onSubmit: @escaping (String) -> Void
     ) -> some View {
@@ -167,20 +169,31 @@ extension View {
                 DefaultToolbarItem(kind: .search, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) { trailing() }
             }
-            .submittableGuessSearch(text: text, prompt: prompt, onSubmit: onSubmit)
+            .submittableGuessSearch(text: text, prompt: prompt, focused: focused, onSubmit: onSubmit)
     }
 
     private func submittableGuessSearch(
         text: Binding<String>,
         prompt: String,
+        focused: FocusState<Bool>.Binding? = nil,
         onSubmit: @escaping (String) -> Void
     ) -> some View {
-        self
+        let field = self
             .searchable(text: text, prompt: prompt)
             .onSubmit(of: .search) {
                 onSubmit(text.wrappedValue)
                 text.wrappedValue = ""
             }
+        // `.searchFocused` needs a concrete binding, so branch on whether a
+        // host opted into programmatic focus (e.g. the daily challenge
+        // auto-focusing the field when it opens).
+        return Group {
+            if let focused {
+                field.searchFocused(focused)
+            } else {
+                field
+            }
+        }
     }
 }
 
@@ -195,6 +208,9 @@ struct ChallengeSearchField: View {
     /// Reports keyboard focus changes so a host can adapt its layout (e.g.
     /// hide an adjacent button while typing).
     var onFocusChange: ((Bool) -> Void)? = nil
+    /// When true, the field grabs keyboard focus as soon as it appears so the
+    /// user can start typing immediately (used by the daily challenge).
+    var autofocus: Bool = false
     let onSubmit: (String) -> Void
 
     @State private var showSuggestions = false
@@ -237,6 +253,14 @@ struct ChallengeSearchField: View {
                             .fill(AppColors.cardBackground(isDarkMode: isDarkMode))
                             .shadow(color: .black.opacity(isDarkMode ? 0.3 : 0.08), radius: 8, y: 2)
                     )
+            }
+        }
+        .onAppear {
+            guard autofocus else { return }
+            // A short hop past the first layout pass lets the field install
+            // before it claims focus, which the keyboard reliably follows.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                isFieldFocused = true
             }
         }
     }

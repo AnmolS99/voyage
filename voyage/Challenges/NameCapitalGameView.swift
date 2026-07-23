@@ -20,6 +20,9 @@ struct NameCapitalGameView: View {
     /// Mirrors the search field's keyboard focus (pre-iOS 26 fallback bar);
     /// hides the restart button while typing so the field takes full width.
     @State private var isSearchFocused = false
+    /// Drives the native (iOS 26) search field's focus so the game can grab
+    /// the keyboard as soon as it opens, and release it when the sweep ends.
+    @FocusState private var isFieldFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
 
     private let isDarkMode: Bool
@@ -67,6 +70,7 @@ struct NameCapitalGameView: View {
                         .toolbar(.hidden, for: .navigationBar)
                         .bottomBarGuessSearch(
                             text: $searchText,
+                            focused: $isFieldFocused,
                             trailing: {
                                 Button {
                                     showRestartConfirmation = true
@@ -102,6 +106,7 @@ struct NameCapitalGameView: View {
         }
         .onAppear {
             focusOnCurrentTarget(distance: region.cameraTarget.distance)
+            focusSearchField()
         }
         .onChange(of: viewModel.currentTarget) { _, _ in
             // Fly to each new question's country at the player's current zoom
@@ -119,6 +124,7 @@ struct NameCapitalGameView: View {
             // search field don't cover the result overlay's buttons.
             if newPhase == .finished {
                 isSearchFocused = false
+                isFieldFocused = false
                 dismissKeyboard()
             }
         }
@@ -258,6 +264,15 @@ struct NameCapitalGameView: View {
         }
     }
 
+    /// Grabs keyboard focus for the native (iOS 26) search field so the player
+    /// can start typing right away. A short hop past the first layout pass lets
+    /// the search field install before it claims focus.
+    private func focusSearchField() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            isFieldFocused = true
+        }
+    }
+
     /// Resigns the first responder, dismissing the keyboard (works for both
     /// the native search field and the pre-iOS 26 custom text field).
     private func dismissKeyboard() {
@@ -288,6 +303,7 @@ struct NameCapitalGameView: View {
         gameGlobe.isAutoRotating = false
         viewModel.restart()
         focusOnCurrentTarget(distance: region.cameraTarget.distance)
+        focusSearchField()
     }
 
     // MARK: - HUD
@@ -305,6 +321,7 @@ struct NameCapitalGameView: View {
                 onFocusChange: { focused in
                     isSearchFocused = focused
                 },
+                autofocus: true,
                 onSubmit: { guess in
                     submit(guess)
                     searchText = ""
