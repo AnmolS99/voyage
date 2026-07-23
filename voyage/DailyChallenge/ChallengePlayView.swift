@@ -6,6 +6,7 @@ struct ChallengePlayView: View {
     @StateObject private var viewModel = DailyChallengeViewModel()
     @State private var searchText = ""
     @State private var showConfetti = false
+    @FocusState private var isSearchFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -141,8 +142,16 @@ struct ChallengePlayView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
                 }
-                .bottomBarGuessSearch(text: $searchText) { guess in
+                .bottomBarGuessSearch(text: $searchText, focused: $isSearchFocused) { guess in
                     viewModel.submitGuess(guess)
+                }
+                .onAppear {
+                    // Auto-focus the guess field so the user can start typing
+                    // right away. A short hop past the first layout pass lets
+                    // the search field install before it claims focus.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        isSearchFocused = true
+                    }
                 }
             } else {
                 // Pre-iOS 26 fallback: the custom search bar with its own
@@ -154,6 +163,7 @@ struct ChallengePlayView: View {
                             suggestions: viewModel.suggestions,
                             guessedItems: Set(viewModel.guesses),
                             isDarkMode: isDarkMode,
+                            autofocus: true,
                             onSubmit: { guess in
                                 viewModel.submitGuess(guess)
                                 searchText = ""
