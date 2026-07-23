@@ -1,16 +1,19 @@
 import SwiftUI
 import UIKit
 
-/// Full-screen "Name the Capital" game. Each country in the region is shown
-/// on the prompt card (flag + name) while the globe flies to and outlines it;
-/// the player types its capital into a search field. Solved countries stay
-/// green, revealed misses stay red — like Click the Country, the game runs on
-/// its own in-memory `GlobeState`, so nothing touches the user's travel data.
-struct NameCapitalGameView: View {
+/// Full-screen "Name the Flag" game. Each country in the region is shown as
+/// its flag on the prompt card; the player types the country's name into a
+/// search field. Unlike Name the Capital, the globe stays a neutral backdrop
+/// during play — outlining the asked country would give the answer away — and
+/// only flies to a country when its answer is revealed after three misses.
+/// Correctly named countries stay green, revealed misses stay red. The game
+/// runs on its own in-memory `GlobeState`, so nothing touches the user's
+/// travel data.
+struct NameFlagGameView: View {
     let region: ChallengeRegion
     let onDismiss: () -> Void
 
-    @StateObject private var viewModel: NameCapitalGameViewModel
+    @StateObject private var viewModel: NameFlagGameViewModel
     @StateObject private var gameGlobe: GlobeState
     @State private var searchText = ""
     @State private var feedback: Feedback?
@@ -23,16 +26,16 @@ struct NameCapitalGameView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     private let isDarkMode: Bool
-    /// Every capital in the dataset — the search field's suggestion pool, so
-    /// the answer never stands out by being the only nearby suggestion.
-    private let capitalSuggestions: [String]
+    /// Every country name in the dataset — the search field's suggestion pool,
+    /// so the answer never stands out by being the only nearby suggestion.
+    private let countrySuggestions: [String]
     private static let revealDuration: TimeInterval = 2.6
 
     init(region: ChallengeRegion, mainState: GlobeState, onDismiss: @escaping () -> Void) {
         self.region = region
         self.onDismiss = onDismiss
         self.isDarkMode = mainState.isDarkMode
-        _viewModel = StateObject(wrappedValue: NameCapitalGameViewModel(region: region))
+        _viewModel = StateObject(wrappedValue: NameFlagGameViewModel(region: region))
 
         let globe = GlobeState(inMemory: true)
         globe.globeStyle = mainState.globeStyle
@@ -41,13 +44,13 @@ struct NameCapitalGameView: View {
         globe.showsCapitalMarker = false
         _gameGlobe = StateObject(wrappedValue: globe)
 
-        capitalSuggestions = Set(CountryDataCache.shared.countries.compactMap { $0.capital?.name }).sorted()
+        countrySuggestions = CountryDataCache.shared.countries.map { $0.name }.sorted()
     }
 
     private enum Feedback: Equatable {
-        case correct(capital: String, points: Int)
+        case correct(country: String, points: Int)
         case wrong(guess: String, remainingTries: Int)
-        case reveal(country: String, capital: String)
+        case reveal(country: String)
     }
 
     var body: some View {
@@ -106,11 +109,7 @@ struct NameCapitalGameView: View {
         }
         }
         .onAppear {
-            focusOnCurrentTarget(distance: region.cameraTarget.distance)
-        }
-        .onChange(of: viewModel.currentTarget) { _, _ in
-            // Fly to each new question's country at the player's current zoom
-            focusOnCurrentTarget(distance: nil)
+            gameGlobe.flyTo(region.cameraTarget)
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
@@ -151,8 +150,9 @@ struct NameCapitalGameView: View {
         ZStack {
             GlobeBackdrop(isDarkMode: isDarkMode)
 
-            // The globe is a backdrop showing the asked country — taps on it
-            // are not part of this game
+            // The globe is a neutral backdrop framing the region — the asked
+            // country is deliberately not outlined (that's the answer), and
+            // taps on it are not part of this game
             GlobeView(globeState: gameGlobe, onCountryTapped: { _ in })
                 .ignoresSafeArea()
 
@@ -166,7 +166,7 @@ struct NameCapitalGameView: View {
                 ) {
                     showQuitConfirmation = true
                 }
-                SweepPromptCard(
+                SweepFlagPromptCard(
                     viewModel: viewModel,
                     flagProvider: gameGlobe.flagForCountry,
                     isDarkMode: isDarkMode
@@ -202,10 +202,10 @@ struct NameCapitalGameView: View {
     }
 
     /// Compact dropdown floating above the native search field (iOS 26):
-    /// tapping a capital submits it; already-guessed ones are greyed out.
+    /// tapping a country submits it; already-guessed ones are greyed out.
     @ViewBuilder
     private var nativeSearchDropdown: some View {
-        let matches = searchText.isEmpty ? [] : capitalSuggestions
+        let matches = searchText.isEmpty ? [] : countrySuggestions
             .filter { $0.localizedCaseInsensitiveContains(searchText) }
         if !matches.isEmpty {
             ChallengeSuggestionList(
@@ -223,29 +223,17 @@ struct NameCapitalGameView: View {
 
     // MARK: - Game interaction
 
-    /// Outlines the current question's country on the globe and flies to it.
-    private func focusOnCurrentTarget(distance: Float?) {
-        guard let target = viewModel.currentTarget else { return }
-        gameGlobe.selectCountry(target, center: nil)
-        if let center = CountryHitTester.shared.center(of: target) {
-            gameGlobe.flyTo(.init(lat: center.lat, lon: center.lon, distance: distance))
-        }
-    }
-
     private func submit(_ guess: String) {
         // Captured before submitting: a correct guess advances the target
         let target = viewModel.currentTarget
-        let capital = viewModel.currentCapital
 
         switch viewModel.submitGuess(guess) {
         case .correct(let points):
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             if let target = target {
-                gameGlobe.deselectCountry(resumeAutoRotation: false)
+                // Naming it right reveals where it is — colour it in on the globe
                 gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: target)
-            }
-            if let capital = capital {
-                showFeedback(.correct(capital: capital, points: points))
+                showFeedback(.correct(country: target, points: points))
             }
 
         case .wrong(let remainingTries):
@@ -253,12 +241,15 @@ struct NameCapitalGameView: View {
             showFeedback(.wrong(guess: guess, remainingTries: remainingTries))
 
         case .reveal:
-            guard let target = target, let capital = capital else { return }
+            guard let target = target else { return }
             UINotificationFeedbackGenerator().notificationOccurred(.error)
-            showFeedback(.reveal(country: target, capital: capital), duration: Self.revealDuration)
+            showFeedback(.reveal(country: target), duration: Self.revealDuration)
+            // Fly to and outline the missed country so the player sees where it was
             gameGlobe.setCountryHighlight(AppColors.challengeWrongUI, for: target)
+            gameGlobe.selectCountry(target, center: CountryHitTester.shared.center(of: target))
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.revealDuration) {
                 gameGlobe.deselectCountry(resumeAutoRotation: false)
+                gameGlobe.flyTo(region.cameraTarget)
                 viewModel.finishReveal()
             }
 
@@ -295,8 +286,8 @@ struct NameCapitalGameView: View {
         searchText = ""
         gameGlobe.resetAllData()
         gameGlobe.isAutoRotating = false
+        gameGlobe.flyTo(region.cameraTarget)
         viewModel.restart()
-        focusOnCurrentTarget(distance: region.cameraTarget.distance)
     }
 
     // MARK: - HUD
@@ -307,7 +298,7 @@ struct NameCapitalGameView: View {
         HStack(alignment: .bottom, spacing: 10) {
             ChallengeSearchField(
                 searchText: $searchText,
-                suggestions: capitalSuggestions,
+                suggestions: countrySuggestions,
                 guessedItems: Set(viewModel.wrongGuesses),
                 isDarkMode: isDarkMode,
                 usesGlass: true,
@@ -338,14 +329,14 @@ struct NameCapitalGameView: View {
         let text: String
         let color: Color
         switch feedback {
-        case .correct(let capital, let points):
-            text = "\(capital) +\(points)"
+        case .correct(let country, let points):
+            text = "\(country) +\(points)"
             color = AppColors.challengeCorrect
         case .wrong(let guess, let remainingTries):
             text = "Not \(guess) — \(remainingTries) \(remainingTries == 1 ? "try" : "tries") left"
             color = AppColors.challengeWrong
-        case .reveal(let country, let capital):
-            text = "The capital of \(country) is \(capital)"
+        case .reveal(let country):
+            text = "This flag is \(country) \(gameGlobe.flagForCountry(country))"
             color = AppColors.challengeWrong
         }
 
@@ -354,11 +345,6 @@ struct NameCapitalGameView: View {
 
     private var missedSummary: String? {
         guard !viewModel.missedCountries.isEmpty else { return nil }
-        return viewModel.missedCountries.map { country in
-            if let capital = viewModel.capital(of: country) {
-                return "\(country) — \(capital)"
-            }
-            return country
-        }.joined(separator: ", ")
+        return viewModel.missedCountries.joined(separator: ", ")
     }
 }
