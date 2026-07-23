@@ -205,8 +205,7 @@ struct NameFlagGameView: View {
     /// tapping a country submits it; already-guessed ones are greyed out.
     @ViewBuilder
     private var nativeSearchDropdown: some View {
-        let matches = searchText.isEmpty ? [] : countrySuggestions
-            .filter { $0.localizedCaseInsensitiveContains(searchText) }
+        let matches = countrySuggestions.rankedMatches(for: searchText)
         if !matches.isEmpty {
             ChallengeSuggestionList(
                 suggestions: matches,
