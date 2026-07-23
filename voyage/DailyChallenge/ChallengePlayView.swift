@@ -118,25 +118,32 @@ struct ChallengePlayView: View {
                 // bottom toolbar, with a compact suggestion dropdown floating
                 // above it. Scoped to the playing state so it disappears on the
                 // result screen.
-                clues
-                    .overlay(alignment: .bottom) {
-                        GuessSuggestionDropdown(
-                            suggestions: viewModel.suggestions,
-                            query: searchText,
-                            guessedItems: Set(viewModel.guesses),
-                            isDarkMode: isDarkMode,
-                            usesGlass: true,
-                            onSelect: { guess in
-                                viewModel.submitGuess(guess)
-                                searchText = ""
-                            }
-                        )
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 12)
-                    }
-                    .bottomBarGuessSearch(text: $searchText) { guess in
-                        viewModel.submitGuess(guess)
-                    }
+                // The dropdown floats above the scrolling clues as a bottom
+                // ZStack layer (not a `.overlay`): the ZStack hands it a
+                // definite full-width proposal so `maxWidth: .infinity` fills
+                // the screen. As an overlay it was instead proposed a
+                // content-sized width and collapsed to the widest row — the
+                // same full-width layout the Challenges game modes use.
+                ZStack(alignment: .bottom) {
+                    clues
+                    GuessSuggestionDropdown(
+                        suggestions: viewModel.suggestions,
+                        query: searchText,
+                        guessedItems: Set(viewModel.guesses),
+                        isDarkMode: isDarkMode,
+                        usesGlass: true,
+                        onSelect: { guess in
+                            viewModel.submitGuess(guess)
+                            searchText = ""
+                        }
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+                }
+                .bottomBarGuessSearch(text: $searchText) { guess in
+                    viewModel.submitGuess(guess)
+                }
             } else {
                 // Pre-iOS 26 fallback: the custom search bar with its own
                 // suggestion dropdown, inset above the bottom safe area.
