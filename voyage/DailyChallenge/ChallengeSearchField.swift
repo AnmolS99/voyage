@@ -109,6 +109,81 @@ struct ChallengeSuggestionList: View {
     }
 }
 
+/// Floating suggestion dropdown for a guess-entry field: ranks `suggestions`
+/// against `query` (prefix matches first), greys out already-guessed items, and
+/// reports the tapped suggestion. Renders nothing when the query has no matches.
+/// Shared by the Daily Challenge and the Challenges game modes so suggestions
+/// look and behave identically everywhere.
+struct GuessSuggestionDropdown: View {
+    let suggestions: [String]
+    let query: String
+    let guessedItems: Set<String>
+    let isDarkMode: Bool
+    /// Liquid-glass styling to sit above the native iOS 26 search field.
+    var usesGlass: Bool = false
+    let onSelect: (String) -> Void
+
+    var body: some View {
+        let matches = suggestions.rankedMatches(for: query)
+        if !matches.isEmpty {
+            ChallengeSuggestionList(
+                suggestions: matches,
+                guessedItems: guessedItems,
+                isDarkMode: isDarkMode,
+                usesGlass: usesGlass,
+                onSelect: onSelect
+            )
+        }
+    }
+}
+
+@available(iOS 26, *)
+extension View {
+    /// The app's default guess-entry search (iOS 26+): pins the system
+    /// `.searchable` field into the bottom toolbar — liquid glass and
+    /// thumb-reachable — and clears the text after each submit. Callers float a
+    /// `GuessSuggestionDropdown` above it to show suggestions.
+    func bottomBarGuessSearch(
+        text: Binding<String>,
+        prompt: String = "Type your guess...",
+        onSubmit: @escaping (String) -> Void
+    ) -> some View {
+        self
+            .toolbar { DefaultToolbarItem(kind: .search, placement: .bottomBar) }
+            .submittableGuessSearch(text: text, prompt: prompt, onSubmit: onSubmit)
+    }
+
+    /// Same as `bottomBarGuessSearch`, plus a `trailing` control pinned beside
+    /// the field in the bottom toolbar (e.g. a restart button). Both items share
+    /// one `.toolbar` block so their left-to-right order is preserved.
+    func bottomBarGuessSearch<Trailing: View>(
+        text: Binding<String>,
+        prompt: String = "Type your guess...",
+        @ViewBuilder trailing: @escaping () -> Trailing,
+        onSubmit: @escaping (String) -> Void
+    ) -> some View {
+        self
+            .toolbar {
+                DefaultToolbarItem(kind: .search, placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) { trailing() }
+            }
+            .submittableGuessSearch(text: text, prompt: prompt, onSubmit: onSubmit)
+    }
+
+    private func submittableGuessSearch(
+        text: Binding<String>,
+        prompt: String,
+        onSubmit: @escaping (String) -> Void
+    ) -> some View {
+        self
+            .searchable(text: text, prompt: prompt)
+            .onSubmit(of: .search) {
+                onSubmit(text.wrappedValue)
+                text.wrappedValue = ""
+            }
+    }
+}
+
 struct ChallengeSearchField: View {
     @Binding var searchText: String
     let suggestions: [String]

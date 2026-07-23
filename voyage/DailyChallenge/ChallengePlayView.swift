@@ -93,7 +93,7 @@ struct ChallengePlayView: View {
     @ViewBuilder
     private var playingView: some View {
         if let challenge = viewModel.challenge {
-            ScrollView {
+            let clues = ScrollView {
                 VStack(spacing: 24) {
                     // Question type header
                     questionHeader(challenge.questionType)
@@ -111,20 +111,51 @@ struct ChallengePlayView: View {
                 }
                 .padding(.vertical, 24)
             }
-            .safeAreaInset(edge: .bottom) {
-                ChallengeSearchField(
-                    searchText: $searchText,
-                    suggestions: viewModel.suggestions,
-                    guessedItems: Set(viewModel.guesses),
-                    isDarkMode: isDarkMode,
-                    onSubmit: { guess in
-                        viewModel.submitGuess(guess)
-                        searchText = ""
+
+            if #available(iOS 26, *) {
+                // Native path: the same bottom-bar search the Challenges game
+                // modes use — the system's liquid-glass field pinned to the
+                // bottom toolbar, with a compact suggestion dropdown floating
+                // above it. Scoped to the playing state so it disappears on the
+                // result screen.
+                clues
+                    .overlay(alignment: .bottom) {
+                        GuessSuggestionDropdown(
+                            suggestions: viewModel.suggestions,
+                            query: searchText,
+                            guessedItems: Set(viewModel.guesses),
+                            isDarkMode: isDarkMode,
+                            usesGlass: true,
+                            onSelect: { guess in
+                                viewModel.submitGuess(guess)
+                                searchText = ""
+                            }
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
                     }
-                )
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(AppColors.pageBackground(isDarkMode: isDarkMode))
+                    .bottomBarGuessSearch(text: $searchText) { guess in
+                        viewModel.submitGuess(guess)
+                    }
+            } else {
+                // Pre-iOS 26 fallback: the custom search bar with its own
+                // suggestion dropdown, inset above the bottom safe area.
+                clues
+                    .safeAreaInset(edge: .bottom) {
+                        ChallengeSearchField(
+                            searchText: $searchText,
+                            suggestions: viewModel.suggestions,
+                            guessedItems: Set(viewModel.guesses),
+                            isDarkMode: isDarkMode,
+                            onSubmit: { guess in
+                                viewModel.submitGuess(guess)
+                                searchText = ""
+                            }
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(AppColors.pageBackground(isDarkMode: isDarkMode))
+                    }
             }
         }
     }
