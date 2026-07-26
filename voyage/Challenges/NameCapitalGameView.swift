@@ -48,8 +48,7 @@ struct NameCapitalGameView: View {
     }
 
     private enum Feedback: Equatable {
-        case correct(capital: String, points: Int)
-        case wrong(guess: String, remainingTries: Int)
+        case correct(capital: String)
         case reveal(country: String, capital: String)
     }
 
@@ -96,7 +95,6 @@ struct NameCapitalGameView: View {
             SweepResultOverlay(
                 viewModel: viewModel,
                 isDarkMode: isDarkMode,
-                firstTryLabel: "First-try answers",
                 missedSummary: missedSummary,
                 onPlayAgain: playAgain,
                 onDismiss: onDismiss
@@ -208,7 +206,6 @@ struct NameCapitalGameView: View {
         GuessSuggestionDropdown(
             suggestions: capitalSuggestions,
             query: searchText,
-            guessedItems: Set(viewModel.wrongGuesses),
             isDarkMode: isDarkMode,
             usesGlass: true,
             onSelect: { suggestion in
@@ -232,22 +229,18 @@ struct NameCapitalGameView: View {
     private func submit(_ guess: String) {
         // Captured before submitting: a correct guess advances the target
         let target = viewModel.currentTarget
-        let capital = viewModel.currentCapital
+        let capital = viewModel.currentAnswer
 
         switch viewModel.submitGuess(guess) {
-        case .correct(let points):
+        case .correct:
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             if let target = target {
                 gameGlobe.deselectCountry(resumeAutoRotation: false)
                 gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: target)
             }
             if let capital = capital {
-                showFeedback(.correct(capital: capital, points: points))
+                showFeedback(.correct(capital: capital))
             }
-
-        case .wrong(let remainingTries):
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
-            showFeedback(.wrong(guess: guess, remainingTries: remainingTries))
 
         case .reveal:
             guard let target = target, let capital = capital else { return }
@@ -315,7 +308,6 @@ struct NameCapitalGameView: View {
             ChallengeSearchField(
                 searchText: $searchText,
                 suggestions: capitalSuggestions,
-                guessedItems: Set(viewModel.wrongGuesses),
                 isDarkMode: isDarkMode,
                 usesGlass: true,
                 onFocusChange: { focused in
@@ -346,12 +338,9 @@ struct NameCapitalGameView: View {
         let text: String
         let color: Color
         switch feedback {
-        case .correct(let capital, let points):
-            text = "\(capital) +\(points)"
+        case .correct(let capital):
+            text = "Correct — \(capital)"
             color = AppColors.challengeCorrect
-        case .wrong(let guess, let remainingTries):
-            text = "Not \(guess) — \(remainingTries) \(remainingTries == 1 ? "try" : "tries") left"
-            color = AppColors.challengeWrong
         case .reveal(let country, let capital):
             text = "The capital of \(country) is \(capital)"
             color = AppColors.challengeWrong

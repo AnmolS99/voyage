@@ -3,38 +3,37 @@ import Foundation
 /// Outcome of one player input in a region-sweep game.
 enum SweepGuessOutcome {
     case marked      // Click the Country: first tap marked, awaiting confirmation
-    case correct(points: Int)
-    case wrong(remainingTries: Int)
-    case reveal
-    case ignored     // no-op input (already solved, repeated, empty, not playing)
+    case correct
+    case reveal      // wrong guess: the answer is shown before moving on
+    case ignored     // no-op input (already answered, empty, not playing)
 }
 
 /// Shared engine for region-sweep challenge games: every country in the
-/// region appears once (shuffled), with three graded tries each (3/2/1
-/// points). After the third miss the answer is revealed for 0 points. The
-/// sweep is timed until the queue is exhausted, and results are recorded in
-/// `ChallengeStatsStore` under the subclass's game mode.
+/// region appears once (shuffled), with a single guess each. A wrong guess
+/// reveals the answer and moves on — the result of a sweep is simply how many
+/// countries were answered correctly. The sweep is timed until the queue is
+/// exhausted, and results are recorded in `ChallengeStatsStore` under the
+/// subclass's game mode.
 ///
 /// Subclasses translate their input (globe taps, typed capitals) into a
-/// right/wrong judgement and pass it to `resolveGuess(correct:)`.
+/// right/wrong judgement and pass it to `resolveGuess(correct:)`; typed-answer
+/// games can use `submitGuess(_:)` directly by overriding `currentAnswer`.
 class RegionSweepGameViewModel: ObservableObject {
     enum Phase {
         case playing
-        case revealing   // third miss: the answer is being shown
+        case revealing   // wrong guess: the answer is being shown
         case finished
     }
-
-    static let maxPointsPerCountry = 3
 
     let mode: ChallengeGameMode
     let region: ChallengeRegion
     let totalCountries: Int
-    var maxScore: Int { totalCountries * Self.maxPointsPerCountry }
 
     @Published private(set) var currentTarget: String?
-    @Published private(set) var solvedCount = 0
-    @Published private(set) var triesLeft: Int
-    @Published private(set) var score = 0
+    /// Countries answered correctly — the score of the sweep.
+    @Published private(set) var correctCount = 0
+    /// Countries whose answer was revealed after a wrong guess, in sweep order.
+    @Published private(set) var missedCountries: [String] = []
     @Published private(set) var elapsedTime: TimeInterval = 0
     @Published private(set) var phase: Phase = .playing
     @Published private(set) var isNewBest = false
@@ -42,14 +41,12 @@ class RegionSweepGameViewModel: ObservableObject {
     /// first time (repeat 100% runs don't re-earn it).
     @Published private(set) var didEarnTrophy = false
 
-    /// Countries answered on the first try.
-    private(set) var perfectCount = 0
-    /// Countries revealed after three misses (0 points), in sweep order.
-    private(set) var missedCountries: [String] = []
+    /// How far through the queue the sweep is.
+    var answeredCount: Int { correctCount + missedCountries.count }
 
     private let statsStore: ChallengeStatsStore
     private var queue: [String]
-    private var solved: Set<String> = []
+    private var answered: Set<String> = []
     /// Whether this run has been counted as an attempt (set on the first guess).
     private var hasRecordedAttempt = false
     private var accumulatedTime: TimeInterval = 0
@@ -68,7 +65,6 @@ class RegionSweepGameViewModel: ObservableObject {
         self.queue = countries ?? region.countries.shuffled()
         self.totalCountries = queue.count
         self.currentTarget = queue.first
-        self.triesLeft = Self.maxPointsPerCountry
         if queue.isEmpty {
             phase = .finished
         } else {
@@ -82,6 +78,21 @@ class RegionSweepGameViewModel: ObservableObject {
 
     // MARK: - Subclass interface
 
+    /// The answer expected for the current target. Defaults to the country's
+    /// own name (Name the Flag); Name the Capital overrides it.
+    var currentAnswer: String? { currentTarget }
+
+    /// Scores one typed guess against `currentAnswer`, ignoring casing and
+    /// surrounding whitespace.
+    func submitGuess(_ guess: String) -> SweepGuessOutcome {
+        guard phase == .playing, let answer = currentAnswer else { return .ignored }
+
+        let trimmed = guess.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .ignored }
+
+        return resolveGuess(correct: answer.caseInsensitiveCompare(trimmed) == .orderedSame)
+    }
+
     /// Scores one submitted guess against the current target. Subclasses call
     /// this after translating their input into a right/wrong judgement.
     func resolveGuess(correct: Bool) -> SweepGuessOutcome {
@@ -89,31 +100,23 @@ class RegionSweepGameViewModel: ObservableObject {
 
         registerAttemptIfNeeded()
 
-        if correct {
-            let points = triesLeft
-            score += points
-            if points == Self.maxPointsPerCountry {
-                perfectCount += 1
-            }
-            advance(past: target)
-            return .correct(points: points)
-        }
-
-        triesLeft -= 1
-        if triesLeft <= 0 {
+        guard correct else {
             missedCountries.append(target)
             phase = .revealing
             return .reveal
         }
-        return .wrong(remainingTries: triesLeft)
+
+        correctCount += 1
+        advance(past: target)
+        return .correct
     }
 
-    func isSolved(_ country: String) -> Bool {
-        solved.contains(country)
+    func isAnswered(_ country: String) -> Bool {
+        answered.contains(country)
     }
 
     /// Subclass hook: called whenever the sweep moves on to a new target
-    /// (after a solve, a reveal, or a restart). Clears per-target input state.
+    /// (after an answer, a reveal, or a restart). Clears per-target input state.
     func targetDidChange() {}
 
     /// The country pool a restarted sweep draws from. Subclasses that filter
@@ -134,13 +137,10 @@ class RegionSweepGameViewModel: ObservableObject {
     /// Restarts the sweep from scratch with a fresh shuffle.
     func restart() {
         queue = freshQueue()
-        solved = []
+        answered = []
         missedCountries = []
-        perfectCount = 0
-        solvedCount = 0
-        score = 0
+        correctCount = 0
         currentTarget = queue.first
-        triesLeft = Self.maxPointsPerCountry
         accumulatedTime = 0
         elapsedTime = 0
         isNewBest = false
@@ -177,11 +177,9 @@ class RegionSweepGameViewModel: ObservableObject {
     }
 
     private func advance(past target: String) {
-        solved.insert(target)
-        solvedCount += 1
+        answered.insert(target)
         queue.removeFirst()
         currentTarget = queue.first
-        triesLeft = Self.maxPointsPerCountry
         targetDidChange()
         if currentTarget == nil {
             finishGame()
@@ -196,11 +194,11 @@ class RegionSweepGameViewModel: ObservableObject {
         isNewBest = statsStore.recordGame(
             mode: mode,
             region: region,
-            score: score,
-            maxScore: maxScore,
+            correct: correctCount,
+            total: totalCountries,
             time: elapsedTime
         )
-        didEarnTrophy = !hadTrophy && score == maxScore
+        didEarnTrophy = !hadTrophy && correctCount == totalCountries
     }
 
     private func startTimer() {
