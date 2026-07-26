@@ -12,7 +12,6 @@ struct ChallengeGameStats: Codable {
     /// change between app versions, so best results compare as fractions).
     var bestTotal: Int?
     var bestTime: TimeInterval?
-    var lastPlayed: Date?
 
     var bestFraction: Double? {
         guard let bestCorrect = bestCorrect, let bestTotal = bestTotal, bestTotal > 0 else { return nil }
@@ -74,7 +73,6 @@ final class ChallengeStatsStore: ObservableObject {
         guard total > 0 else { return false }
         var stats = stats(for: mode, region: region)
         stats.gamesPlayed += 1
-        stats.lastPlayed = Date()
 
         let fraction = Double(correct) / Double(total)
         let isNewBest: Bool
