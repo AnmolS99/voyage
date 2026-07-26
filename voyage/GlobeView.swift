@@ -93,6 +93,12 @@ struct GlobeView: UIViewRepresentable {
         private static let referenceCameraDistance: Float = 4.0
         private static let globeRadius: Float = 1.0
         private static let basePanRotationSpeed: Float = 0.005
+        /// Closest the camera may get to the globe's center (pinch and button zoom).
+        static let minCameraDistance: Float = 1.2
+        /// Fraction of finger speed the globe tracks at when fully zoomed in. Below
+        /// 1.0 the surface deliberately lags the finger, trading 1:1 feel for finer
+        /// control when a single country fills the screen.
+        private static let fullZoomTrackingFactor: Float = 0.6
 
         /// On-screen scale at `cameraDistance` relative to the reference distance.
         ///
@@ -108,14 +114,24 @@ struct GlobeView: UIViewRepresentable {
         /// Speed grows with camera distance so the globe stays quick to spin when
         /// zoomed out. The quadratic falloff alone overshoots close in, though —
         /// because the on-screen arc a rotation sweeps grows as `1 / (distance -
-        /// radius)`, at the minimum distance (1.2) the surface ran ~35% ahead of the
+        /// radius)`, at the minimum distance the surface ran ~35% ahead of the
         /// finger. Zoomed in past the reference distance the speed is therefore
-        /// capped at 1:1 finger tracking; zoomed out it is left alone.
+        /// capped at finger tracking; zoomed out it is left alone.
+        ///
+        /// The cap tightens to `fullZoomTrackingFactor` of finger speed at the
+        /// closest zoom and ramps back to 1:1 by the reference distance, so the
+        /// extra damping lands where fine control matters and fades out before the
+        /// default view. Both branches agree at the reference distance, so speed is
+        /// continuous across zoom.
         private static func panRotationSpeed(cameraDistance: Float) -> Float {
             let distanceRatio = cameraDistance / referenceCameraDistance
             let quadratic = basePanRotationSpeed * distanceRatio * distanceRatio
             guard cameraDistance < referenceCameraDistance else { return quadratic }
-            return min(quadratic, basePanRotationSpeed * screenScale(cameraDistance: cameraDistance))
+
+            let zoomOutProgress = (cameraDistance - minCameraDistance) / (referenceCameraDistance - minCameraDistance)
+            let tracking = fullZoomTrackingFactor
+                + (1 - fullZoomTrackingFactor) * max(0, min(1, zoomOutProgress))
+            return min(quadratic, basePanRotationSpeed * tracking * screenScale(cameraDistance: cameraDistance))
         }
 
         private var currentOutlineScale: Float = 1.0
@@ -156,7 +172,7 @@ struct GlobeView: UIViewRepresentable {
             guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
-            cameraNode.position.z = max(1.2, cameraNode.position.z - 0.5)
+            cameraNode.position.z = max(Self.minCameraDistance, cameraNode.position.z - 0.5)
             updateOutlineThickness(cameraDistance: Float(cameraNode.position.z))
             SCNTransaction.commit()
         }
@@ -404,7 +420,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = currentDistance - Float(gesture.scale - 1) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(1.2, min(8.0, newDistance))
+                newDistance = max(Self.minCameraDistance, min(8.0, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,
@@ -444,7 +460,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = doubleTapDragStartDistance + Float(deltaY) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(1.2, min(8.0, newDistance))
+                newDistance = max(Self.minCameraDistance, min(8.0, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,
