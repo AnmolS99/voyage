@@ -98,6 +98,22 @@ struct GlobeView: UIViewRepresentable {
         /// control when a single country fills the screen.
         private static let fullZoomTrackingFactor: Float = 0.6
 
+        /// Outer radius of the capital star, in world units at the default distance.
+        /// Slightly larger than the 0.006 dot it replaces — a star of equal radius
+        /// carries less visual weight than a filled circle.
+        private static let capitalMarkerRadius: Float = 0.008
+
+        /// How much of the perspective shrink the capital marker compensates for.
+        ///
+        /// Scaling by the raw zoom scale (fixed on-screen size) leaves a ~4pt speck
+        /// once a single country fills the screen; not scaling at all (fixed world
+        /// size) balloons it to a third of the screen. The square root sits between,
+        /// so at the closest zoom the marker reads about 5x larger than at the
+        /// default distance without covering the capital it marks.
+        private static func capitalMarkerScale(zoomScale: Float) -> Float {
+            sqrt(zoomScale)
+        }
+
         /// On-screen scale at `cameraDistance` relative to the reference distance.
         ///
         /// Perspective makes anything on the globe's near face cover a span
@@ -132,7 +148,10 @@ struct GlobeView: UIViewRepresentable {
             return min(quadratic, basePanRotationSpeed * tracking * screenScale(cameraDistance: cameraDistance))
         }
 
+        /// Last scale pushed to the outline materials (throttles uniform updates)
         private var currentOutlineScale: Float = 1.0
+        /// Latest zoom scale, re-applied to the capital marker each time it is rebuilt
+        private var currentZoomScale: Float = 1.0
 
         private var lastPanLocation: CGPoint = .zero
         private var currentRotationX: Float = 0
@@ -171,7 +190,7 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
             cameraNode.position.z = max(GlobeState.minCameraDistance, cameraNode.position.z - 0.5)
-            updateOutlineThickness(cameraDistance: Float(cameraNode.position.z))
+            updateZoomDependentSizing(cameraDistance: Float(cameraNode.position.z))
             SCNTransaction.commit()
         }
 
@@ -180,7 +199,7 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.3
             cameraNode.position.z = min(10.0, cameraNode.position.z + 0.5)
-            updateOutlineThickness(cameraDistance: Float(cameraNode.position.z))
+            updateZoomDependentSizing(cameraDistance: Float(cameraNode.position.z))
             SCNTransaction.commit()
         }
 
@@ -195,7 +214,7 @@ struct GlobeView: UIViewRepresentable {
                 cameraDistance * cos(currentRotationX)
             )
             aimCameraAtGlobeCenter(cameraNode)
-            updateOutlineThickness(cameraDistance: cameraDistance)
+            updateZoomDependentSizing(cameraDistance: cameraDistance)
             SCNTransaction.commit()
         }
 
@@ -213,12 +232,24 @@ struct GlobeView: UIViewRepresentable {
             cameraNode.look(at: SCNVector3(0, 0, 0), up: SCNVector3(0, 1, 0), localFront: SCNVector3(0, 0, -1))
         }
 
-        /// Scales outline thickness with camera distance so borders keep a constant
-        /// on-screen width. At the default distance (4.0) outlines render at their
-        /// base thickness; zoomed all the way in they thin to ~1/6 of it. Runs inside
-        /// the caller's SCNTransaction, so animated zooms animate the width too.
-        func updateOutlineThickness(cameraDistance: Float) {
-            let scale = max(1.0 / 6.0, min(1.0, Self.screenScale(cameraDistance: cameraDistance)))
+        /// Scales the world-sized decorations — border outlines and the capital
+        /// marker — with camera distance so they keep a constant on-screen size.
+        ///
+        /// At the default distance (4.0) they render at their base size. The lower
+        /// clamp is the scale at the closest zoom, so it never binds inside the
+        /// usable range: width stays constant all the way down instead of the
+        /// outlines fattening once past the old 1/6 floor. Runs inside the caller's
+        /// SCNTransaction, so animated zooms animate the sizing too.
+        func updateZoomDependentSizing(cameraDistance: Float) {
+            let minScale = Self.screenScale(cameraDistance: GlobeState.minCameraDistance)
+            let scale = max(minScale, min(1.0, Self.screenScale(cameraDistance: cameraDistance)))
+
+            // Cheap and needed on every call: the marker node is rebuilt whenever the
+            // selection changes and has to pick up the current zoom scale.
+            currentZoomScale = scale
+            let markerScale = Self.capitalMarkerScale(zoomScale: scale)
+            capitalStarNode?.scale = SCNVector3(markerScale, markerScale, markerScale)
+
             guard abs(scale - currentOutlineScale) > 0.005 else { return }
             currentOutlineScale = scale
 
@@ -334,7 +365,7 @@ struct GlobeView: UIViewRepresentable {
                 distance * cos(currentRotationX)
             )
             aimCameraAtGlobeCenter(cameraNode)
-            updateOutlineThickness(cameraDistance: distance)
+            updateZoomDependentSizing(cameraDistance: distance)
 
             SCNTransaction.commit()
         }
@@ -426,7 +457,7 @@ struct GlobeView: UIViewRepresentable {
                     newDistance * cos(currentRotationX)
                 )
                 aimCameraAtGlobeCenter(cameraNode)
-                updateOutlineThickness(cameraDistance: newDistance)
+                updateZoomDependentSizing(cameraDistance: newDistance)
 
                 gesture.scale = 1
             }
@@ -466,7 +497,7 @@ struct GlobeView: UIViewRepresentable {
                     newDistance * cos(currentRotationX)
                 )
                 aimCameraAtGlobeCenter(cameraNode)
-                updateOutlineThickness(cameraDistance: newDistance)
+                updateZoomDependentSizing(cameraDistance: newDistance)
 
             default:
                 break
@@ -710,41 +741,60 @@ struct GlobeView: UIViewRepresentable {
             let y = radius * sin(latRad)
             let z = radius * cos(latRad) * sin(lonRad)
 
-            // Create star geometry
-            let starNode = createStarNode()
-            starNode.position = SCNVector3(x, y, z)
+            // The marker pulses via an SCNAction on its own scale, so the zoom scale
+            // rides on a container instead — otherwise the running action overwrites
+            // it every frame and the marker balloons at close zoom.
+            let holder = SCNNode()
+            holder.position = SCNVector3(x, y, z)
+            let markerScale = Self.capitalMarkerScale(zoomScale: currentZoomScale)
+            holder.scale = SCNVector3(markerScale, markerScale, markerScale)
+            holder.addChildNode(createStarNode())
 
             // Orient star to face outward from globe center using constraints
             let billboardConstraint = SCNBillboardConstraint()
             billboardConstraint.freeAxes = .all
-            starNode.constraints = [billboardConstraint]
+            holder.constraints = [billboardConstraint]
 
-            globeNode.addChildNode(starNode)
-            capitalStarNode = starNode
+            globeNode.addChildNode(holder)
+            capitalStarNode = holder
         }
 
         func createStarNode() -> SCNNode {
-            // Small black dot for capital
-            let sphere = SCNSphere(radius: 0.006)
+            // Five-pointed star, the printed-map convention for a capital. The
+            // holder billboards it, so only the front face is ever seen; the
+            // extrusion just gives the shape a body to shade.
+            //
+            // Built at unit radius and scaled down by the node rather than drawn at
+            // its final 0.008: SCNShape tessellates against the path's flatness, and
+            // a path smaller than the flatness value yields empty geometry.
+            let starPath = UIBezierPath(cgPath: CapitalMarker.starPath(outerRadius: 1, yUp: true))
+            starPath.flatness = 0.01
+            let star = SCNShape(path: starPath, extrusionDepth: 0.05)
 
+            // `.constant` already ignores scene lighting, so the star keeps the exact
+            // theme orange on the night side without an emission wash over it.
             let material = SCNMaterial()
-            material.diffuse.contents = UIColor.black
-            material.emission.contents = UIColor(white: 0.2, alpha: 0.8)
+            material.diffuse.contents = AppColors.capitalMarkerUI
             material.lightingModel = .constant
-            sphere.materials = [material]
+            star.materials = [material]
 
-            let node = SCNNode(geometry: sphere)
-            node.name = "capitalMarker"
+            let starNode = SCNNode(geometry: star)
+            starNode.name = "capitalMarker"
+            let radius = Self.capitalMarkerRadius
+            starNode.scale = SCNVector3(radius, radius, radius)
 
-            // Add pulsating animation
+            // The pulse rides on a parent so it doesn't overwrite the size scale.
+            let pulseNode = SCNNode()
+            pulseNode.addChildNode(starNode)
+
             let scaleUp = SCNAction.scale(to: 1.5, duration: 0.6)
             scaleUp.timingMode = .easeInEaseOut
             let scaleDown = SCNAction.scale(to: 1.0, duration: 0.6)
             scaleDown.timingMode = .easeInEaseOut
             let pulse = SCNAction.sequence([scaleUp, scaleDown])
-            node.runAction(SCNAction.repeatForever(pulse))
+            pulseNode.runAction(SCNAction.repeatForever(pulse))
 
-            return node
+            return pulseNode
         }
     }
 }

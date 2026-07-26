@@ -53,6 +53,13 @@ enum AppColors {
     /// Atmosphere glow
     static let atmosphere = UIColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.15)
 
+    /// Capital star marker — shared by the globe and the map so both match.
+    /// Uses the app's theme orange rather than restating its RGB.
+    static let capitalMarker = buttonColor
+    static let capitalMarkerUI = UIColor(buttonColor)
+    /// Thin rim the map strokes around the star to lift it off the country fill
+    static let capitalMarkerOutline = Color(white: 0.3)
+
     /// Ocean for map view (slightly darker)
     static let oceanMap = Color(red: 0.192, green: 0.451, blue: 0.608)
 
