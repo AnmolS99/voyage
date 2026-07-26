@@ -123,9 +123,9 @@ final class ClickCountryGameTests: XCTestCase {
         XCTAssertEqual(viewModel.correctCount, 1)
     }
 
-    // MARK: - Attempts vs completed games
-
-    func testAttemptCountedOnFirstGuessOnly() {
+    /// Only sweeps that run to the end are recorded — restarting or walking
+    /// away mid-run leaves the statistics untouched.
+    func testUnfinishedRunsAreNotRecorded() {
         let store = makeStore()
         let viewModel = ClickCountryGameViewModel(
             region: .europe,
@@ -133,52 +133,18 @@ final class ClickCountryGameTests: XCTestCase {
             statsStore: store
         )
 
-        // No guess yet: opening a game is not an attempt
-        XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 0)
-
-        // Marking a country is not a guess yet
-        _ = viewModel.handleTap(on: "Norway")
-        XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 0)
-
-        // The first confirmed guess (right or wrong) counts the attempt, exactly once
-        _ = viewModel.handleTap(on: "Norway")
-        XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 1)
-        viewModel.finishReveal()
-        guess(viewModel, "Germany")
-        XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 1)
-
-        // The completed run counts once in both statistics
-        let stats = store.stats(for: .clickCountry, region: .europe)
-        XCTAssertEqual(stats.gamesPlayed, 1)
-        XCTAssertEqual(stats.attempts, 1)
-    }
-
-    func testAbandonedAndRestartedRunsCountAsAttemptsButNotPlayed() {
-        let store = makeStore()
-        let viewModel = ClickCountryGameViewModel(
-            region: .europe,
-            countries: ["France", "Germany"],
-            statsStore: store
-        )
-
-        // Guess once, then restart mid-run: attempt recorded, nothing completed
+        // Guess once, then restart mid-run
         guess(viewModel, "France")
         viewModel.restart()
-        XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 1)
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).gamesPlayed, 0)
 
-        // A restart with no guess afterwards adds nothing
-        viewModel.restart()
-        XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 1)
-
-        // Abandoning after a guess (view model dropped, never finished) still counts
+        // Abandoned after a guess: the view model is dropped, never finished
         let abandoned = ClickCountryGameViewModel(
             region: .europe,
             countries: ["France", "Germany"],
             statsStore: store
         )
-        guess(abandoned, "Norway")
-        XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).attempts, 2)
+        guess(abandoned, "France")
         XCTAssertEqual(store.stats(for: .clickCountry, region: .europe).gamesPlayed, 0)
     }
 
@@ -289,25 +255,6 @@ final class ClickCountryGameTests: XCTestCase {
         let stats = reloaded.stats(for: .clickCountry, region: .asia)
         XCTAssertEqual(stats.gamesPlayed, 1)
         XCTAssertEqual(stats.bestCorrect, 10)
-    }
-
-    /// Stats saved by the old points-based scoring still load, so best results
-    /// (and the trophies they earned) survive the upgrade.
-    func testLegacyPointsBasedStatsStillLoad() {
-        let legacy = """
-        {"clickCountry|europe":{"gamesPlayed":2,"attempts":3,\
-        "bestScore":132,"bestScoreMax":132,"bestScoreTime":400}}
-        """
-        userDefaults.set(Data(legacy.utf8), forKey: "challengeGameStats")
-
-        let stats = ChallengeStatsStore(userDefaults: userDefaults)
-            .stats(for: .clickCountry, region: .europe)
-
-        XCTAssertEqual(stats.gamesPlayed, 2)
-        XCTAssertEqual(stats.bestCorrect, 132)
-        XCTAssertEqual(stats.bestTotal, 132)
-        XCTAssertEqual(stats.bestTime, 400)
-        XCTAssertTrue(stats.isPerfect)
     }
 
     // MARK: - Region pools

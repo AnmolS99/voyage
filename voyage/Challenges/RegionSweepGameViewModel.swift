@@ -47,8 +47,6 @@ class RegionSweepGameViewModel: ObservableObject {
     private let statsStore: ChallengeStatsStore
     private var queue: [String]
     private var answered: Set<String> = []
-    /// Whether this run has been counted as an attempt (set on the first guess).
-    private var hasRecordedAttempt = false
     private var accumulatedTime: TimeInterval = 0
     private var segmentStart = Date()
     private var timer: Timer?
@@ -98,8 +96,6 @@ class RegionSweepGameViewModel: ObservableObject {
     func resolveGuess(correct: Bool) -> SweepGuessOutcome {
         guard phase == .playing, let target = currentTarget else { return .ignored }
 
-        registerAttemptIfNeeded()
-
         guard correct else {
             missedCountries.append(target)
             phase = .revealing
@@ -145,7 +141,6 @@ class RegionSweepGameViewModel: ObservableObject {
         elapsedTime = 0
         isNewBest = false
         didEarnTrophy = false
-        hasRecordedAttempt = false
         phase = queue.isEmpty ? .finished : .playing
         targetDidChange()
         if phase == .playing {
@@ -166,15 +161,6 @@ class RegionSweepGameViewModel: ObservableObject {
     }
 
     // MARK: - Internals
-
-    /// Counts this run as an attempt on its first guess, so abandoned and
-    /// restarted runs still contribute to the (stored, not yet shown)
-    /// attempts statistic.
-    private func registerAttemptIfNeeded() {
-        guard !hasRecordedAttempt else { return }
-        hasRecordedAttempt = true
-        statsStore.recordAttempt(mode: mode, region: region)
-    }
 
     private func advance(past target: String) {
         answered.insert(target)

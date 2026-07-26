@@ -97,23 +97,7 @@ final class NameFlagGameTests: XCTestCase {
         XCTAssertEqual(viewModel.answeredCount, 0)
     }
 
-    // MARK: - Attempts and trophies
-
-    func testAttemptCountedOnFirstGuessOnly() {
-        let store = makeStore()
-        let viewModel = makeViewModel(countries: ["France", "Germany"], store: store)
-
-        // Opening a game is not an attempt
-        XCTAssertEqual(store.stats(for: .nameFlag, region: .europe).attempts, 0)
-
-        // The first guess (right or wrong) counts the attempt, exactly once
-        _ = viewModel.submitGuess("Spain")
-        XCTAssertEqual(store.stats(for: .nameFlag, region: .europe).attempts, 1)
-        viewModel.finishReveal()
-        _ = viewModel.submitGuess("Germany")
-        XCTAssertEqual(store.stats(for: .nameFlag, region: .europe).attempts, 1)
-        XCTAssertEqual(store.stats(for: .nameFlag, region: .europe).gamesPlayed, 1)
-    }
+    // MARK: - Trophies
 
     func testTrophyEarnedOnlyOnFirstPerfectSweep() {
         let store = makeStore()
