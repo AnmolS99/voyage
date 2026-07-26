@@ -91,6 +91,32 @@ struct GlobeView: UIViewRepresentable {
         static let selectedOutlineFactor: Float = 5.0 / 3.0   // matches the old 0.0025 selected width
         static let selectedOutlineRaise: Float = 0.001        // lift above neighbours' outlines
         private static let referenceCameraDistance: Float = 4.0
+        private static let globeRadius: Float = 1.0
+        private static let basePanRotationSpeed: Float = 0.005
+
+        /// On-screen scale at `cameraDistance` relative to the reference distance.
+        ///
+        /// Perspective makes anything on the globe's near face cover a span
+        /// proportional to `1 / (distance - radius)`, so both the outline width and
+        /// the pan speed scale by this ratio to keep a constant on-screen size.
+        private static func screenScale(cameraDistance: Float) -> Float {
+            (cameraDistance - globeRadius) / (referenceCameraDistance - globeRadius)
+        }
+
+        /// Radians of globe rotation per point of finger travel.
+        ///
+        /// Speed grows with camera distance so the globe stays quick to spin when
+        /// zoomed out. The quadratic falloff alone overshoots close in, though —
+        /// because the on-screen arc a rotation sweeps grows as `1 / (distance -
+        /// radius)`, at the minimum distance (1.2) the surface ran ~35% ahead of the
+        /// finger. Zoomed in past the reference distance the speed is therefore
+        /// capped at 1:1 finger tracking; zoomed out it is left alone.
+        private static func panRotationSpeed(cameraDistance: Float) -> Float {
+            let distanceRatio = cameraDistance / referenceCameraDistance
+            let quadratic = basePanRotationSpeed * distanceRatio * distanceRatio
+            guard cameraDistance < referenceCameraDistance else { return quadratic }
+            return min(quadratic, basePanRotationSpeed * screenScale(cameraDistance: cameraDistance))
+        }
 
         private var currentOutlineScale: Float = 1.0
 
@@ -178,7 +204,7 @@ struct GlobeView: UIViewRepresentable {
         /// base thickness; zoomed all the way in they thin to ~1/6 of it. Runs inside
         /// the caller's SCNTransaction, so animated zooms animate the width too.
         func updateOutlineThickness(cameraDistance: Float) {
-            let scale = max(1.0 / 6.0, min(1.0, (cameraDistance - 1.0) / (Self.referenceCameraDistance - 1.0)))
+            let scale = max(1.0 / 6.0, min(1.0, Self.screenScale(cameraDistance: cameraDistance)))
             guard abs(scale - currentOutlineScale) > 0.005 else { return }
             currentOutlineScale = scale
 
@@ -311,10 +337,7 @@ struct GlobeView: UIViewRepresentable {
             let cameraDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
                                       cameraNode.position.y * cameraNode.position.y +
                                       cameraNode.position.z * cameraNode.position.z)
-            let baseRotationSpeed: Float = 0.005
-            let referenceDistance: Float = 4.0
-            let distanceRatio = cameraDistance / referenceDistance
-            let rotationSpeed = baseRotationSpeed * distanceRatio * distanceRatio
+            let rotationSpeed = Self.panRotationSpeed(cameraDistance: cameraDistance)
 
             // Gestures only accumulate rotation deltas; the render delegate applies them
             // once per rendered frame. Setting node transforms from main-thread gesture
