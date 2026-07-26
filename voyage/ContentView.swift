@@ -145,6 +145,12 @@ class GlobeState: ObservableObject {
     @Published var checkedCities: [String: Set<String>] = [:]
     @Published var checkedAttractions: [String: Set<String>] = [:]
     @Published var zoomLevel: Float = 4.0
+    /// Closest the camera may get to the globe's center. The floor is set by the
+    /// atmosphere shell (radius 1.08) — the camera has to stay outside it, or its
+    /// double-sided translucent glow tints the whole view — and by the camera's
+    /// zNear, which must clear the globe surface at `minCameraDistance - 1`.
+    static let minCameraDistance: Float = 1.1
+    static let maxCameraDistance: Float = 10.0
     @Published var isDarkMode: Bool = false
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
@@ -431,11 +437,11 @@ class GlobeState: ObservableObject {
     }
 
     func zoomIn() {
-        zoomLevel = max(1.2, zoomLevel - 0.5)
+        zoomLevel = max(Self.minCameraDistance, zoomLevel - 0.5)
     }
 
     func zoomOut() {
-        zoomLevel = min(10.0, zoomLevel + 0.5)
+        zoomLevel = min(Self.maxCameraDistance, zoomLevel + 0.5)
     }
 
     // Get flag emoji for a country

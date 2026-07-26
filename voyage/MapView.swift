@@ -209,17 +209,13 @@ struct MapView: View {
                     let y = (90 - capital.lat) / 180 * mapHeight + verticalOffset
                     let center = CGPoint(x: x, y: y).applying(transform)
 
-                    // Draw small black dot
-                    let dotRadius: CGFloat = 4
-                    let dotPath = Path(ellipseIn: CGRect(
-                        x: center.x - dotRadius,
-                        y: center.y - dotRadius,
-                        width: dotRadius * 2,
-                        height: dotRadius * 2
-                    ))
+                    // Five-pointed star, matching the globe's capital marker
+                    let starRadius: CGFloat = 6
+                    let starPath = Path(CapitalMarker.starPath(outerRadius: starRadius, yUp: false))
+                        .applying(CGAffineTransform(translationX: center.x, y: center.y))
 
-                    context.fill(dotPath, with: .color(.black))
-                    context.stroke(dotPath, with: .color(Color(white: 0.3)), lineWidth: 1)
+                    context.fill(starPath, with: .color(AppColors.capitalMarker))
+                    context.stroke(starPath, with: .color(AppColors.capitalMarkerOutline), lineWidth: 1)
                 }
             }
             .gesture(

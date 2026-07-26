@@ -19,6 +19,7 @@
 		E81234560101 /* Earcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550101 /* Earcut.swift */; };
 		E81234560102 /* Earcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550101 /* Earcut.swift */; };
 		E81234560103 /* CountryHitTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550102 /* CountryHitTester.swift */; };
+		E81234590004 /* CapitalMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234590003 /* CapitalMarker.swift */; };
 		E81234560010 /* world.geojson in Resources */ = {isa = PBXBuildFile; fileRef = E81234550010 /* world.geojson */; };
 		E81234560011 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550011 /* MapView.swift */; };
 		E81234560012 /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550012 /* OrientationManager.swift */; };
@@ -95,6 +96,7 @@
 		E81234550009 /* PolygonTriangulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonTriangulator.swift; sourceTree = "<group>"; };
 		E81234550101 /* Earcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Earcut.swift; sourceTree = "<group>"; };
 		E81234550102 /* CountryHitTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryHitTester.swift; sourceTree = "<group>"; };
+		E81234590003 /* CapitalMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapitalMarker.swift; sourceTree = "<group>"; };
 		E81234550010 /* world.geojson */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = world.geojson; sourceTree = "<group>"; };
 		E81234550011 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		E81234550012 /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
@@ -200,6 +202,7 @@
 				E81234550009 /* PolygonTriangulator.swift */,
 				E81234550101 /* Earcut.swift */,
 				E81234550102 /* CountryHitTester.swift */,
+				E81234590003 /* CapitalMarker.swift */,
 				E81234550018 /* GlobeCache.swift */,
 				E81234550051 /* GlobeInertia.swift */,
 				E81234550021 /* AchievementsView.swift */,
@@ -422,6 +425,7 @@
 				E81234560009 /* PolygonTriangulator.swift in Sources */,
 				E81234560101 /* Earcut.swift in Sources */,
 				E81234560103 /* CountryHitTester.swift in Sources */,
+				E81234590004 /* CapitalMarker.swift in Sources */,
 				E81234560018 /* GlobeCache.swift in Sources */,
 				E81234560046 /* GlobeInertia.swift in Sources */,
 				E81234560021 /* AchievementsView.swift in Sources */,

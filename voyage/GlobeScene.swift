@@ -51,7 +51,9 @@ class GlobeScene {
         cameraNode.name = "camera"
         cameraNode.camera = SCNCamera()
         cameraNode.camera?.fieldOfView = 45
-        cameraNode.camera?.zNear = 0.1
+        // Well inside `GlobeState.minCameraDistance - 1` (the globe surface at the
+        // closest zoom) so deep zoom doesn't clip the surface or the atmosphere shell.
+        cameraNode.camera?.zNear = 0.01
         cameraNode.camera?.zFar = 100
         cameraNode.position = SCNVector3(0, 0, 4)
         scene.rootNode.addChildNode(cameraNode)
