@@ -5,15 +5,18 @@ import UIKit
 /// its flag on the prompt card; the player types the country's name into a
 /// search field. Unlike Name the Capital, the globe stays a neutral backdrop
 /// during play — outlining the asked country would give the answer away — and
-/// only flies to a country when its answer is revealed after three misses.
+/// only flies to a country when its answer is revealed after a wrong guess.
 /// Correctly named countries stay green, revealed misses stay red. The game
 /// runs on its own in-memory `GlobeState`, so nothing touches the user's
 /// travel data.
+///
+/// The answer is the country's own name, which is what the shared sweep engine
+/// checks by default — so this mode needs no view model of its own.
 struct NameFlagGameView: View {
     let region: ChallengeRegion
     let onDismiss: () -> Void
 
-    @StateObject private var viewModel: NameFlagGameViewModel
+    @StateObject private var viewModel: RegionSweepGameViewModel
     @StateObject private var gameGlobe: GlobeState
     @State private var searchText = ""
     @State private var feedback: Feedback?
@@ -38,7 +41,7 @@ struct NameFlagGameView: View {
         self.region = region
         self.onDismiss = onDismiss
         self.isDarkMode = mainState.isDarkMode
-        _viewModel = StateObject(wrappedValue: NameFlagGameViewModel(region: region))
+        _viewModel = StateObject(wrappedValue: RegionSweepGameViewModel(mode: .nameFlag, region: region))
 
         let globe = GlobeState(inMemory: true)
         globe.globeStyle = mainState.globeStyle
@@ -51,8 +54,7 @@ struct NameFlagGameView: View {
     }
 
     private enum Feedback: Equatable {
-        case correct(country: String, points: Int)
-        case wrong(guess: String, remainingTries: Int)
+        case correct(country: String)
         case reveal(country: String)
     }
 
@@ -99,7 +101,6 @@ struct NameFlagGameView: View {
             SweepResultOverlay(
                 viewModel: viewModel,
                 isDarkMode: isDarkMode,
-                firstTryLabel: "First-try answers",
                 missedSummary: missedSummary,
                 onPlayAgain: playAgain,
                 onDismiss: onDismiss
@@ -167,9 +168,11 @@ struct NameFlagGameView: View {
                 ) {
                     showQuitConfirmation = true
                 }
-                SweepFlagPromptCard(
+                SweepPromptCard(
                     viewModel: viewModel,
                     flagProvider: gameGlobe.flagForCountry,
+                    flagOnly: true,
+                    question: "Which country?",
                     isDarkMode: isDarkMode
                 )
                 Spacer(minLength: 0)
@@ -208,7 +211,6 @@ struct NameFlagGameView: View {
         GuessSuggestionDropdown(
             suggestions: countrySuggestions,
             query: searchText,
-            guessedItems: Set(viewModel.wrongGuesses),
             isDarkMode: isDarkMode,
             usesGlass: true,
             onSelect: { suggestion in
@@ -225,17 +227,13 @@ struct NameFlagGameView: View {
         let target = viewModel.currentTarget
 
         switch viewModel.submitGuess(guess) {
-        case .correct(let points):
+        case .correct:
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             if let target = target {
                 // Naming it right reveals where it is — colour it in on the globe
                 gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: target)
-                showFeedback(.correct(country: target, points: points))
+                showFeedback(.correct(country: target))
             }
-
-        case .wrong(let remainingTries):
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
-            showFeedback(.wrong(guess: guess, remainingTries: remainingTries))
 
         case .reveal:
             guard let target = target else { return }
@@ -306,7 +304,6 @@ struct NameFlagGameView: View {
             ChallengeSearchField(
                 searchText: $searchText,
                 suggestions: countrySuggestions,
-                guessedItems: Set(viewModel.wrongGuesses),
                 isDarkMode: isDarkMode,
                 usesGlass: true,
                 onFocusChange: { focused in
@@ -337,12 +334,9 @@ struct NameFlagGameView: View {
         let text: String
         let color: Color
         switch feedback {
-        case .correct(let country, let points):
-            text = "\(country) +\(points)"
+        case .correct(let country):
+            text = "Correct — \(country)"
             color = AppColors.challengeCorrect
-        case .wrong(let guess, let remainingTries):
-            text = "Not \(guess) — \(remainingTries) \(remainingTries == 1 ? "try" : "tries") left"
-            color = AppColors.challengeWrong
         case .reveal(let country):
             text = "This flag is \(country) \(gameGlobe.flagForCountry(country))"
             color = AppColors.challengeWrong

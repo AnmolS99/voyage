@@ -204,7 +204,8 @@ struct RegionCard: View {
     let stats: ChallengeGameStats
     let isDarkMode: Bool
 
-    /// A flawless sweep (100%) completes the region and earns its trophy;
+    /// A flawless sweep (every country correct) completes the region and earns
+    /// its trophy;
     /// completed cards get a green ring, mirroring completed achievements.
     private var isCompleted: Bool {
         stats.isPerfect
@@ -260,7 +261,7 @@ struct RegionCard: View {
 
     @ViewBuilder
     private var statsLine: some View {
-        if let percentage = stats.bestPercentage, let time = stats.bestScoreTime {
+        if let percentage = stats.bestPercentage, let time = stats.bestTime {
             Text("Best \(percentage)% · \(formatGameTime(time)) · Played \(stats.gamesPlayed) time\(stats.gamesPlayed == 1 ? "" : "s")")
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundColor(isCompleted ? AppColors.buttonVisited : AppColors.buttonColor)

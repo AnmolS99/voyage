@@ -65,7 +65,7 @@ struct SweepHUDButton: View {
     }
 }
 
-/// Top bar: quit button leading, timer + score pill trailing.
+/// Top bar: quit button leading, timer + correct-count pill trailing.
 struct SweepTopBar: View {
     @ObservedObject var viewModel: RegionSweepGameViewModel
     let isDarkMode: Bool
@@ -89,10 +89,10 @@ struct SweepTopBar: View {
                     Text("·")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-                    Image(systemName: "star.fill")
+                    Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(AppColors.buttonColor)
-                    Text("\(viewModel.score) pts")
+                    Text("\(viewModel.correctCount)")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                 }
@@ -106,89 +106,42 @@ struct SweepTopBar: View {
     }
 }
 
-/// Prompt card: sweep progress, flag + country name, an optional question
-/// line, and the tries-left dots.
+/// Prompt card: sweep progress, the clue for the current target, and an
+/// optional question line. The clue is the country's flag and name, except in
+/// Name the Flag (`flagOnly`) where the name *is* the answer and only a large
+/// flag is shown.
 struct SweepPromptCard: View {
     @ObservedObject var viewModel: RegionSweepGameViewModel
     let flagProvider: (String) -> String
+    var flagOnly = false
     var question: String? = nil
     let isDarkMode: Bool
 
     var body: some View {
         if let target = viewModel.currentTarget {
             VStack(spacing: 8) {
-                Text("\(viewModel.solvedCount + 1)/\(viewModel.totalCountries)")
+                Text("\(viewModel.answeredCount + 1)/\(viewModel.totalCountries)")
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                     .textCase(.uppercase)
 
-                HStack(spacing: 10) {
+                if flagOnly {
                     Text(flagProvider(target))
-                        .font(.system(size: 26))
-                    Text(target)
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                        .font(.system(size: 72))
+                } else {
+                    HStack(spacing: 10) {
+                        Text(flagProvider(target))
+                            .font(.system(size: 26))
+                        Text(target)
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    }
                 }
 
                 if let question = question {
                     Text(question)
                         .font(.system(size: 14, design: .rounded))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-                }
-
-                HStack(spacing: 6) {
-                    ForEach(0..<RegionSweepGameViewModel.maxPointsPerCountry, id: \.self) { index in
-                        Circle()
-                            .fill(index < viewModel.triesLeft ?
-                                  AppColors.buttonColor :
-                                  AppColors.track(isDarkMode: isDarkMode))
-                            .frame(width: 8, height: 8)
-                    }
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(AppColors.cardBackground(isDarkMode: isDarkMode))
-                    .shadow(color: .black.opacity(isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
-            )
-            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: target)
-        }
-    }
-}
-
-/// Prompt card for "Name the Flag": sweep progress, a large flag, a prompt
-/// line and the tries-left dots. The country name is deliberately omitted —
-/// it's the answer the player is guessing.
-struct SweepFlagPromptCard: View {
-    @ObservedObject var viewModel: RegionSweepGameViewModel
-    let flagProvider: (String) -> String
-    let isDarkMode: Bool
-
-    var body: some View {
-        if let target = viewModel.currentTarget {
-            VStack(spacing: 8) {
-                Text("\(viewModel.solvedCount + 1)/\(viewModel.totalCountries)")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-                    .textCase(.uppercase)
-
-                Text(flagProvider(target))
-                    .font(.system(size: 72))
-
-                Text("Which country?")
-                    .font(.system(size: 14, design: .rounded))
-                    .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-
-                HStack(spacing: 6) {
-                    ForEach(0..<RegionSweepGameViewModel.maxPointsPerCountry, id: \.self) { index in
-                        Circle()
-                            .fill(index < viewModel.triesLeft ?
-                                  AppColors.buttonColor :
-                                  AppColors.track(isDarkMode: isDarkMode))
-                            .frame(width: 8, height: 8)
-                    }
                 }
             }
             .padding(.horizontal, 24)
@@ -219,12 +172,11 @@ struct SweepFeedbackBanner: View {
     }
 }
 
-/// End-of-sweep overlay: trophy, new-best badge, score, stat rows, a footer
+/// End-of-sweep overlay: trophy, new-best badge, the correct count, a footer
 /// listing what was missed, and Play Again / Done buttons.
 struct SweepResultOverlay: View {
     @ObservedObject var viewModel: RegionSweepGameViewModel
     let isDarkMode: Bool
-    let firstTryLabel: String
     /// Footer listing what was missed (nil when nothing was).
     let missedSummary: String?
     let onPlayAgain: () -> Void
@@ -265,19 +217,13 @@ struct SweepResultOverlay: View {
                 }
 
                 VStack(spacing: 4) {
-                    Text("\(viewModel.score) / \(viewModel.maxScore)")
+                    Text("\(viewModel.correctCount) / \(viewModel.totalCountries)")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundColor(AppColors.buttonColor)
-                    Text("\(scorePercentage)% · \(formatGameTime(viewModel.elapsedTime))")
+                    Text("\(correctPercentage)% · \(formatGameTime(viewModel.elapsedTime))")
                         .font(.system(size: 15, weight: .medium, design: .rounded))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 }
-
-                VStack(spacing: 8) {
-                    resultRow(icon: "star.circle.fill", label: firstTryLabel, value: "\(viewModel.perfectCount)")
-                    resultRow(icon: "eye.fill", label: "Revealed", value: "\(viewModel.missedCountries.count)")
-                }
-                .padding(.top, 4)
 
                 if let missedSummary = missedSummary {
                     Text(missedSummary)
@@ -325,25 +271,8 @@ struct SweepResultOverlay: View {
         }
     }
 
-    private func resultRow(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(AppColors.buttonColor)
-                .frame(width: 20)
-            Text(label)
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-            Spacer()
-            Text(value)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-        }
-        .frame(maxWidth: 240)
-    }
-
-    private var scorePercentage: Int {
-        guard viewModel.maxScore > 0 else { return 0 }
-        return Int((Double(viewModel.score) / Double(viewModel.maxScore) * 100).rounded())
+    private var correctPercentage: Int {
+        guard viewModel.totalCountries > 0 else { return 0 }
+        return Int((Double(viewModel.correctCount) / Double(viewModel.totalCountries) * 100).rounded())
     }
 }

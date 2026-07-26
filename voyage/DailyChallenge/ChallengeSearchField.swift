@@ -117,7 +117,9 @@ struct ChallengeSuggestionList: View {
 struct GuessSuggestionDropdown: View {
     let suggestions: [String]
     let query: String
-    let guessedItems: Set<String>
+    /// Already-guessed items, greyed out. Only the daily challenge (five
+    /// attempts) has any; the one-guess game modes leave it empty.
+    var guessedItems: Set<String> = []
     let isDarkMode: Bool
     /// Liquid-glass styling to sit above the native iOS 26 search field.
     var usesGlass: Bool = false
@@ -200,7 +202,9 @@ extension View {
 struct ChallengeSearchField: View {
     @Binding var searchText: String
     let suggestions: [String]
-    let guessedItems: Set<String>
+    /// Already-guessed items, greyed out in the suggestion list. Only the
+    /// daily challenge (five attempts) has any.
+    var guessedItems: Set<String> = []
     let isDarkMode: Bool
     /// Liquid glass styling (iOS 26) for in-game HUDs; the default card look
     /// is kept for the daily challenge.

@@ -35,8 +35,7 @@ struct ClickCountryGameView: View {
     }
 
     private enum Feedback: Equatable {
-        case correct(country: String, points: Int)
-        case wrong(tapped: String, remainingTries: Int)
+        case correct(country: String)
         case reveal(country: String)
     }
 
@@ -76,7 +75,6 @@ struct ClickCountryGameView: View {
                 SweepResultOverlay(
                     viewModel: viewModel,
                     isDarkMode: isDarkMode,
-                    firstTryLabel: "First-try finds",
                     missedSummary: viewModel.missedCountries.isEmpty ?
                         nil : viewModel.missedCountries.joined(separator: ", "),
                     onPlayAgain: playAgain,
@@ -124,16 +122,11 @@ struct ClickCountryGameView: View {
                 gameGlobe.flyTo(.init(lat: center.lat, lon: center.lon, distance: nil))
             }
 
-        case .correct(let points):
+        case .correct:
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             gameGlobe.deselectCountry(resumeAutoRotation: false)
             gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: country)
-            showFeedback(.correct(country: country, points: points))
-
-        case .wrong(let remainingTries):
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
-            gameGlobe.deselectCountry(resumeAutoRotation: false)
-            showFeedback(.wrong(tapped: country, remainingTries: remainingTries))
+            showFeedback(.correct(country: country))
 
         case .reveal:
             guard let target = viewModel.currentTarget else { return }
@@ -214,12 +207,9 @@ struct ClickCountryGameView: View {
         let text: String
         let color: Color
         switch feedback {
-        case .correct(let country, let points):
-            text = "\(country) +\(points)"
+        case .correct(let country):
+            text = "Correct — \(country)"
             color = AppColors.challengeCorrect
-        case .wrong(let tapped, let remainingTries):
-            text = "That's \(tapped) — \(remainingTries) \(remainingTries == 1 ? "try" : "tries") left"
-            color = AppColors.challengeWrong
         case .reveal(let country):
             text = "\(country) \(gameGlobe.flagForCountry(country)) is here"
             color = AppColors.challengeWrong

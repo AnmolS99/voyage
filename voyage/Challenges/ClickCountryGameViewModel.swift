@@ -6,7 +6,7 @@ import Foundation
 /// Guesses are confirmed with two taps: the first tap marks a country
 /// (`.marked`), tapping the same country again submits it as the guess.
 /// Tapping a different country moves the mark instead — so a mis-tap never
-/// costs a try.
+/// costs the country's single guess.
 final class ClickCountryGameViewModel: RegionSweepGameViewModel {
     typealias TapOutcome = SweepGuessOutcome
 
@@ -22,7 +22,7 @@ final class ClickCountryGameViewModel: RegionSweepGameViewModel {
 
     func handleTap(on country: String) -> TapOutcome {
         guard phase == .playing, let target = currentTarget else { return .ignored }
-        guard !isSolved(country) else { return .ignored }
+        guard !isAnswered(country) else { return .ignored }
 
         // First tap marks the country; only a tap on the marked country
         // confirms it as the guess (a tap elsewhere moves the mark)
