@@ -112,15 +112,13 @@ struct ClickCountryGameView: View {
     private func handleTap(on country: String) {
         switch viewModel.handleTap(on: country) {
         case .marked:
-            // First tap: outline the country and center it at the player's
-            // current zoom — zooming out here would make small countries hard
-            // to hit again for the confirming tap. The name is deliberately
-            // not shown so marking doesn't reveal the answer.
+            // First tap: only outline the country — the camera stays put.
+            // Flying the globe to the tap would move the target out from under
+            // the finger mid-animation, so the confirming tap could land on a
+            // neighbour. The name is deliberately not shown so marking doesn't
+            // reveal the answer.
             UISelectionFeedbackGenerator().selectionChanged()
             gameGlobe.selectCountry(country, center: nil)
-            if let center = CountryHitTester.shared.center(of: country) {
-                gameGlobe.flyTo(.init(lat: center.lat, lon: center.lon, distance: nil))
-            }
 
         case .correct:
             UINotificationFeedbackGenerator().notificationOccurred(.success)
