@@ -15,12 +15,15 @@ struct Achievement: Identifiable {
     var percentage: Int { Int(progress * 100) }
 }
 
-/// The New 7 Wonders of the World, each paired with the country whose
-/// attraction checklist (country_highlights.json) contains it.
-enum SevenWonders {
+/// The New 7 Wonders of the World plus the Pyramids of Giza — the only surviving
+/// ancient wonder, which the New7Wonders campaign named an honorary eighth rather
+/// than putting it to the vote. Each is paired with the country whose attraction
+/// checklist (country_highlights.json) contains it.
+enum WondersOfTheWorld {
     static let wonders: [(country: String, attraction: String)] = [
         ("Brazil", "Christ the Redeemer"),
         ("China", "Great Wall of China"),
+        ("Egypt", "Pyramids of Giza"),
         ("India", "Taj Mahal"),
         ("Italy", "Colosseum"),
         ("Jordan", "Petra"),
