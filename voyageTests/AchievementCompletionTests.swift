@@ -138,65 +138,71 @@ final class AchievementCompletionTests: XCTestCase {
             "Should have most countries defined across all continents")
     }
 
-    // MARK: - Seven Wonders Achievement Tests
+    // MARK: - Wonders of the World Achievement Tests
 
-    private func makeSevenWondersAchievement(checked: [String: Set<String>]) -> Achievement {
+    private func makeWondersAchievement(checked: [String: Set<String>]) -> Achievement {
         Achievement(
-            name: "New Wonders of the World",
+            name: "Wonders of the World",
             medal: "⭐️",
-            visitedCountries: SevenWonders.visited(from: checked),
-            remainingCountries: SevenWonders.remaining(from: checked),
+            visitedCountries: WondersOfTheWorld.visited(from: checked),
+            remainingCountries: WondersOfTheWorld.remaining(from: checked),
             itemLabel: "wonders"
         )
     }
 
-    func testSevenWondersAchievementCompletedWhenAllChecked() {
+    func testWondersAchievementCompletedWhenAllChecked() {
         var checked: [String: Set<String>] = [:]
-        for wonder in SevenWonders.wonders {
+        for wonder in WondersOfTheWorld.wonders {
             checked[wonder.country, default: []].insert(wonder.attraction)
         }
 
-        let achievement = makeSevenWondersAchievement(checked: checked)
-        XCTAssertEqual(achievement.total, 7)
+        let achievement = makeWondersAchievement(checked: checked)
+        XCTAssertEqual(achievement.total, 8)
         XCTAssertTrue(achievement.isCompleted,
-            "Checking all seven wonders should complete the achievement")
+            "Checking all eight wonders should complete the achievement")
         XCTAssertEqual(achievement.percentage, 100)
     }
 
-    func testSevenWondersAchievementPartialProgress() {
+    func testWondersAchievementPartialProgress() {
         let checked: [String: Set<String>] = [
             "Peru": ["Machu Picchu"],
             "Italy": ["Colosseum"],
         ]
 
-        let achievement = makeSevenWondersAchievement(checked: checked)
+        let achievement = makeWondersAchievement(checked: checked)
         XCTAssertEqual(achievement.current, 2)
-        XCTAssertEqual(achievement.total, 7)
+        XCTAssertEqual(achievement.total, 8)
         XCTAssertFalse(achievement.isCompleted)
     }
 
-    func testSevenWondersIgnoresOtherCheckedAttractions() {
+    func testWondersIncludePyramidsOfGiza() {
+        let achievement = makeWondersAchievement(checked: ["Egypt": ["Pyramids of Giza"]])
+        XCTAssertEqual(achievement.visitedCountries, ["Pyramids of Giza"])
+        XCTAssertEqual(achievement.current, 1)
+    }
+
+    func testWondersIgnoresOtherCheckedAttractions() {
         // A non-wonder attraction in a wonder country must not count
         let checked: [String: Set<String>] = [
             "Italy": ["Pompeii"],
             "China": ["Great Wall of China"],
         ]
 
-        let achievement = makeSevenWondersAchievement(checked: checked)
+        let achievement = makeWondersAchievement(checked: checked)
         XCTAssertEqual(achievement.current, 1)
         XCTAssertEqual(achievement.visitedCountries, ["Great Wall of China"])
     }
 
-    func testSevenWondersMatchCountryHighlightsData() {
+    func testWondersMatchCountryHighlightsData() {
         // Each wonder must reference a real country and an attraction that exists
         // in that country's checklist, otherwise it can never be checked off.
         let countries = GeoJSONParser.loadCountries()
         let highlights = CountryHighlightsParser.loadHighlights()
 
-        for wonder in SevenWonders.wonders {
+        for wonder in WondersOfTheWorld.wonders {
             guard let country = countries.first(where: { $0.name == wonder.country }),
                   let code = country.flagCode else {
-                XCTFail("Seven wonders country \(wonder.country) not found in world.geojson")
+                XCTFail("Wonder country \(wonder.country) not found in world.geojson")
                 continue
             }
 

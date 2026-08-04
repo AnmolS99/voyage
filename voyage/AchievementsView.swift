@@ -42,12 +42,12 @@ struct AchievementsView: View {
             itemLabel: "capitals"
         ))
 
-        // New 7 Wonders of the World achievement
+        // Wonders of the World achievement (New 7 + honorary Pyramids of Giza)
         list.append(Achievement(
-            name: "New Wonders of the World",
+            name: "Wonders of the World",
             medal: "⭐️",
-            visitedCountries: SevenWonders.visited(from: globeState.checkedAttractions),
-            remainingCountries: SevenWonders.remaining(from: globeState.checkedAttractions),
+            visitedCountries: WondersOfTheWorld.visited(from: globeState.checkedAttractions),
+            remainingCountries: WondersOfTheWorld.remaining(from: globeState.checkedAttractions),
             itemLabel: "wonders"
         ))
 
