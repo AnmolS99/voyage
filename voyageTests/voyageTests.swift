@@ -1,5 +1,6 @@
 import XCTest
 import SceneKit
+import simd
 @testable import voyage
 
 final class voyageTests: XCTestCase {
@@ -166,6 +167,106 @@ final class voyageTests: XCTestCase {
                 print("At (\(testCase.lat), \(testCase.lon)) found: \(found ?? "nil")")
             }
         }
+    }
+
+    // MARK: - Tap ray → surface intersection (globe click accuracy)
+
+    // latLonToSphere → sphereToLatLon must round-trip across the globe
+    func testSphereToLatLonRoundTrip() {
+        for lat in stride(from: -80.0, through: 80.0, by: 20.0) {
+            for lon in stride(from: -170.0, through: 170.0, by: 30.0) {
+                let v = PolygonTriangulator.latLonToSphere(lat: lat, lon: lon, radius: 1.0)
+                let (outLat, outLon) = PolygonTriangulator.sphereToLatLon(
+                    simd_double3(Double(v.x), Double(v.y), Double(v.z)))
+                XCTAssertEqual(outLat, lat, accuracy: 0.001, "lat round trip at (\(lat), \(lon))")
+                XCTAssertEqual(outLon, lon, accuracy: 0.001, "lon round trip at (\(lat), \(lon))")
+            }
+        }
+    }
+
+    // A ray aimed at a known surface point must recover exactly that point,
+    // no matter how oblique the ray is (screen-edge taps at close zoom)
+    func testTapRayRecoversExactSurfacePoint() {
+        // Camera at the closest allowed zoom on the +X axis, which in the
+        // latLonToSphere convention looks straight at lat/lon (0°, 0°)
+        let cameraDistance = Double(GlobeState.minCameraDistance)
+        let origin = simd_double3(cameraDistance, 0, 0)
+
+        // Sample of surface targets from dead center out to very oblique
+        let targets: [(lat: Double, lon: Double)] = [
+            (0, 0),           // screen center
+            (0.5, 0.5),       // near center
+            (2.5, 4.0),       // Paris → Luxembourg scale offset
+            (8, 10),          // strongly oblique
+            (18, 12),         // near the visible limb at this zoom (~21.5° of ~24.6°)
+        ]
+
+        for target in targets {
+            let surface = unitVector(lat: target.lat, lon: target.lon)
+            guard let hit = PolygonTriangulator.raySphereSurfaceDirection(
+                origin: origin, direction: surface - origin) else {
+                XCTFail("Ray at (\(target.lat), \(target.lon)) should hit the sphere")
+                continue
+            }
+            let (lat, lon) = PolygonTriangulator.sphereToLatLon(hit)
+            XCTAssertEqual(lat, target.lat, accuracy: 1e-6, "lat at (\(target.lat), \(target.lon))")
+            XCTAssertEqual(lon, target.lon, accuracy: 1e-6, "lon at (\(target.lat), \(target.lon))")
+        }
+    }
+
+    // Documents the bug the analytic intersection fixes: SceneKit's hitTest
+    // struck the atmosphere shell (radius 1.08) first, and normalizing that hit
+    // point drags oblique taps toward the screen center by several degrees —
+    // enough to turn an edge-of-screen tap on Luxembourg into a tap on France.
+    func testAtmosphereShellHitSkewsObliqueTaps() {
+        let cameraDistance = Double(GlobeState.minCameraDistance)
+        let origin = simd_double3(cameraDistance, 0, 0)
+        let target = unitVector(lat: 0, lon: 4)  // ~Luxembourg's offset from screen center
+
+        let exact = PolygonTriangulator.raySphereSurfaceDirection(
+            origin: origin, direction: target - origin)!
+        let shell = PolygonTriangulator.raySphereSurfaceDirection(
+            origin: origin, direction: target - origin, radius: 1.08)!
+
+        XCTAssertLessThan(angleDegrees(exact, target), 1e-6,
+                          "Analytic surface intersection should be exact")
+        XCTAssertGreaterThan(angleDegrees(shell, target), 2,
+                             "Shell hit should skew by degrees — the pre-fix misclick")
+    }
+
+    // Near-misses clamp to the limb so taps just off the globe still resolve;
+    // wide misses and rays pointing away return nil
+    func testRaySphereLimbClampAndMisses() {
+        let origin = simd_double3(0, 0, 4)
+
+        // Passes 1.02 from center: within limb slack → clamped to closest approach
+        let nearMiss = PolygonTriangulator.raySphereSurfaceDirection(
+            origin: origin, direction: simd_double3(1.02, 0, -4))
+        XCTAssertNotNil(nearMiss, "Near-miss within limb slack should clamp to the limb")
+        if let nearMiss = nearMiss {
+            XCTAssertEqual(simd_length(nearMiss), 1.0, accuracy: 1e-9, "Clamped point should be on the unit sphere")
+        }
+
+        // Passes 1.2 from center: outside slack → miss
+        XCTAssertNil(PolygonTriangulator.raySphereSurfaceDirection(
+            origin: origin, direction: simd_double3(1.2, 0, -4)),
+            "Wide miss should not resolve to a surface point")
+
+        // Sphere behind the ray → miss
+        XCTAssertNil(PolygonTriangulator.raySphereSurfaceDirection(
+            origin: origin, direction: simd_double3(0, 0, 1)),
+            "Ray pointing away from the globe should not hit")
+    }
+
+    private func unitVector(lat: Double, lon: Double) -> simd_double3 {
+        let latRad = lat * .pi / 180
+        let lonRad = -lon * .pi / 180
+        return simd_double3(cos(latRad) * cos(lonRad), sin(latRad), cos(latRad) * sin(lonRad))
+    }
+
+    private func angleDegrees(_ a: simd_double3, _ b: simd_double3) -> Double {
+        let cosine = simd_dot(simd_normalize(a), simd_normalize(b))
+        return acos(min(1, max(-1, cosine))) * 180 / .pi
     }
 
     // Helper functions for tests
