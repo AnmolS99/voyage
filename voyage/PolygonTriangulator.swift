@@ -20,6 +20,53 @@ class PolygonTriangulator {
         return SCNVector3(x, y, z)
     }
 
+    /// Inverse of `latLonToSphere`: direction from the globe's center to lat/lon degrees.
+    static func sphereToLatLon(_ direction: simd_double3) -> (lat: Double, lon: Double) {
+        let unit = simd_normalize(direction)
+        let lat = asin(min(1, max(-1, unit.y))) * 180 / .pi
+        let lon = -atan2(unit.z, unit.x) * 180 / .pi
+        return (lat: lat, lon: lon)
+    }
+
+    /// First crossing of a ray with a sphere of `radius` centered at the origin,
+    /// returned as the surface direction (unit vector), or nil if the ray misses.
+    ///
+    /// Tap handling uses this instead of SceneKit's mesh hitTest: the atmosphere
+    /// shell (radius 1.08) and raised fills/outlines are struck first by oblique
+    /// rays, and normalizing those hit points skews the tap toward screen center —
+    /// by several degrees near the screen edge at close zoom.
+    ///
+    /// Rays that narrowly miss the sphere — within `limbSlack` × radius at closest
+    /// approach — are clamped to the closest-approach direction so taps just off
+    /// the globe's limb still resolve to the country on the horizon.
+    static func raySphereSurfaceDirection(origin: simd_double3,
+                                          direction: simd_double3,
+                                          radius: Double = 1.0,
+                                          limbSlack: Double = 1.05) -> simd_double3? {
+        let lengthSquared = simd_length_squared(direction)
+        guard lengthSquared > 0 else { return nil }
+        let unitDirection = direction / lengthSquared.squareRoot()
+
+        // Parameter of the ray's closest approach to the sphere's center
+        let tClosest = -simd_dot(origin, unitDirection)
+        guard tClosest > 0 else { return nil }  // sphere is behind the ray
+
+        let closest = origin + tClosest * unitDirection
+        let closestDistanceSquared = simd_length_squared(closest)
+        let radiusSquared = radius * radius
+
+        if closestDistanceSquared <= radiusSquared {
+            // Entry point: pull back from closest approach by half the chord
+            let halfChord = (radiusSquared - closestDistanceSquared).squareRoot()
+            return simd_normalize(origin + (tClosest - halfChord) * unitDirection)
+        }
+        let slack = radius * limbSlack
+        if closestDistanceSquared <= slack * slack {
+            return simd_normalize(closest)
+        }
+        return nil
+    }
+
     // Compute UV texture coordinates from 3D vertices by reverse-mapping to lat/lon
     private static func computeTexCoords(vertices: [SCNVector3], polygons: [[[Double]]]) -> [CGPoint] {
         // Compute overall bounding box across all polygons

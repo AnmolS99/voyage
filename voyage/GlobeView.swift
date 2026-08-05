@@ -1,6 +1,7 @@
 import SwiftUI
 import SceneKit
 import UIKit
+import simd
 
 struct GlobeView: UIViewRepresentable {
     @ObservedObject var globeState: GlobeState
@@ -511,43 +512,45 @@ struct GlobeView: UIViewRepresentable {
             stopInertia()
 
             let location = gesture.location(in: sceneView)
-            let hitResults = sceneView.hitTest(location, options: nil)
+            guard let (lat, lon) = Self.surfaceLatLon(at: location, in: sceneView, globeNode: globeNode) else { return }
 
-            // Accept any hit that's part of the globe (not camera or lights)
-            let excludedNames: Set<String> = ["camera", "light", "ambientLight"]
-
-            for hit in hitResults {
-                let nodeName = hit.node.name ?? ""
-                if excludedNames.contains(nodeName) { continue }
-
-                // Convert world hit point to globe's local coordinate system
-                let worldPoint = hit.worldCoordinates
-                let localPoint = globeNode.convertPosition(worldPoint, from: nil)
-
-                // Normalize to unit sphere
-                let length = sqrt(localPoint.x * localPoint.x + localPoint.y * localPoint.y + localPoint.z * localPoint.z)
-                guard length > 0 else { continue }
-
-                let nx = localPoint.x / length
-                let ny = localPoint.y / length
-                let nz = localPoint.z / length
-
-                // Convert 3D point to lat/lon
-                let lat = Double(asin(ny)) * 180.0 / .pi
-                let lon = -Double(atan2(nz, nx)) * 180.0 / .pi
-
-                // Find which country contains this point
-                if let countryName = findCountryAt(lat: lat, lon: lon) {
-                    if let onCountryTapped = onCountryTapped {
-                        onCountryTapped(countryName)
-                    } else {
-                        let center = getCountryCenter(name: countryName)
-                        self.globeState.selectCountry(countryName, center: center)
-                        self.updateHighlights()
-                    }
+            // Find which country contains this point
+            if let countryName = findCountryAt(lat: lat, lon: lon) {
+                if let onCountryTapped = onCountryTapped {
+                    onCountryTapped(countryName)
+                } else {
+                    let center = getCountryCenter(name: countryName)
+                    self.globeState.selectCountry(countryName, center: center)
+                    self.updateHighlights()
                 }
-                return
             }
+        }
+
+        /// Exact tap → globe-surface lat/lon: unprojects the screen point into a
+        /// world-space ray and intersects it with the globe sphere analytically.
+        ///
+        /// A SceneKit hitTest is deliberately not used here — its nearest hit is
+        /// almost always the atmosphere shell (radius 1.08), and normalizing that
+        /// hit point misreads oblique taps: near the screen edge at close zoom the
+        /// error reaches several degrees, enough to land in a neighboring country.
+        static func surfaceLatLon(at point: CGPoint, in sceneView: SCNView,
+                                  globeNode: SCNNode) -> (lat: Double, lon: Double)? {
+            let nearWorld = sceneView.unprojectPoint(SCNVector3(Float(point.x), Float(point.y), 0))
+            let farWorld = sceneView.unprojectPoint(SCNVector3(Float(point.x), Float(point.y), 1))
+
+            // Globe-local space, via the presentation node so in-flight rotation
+            // animations (centering flights, auto-rotation) are accounted for
+            let globe = globeNode.presentation
+            let nearLocal = globe.convertPosition(nearWorld, from: nil)
+            let farLocal = globe.convertPosition(farWorld, from: nil)
+
+            let origin = simd_double3(Double(nearLocal.x), Double(nearLocal.y), Double(nearLocal.z))
+            let target = simd_double3(Double(farLocal.x), Double(farLocal.y), Double(farLocal.z))
+            guard let surface = PolygonTriangulator.raySphereSurfaceDirection(origin: origin,
+                                                                             direction: target - origin) else {
+                return nil
+            }
+            return PolygonTriangulator.sphereToLatLon(surface)
         }
 
         func findCountryAt(lat: Double, lon: Double) -> String? {
