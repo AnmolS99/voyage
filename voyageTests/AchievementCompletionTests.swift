@@ -212,6 +212,82 @@ final class AchievementCompletionTests: XCTestCase {
         }
     }
 
+    // MARK: - Continental Drifter Achievement Tests
+
+    private func makeDrifterAchievement(visited: Set<String>) -> Achievement {
+        Achievement(
+            name: "Continental Drifter",
+            medal: "🌐",
+            visitedCountries: ContinentData.visitedContinentNames(from: visited),
+            remainingCountries: ContinentData.remainingContinentNames(from: visited),
+            itemLabel: "continents"
+        )
+    }
+
+    func testDrifterTracksAllSevenContinents() {
+        let achievement = makeDrifterAchievement(visited: [])
+        XCTAssertEqual(achievement.total, 7,
+            "Continental Drifter should track all seven continents, Antarctica included")
+        XCTAssertEqual(achievement.current, 0)
+        XCTAssertTrue(achievement.remainingCountries.contains("Antarctica"))
+    }
+
+    func testDrifterCountsContinentAfterOneCountry() {
+        guard let europeCountry = Continent.europe.countries.first else {
+            XCTFail("No European countries loaded")
+            return
+        }
+
+        let achievement = makeDrifterAchievement(visited: [europeCountry])
+        XCTAssertEqual(achievement.current, 1,
+            "A single country should count its whole continent")
+        XCTAssertEqual(achievement.visitedCountries, ["Europe"])
+        XCTAssertFalse(achievement.isCompleted)
+    }
+
+    func testDrifterDoesNotDoubleCountSameContinent() {
+        let europeCountries = Set(Continent.europe.countries.prefix(4))
+        guard europeCountries.count == 4 else {
+            XCTFail("Not enough European countries loaded")
+            return
+        }
+
+        let achievement = makeDrifterAchievement(visited: europeCountries)
+        XCTAssertEqual(achievement.current, 1,
+            "Four countries on one continent should still count as one continent")
+    }
+
+    func testDrifterCompletedWithOneCountryPerContinent() {
+        var visited: Set<String> = []
+        for continent in Continent.allCases {
+            guard let country = continent.countries.first else {
+                XCTFail("\(continent.rawValue) has no countries to visit")
+                continue
+            }
+            visited.insert(country)
+        }
+
+        let achievement = makeDrifterAchievement(visited: visited)
+        XCTAssertTrue(achievement.isCompleted,
+            "One country on each of the seven continents should complete the achievement")
+        XCTAssertEqual(achievement.percentage, 100)
+        XCTAssertTrue(achievement.remainingCountries.isEmpty)
+    }
+
+    func testDrifterIncompleteWithoutAntarctica() {
+        var visited: Set<String> = []
+        for continent in Continent.allCases where continent != .antarctica {
+            guard let country = continent.countries.first else { continue }
+            visited.insert(country)
+        }
+
+        let achievement = makeDrifterAchievement(visited: visited)
+        XCTAssertFalse(achievement.isCompleted,
+            "Six continents without Antarctica should leave the achievement incomplete")
+        XCTAssertEqual(achievement.current, 6)
+        XCTAssertEqual(achievement.remainingCountries, ["Antarctica"])
+    }
+
     // MARK: - Cross-view Consistency Tests
 
     func testAchievementConsistencyBetweenViews() {

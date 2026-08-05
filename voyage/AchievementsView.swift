@@ -51,6 +51,16 @@ struct AchievementsView: View {
             itemLabel: "wonders"
         ))
 
+        // Continental Drifter achievement — one item per continent, earned by
+        // setting foot on all seven (Antarctica included)
+        list.append(Achievement(
+            name: "Continental Drifter",
+            medal: "🌐",
+            visitedCountries: ContinentData.visitedContinentNames(from: globeState.visitedCountries),
+            remainingCountries: ContinentData.remainingContinentNames(from: globeState.visitedCountries),
+            itemLabel: "continents"
+        ))
+
         // Continent achievements
         for continent in Continent.allCases where continent != .antarctica {
             let countries = continent.countries
