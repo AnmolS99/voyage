@@ -81,6 +81,23 @@ struct ContinentData {
         visited.intersection(continent.countries)
     }
 
+    /// A continent counts as visited once any single country on it has been visited.
+    static func hasVisited(_ continent: Continent, from visited: Set<String>) -> Bool {
+        !visitedCountries(in: continent, from: visited).isEmpty
+    }
+
+    /// Continents with at least one visited country, in `Continent.allCases` order.
+    /// Antarctica is included here even though it has no "Explorer of" achievement
+    /// of its own — the Continental Drifter achievement requires all seven.
+    static func visitedContinentNames(from visited: Set<String>) -> [String] {
+        Continent.allCases.filter { hasVisited($0, from: visited) }.map(\.rawValue)
+    }
+
+    /// Continents with no visited country, in `Continent.allCases` order.
+    static func remainingContinentNames(from visited: Set<String>) -> [String] {
+        Continent.allCases.filter { !hasVisited($0, from: visited) }.map(\.rawValue)
+    }
+
     /// Reset cached data (useful for testing)
     static func resetCache() {
         _countriesByContinent = nil
