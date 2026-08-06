@@ -1,5 +1,5 @@
 #!/bin/bash
-# Regenerates voyage/world.geojson country geometry from Natural Earth 1:10m data.
+# Regenerates shared/data/world.geojson country geometry from Natural Earth 1:10m data.
 #
 # Downloads NE admin-0 countries, simplifies to the app's point budget with
 # mapshaper, and merges the new geometry into the existing world.geojson
@@ -54,9 +54,9 @@ npx -y mapshaper "$WORK_DIR/ne_10m_admin_0_map_units.shp" \
     -clean \
     -o format=geojson precision=0.0001 "$WORK_DIR/ne_simplified.json"
 
-echo "Merging geometry into voyage/world.geojson..."
+echo "Merging geometry into shared/data/world.geojson..."
 python3 "$SCRIPT_DIR/merge_geometry.py" \
     "$WORK_DIR/ne_simplified.json" \
-    "$PROJECT_DIR/voyage/world.geojson"
+    "$PROJECT_DIR/shared/data/world.geojson"
 
-echo "Done. Next: regenerate voyage/globe.scn with GlobeCacheGenerator."
+echo "Done. Next: regenerate ios/voyage/globe.scn with GlobeCacheGenerator."

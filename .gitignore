@@ -18,17 +18,17 @@ Pods/
 Carthage/Build/
 
 # Fastlane
-fastlane/report.xml
-fastlane/Preview.html
-fastlane/screenshots/
-fastlane/test_output/
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/screenshots/
+ios/fastlane/test_output/
 
 # Supabase
-supabase/.branches
-supabase/.temp
+shared/supabase/.branches
+shared/supabase/.temp
 
 # Secrets
-Secrets.xcconfig
+ios/Secrets.xcconfig
 
 # Other
 *.ipa

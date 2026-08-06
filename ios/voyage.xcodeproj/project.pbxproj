@@ -97,7 +97,7 @@
 		E81234550101 /* Earcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Earcut.swift; sourceTree = "<group>"; };
 		E81234550102 /* CountryHitTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryHitTester.swift; sourceTree = "<group>"; };
 		E81234590003 /* CapitalMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapitalMarker.swift; sourceTree = "<group>"; };
-		E81234550010 /* world.geojson */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = world.geojson; sourceTree = "<group>"; };
+		E81234550010 /* world.geojson */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = world.geojson; path = "../../shared/data/world.geojson"; sourceTree = "<group>"; };
 		E81234550011 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		E81234550012 /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
 		E81234550013 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -120,7 +120,7 @@
 		E81234550031 /* CountryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryListView.swift; sourceTree = "<group>"; };
 		E81234550032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		E81234550034 /* CountryExploreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryExploreView.swift; sourceTree = "<group>"; };
-		E81234550035 /* country_highlights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = country_highlights.json; sourceTree = "<group>"; };
+		E81234550035 /* country_highlights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = country_highlights.json; path = "../../shared/data/country_highlights.json"; sourceTree = "<group>"; };
 		E81234550036 /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallenge.swift; sourceTree = "<group>"; };
 		E81234550037 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		E81234550038 /* ChallengeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeStore.swift; sourceTree = "<group>"; };

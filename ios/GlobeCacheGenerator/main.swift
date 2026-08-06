@@ -222,7 +222,7 @@ func main() {
         geojsonPath = args[1]
         outputPath = args[2]
     } else {
-        geojsonPath = "\(projectDir)/voyage/world.geojson"
+        geojsonPath = "\(projectDir)/../shared/data/world.geojson"
         outputPath = "\(projectDir)/voyage/globe.scn"
     }
 

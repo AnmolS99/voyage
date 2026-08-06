@@ -38,8 +38,8 @@
 ```bash
 git clone https://github.com/AnmolS99/voyage.git
 cd voyage
-cp Secrets.xcconfig.example Secrets.xcconfig
-# Edit Secrets.xcconfig with your Supabase URL and publishable key
+cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig
+# Edit ios/Secrets.xcconfig with your Supabase URL and publishable key
 open voyage.xcodeproj
 ```
 
@@ -61,9 +61,10 @@ Build and run on iOS 17.0+ simulator or device.
 The globe (`globe.scn`) is pre-built for fast startup. To regenerate after modifying `world.geojson`:
 
 ```bash
-# Build and run the generator
+# Build and run the generator (from the ios/ directory)
+cd ios
 xcodebuild -scheme GlobeCacheGenerator -destination 'platform=macOS' build
-# Run it (output goes directly to voyage/globe.scn)
+# Run it (output goes directly to ios/voyage/globe.scn)
 ./DerivedData/voyage/Build/Products/Debug/GlobeCacheGenerator
 ```
 

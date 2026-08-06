@@ -88,17 +88,23 @@ voyage/
 
 Steps:
 
-- [ ] Move iOS project into `ios/` (use `git mv` to preserve history)
-- [ ] Move `world.geojson` and `country_highlights.json` to `shared/data/`;
-      update the Xcode project to reference them there (folder/file references
-      outside the project dir — bundle output must be identical)
-- [ ] Move `supabase/` to `shared/supabase/`; update any config paths
-- [ ] Update `scripts/update_geometry.sh` + `merge_geometry.py` paths
-- [ ] Update `.github/workflows/testflight.yml` working-directory/paths
-- [ ] Update GlobeCacheGenerator input/output paths
-- [ ] Update CLAUDE.md: new layout, plus a pointer to this plan
-- [ ] Full verification: iOS build, full test suite, and a TestFlight workflow
-      run (`gh workflow run testflight.yml`) all succeed
+- [x] Move iOS project into `ios/` (use `git mv` to preserve history)
+- [x] Move `world.geojson` and `country_highlights.json` to `shared/data/`;
+      update the Xcode project to reference them there (file references carry
+      `name` + a `../../shared/data/…` path; verified all three data files land
+      in the built `.app` bundle unchanged)
+- [x] Move `supabase/` to `shared/supabase/`; update any config paths
+- [x] Update `scripts/update_geometry.sh` + `merge_geometry.py` paths
+- [x] Update `.github/workflows/testflight.yml` working-directory/paths
+      (job-level `defaults.run.working-directory: ios`; artifact path is
+      repo-relative since `upload-artifact` ignores that default)
+- [x] Update GlobeCacheGenerator input/output paths
+- [x] Update CLAUDE.md: new layout, plus a pointer to this plan
+- [x] Full verification: iOS build ✅, full test suite ✅ (TEST SUCCEEDED),
+      GlobeCacheGenerator build ✅
+- [x] Final gate: a TestFlight workflow run from this branch
+      (`gh workflow run testflight.yml --ref refactor/monorepo-restructure`)
+      — proves CI works with the new layout before merge
 
 **Definition of done:** repo has the new layout, `git log --follow` still
 tracks moved files, and a TestFlight build produced from the restructured repo
@@ -342,7 +348,7 @@ Update the table as phases complete.
 | Phase | Status |
 | --- | --- |
 | 0 — Environment & tooling | ✅ Done (2026-08-06) |
-| 1 — Repo restructure | Not started |
+| 1 — Repo restructure | ✅ Done (2026-08-06) |
 | 2 — Scaffold + Play account | Not started |
 | 3 — Data layer | Not started |
 | 4 — 2D map | Not started |
