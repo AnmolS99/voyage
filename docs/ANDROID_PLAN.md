@@ -102,7 +102,7 @@ Steps:
 - [x] Update CLAUDE.md: new layout, plus a pointer to this plan
 - [x] Full verification: iOS build ✅, full test suite ✅ (TEST SUCCEEDED),
       GlobeCacheGenerator build ✅
-- [ ] Final gate: a TestFlight workflow run from this branch
+- [x] Final gate: a TestFlight workflow run from this branch
       (`gh workflow run testflight.yml --ref refactor/monorepo-restructure`)
       — proves CI works with the new layout before merge
 
@@ -348,7 +348,7 @@ Update the table as phases complete.
 | Phase | Status |
 | --- | --- |
 | 0 — Environment & tooling | ✅ Done (2026-08-06) |
-| 1 — Repo restructure | 🔄 Code complete — awaiting TestFlight CI verification |
+| 1 — Repo restructure | ✅ Done (2026-08-06) |
 | 2 — Scaffold + Play account | Not started |
 | 3 — Data layer | Not started |
 | 4 — 2D map | Not started |
