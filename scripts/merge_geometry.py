@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge Natural Earth geometry into voyage/world.geojson.
+"""Merge Natural Earth geometry into shared/data/world.geojson.
 
 Replaces only the `geometry` of each feature, matched by ISO 3166-1 alpha-2
 code (feature.id in world.geojson <-> ISO_A2_EH / ISO_A2 in Natural Earth).

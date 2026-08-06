@@ -4,7 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # voyage
 
-An iOS app that displays an interactive 3D globe where users can explore and track countries they've visited.
+An app that displays an interactive 3D globe where users can explore and track
+countries they've visited. iOS ships today; a native Android version is being
+built — see [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) for the phased plan and
+current progress.
+
+## Repository Layout
+
+```
+voyage/
+├── ios/        # iOS app: voyage.xcodeproj, voyage/, voyageTests/,
+│               # GlobeCacheGenerator/, fastlane/, Gemfile, Secrets.xcconfig
+├── android/    # Android app (created in Phase 2 of the Android plan)
+├── shared/
+│   ├── data/       # world.geojson, country_highlights.json — consumed by BOTH apps
+│   └── supabase/   # schemas/, migrations/, seed.sql
+├── scripts/    # update_geometry.sh, merge_geometry.py
+└── docs/       # ANDROID_PLAN.md and platform docs
+```
+
+**All iOS commands below run from the `ios/` directory.** The data files under
+`shared/data/` are referenced by the Xcode project in place (not copied) — edit
+them there, never duplicate them per platform.
 
 ## Git Conventions
 
@@ -22,11 +43,15 @@ Examples:
 - `fix/globe-rotation-reset`
 - `refactor/country-data-parsing`
 
-## Build, Run & Test
+## Build, Run & Test (iOS)
 
 **Always build and run the simulator after making larger changes to verify the implementation works correctly.**
 
+All commands in this section run from `ios/`:
+
 ```bash
+cd ios
+
 # Build
 xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' -configuration Debug build
 
@@ -57,11 +82,11 @@ gh run watch                                    # monitor the build
 
 ## Setup
 
-Supabase credentials are stored in `Secrets.xcconfig` (gitignored). To set up:
+Supabase credentials are stored in `ios/Secrets.xcconfig` (gitignored). To set up:
 
 ```bash
-cp Secrets.xcconfig.example Secrets.xcconfig
-# Edit Secrets.xcconfig with your Supabase URL and publishable key
+cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig
+# Edit ios/Secrets.xcconfig with your Supabase URL and publishable key
 ```
 
 ## Architecture
@@ -83,7 +108,7 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 
 ## Key Files
 
-| File                        | Purpose                                           |
+| File (under `ios/voyage/`)  | Purpose                                           |
 | --------------------------- | ------------------------------------------------- |
 | `ContentView.swift`         | Tab container + `GlobeState` (shared app state)   |
 | `GlobeView.swift`           | Main 3D globe view with SceneKit integration      |
@@ -185,7 +210,7 @@ A daily geography quiz feature powered by Supabase. The `daily_challenges` table
 
 The `daily_challenges` table has columns: `id` (uuid), `date` (date), `is_guess_country` (bool), `is_guess_capital` (bool), `is_guess_flag` (bool), `answer` (text — ISO 3166-1 alpha-2 code), `created_at`, `updated_at`. Only one boolean is true per row.
 
-Schema and migrations live in `supabase/schemas/` and `supabase/migrations/`; `supabase/seed.sql` seeds the 365 daily challenges.
+Schema and migrations live in `shared/supabase/schemas/` and `shared/supabase/migrations/`; `shared/supabase/seed.sql` seeds the 365 daily challenges.
 
 ## Color Palette
 
@@ -204,9 +229,9 @@ All colors are defined once in `ColorPalette.swift` (`AppColors`) and referenced
 
 ## Data Files
 
-- `world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
-- `country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
-- `globe.scn` - Pre-built 3D globe cache (regenerate with GlobeCacheGenerator)
+- `shared/data/world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
+- `shared/data/country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
+- `ios/voyage/globe.scn` - Pre-built 3D globe cache, iOS-only (regenerate with GlobeCacheGenerator)
 
 ### Boundary Data Provenance
 
@@ -216,7 +241,7 @@ coordinates) to ~170k boundary points world-wide. To regenerate or change the de
 budget, run:
 
 ```bash
-./scripts/update_geometry.sh   # downloads NE data, simplifies, merges into world.geojson
+./scripts/update_geometry.sh   # downloads NE data, simplifies, merges into shared/data/world.geojson
 ```
 
 Map units splitting one country into several features (GB = England + Scotland + Wales +
@@ -232,7 +257,7 @@ regenerate `globe.scn` (see [Globe Cache Generation](#globe-cache-generation)).
 
 ## Country Highlights Data
 
-`country_highlights.json` contains 1-5 top cities and 1-5 top attractions for all 206 countries/territories. The data was compiled by cross-referencing at least 3 sources per country to ensure accuracy and reduce bias.
+`shared/data/country_highlights.json` contains 1-5 top cities and 1-5 top attractions for all 206 countries/territories. The data was compiled by cross-referencing at least 3 sources per country to ensure accuracy and reduce bias.
 
 **Sources used:** Lonely Planet, TripAdvisor, Touropia, PlanetWare, Atlas Obscura, Culture Trip, Rough Guides, Wikipedia (tourism pages), official national tourism boards, and regional travel blogs.
 
@@ -246,13 +271,14 @@ regenerate `globe.scn` (see [Globe Cache Generation](#globe-cache-generation)).
 
 ## Globe Cache Generation
 
-The `globe.scn` file is a pre-built SceneKit scene for fast app startup. To regenerate after modifying `world.geojson`:
+The `ios/voyage/globe.scn` file is a pre-built SceneKit scene for fast app startup. To regenerate after modifying `shared/data/world.geojson`:
 
 ```bash
 # From Xcode: Select GlobeCacheGenerator scheme and Run (⌘R)
 # Or from command line:
+cd ios
 xcodebuild -scheme GlobeCacheGenerator -destination 'platform=macOS' build
 ./DerivedData/voyage/Build/Products/Debug/GlobeCacheGenerator
 ```
 
-The generator reads `voyage/world.geojson` and outputs to `voyage/globe.scn`.
+The generator reads `shared/data/world.geojson` and outputs to `ios/voyage/globe.scn`.

@@ -7,6 +7,10 @@ concurrency:
   group: testflight-build
   cancel-in-progress: false
 
+defaults:
+  run:
+    working-directory: ios
+
 jobs:
   build:
     runs-on: macos-15
@@ -54,4 +58,4 @@ jobs:
           name: fastlane-logs
           path: |
             ~/Library/Logs/gym
-            fastlane/report.xml
+            ios/fastlane/report.xml
