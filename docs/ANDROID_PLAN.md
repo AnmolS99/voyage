@@ -37,13 +37,23 @@ change.
 
 Get an Android development environment working on this machine.
 
-- [ ] Install Android Studio (latest stable) + Android SDK, platform tools
-- [ ] Install JDK 17 (Temurin via Homebrew, or use Android Studio's embedded JDK)
-- [ ] Create an emulator (Pixel-class device, latest stable API image) and verify it boots
-- [ ] Verify `gradle`/`adb` work from the terminal (needed for CI-parity local builds)
+- [x] Install Android Studio (latest stable) + Android SDK, platform tools
+      — Studio via Homebrew cask; SDK at `~/Library/Android/sdk` (platform-tools,
+      platforms 35+36, build-tools 35.0.0, emulator, cmdline-tools)
+- [x] Install JDK 17 (Homebrew `openjdk@17`; `JAVA_HOME`/`ANDROID_HOME` exported
+      in `~/.zshrc`) — note: Studio's embedded JBR is JDK 25, fine for the IDE
+      but CLI builds use 17
+- [x] Create an emulator (Pixel-class device, latest stable API image) and
+      verify it boots — AVD `voyage_pixel9_api36` (Pixel 9, Android 16)
+- [x] Verify `gradle`/`adb` work from the terminal (needed for CI-parity local builds)
+- [x] Open Android Studio once (first-run wizard; it should auto-detect the SDK)
+      and confirm a project syncs — the one step that needs the GUI
 
 **Definition of done:** a "Hello World" Compose template project builds and
 runs on the emulator from both Android Studio and the command line.
+*Verified 2026-08-06 via CLI: Compose app built with the Gradle wrapper
+(AGP 8.8 / Kotlin 2.1 / Gradle 8.10.2 on JDK 17), installed and rendered on
+the Android 16 emulator. Android Studio first-run check remains.*
 
 ---
 
@@ -331,7 +341,7 @@ Update the table as phases complete.
 
 | Phase | Status |
 | --- | --- |
-| 0 — Environment & tooling | Not started |
+| 0 — Environment & tooling | ✅ Done (2026-08-06) |
 | 1 — Repo restructure | Not started |
 | 2 — Scaffold + Play account | Not started |
 | 3 — Data layer | Not started |
