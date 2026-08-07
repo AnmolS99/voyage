@@ -30,6 +30,9 @@ change.
 | 2026-08-06 | Persistence: Jetpack DataStore + Android Auto Backup, local-only | No account system for v1. Cross-platform sync (Supabase auth) is explicitly out of scope; revisit after launch. |
 | 2026-08-06 | Google Play account: **not yet registered** | New personal accounts must run a closed test with ≥12 testers for 14 days before production access — register early (Phase 2). |
 | 2026-08-06 | minSdk 26, targetSdk = latest stable | Filament and Compose are comfortable at 26; dynamic color (31+) degrades gracefully. |
+| 2026-08-06 | applicationId `com.anmol.voyage` | Matches the iOS bundle id; one identity across stores. Permanent once the Play entry is created. |
+| 2026-08-06 | AGP 9 built-in Kotlin instead of the `kotlin-android` plugin | AGP 9 defaults to `android.builtInKotlin=true` and the old plugin is incompatible with the new DSL; opting out is removed in AGP 10. |
+| 2026-08-06 | Five bottom-bar destinations, not four | The iOS app has five tabs (a Challenges tab was added after this plan was written); the shell mirrors what iOS actually ships. |
 
 ---
 
@@ -117,35 +120,58 @@ installs and runs correctly.
 Two independent tracks; start the Play account clock ticking now because of
 Google's 14-day closed-testing requirement.
 
-**Play account (admin track — can run in parallel with everything below):**
+**Play account (admin track — owner-only, can run in parallel with everything
+below):** these steps need payment details and identity documents, so they have
+to be done by hand at <https://play.google.com/console>.
 
-- [ ] Register Google Play developer account ($25 one-time) + identity verification
-- [ ] Create the app entry in Play Console (`com.anmol.voyage` or chosen
-      applicationId — **this is permanent, decide carefully**)
+- [~] Register Google Play developer account ($25 one-time) + identity
+      verification — **registered 2026-08-07, awaiting Google's identity
+      verification**; the console stays limited until it clears
+- [ ] Create the app entry in Play Console — applicationId **`com.anmol.voyage`**
+      (matches the iOS bundle id; already baked into the scaffold and permanent
+      once the Play entry exists). Blocked on verification completing
 - [ ] Note the requirement: ≥12 testers opted in for 14 consecutive days of
       closed testing before production access can be requested — recruit
       testers early
 
 **Project scaffold:**
 
-- [ ] Create `android/` Gradle project: Kotlin DSL, version catalog
+- [x] Create `android/` Gradle project: Kotlin DSL, version catalog
       (`libs.versions.toml`), single `app` module, Compose + Material 3
-- [ ] applicationId matching the Play Console entry; minSdk 26, targetSdk latest
-- [ ] App theme: port `AppColors` from `ColorPalette.swift` into a single
-      `ColorPalette.kt` (same hex values, one source of truth per platform),
-      light + dark schemes, optional Material You dynamic color for chrome
-      (never for country-status colors — those are semantic)
-- [ ] Four-destination `NavigationBar` shell mirroring the iOS tabs:
-      Home / Daily / Achievements / Settings, with placeholder screens
-- [ ] Edge-to-edge + predictive back enabled from day one
-- [ ] Adaptive app icon + Splash Screen API (reuse iOS icon artwork)
-- [ ] `docs/ANDROID_DEVELOPMENT.md`: how to build, run, test (Android's
-      counterpart to the iOS instructions in CLAUDE.md); reference it from CLAUDE.md
-- [ ] CI: `.github/workflows/android-ci.yml` — assemble debug + run unit tests
-      on every PR touching `android/` or `shared/`
+      — AGP 9.3.1 with **built-in Kotlin** (no `org.jetbrains.kotlin.android`
+      plugin; only the Compose compiler plugin is applied), Kotlin 2.3.21,
+      Gradle wrapper 9.6.1, Compose BOM 2026.06.01, sources in `src/main/kotlin`
+- [x] applicationId `com.anmol.voyage`; minSdk 26, compileSdk/targetSdk 37
+      (API 37.1 — current AndroidX requires compiling against 37+)
+- [x] App theme: `ui/theme/ColorPalette.kt` (`VoyagePalette`) ports every
+      `AppColors` value 1:1, light + dark Material 3 schemes built from it
+      (tonal container roles derived from the palette, not added to it),
+      dynamic color opt-in for chrome only — never for country-status colors.
+      `ColorPaletteTest` pins the values documented in CLAUDE.md
+- [x] `NavigationBar` shell with placeholder screens — **five** destinations,
+      not four: the iOS `TabView` gained a Challenges tab, so the bar mirrors
+      Home / Daily / Challenges / Achievements / Settings. The Achievements item
+      is labelled "Medals" in the bar (five full-length labels don't fit) while
+      the screen keeps the iOS wording
+- [x] Edge-to-edge + predictive back enabled from day one
+      (`enableEdgeToEdge()`, `enableOnBackInvokedCallback`); back from any tab
+      returns to Home, verified on the emulator
+- [x] Adaptive app icon + Splash Screen API — icon layers (foreground +
+      monochrome themed layer) generated from the iOS artwork by
+      `android/tools/generate_launcher_icons.py`; `core-splashscreen` handover
+      theme, `Theme.Voyage.Starting` → `Theme.Voyage`
+- [x] `docs/ANDROID_DEVELOPMENT.md`: how to build, run, test; referenced from
+      CLAUDE.md
+- [x] CI: `.github/workflows/android-ci.yml` — `assembleDebug`,
+      `testDebugUnitTest`, `lintDebug` on every PR touching `android/` or
+      `shared/`, with the debug APK uploaded as an artifact
 
-**Definition of done:** the empty four-tab app runs on the emulator looking
+**Definition of done:** the empty five-tab app runs on the emulator looking
 like a real Material 3 app, and CI builds it on every PR.
+*Scaffold verified 2026-08-06 on the Android 16 emulator: `assembleDebug` ✅,
+7 unit tests ✅, `lintDebug` clean of errors ✅, five-tab shell renders in light
+and dark with the Voyage palette, launcher icon matches the iOS artwork. Play
+account registration is the remaining item.*
 
 ---
 
@@ -349,7 +375,7 @@ Update the table as phases complete.
 | --- | --- |
 | 0 — Environment & tooling | ✅ Done (2026-08-06) |
 | 1 — Repo restructure | ✅ Done (2026-08-06) |
-| 2 — Scaffold + Play account | Not started |
+| 2 — Scaffold + Play account | 🟡 Scaffold done (2026-08-06); Play account registered 2026-08-07, awaiting Google identity verification |
 | 3 — Data layer | Not started |
 | 4 — 2D map | Not started |
 | 5 — State & persistence | Not started |

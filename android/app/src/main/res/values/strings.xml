@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Voyage</string>
+
+    <!-- Bottom navigation labels (mirror the iOS tab titles) -->
+    <string name="destination_home">Home</string>
+    <string name="destination_daily">Daily</string>
+    <string name="destination_challenges">Challenges</string>
+    <string name="destination_achievements">Achievements</string>
+    <!-- Bottom bar variant: "Achievements" wraps with five items on a phone -->
+    <string name="destination_achievements_short">Medals</string>
+    <string name="destination_settings">Settings</string>
+
+    <!-- Placeholder copy, removed as each phase lands its real screen -->
+    <string name="placeholder_home">The 3D globe and flat map land here.</string>
+    <string name="placeholder_daily">The daily geography challenge calendar lands here.</string>
+    <string name="placeholder_challenges">Longer-form challenges land here.</string>
+    <string name="placeholder_achievements">Medals and progress land here.</string>
+    <string name="placeholder_settings">Appearance and style preferences land here.</string>
+</resources>
