@@ -13,22 +13,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anmol.voyage.navigation.VoyageDestination
+import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.map.MapScreen
 import com.anmol.voyage.ui.screens.PlaceholderScreen
 
 /**
  * App shell: a Material 3 [NavigationBar] over a [NavHost], one entry per
- * top-level destination. Later phases replace the placeholder bodies with real
- * screens without touching this file.
+ * top-level destination. Later phases replace the remaining placeholder bodies
+ * with real screens.
+ *
+ * [VoyageState] is created here, above the [NavHost], so every tab shares one
+ * source of truth — the role `GlobeState` plays on iOS.
  */
 @Composable
 fun VoyageApp(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
+    val voyageState: VoyageState = viewModel()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: VoyageDestination.start.route
 
@@ -78,11 +85,16 @@ fun VoyageApp(modifier: Modifier = Modifier) {
         ) {
             VoyageDestination.entries.forEach { destination ->
                 composable(destination.route) {
-                    PlaceholderScreen(
-                        title = stringResource(destination.titleRes),
-                        subtitle = stringResource(destination.subtitleRes),
-                        icon = destination.icon,
-                    )
+                    val subtitleRes = destination.subtitleRes
+                    when {
+                        destination == VoyageDestination.Home -> MapScreen(state = voyageState)
+                        // Destinations a later phase still owns.
+                        subtitleRes != null -> PlaceholderScreen(
+                            title = stringResource(destination.titleRes),
+                            subtitle = stringResource(subtitleRes),
+                            icon = destination.icon,
+                        )
+                    }
                 }
             }
         }

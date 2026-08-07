@@ -11,8 +11,13 @@
     <string name="destination_achievements_short">Medals</string>
     <string name="destination_settings">Settings</string>
 
+    <!-- Map -->
+    <string name="map_capital">Capital: %1$s</string>
+    <string name="map_visited">Visited</string>
+    <string name="map_wishlist">Wishlist</string>
+    <string name="map_clear_selection">Clear selection</string>
+
     <!-- Placeholder copy, removed as each phase lands its real screen -->
-    <string name="placeholder_home">The 3D globe and flat map land here.</string>
     <string name="placeholder_daily">The daily geography challenge calendar lands here.</string>
     <string name="placeholder_challenges">Longer-form challenges land here.</string>
     <string name="placeholder_achievements">Medals and progress land here.</string>
