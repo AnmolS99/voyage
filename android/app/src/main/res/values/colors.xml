@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  XML mirrors of the few VoyagePalette colors the platform needs before Compose
+  is running (launcher icon background, splash background). Keep in sync with
+  ui/theme/ColorPalette.kt.
+-->
+<resources>
+    <!-- VoyagePalette.buttonColor -->
+    <color name="voyage_orange">#D98C59</color>
+    <!-- VoyagePalette.pageBgDark -->
+    <color name="voyage_page_bg_dark">#1A1A1F</color>
+    <!-- VoyagePalette.pageBgLight -->
+    <color name="voyage_page_bg_light">#F5F2ED</color>
+</resources>

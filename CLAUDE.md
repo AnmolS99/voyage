@@ -15,17 +15,24 @@ current progress.
 voyage/
 ├── ios/        # iOS app: voyage.xcodeproj, voyage/, voyageTests/,
 │               # GlobeCacheGenerator/, fastlane/, Gemfile, Secrets.xcconfig
-├── android/    # Android app (created in Phase 2 of the Android plan)
+├── android/    # Android app: Kotlin/Compose Gradle project (app/, gradle/, tools/)
 ├── shared/
 │   ├── data/       # world.geojson, country_highlights.json — consumed by BOTH apps
 │   └── supabase/   # schemas/, migrations/, seed.sql
 ├── scripts/    # update_geometry.sh, merge_geometry.py
-└── docs/       # ANDROID_PLAN.md and platform docs
+└── docs/       # ANDROID_PLAN.md, ANDROID_DEVELOPMENT.md
 ```
 
 **All iOS commands below run from the `ios/` directory.** The data files under
 `shared/data/` are referenced by the Xcode project in place (not copied) — edit
 them there, never duplicate them per platform.
+
+**Android:** build/run/test instructions live in
+[docs/ANDROID_DEVELOPMENT.md](docs/ANDROID_DEVELOPMENT.md); all Android commands
+run from `android/`. The Android color palette
+(`android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt`) mirrors
+`ios/voyage/ColorPalette.swift` — see [Color Palette](#color-palette) — so a
+color change must land on both platforms in the same PR.
 
 ## Git Conventions
 
@@ -225,7 +232,7 @@ Schema and migrations live in `shared/supabase/schemas/` and `shared/supabase/mi
 | Wishlist + selected  | -       | (0.75, 0.55, 0.95)    |
 | Buttons (light mode) | #D98C59 | (0.85, 0.55, 0.35)    |
 
-All colors are defined once in `ColorPalette.swift` (`AppColors`) and referenced throughout — don't hardcode hex/RGB values elsewhere.
+All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`AppColors`) and `android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt` (`VoyagePalette`) — and referenced throughout; don't hardcode hex/RGB values elsewhere. The two files hold the same values, and `ColorPaletteTest` on Android pins the table above, so palette changes ship to both platforms together.
 
 ## Data Files
 

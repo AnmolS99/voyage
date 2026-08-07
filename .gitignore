@@ -27,6 +27,10 @@ ios/fastlane/test_output/
 shared/supabase/.branches
 shared/supabase/.temp
 
+# IDEs (Android Studio / IntelliJ project state)
+.idea/
+*.iml
+
 # Secrets
 ios/Secrets.xcconfig
 
