@@ -59,4 +59,7 @@ python3 "$SCRIPT_DIR/merge_geometry.py" \
     "$WORK_DIR/ne_simplified.json" \
     "$PROJECT_DIR/shared/data/world.geojson"
 
-echo "Done. Next: regenerate ios/voyage/globe.scn with GlobeCacheGenerator."
+echo "Regenerating the shared country fixture..."
+python3 "$SCRIPT_DIR/generate_country_fixture.py"
+
+echo "Done. Review the fixture diff, then regenerate ios/voyage/globe.scn with GlobeCacheGenerator."

@@ -67,6 +67,8 @@
 		E81234560070 /* NameCapitalGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550070 /* NameCapitalGameTests.swift */; };
 		E81234560073 /* NameFlagGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550073 /* NameFlagGameView.swift */; };
 		E81234560074 /* NameFlagGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550074 /* NameFlagGameTests.swift */; };
+		E81234560080 /* expected_countries.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550080 /* expected_countries.json */; };
+		E81234560081 /* GeoJSONFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550081 /* GeoJSONFixtureTests.swift */; };
 		E81234560066 /* ChallengeStoreMergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550066 /* ChallengeStoreMergeTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -144,6 +146,8 @@
 		E81234550070 /* NameCapitalGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameTests.swift; sourceTree = "<group>"; };
 		E81234550073 /* NameFlagGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameFlagGameView.swift; sourceTree = "<group>"; };
 		E81234550074 /* NameFlagGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameFlagGameTests.swift; sourceTree = "<group>"; };
+		E81234550080 /* expected_countries.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = expected_countries.json; path = "../../shared/fixtures/expected_countries.json"; sourceTree = "<group>"; };
+		E81234550081 /* GeoJSONFixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoJSONFixtureTests.swift; sourceTree = "<group>"; };
 		E81234550066 /* ChallengeStoreMergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeStoreMergeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -243,6 +247,8 @@
 				E81234550065 /* ClickCountryGameTests.swift */,
 				E81234550070 /* NameCapitalGameTests.swift */,
 				E81234550074 /* NameFlagGameTests.swift */,
+				E81234550081 /* GeoJSONFixtureTests.swift */,
+				E81234550080 /* expected_countries.json */,
 				E81234550066 /* ChallengeStoreMergeTests.swift */,
 			);
 			path = voyageTests;
@@ -403,6 +409,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E81234560080 /* expected_countries.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -472,6 +479,7 @@
 				E81234560065 /* ClickCountryGameTests.swift in Sources */,
 				E81234560070 /* NameCapitalGameTests.swift in Sources */,
 				E81234560074 /* NameFlagGameTests.swift in Sources */,
+				E81234560081 /* GeoJSONFixtureTests.swift in Sources */,
 				E81234560066 /* ChallengeStoreMergeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -3,6 +3,7 @@ plugins {
     // Kotlin itself comes from AGP's built-in Kotlin support (AGP 9+); only the
     // Compose compiler plugin still has to be applied explicitly.
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -39,6 +40,12 @@ android {
         compose = true
     }
 
+    sourceSets {
+        // world.geojson and country_highlights.json are shared with iOS and are
+        // read from shared/data in place — never copied into android/.
+        getByName("main").assets.srcDirs("../../shared/data")
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -58,6 +65,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)

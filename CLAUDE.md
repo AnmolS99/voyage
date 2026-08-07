@@ -18,8 +18,9 @@ voyage/
 ├── android/    # Android app: Kotlin/Compose Gradle project (app/, gradle/, tools/)
 ├── shared/
 │   ├── data/       # world.geojson, country_highlights.json — consumed by BOTH apps
+│   ├── fixtures/   # expected_countries.json — parser contract for BOTH apps
 │   └── supabase/   # schemas/, migrations/, seed.sql
-├── scripts/    # update_geometry.sh, merge_geometry.py
+├── scripts/    # update_geometry.sh, merge_geometry.py, generate_country_fixture.py
 └── docs/       # ANDROID_PLAN.md, ANDROID_DEVELOPMENT.md
 ```
 
@@ -32,7 +33,9 @@ them there, never duplicate them per platform.
 run from `android/`. The Android color palette
 (`android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt`) mirrors
 `ios/voyage/ColorPalette.swift` — see [Color Palette](#color-palette) — so a
-color change must land on both platforms in the same PR.
+color change must land on both platforms in the same PR. Both apps parse the
+same `shared/data/` files and both assert the same parser fixture — see
+[Shared Country Fixture](#shared-country-fixture).
 
 ## Git Conventions
 
@@ -238,7 +241,27 @@ All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`A
 
 - `shared/data/world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
 - `shared/data/country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
+- `shared/fixtures/expected_countries.json` - Parser contract asserted by both platforms. See [Shared Country Fixture](#shared-country-fixture).
 - `ios/voyage/globe.scn` - Pre-built 3D globe cache, iOS-only (regenerate with GlobeCacheGenerator)
+
+### Shared Country Fixture
+
+`shared/fixtures/expected_countries.json` pins what parsing `world.geojson` must
+produce: 206 countries in feature order, their ISO codes, names, continents,
+capitals, per-ring point counts (170,955 coordinates total) and bounding boxes.
+`voyageTests/GeoJSONFixtureTests` and the Android `GeoJsonParserTest` both assert
+it, so neither hand-written parser can drift from the other or from the data.
+
+It is derived from `world.geojson` by `scripts/generate_country_fixture.py`,
+which `update_geometry.sh` runs automatically; Android CI fails if it is stale:
+
+```bash
+python3 scripts/generate_country_fixture.py          # rewrite after a data change
+python3 scripts/generate_country_fixture.py --check  # what CI runs
+```
+
+Review the fixture's diff after regenerating it — an unexpected change there is
+an unexpected change to what both apps render.
 
 ### Boundary Data Provenance
 
