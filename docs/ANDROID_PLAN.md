@@ -124,10 +124,12 @@ Google's 14-day closed-testing requirement.
 below):** these steps need payment details and identity documents, so they have
 to be done by hand at <https://play.google.com/console>.
 
-- [ ] Register Google Play developer account ($25 one-time) + identity verification
+- [~] Register Google Play developer account ($25 one-time) + identity
+      verification — **registered 2026-08-07, awaiting Google's identity
+      verification**; the console stays limited until it clears
 - [ ] Create the app entry in Play Console — applicationId **`com.anmol.voyage`**
       (matches the iOS bundle id; already baked into the scaffold and permanent
-      once the Play entry exists)
+      once the Play entry exists). Blocked on verification completing
 - [ ] Note the requirement: ≥12 testers opted in for 14 consecutive days of
       closed testing before production access can be requested — recruit
       testers early
@@ -373,7 +375,7 @@ Update the table as phases complete.
 | --- | --- |
 | 0 — Environment & tooling | ✅ Done (2026-08-06) |
 | 1 — Repo restructure | ✅ Done (2026-08-06) |
-| 2 — Scaffold + Play account | 🟡 Scaffold done (2026-08-06); Play account registration pending (owner-only) |
+| 2 — Scaffold + Play account | 🟡 Scaffold done (2026-08-06); Play account registered 2026-08-07, awaiting Google identity verification |
 | 3 — Data layer | Not started |
 | 4 — 2D map | Not started |
 | 5 — State & persistence | Not started |
