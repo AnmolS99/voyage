@@ -15,14 +15,20 @@ plan lives in [ANDROID_PLAN.md](ANDROID_PLAN.md).
 | Gradle | wrapper (9.6.1) | Always use `./gradlew`; a system Gradle is only needed to regenerate the wrapper. |
 | Emulator | any API 26+ image | `voyage_pixel9_api36` (Pixel 9, Android 16) is the local AVD. |
 
-Environment (already exported in `~/.zshrc` on this machine — note that
-non-interactive shells may not pick it up):
+Environment — these live in `~/.zshenv` on this machine, **not** `~/.zshrc`, so
+that non-interactive shells (scripts, cron, editor- and agent-spawned shells) get
+them too; zsh reads `.zshrc` for interactive shells only:
 
 ```bash
 export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
 ```
+
+Some tools compose their own `PATH` and will drop that last line while keeping
+the two exports. `./gradlew` and `sdkmanager` only need `JAVA_HOME`, so they work
+regardless; reach for `"$ANDROID_HOME/platform-tools/adb"` instead of bare `adb`
+when a shell might not have the `PATH` entry.
 
 Install the SDK packages the build needs:
 
@@ -77,12 +83,17 @@ android/
 │       │   │   ├── VoyageApplication.kt     # installs + prewarms the country data
 │       │   │   ├── MainActivity.kt          # splash + edge-to-edge + Compose entry
 │       │   │   ├── VoyageApp.kt             # NavigationBar shell + NavHost
-│       │   │   ├── data/                    # models, GeoJSON parser, CountryDataCache
+│       │   │   ├── data/                    # models, GeoJSON parser, cache, hit testing
 │       │   │   ├── navigation/              # top-level destinations
-│       │   │   └── ui/theme/                # ColorPalette.kt, Theme.kt
+│       │   │   ├── state/                   # VoyageState — shared app state
+│       │   │   └── ui/
+│       │   │       ├── map/                 # flat map: projection, paths, styles, Canvas
+│       │   │       ├── screens/             # placeholders for unbuilt phases
+│       │   │       └── theme/               # ColorPalette.kt, Theme.kt
 │       │   ├── res/                         # strings, themes, launcher icon
 │       │   └── AndroidManifest.xml
-│       └── test/kotlin/…                    # JVM unit tests
+│       ├── test/kotlin/…                    # JVM unit tests
+│       └── androidTest/kotlin/…             # instrumented tests (need a device)
 ├── gradle/libs.versions.toml     # single source for all dependency versions
 ├── tools/                        # asset generators (launcher icons)
 └── gradlew                       # use this, not a system Gradle
@@ -99,6 +110,13 @@ android/
   other in the same PR — `ColorPaletteTest` pins the values documented in
   CLAUDE.md. Material You dynamic color is opt-in and applies to chrome only;
   country-status colors are semantic and always come from the palette.
+- **The map and the globe must agree.** CLAUDE.md's globe/map consistency rule
+  applies across platforms too, so what a country *looks like* is decided outside
+  the renderers: `ui/map/CountryStyle.kt` for fills, borders and widths,
+  `ui/map/CapitalMarker.kt` for the capital star, `ui/map/MapProjection.kt` for
+  the geometry. The Filament globe (Phase 7) reuses them rather than restating
+  them, and they are unit-tested without a renderer. `ui/map/WorldMap.kt` is a
+  port of `ios/voyage/MapView.swift` — change one, change the other.
 - **Shared data is referenced in place** from `shared/data/` via
   `assets.srcDirs` in `app/build.gradle.kts` — never copied into `android/`.
   The app reads it through `AssetManager`; JVM unit tests read the same files
@@ -151,6 +169,27 @@ Steady-state parity with iOS is there; the cold-start premium is ART warming up,
 not the parser (AOT-compiling the dex does not move it, and the same code parses
 in ~25 ms on a warm host JVM). A baseline profile in Phase 11 is the fix — see
 the plan.
+
+## What is tested where
+
+JVM unit tests (`src/test`) cover everything that is pure logic — the GeoJSON
+parser against the shared fixture, the palette, tap-to-country hit testing, the
+map projection, and the country color rules. They read `shared/data` straight off
+disk, so they need no device, and they are what CI runs.
+
+Instrumented tests (`src/androidTest`) cover what the JVM cannot: `Path` and
+`Canvas` are Android framework classes that are stubbed in unit tests, and a pinch
+cannot be injected outside a real input pipeline. `WorldMapGestureTest` drives tap,
+pinch-zoom and pan on the real map and asserts through the selection that the draw
+transform and its inverse agree. Run it with a device attached:
+
+```bash
+./gradlew connectedDebugAndroidTest   # uninstalls the app afterwards
+```
+
+Two things worth knowing about that run: it removes the app from the device when
+it finishes (reinstall with `./gradlew installDebug`), and it is not part of CI,
+which has no emulator — so run it locally after touching the map or the globe.
 
 ## CI
 

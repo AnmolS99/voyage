@@ -35,7 +35,12 @@ run from `android/`. The Android color palette
 `ios/voyage/ColorPalette.swift` — see [Color Palette](#color-palette) — so a
 color change must land on both platforms in the same PR. Both apps parse the
 same `shared/data/` files and both assert the same parser fixture — see
-[Shared Country Fixture](#shared-country-fixture).
+[Shared Country Fixture](#shared-country-fixture). `ui/map/WorldMap.kt` is a port
+of `ios/voyage/MapView.swift`, so the consistency rule in
+[Globe and Map Consistency](#globe-and-map-consistency) covers four renderers, not
+two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,
+`ui/map/CapitalMarker.kt`, and `ui/map/MapProjection.kt` rather than in the
+renderer.
 
 ## Git Conventions
 

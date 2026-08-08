@@ -23,14 +23,14 @@ enum class VoyageDestination(
     @param:StringRes val labelRes: Int,
     @param:StringRes val titleRes: Int,
     val icon: ImageVector,
-    @param:StringRes val subtitleRes: Int,
+    /** Placeholder copy; null once the destination has its real screen. */
+    @param:StringRes val subtitleRes: Int? = null,
 ) {
     Home(
         route = "home",
         labelRes = R.string.destination_home,
         titleRes = R.string.destination_home,
         icon = Icons.Rounded.Public,
-        subtitleRes = R.string.placeholder_home,
     ),
     Daily(
         route = "daily",
