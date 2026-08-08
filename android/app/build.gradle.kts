@@ -50,6 +50,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    testOptions {
+        // Unit tests here cover pure logic, but the app state they exercise sits
+        // one call away from android.jar stubs (android.util.Log on its failure
+        // path). Returning defaults keeps those from throwing, rather than
+        // pulling in Robolectric for the sake of a log line.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 kotlin {
@@ -63,9 +71,12 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.datastore)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.core)
 
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)

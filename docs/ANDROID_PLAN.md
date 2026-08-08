@@ -38,6 +38,10 @@ change.
 | 2026-08-07 | Map appearance rules live outside the renderer (`MapProjection`, `CountryStyles`, `CapitalMarker`) | CLAUDE.md makes "globe and map look identical" a rule, and on iOS it is upheld by remembering to edit two files. Extracting the rules lets the Filament globe *reuse* them in Phase 7 instead of restating them, and makes them unit-testable without a renderer. |
 | 2026-08-07 | Gestures verified by instrumented tests, not JVM tests | A pinch cannot be injected from a JVM test, and `Path`/`Canvas` are Android framework classes that are stubbed there. Rather than add Robolectric, geometry and gestures are covered by four Compose UI tests on the emulator; the pure logic (projection, colors, hit-testing) stays on the JVM where CI can run it. |
 | 2026-08-07 | Interim selection card on the map instead of waiting for Phase 6 | Visited/wishlist colors were otherwise unreachable from the UI, so the phase could not be verified. It is ~60 lines and is replaced by the real details bottom sheet in Phase 6. |
+| 2026-08-08 | App state stays Compose state, not `StateFlow` as this plan first said | Every reader is a composable, so a flow would only be collected back into Compose state at each call site. The persisted half is a single snapshot object either way, which is what a non-Compose consumer would observe if one ever appears. |
+| 2026-08-08 | One versioned JSON document in a typed DataStore, not `datastore-preferences` | A write is then always a complete, self-consistent snapshot, and the document can carry a schema version — the thing the deferred cross-platform sync will need. Loose preference keys can version only themselves. |
+| 2026-08-08 | Appearance is `ThemeMode` (system/light/dark), not iOS's `isDarkMode` boolean | "Follow the system" is the Android default users expect; `Light`/`Dark` still map onto the iOS boolean exactly. |
+| 2026-08-08 | View mode is persisted, unlike iOS, which starts every launch on the globe | Android can kill and restore the process at any moment; coming back to a different view than the one left behind reads as a bug. Defaults to the map until the Filament globe exists (Phase 7). |
 
 ---
 
@@ -277,23 +281,43 @@ when a texture fails to load.
 
 ## Phase 5 — App state & persistence
 
-- [~] `VoyageState` (analogue of `GlobeState`): visited/wishlist countries,
+- [x] `VoyageState` (analogue of `GlobeState`): visited/wishlist countries,
       checked cities/attractions, view mode, style prefs, dark mode — single
-      source of truth, exposed as `StateFlow` from a ViewModel scoped to the
-      activity. **Started in Phase 4**: `state/VoyageState.kt` is an activity-scoped
-      `ViewModel` holding selection plus visited/wishlist, backed by
-      `mutableStateOf` rather than `StateFlow` (nothing needs a flow yet — revisit
-      when DataStore lands). Still to add: checked cities/attractions, view mode,
-      style prefs, dark mode
-- [ ] Persist via Jetpack DataStore; keep the on-disk model versioned so a
-      future sync feature can migrate it
-- [ ] Enable Auto Backup (`android:allowBackup` + backup rules) so state
-      survives device migration
-- [ ] Unit tests: mutation methods (`addVisit`, `toggleCheckedCity`, …) mirror
-      iOS semantics
+      source of truth, activity-scoped `ViewModel`. Everything that outlives the
+      process is held in one `PersistedState` snapshot; the selection deliberately
+      is not, matching iOS. Exposed as Compose state rather than `StateFlow`
+      (see the decision log); appearance is a three-way `ThemeMode`
+      (system/light/dark) rather than iOS's boolean
+- [x] Persist via Jetpack DataStore; keep the on-disk model versioned so a
+      future sync feature can migrate it — typed (JSON) DataStore, not
+      `datastore-preferences`: `state/PersistedState.kt` is one versioned
+      document with `migrated()` applied on every read (it carries the iOS
+      renamed-country table), `state/StateStore.kt` is the seam the JVM tests
+      substitute, `state/DataStoreStateStore.kt` is the real one
+- [x] Enable Auto Backup (`android:allowBackup` + backup rules) so state
+      survives device migration — `res/xml/backup_rules.xml` (API ≤ 30) and
+      `res/xml/data_extraction_rules.xml` (31+, cloud backup and device
+      transfer), both scoped to `files/datastore/`
+- [x] Unit tests: mutation methods (`addVisit`, `toggleCheckedCity`, …) mirror
+      iOS semantics — `VoyageStateTest` (14), `PersistedStateTest` (9),
+      `PreferencesTest` (2); 77 unit tests total
 
 **Definition of done:** visited/wishlist selections survive process death and
 reinstall-with-backup; state mutations have test coverage.
+*Test coverage met 2026-08-08 (Android CI green: `assembleDebug`,
+`testDebugUnitTest`, `lintDebug`). The device half of the DoD is still
+outstanding — this phase was built in a Linux container with no Android SDK or
+emulator, so the two on-device checks below have not been run:*
+
+```bash
+cd android && ./gradlew installDebug
+adb shell am start -n com.anmol.voyage/.MainActivity
+# 1. Process death: mark a country visited, then
+adb shell am kill com.anmol.voyage      # relaunch — the mark must still be there
+# 2. Backup/restore:
+adb shell bmgr backupnow com.anmol.voyage
+adb uninstall com.anmol.voyage && ./gradlew installDebug   # marks must come back
+```
 
 ## Phase 6 — Country details & highlights UI
 
@@ -377,7 +401,9 @@ accepted answers on both platforms; mid-game state survives leaving the app.
 
 ## Phase 10 — Settings & native polish
 
-- [ ] Settings screen: view style prefs, dark mode (system/light/dark)
+- [ ] Settings screen: view style prefs, dark mode (system/light/dark) — the
+      state and its persistence already exist (`VoyageState.themeMode`,
+      `globeStyle`, `mapStyle` from Phase 5); this is the UI that sets them
 - [ ] Haptics on key interactions (selection, achievement unlock)
 - [ ] Polish pass: Material motion for transitions, themed (monochrome) icon,
       correct behavior across font scales and window sizes (foldables get the
@@ -443,7 +469,7 @@ Update the table as phases complete.
 | 2 — Scaffold + Play account | 🟡 Scaffold done (2026-08-06); Play account registered 2026-08-07, awaiting Google identity verification |
 | 3 — Data layer | ✅ Done (2026-08-07) |
 | 4 — 2D map | ✅ Done (2026-08-07) |
-| 5 — State & persistence | Not started |
+| 5 — State & persistence | 🟡 Built + CI green (2026-08-08); on-device process-death and backup checks still to run |
 | 6 — Country details | Not started |
 | 7 — 3D globe | Not started |
 | 8 — Achievements | Not started |

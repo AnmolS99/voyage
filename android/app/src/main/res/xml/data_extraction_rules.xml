@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup and device-to-device transfer on API 31+. Same rule as
+  backup_rules.xml: the saved state travels, nothing else does.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="datastore/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="datastore/" />
+    </device-transfer>
+</data-extraction-rules>
