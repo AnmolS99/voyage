@@ -26,10 +26,15 @@ import kotlinx.coroutines.launch
  * it, matching iOS, where a launch starts with nothing selected. Saves are
  * requested by every mutation and coalesced, so a burst of taps costs one write.
  *
- * State is exposed as Compose state rather than `StateFlow`: every reader is a
- * composable, and this keeps a read a plain property access with automatic,
- * per-field recomposition. Should a non-Compose consumer ever appear, the
- * snapshot behind these properties is what it would observe.
+ * State is exposed as Compose state rather than `StateFlow`, because every
+ * reader is a composable and a flow would only be collected back into Compose
+ * state at each call site. The map reads these properties inside its `Canvas`
+ * draw lambda, so a change there re-runs drawing alone — collecting a flow above
+ * the canvas would put it back through composition. Note the granularity: the
+ * persisted fields share one snapshot, so a theme change invalidates readers of
+ * the visited set too; only the selection is independent. Should a non-Compose
+ * consumer ever appear — a widget, a sync worker — that snapshot is already the
+ * shape a `StateFlow` would carry.
  */
 class VoyageState(
     private val store: StateStore = InMemoryStateStore(),
