@@ -91,8 +91,8 @@ private val VoyageDarkColorScheme = darkColorScheme(
 /**
  * App theme.
  *
- * @param darkTheme follows the system by default; Phase 5 wires this to the
- *   user's explicit system/light/dark preference in app state.
+ * @param darkTheme follows the system by default; the activity passes the
+ *   user's system/light/dark preference (`VoyageState.themeMode`) instead.
  * @param dynamicColor opts into Material You wallpaper colors (Android 12+) for
  *   chrome only. Off by default so the app's warm identity — shared with iOS —
  *   is what users see out of the box.

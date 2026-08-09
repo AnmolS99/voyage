@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup on API 30 and below. Only the DataStore document is backed up:
+  everything else the app writes is a cache of shared/data, which the APK ships
+  anyway, and restoring it would just waste the user's backup quota.
+-->
+<full-backup-content>
+    <include domain="file" path="datastore/" />
+</full-backup-content>

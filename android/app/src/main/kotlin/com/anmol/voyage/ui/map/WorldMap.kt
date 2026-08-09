@@ -176,7 +176,7 @@ fun WorldMap(
 /** The style for one country given the current visited/wishlist/selection state. */
 private fun VoyageState.styleFor(name: String): CountryStyle = CountryStyles.of(
     isVisited = isVisited(name),
-    isWishlist = isWishlisted(name),
+    isWishlist = isInWishlist(name),
     isSelected = selectedCountry == name,
 )
 

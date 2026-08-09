@@ -153,7 +153,7 @@ private fun SelectionCard(
                     ToggleChip(
                         label = stringResource(R.string.map_wishlist),
                         icon = Icons.Rounded.Favorite,
-                        selected = state.isWishlisted(name),
+                        selected = state.isInWishlist(name),
                         onClick = { state.toggleWishlist(name) },
                     )
                 }

@@ -85,7 +85,7 @@ android/
 │       │   │   ├── VoyageApp.kt             # NavigationBar shell + NavHost
 │       │   │   ├── data/                    # models, GeoJSON parser, cache, hit testing
 │       │   │   ├── navigation/              # top-level destinations
-│       │   │   ├── state/                   # VoyageState — shared app state
+│       │   │   ├── state/                   # VoyageState + its persisted document
 │       │   │   └── ui/
 │       │   │       ├── map/                 # flat map: projection, paths, styles, Canvas
 │       │   │       ├── screens/             # placeholders for unbuilt phases
@@ -134,6 +134,51 @@ android/
   `android/secrets.properties` surfaced through `BuildConfig` — the Android
   analogue of `ios/Secrets.xcconfig`.
 
+## App state and persistence
+
+`state/VoyageState.kt` is the single source of truth — the Android `GlobeState`.
+It is an activity-scoped `ViewModel`, created once in `MainActivity` and handed
+to every screen; mutate it through its methods (`addVisit`, `toggleCheckedCity`,
+`setThemeMode`, …) rather than keeping copies in a screen.
+
+Two halves, on purpose:
+
+- **Persisted** — visited and wishlist countries, checked cities and
+  attractions, view mode, globe/map style, theme mode. These live in one
+  `PersistedState` snapshot (`state/PersistedState.kt`) and are read through
+  `VoyageState`'s properties.
+- **Transient** — the current selection. iOS starts every launch with nothing
+  selected and so does this.
+
+Every mutation asks for a save; requests are conflated, so a burst of taps costs
+one write. Saving goes through `StateStore` (`state/StateStore.kt`):
+`DataStoreStateStore` is the real one — a single JSON document in Jetpack
+DataStore at `files/datastore/voyage_state.json` — and `InMemoryStateStore` is
+the default, which keeps tests and previews away from real files, the role
+`inMemory: true` plays for the iOS `GlobeState`.
+
+The document is **versioned** (`PersistedState.CURRENT_VERSION`). Every read
+goes through `migrated()`, which currently applies the same renamed-country
+table iOS uses (`Turkey` → `Türkiye`, `Cape Verde` → `Cabo Verde`) — saved data
+is keyed by country name, so a rename in `world.geojson` would otherwise orphan
+it. When the shape changes: bump the version, teach `migrated()` the new step,
+and add a case to `PersistedStateTest`. Fields are all defaulted and unknown
+ones are ignored, so documents written by older *and* newer builds still read.
+
+`MainActivity` holds the splash screen until `VoyageState.isLoaded` — the saved
+theme decides the color scheme, and drawing before it lands flashes the wrong
+one.
+
+State is backed up: `res/xml/backup_rules.xml` (API ≤ 30) and
+`res/xml/data_extraction_rules.xml` (31+) include `files/datastore/` and nothing
+else. To check a round trip on a device:
+
+```bash
+adb shell bmgr backupnow com.anmol.voyage
+adb uninstall com.anmol.voyage
+./gradlew installDebug     # marks should come back with the restore
+```
+
 ## The shared country fixture
 
 `shared/fixtures/expected_countries.json` is the contract both platforms' GeoJSON
@@ -174,8 +219,11 @@ the plan.
 
 JVM unit tests (`src/test`) cover everything that is pure logic — the GeoJSON
 parser against the shared fixture, the palette, tap-to-country hit testing, the
-map projection, and the country color rules. They read `shared/data` straight off
-disk, so they need no device, and they are what CI runs.
+map projection, the country color rules, and app state with its saved document.
+They read `shared/data` straight off disk, so they need no device, and they are
+what CI runs. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
+unconfined coroutine scope, so loading and saving run inline on the test thread
+and assertions can read the store immediately after a mutation.
 
 Instrumented tests (`src/androidTest`) cover what the JVM cannot: `Path` and
 `Canvas` are Android framework classes that are stubbed in unit tests, and a pinch

@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,13 +28,13 @@ import com.anmol.voyage.ui.screens.PlaceholderScreen
  * top-level destination. Later phases replace the remaining placeholder bodies
  * with real screens.
  *
- * [VoyageState] is created here, above the [NavHost], so every tab shares one
- * source of truth — the role `GlobeState` plays on iOS.
+ * [VoyageState] is owned by the activity and passed in from there — it decides
+ * the theme, which wraps this shell — and handed to every tab, so they share one
+ * source of truth, the role `GlobeState` plays on iOS.
  */
 @Composable
-fun VoyageApp(modifier: Modifier = Modifier) {
+fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
     val navController = rememberNavController()
-    val voyageState: VoyageState = viewModel()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: VoyageDestination.start.route
 
@@ -87,7 +86,7 @@ fun VoyageApp(modifier: Modifier = Modifier) {
                 composable(destination.route) {
                     val subtitleRes = destination.subtitleRes
                     when {
-                        destination == VoyageDestination.Home -> MapScreen(state = voyageState)
+                        destination == VoyageDestination.Home -> MapScreen(state = state)
                         // Destinations a later phase still owns.
                         subtitleRes != null -> PlaceholderScreen(
                             title = stringResource(destination.titleRes),
