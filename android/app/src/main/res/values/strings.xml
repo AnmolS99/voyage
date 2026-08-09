@@ -12,10 +12,29 @@
     <string name="destination_settings">Settings</string>
 
     <!-- Map -->
-    <string name="map_capital">Capital: %1$s</string>
-    <string name="map_visited">Visited</string>
-    <string name="map_wishlist">Wishlist</string>
-    <string name="map_clear_selection">Clear selection</string>
+    <string name="map_search_countries">Search countries</string>
+
+    <!-- Country selection card and details sheet -->
+    <string name="country_capital">Capital: %1$s</string>
+    <string name="country_subtitle">%1$s · %2$s</string>
+    <string name="country_flag">Flag of %1$s</string>
+    <string name="country_visited">Visited</string>
+    <string name="country_wishlist">Wishlist</string>
+    <string name="country_details">Details</string>
+    <string name="country_clear_selection">Clear selection</string>
+    <string name="country_cities">Top Cities</string>
+    <string name="country_attractions">Top Attractions</string>
+    <string name="country_capital_badge">Capital city</string>
+    <string name="country_checked_count">%1$d of %2$d</string>
+    <string name="country_no_highlights">No highlights for this country yet.</string>
+    <string name="country_toggle_visited">Visited: %1$s</string>
+    <string name="country_toggle_wishlist">Wishlist: %1$s</string>
+
+    <!-- Country search -->
+    <string name="search_countries">Search countries</string>
+    <string name="search_clear_query">Clear search</string>
+    <string name="search_close">Close</string>
+    <string name="search_no_results">No countries match “%1$s”.</string>
 
     <!-- Placeholder copy, removed as each phase lands its real screen -->
     <string name="placeholder_daily">The daily geography challenge calendar lands here.</string>

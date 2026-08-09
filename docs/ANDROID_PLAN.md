@@ -42,6 +42,9 @@ change.
 | 2026-08-08 | One versioned JSON document in a typed DataStore, not `datastore-preferences` | A write is then always a complete, self-consistent snapshot, and the document can carry a schema version — the thing the deferred cross-platform sync will need. Loose preference keys can version only themselves. |
 | 2026-08-08 | Appearance is `ThemeMode` (system/light/dark), not iOS's `isDarkMode` boolean | "Follow the system" is the Android default users expect; `Light`/`Dark` still map onto the iOS boolean exactly. |
 | 2026-08-08 | View mode is persisted, unlike iOS, which starts every launch on the globe | Android can kill and restore the process at any moment; coming back to a different view than the one left behind reads as a bug. Defaults to the map until the Filament globe exists (Phase 7). |
+| 2026-08-09 | The selection stays an inline card; the bottom sheet is the *details* view | A modal sheet on every tap would scrim the map and hide the one thing selecting a country changes there — the thicker status-colored border and the capital star. So the summary stays non-blocking and "Details" opens the sheet: the same split iOS makes between its bottom panel and `CountryExploreView`. |
+| 2026-08-09 | Search is a sheet behind an icon, not a docked Material 3 `SearchBar` | A docked search bar owns the top of the screen permanently, and the map is the screen. The icon keeps the map full-bleed and leaves the top-left corner free for the globe/map toggle in Phase 7. |
+| 2026-08-09 | Country search folds accents and ranks prefix matches first | iOS filters with `localizedCaseInsensitiveContains` and leaves the result alphabetical, which buries `India` under `Indonesia`-style matches and leaves `Türkiye` unreachable from an English keyboard. Result ordering in a search field is not one of the cross-platform invariants (those are the parser's and the renderers'), so Android ranks by prefix and normalizes with NFD. |
 
 ---
 
@@ -321,13 +324,38 @@ adb uninstall com.anmol.voyage && ./gradlew installDebug   # marks must come bac
 
 ## Phase 6 — Country details & highlights UI
 
-- [ ] Country detail as a Material 3 bottom sheet (Android-native analogue of
-      the iOS panel): flag, name, capital, visited/wishlist toggle
-- [ ] Highlights checklists (top cities & attractions) wired to `VoyageState`
-- [ ] Search field to find/select a country by name
+- [x] Country detail as a Material 3 bottom sheet (Android-native analogue of
+      the iOS panel): flag, name, capital, visited/wishlist toggle —
+      `ui/country/CountryDetailSheet.kt`. The *selection* stays an inline card
+      (`ui/country/CountrySelectionCard.kt`, replacing Phase 4's interim one)
+      because a modal sheet would scrim the map and hide the selection styling;
+      see the decision log. `data/CountryDetail.kt` joins country + highlights
+      off the main thread, `data/FlagEmoji.kt` ports `flagEmojiFromCode`
+- [x] Highlights checklists (top cities & attractions) wired to `VoyageState` —
+      checkable `ListItem` rows writing through `toggleCheckedCity` /
+      `toggleCheckedAttraction`, per-section progress counts, and the capital
+      badged in the cities list as iOS does
+- [x] Search field to find/select a country by name —
+      `ui/country/CountrySearchSheet.kt` over `data/CountrySearchIndex.kt`,
+      which folds accents (`Türkiye` from an English keyboard) and ranks prefix
+      matches first; rows carry visited/wishlist toggles, as the iOS
+      `CountryListView` rows do
 
 **Definition of done:** full loop works — find country → open details → mark
 visited → map recolors → highlight checkmarks persist.
+*Logic and data verified 2026-08-09: 19 new JVM tests (flag emoji, search
+matching and ordering, detail assembly against the real `shared/data` files,
+including a check that capitals are spelled identically in both files), 96 unit
+tests total. Like Phase 5 this was built in a Linux container with no Android
+SDK, so the loop itself has not been driven on a device — run it once an
+emulator is at hand:*
+
+```bash
+cd android && ./gradlew installDebug
+adb shell am start -n com.anmol.voyage/.MainActivity
+# search → pick a country → Details → tick a city → back out and reopen:
+# the tick is still there, and the map shows the country in its status color
+```
 
 ---
 
@@ -470,7 +498,7 @@ Update the table as phases complete.
 | 3 — Data layer | ✅ Done (2026-08-07) |
 | 4 — 2D map | ✅ Done (2026-08-07) |
 | 5 — State & persistence | 🟡 Built + CI green (2026-08-08); on-device process-death and backup checks still to run |
-| 6 — Country details | Not started |
+| 6 — Country details | 🟡 Built + tests green (2026-08-09); on-device pass of the find → details → mark → persist loop still to run |
 | 7 — 3D globe | Not started |
 | 8 — Achievements | Not started |
 | 9 — Daily Challenge | Not started |
