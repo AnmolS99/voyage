@@ -87,6 +87,7 @@ android/
 │       │   │   ├── navigation/              # top-level destinations
 │       │   │   ├── state/                   # VoyageState + its persisted document
 │       │   │   └── ui/
+│       │   │       ├── country/             # selection card, details sheet, search sheet
 │       │   │       ├── map/                 # flat map: projection, paths, styles, Canvas
 │       │   │       ├── screens/             # placeholders for unbuilt phases
 │       │   │       └── theme/               # ColorPalette.kt, Theme.kt
@@ -179,6 +180,29 @@ adb uninstall com.anmol.voyage
 ./gradlew installDebug     # marks should come back with the restore
 ```
 
+## Reaching a country
+
+Three surfaces in `ui/country/`, all reading and writing the one `VoyageState`:
+
+- **`CountrySelectionCard`** — the inline summary over the map (flag, name,
+  capital, visited/wishlist chips, "Details"). It is a card rather than a bottom
+  sheet on purpose: a modal sheet scrims the map and hides what selecting a
+  country changes there, the thicker status-colored border and the capital star.
+  It mirrors the iOS `HomeView` bottom panel.
+- **`CountryDetailSheet`** — the Material 3 modal bottom sheet behind "Details":
+  the same header plus the two highlights checklists, ticking straight through
+  to `VoyageState` so a tick is saved as it is made. Mirrors iOS
+  `CountryExploreView`, capital badge included.
+- **`CountrySearchSheet`** — find a country by name, reached from the search
+  button over the map. Mirrors iOS `CountryListView`, per-row toggles included.
+
+The pieces that are not composables are unit-tested: `data/CountryDetail.kt`
+joins a country to its highlights (keyed by ISO code, so a display-name change
+cannot orphan them) and `data/CountrySearchIndex.kt` owns matching and ordering
+— accents folded via NFD, prefix matches ranked first. `data/FlagEmoji.kt` is
+the port of the iOS `flagEmojiFromCode`; nothing stores flags, they are computed
+from the ISO code that `world.geojson` already carries.
+
 ## The shared country fixture
 
 `shared/fixtures/expected_countries.json` is the contract both platforms' GeoJSON
@@ -219,7 +243,9 @@ the plan.
 
 JVM unit tests (`src/test`) cover everything that is pure logic — the GeoJSON
 parser against the shared fixture, the palette, tap-to-country hit testing, the
-map projection, the country color rules, and app state with its saved document.
+map projection, the country color rules, app state with its saved document, and
+the country-details data: flag emoji, search matching and ordering, and the
+country ⇄ highlights join.
 They read `shared/data` straight off disk, so they need no device, and they are
 what CI runs. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
 unconfined coroutine scope, so loading and saving run inline on the test thread

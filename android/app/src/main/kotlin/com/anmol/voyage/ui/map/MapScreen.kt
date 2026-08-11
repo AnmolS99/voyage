@@ -1,40 +1,35 @@
 package com.anmol.voyage.ui.map
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anmol.voyage.R
 import com.anmol.voyage.data.CountryDataCache
+import com.anmol.voyage.data.CountryDetail
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.country.CountryDetailSheet
+import com.anmol.voyage.ui.country.CountrySearchSheet
+import com.anmol.voyage.ui.country.CountrySelectionCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -45,7 +40,8 @@ private class MapData(
 )
 
 /**
- * The Home tab: the flat world map plus the current selection.
+ * The Home tab: the flat world map, the current selection, and the two sheets
+ * that reach a country — search to find one, details to explore it.
  *
  * Parsing the GeoJSON and projecting its ~171k points both happen off the main
  * thread, so the first frame is never blocked behind them; the map appears as
@@ -60,6 +56,26 @@ fun MapScreen(state: VoyageState, modifier: Modifier = Modifier) {
             // warm from the prewarm thread), `hitTester` builds its bounding boxes.
             MapData(cache.countries, cache.hitTester)
         }
+    }
+
+    var showingSearch by rememberSaveable { mutableStateOf(false) }
+    var showingDetails by rememberSaveable { mutableStateOf(false) }
+
+    val selectedCountry = state.selectedCountry
+    // Assembling a detail reads country_highlights.json the first time, so it is
+    // built off the main thread and the card fills in when it lands.
+    val detail by produceState<CountryDetail?>(initialValue = null, selectedCountry, cache) {
+        val name = selectedCountry
+        value = if (name == null) {
+            null
+        } else {
+            withContext(Dispatchers.Default) { CountryDetail.of(cache, name) }
+        }
+    }
+
+    LaunchedEffect(selectedCountry) {
+        // Closing the card (or the map deselecting) takes the details sheet with it.
+        if (selectedCountry == null) showingDetails = false
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -88,101 +104,53 @@ fun MapScreen(state: VoyageState, modifier: Modifier = Modifier) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
 
-        state.selectedCountry?.let { name ->
-            SelectionCard(
+        FilledTonalIconButton(
+            onClick = { showingSearch = true },
+            enabled = loaded != null,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Search,
+                contentDescription = stringResource(R.string.map_search_countries),
+            )
+        }
+
+        selectedCountry?.let { name ->
+            CountrySelectionCard(
                 name = name,
-                country = loaded?.countries?.firstOrNull { it.name == name },
+                detail = detail,
                 state = state,
+                onOpenDetails = { showingDetails = true },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp),
             )
         }
     }
-}
 
-/**
- * Interim selection readout with visited/wishlist toggles.
- *
- * Phase 6 replaces this with the real country-details bottom sheet (flag,
- * highlights checklists, search). It exists now because the visited, wishlist,
- * and both-lists colors are otherwise unreachable from the UI.
- */
-@Composable
-private fun SelectionCard(
-    name: String,
-    country: GeoJsonCountry?,
-    state: VoyageState,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        shadowElevation = 3.dp,
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                country?.capital?.let { capital ->
-                    Text(
-                        text = stringResource(R.string.map_capital, capital.name),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ToggleChip(
-                        label = stringResource(R.string.map_visited),
-                        icon = Icons.Rounded.Check,
-                        selected = state.isVisited(name),
-                        onClick = { state.toggleVisited(name) },
-                    )
-                    ToggleChip(
-                        label = stringResource(R.string.map_wishlist),
-                        icon = Icons.Rounded.Favorite,
-                        selected = state.isInWishlist(name),
-                        onClick = { state.toggleWishlist(name) },
-                    )
-                }
-            }
-            IconButton(onClick = state::clearSelection) {
-                Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = stringResource(R.string.map_clear_selection),
-                )
-            }
-        }
+    val countries = data?.countries
+    if (showingSearch && countries != null) {
+        CountrySearchSheet(
+            countries = countries,
+            state = state,
+            onSelect = { country ->
+                // Same as a tap on the map: the center is what the globe (Phase 7)
+                // flies its camera to.
+                state.selectCountry(country.name, data?.hitTester?.center(country.name))
+                showingSearch = false
+            },
+            onDismiss = { showingSearch = false },
+        )
     }
-}
 
-@Composable
-private fun ToggleChip(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label) },
-        leadingIcon = if (selected) {
-            { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) }
-        } else {
-            null
-        },
-    )
+    val shown = detail
+    if (showingDetails && shown != null) {
+        CountryDetailSheet(
+            detail = shown,
+            state = state,
+            onDismiss = { showingDetails = false },
+        )
+    }
 }
