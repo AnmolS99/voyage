@@ -84,6 +84,7 @@ android/
 │       │   │   ├── MainActivity.kt          # splash + edge-to-edge + Compose entry
 │       │   │   ├── VoyageApp.kt             # NavigationBar shell + NavHost
 │       │   │   ├── data/                    # models, GeoJSON parser, cache, hit testing
+│       │   │   ├── globe/                   # 3D globe geometry: earcut, triangulation, outlines (Phase 7)
 │       │   │   ├── navigation/              # top-level destinations
 │       │   │   ├── state/                   # VoyageState + its persisted document
 │       │   │   └── ui/
@@ -243,9 +244,12 @@ the plan.
 
 JVM unit tests (`src/test`) cover everything that is pure logic — the GeoJSON
 parser against the shared fixture, the palette, tap-to-country hit testing, the
-map projection, the country color rules, app state with its saved document, and
-the country-details data: flag emoji, search matching and ordering, and the
-country ⇄ highlights join.
+map projection, the country color rules, app state with its saved document, the
+country-details data (flag emoji, search matching and ordering, the
+country ⇄ highlights join), and the globe geometry pipeline: the earcut port,
+sphere projection and tap-ray math, and `GlobeGeometryWorldTest`, which
+triangulates every country in `shared/data/world.geojson` and asserts none of
+them need the grid-fill fallback.
 They read `shared/data` straight off disk, so they need no device, and they are
 what CI runs. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
 unconfined coroutine scope, so loading and saving run inline on the test thread
