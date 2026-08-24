@@ -2,7 +2,7 @@ package com.anmol.voyage.ui.globe
 
 import android.view.Choreographer
 import android.view.Surface
-import android.view.SurfaceView
+import android.view.TextureView
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.runtime.Composable
@@ -100,7 +100,7 @@ internal fun GlobeSurface(
                 }
             },
         factory = { context ->
-            SurfaceView(context).also { surfaceView -> host.attach(surfaceView) }
+            TextureView(context).also { view -> host.attach(view) }
         },
     )
 }
@@ -152,7 +152,7 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         return hitTester.findCountry(latLon.lat, latLon.lon)
     }
 
-    fun attach(surfaceView: SurfaceView) {
+    fun attach(view: TextureView) {
         uiHelper.renderCallback = object : UiHelper.RendererCallback {
             override fun onNativeWindowChanged(surface: Surface) {
                 if (!destroyed) renderer.onNativeWindowChanged(surface)
@@ -169,7 +169,15 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
                 viewportHeight = height.toFloat()
             }
         }
-        uiHelper.attachTo(surfaceView)
+        // A TextureView, not a SurfaceView. A SurfaceView is its own window
+        // layer: it punches a hole through the app window and shows black until
+        // its first buffer is composited. Compose navigation builds a new one on
+        // every return to Home, so that black gap was visible on every tab
+        // switch. A TextureView draws inside the normal view hierarchy, so
+        // before the first frame it is simply transparent and the theme
+        // background shows through instead.
+        uiHelper.isOpaque = false
+        uiHelper.attachTo(view)
         choreographer.postFrameCallback(frameCallback)
     }
 
