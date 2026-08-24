@@ -39,7 +39,7 @@ import com.anmol.voyage.ui.country.CountryDetailSheet
 import com.anmol.voyage.ui.country.CountrySearchSheet
 import com.anmol.voyage.ui.country.CountrySelectionCard
 import com.anmol.voyage.ui.globe.GlobeCountryFills
-import com.anmol.voyage.ui.globe.GlobeGeometry
+import com.anmol.voyage.globe.GlobeGeometry
 import com.anmol.voyage.ui.globe.GlobeSurface
 import com.anmol.voyage.ui.globe.rememberGlobeGeometry
 import com.anmol.voyage.ui.map.CountryPaths

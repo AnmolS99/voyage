@@ -45,6 +45,7 @@ change.
 | 2026-08-09 | The selection stays an inline card; the bottom sheet is the *details* view | A modal sheet on every tap would scrim the map and hide the one thing selecting a country changes there — the thicker status-colored border and the capital star. So the summary stays non-blocking and "Details" opens the sheet: the same split iOS makes between its bottom panel and `CountryExploreView`. |
 | 2026-08-09 | Search is a sheet behind an icon, not a docked Material 3 `SearchBar` | A docked search bar owns the top of the screen permanently, and the map is the screen. The icon keeps the map full-bleed and leaves the top-left corner free for the globe/map toggle in Phase 7. |
 | 2026-08-09 | Country search folds accents and ranks prefix matches first | iOS filters with `localizedCaseInsensitiveContains` and leaves the result alphabetical, which buries `India` under `Indonesia`-style matches and leaves `Türkiye` unreachable from an English keyboard. Result ordering in a search field is not one of the cross-platform invariants (those are the parser's and the renderers'), so Android ranks by prefix and normalizes with NFD. |
+| 2026-08-11 | Globe geometry and compiled material bytes are cached for the life of the process | Both are pure functions of files that never change at runtime, and both were being rebuilt every time Home was re-entered — ~300 ms of triangulation plus ~190 ms of shader compilation on each return from another tab or from the flat map. Caching them takes a return to the globe from ~500 ms and a spinner to ~64 ms and no spinner. |
 | 2026-08-11 | Globe materials compiled on device with `filamat`, not `matc` at build time | Filament's `matc` is a native binary from its release tarball; wiring it into Gradle would put a platform-specific toolchain in the build and on the CI runner. `filamat-android` compiles the two globe materials at startup for a few ms instead. Revisit if the material count grows. |
 | 2026-08-11 | Globe materials are **unlit**, and post-processing is disabled | CLAUDE.md requires globe and map to show identical country colors. A lit model runs every palette value through the lighting equation, and Filament's post-processing pass applies tone mapping — both shift #34BE82 to something else. Unlit + no post-processing puts palette values on screen unchanged, and the two settings are coupled: no post-processing also disables the linear→sRGB encode, so colors are passed through without conversion. |
 | 2026-08-11 | The far hemisphere is hidden by the opaque ocean sphere, not by backface culling | iOS winds fills single-sided and lets the GPU cull the far side. Here the ocean sphere (r=1.0) already occludes the fills behind it (r=1.003) through the depth buffer, so culling is off and winding never has to be reasoned about. Revisit in 7.10 if fill rate shows up in a profile. |
@@ -424,9 +425,17 @@ something on screen early.
       Verified by `GlobeGestureTest` on the emulator, since neither a pinch nor
       a scroll can be injected from a JVM test
 - [ ] 7.7 Selected-country overlay outline (thicker, status-colored, raised)
-- [ ] 7.8 Startup: build geometry on a background thread; if cold-start is
+- [~] 7.8 Startup: build geometry on a background thread; if cold-start is
       worse than iOS, add a binary geometry cache generated at build time
       (Android's `globe.scn` equivalent)
+      — **background build + process-wide cache done** 2026-08-11.
+      `globe/GlobeGeometryCache.kt` triangulates once and is prewarmed from
+      `VoyageApplication`, queued behind the parser on the countries lazy;
+      compiled material bytes are cached the same way. Measured on the Pixel 9
+      emulator: first show 247 ms from renderer creation to first frame,
+      returning to the globe 64 ms. The build-time binary cache — the real
+      `globe.scn` equivalent, which would also cut the first ~440 ms — is still
+      open
 - [x] 7.9 Globe ⇄ map toggle wired to `VoyageState.viewMode` — done
       2026-08-11. `MapScreen` became `ui/home/HomeScreen.kt`, which owns the
       search button, selection card and both sheets once and swaps only the

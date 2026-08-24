@@ -15,6 +15,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.test.platform.app.InstrumentationRegistry
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.globe.GlobeCamera
+import com.anmol.voyage.globe.NamedCountryMesh
 import com.anmol.voyage.globe.PolygonTriangulator
 import com.anmol.voyage.globe.UvSphere
 import org.junit.Assert.assertEquals

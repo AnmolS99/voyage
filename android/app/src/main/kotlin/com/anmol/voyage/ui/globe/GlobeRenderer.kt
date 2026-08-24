@@ -1,8 +1,8 @@
 package com.anmol.voyage.ui.globe
 
 import android.view.Surface
-import com.anmol.voyage.globe.CountryMesh
 import com.anmol.voyage.globe.GlobeCamera
+import com.anmol.voyage.globe.NamedCountryMesh
 import com.anmol.voyage.globe.SphereMesh
 import com.google.android.filament.Box
 import com.google.android.filament.Camera
@@ -254,8 +254,6 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
     }
 }
 
-/** A country's fill mesh with the name its color is looked up by. */
-internal class NamedCountryMesh(val name: String, val mesh: CountryMesh)
 
 private fun FloatArray.toDirectBuffer(): ByteBuffer =
     ByteBuffer.allocateDirect(size * Float.SIZE_BYTES)
