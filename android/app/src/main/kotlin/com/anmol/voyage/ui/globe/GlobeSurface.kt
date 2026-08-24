@@ -15,6 +15,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.viewinterop.AndroidView
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.globe.GlobeCamera
+import com.anmol.voyage.globe.NamedCountryMesh
 import com.anmol.voyage.globe.SphereMesh
 import com.google.android.filament.android.UiHelper
 import kotlin.math.exp

@@ -122,3 +122,6 @@ internal class DoubleArrayBuilder(initialCapacity: Int = 1024) {
 
     fun toArray(): DoubleArray = storage.copyOf(size)
 }
+
+/** A country's fill mesh with the name its color is looked up by. */
+class NamedCountryMesh(val name: String, val mesh: CountryMesh)

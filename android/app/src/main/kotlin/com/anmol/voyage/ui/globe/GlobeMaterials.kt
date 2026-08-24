@@ -3,6 +3,7 @@ package com.anmol.voyage.ui.globe
 import com.google.android.filament.Engine
 import com.google.android.filament.Material
 import com.google.android.filament.filamat.MaterialBuilder
+import java.nio.ByteBuffer
 
 /**
  * The globe's materials, compiled on device at startup.
@@ -60,13 +61,40 @@ internal class GlobeMaterials private constructor(
         """.trimIndent()
 
         /**
-         * Compiles both materials. Must run on the thread that owns [engine].
+         * The compiled shader bytes, kept for the life of the process.
          *
-         * `MaterialBuilder.init()`/`shutdown()` bracket all building, as
-         * filamat requires; shutdown releases the compiler's own globals and is
-         * safe once every package has been built.
+         * Compiling these costs ~190 ms, and it was being paid again every time
+         * the globe was rebuilt — on every return to the Home tab. The bytes
+         * depend on nothing but the shader source, so they are compiled once
+         * and re-wrapped for whichever engine is current.
+         */
+        @Volatile
+        private var payloads: Payloads? = null
+
+        private class Payloads(val country: ByteBuffer, val ocean: ByteBuffer)
+
+        /**
+         * Builds both materials for [engine]. Must run on the thread that owns it.
+         *
+         * The first call compiles; later calls only hand the cached bytes to
+         * Filament, which is effectively free.
          */
         fun build(engine: Engine): GlobeMaterials {
+            val compiled = payloads ?: compile().also { payloads = it }
+            return GlobeMaterials(
+                // duplicate() so each build reads from position 0 — Filament
+                // consumes the buffer it is given.
+                country = engine.material(compiled.country.duplicate()),
+                ocean = engine.material(compiled.ocean.duplicate()),
+            )
+        }
+
+        /**
+         * `MaterialBuilder.init()`/`shutdown()` bracket all building, as filamat
+         * requires; shutdown releases the compiler's own globals and is safe
+         * once every package has been built.
+         */
+        private fun compile(): Payloads {
             MaterialBuilder.init()
             try {
                 val country = MaterialBuilder()
@@ -93,13 +121,13 @@ internal class GlobeMaterials private constructor(
                 check(country.isValid) { "country material failed to compile" }
                 check(ocean.isValid) { "ocean material failed to compile" }
 
-                return GlobeMaterials(
-                    country = Material.Builder().payload(country.buffer, country.buffer.remaining()).build(engine),
-                    ocean = Material.Builder().payload(ocean.buffer, ocean.buffer.remaining()).build(engine),
-                )
+                return Payloads(country = country.buffer, ocean = ocean.buffer)
             } finally {
                 MaterialBuilder.shutdown()
             }
         }
+
+        private fun Engine.material(payload: ByteBuffer): Material =
+            Material.Builder().payload(payload, payload.remaining()).build(this)
     }
 }

@@ -269,7 +269,14 @@ cannot be injected from a JVM test — run them with
 `./gradlew connectedDebugAndroidTest` against a booted emulator.
 
 To pinch-zoom in the emulator by hand, hold **⌘** (Ctrl on Windows/Linux) and
-drag — two pointer dots appear. The mouse wheel zooms without any modifier. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
+drag — two pointer dots appear. The mouse wheel zooms without any modifier.
+
+**Anything derived from `shared/data` belongs in a process-wide cache, not in a
+composable.** `CountryDataCache` holds the parsed countries and
+`GlobeGeometryCache` the triangulated globe; both are prewarmed off the main
+thread from `VoyageApplication.onCreate`. Held in composition instead, they are
+rebuilt on every navigation away and back — which is a pure performance bug, so
+nothing looks wrong and only a stopwatch catches it. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
 unconfined coroutine scope, so loading and saving run inline on the test thread
 and assertions can read the store immediately after a mutation.
 
