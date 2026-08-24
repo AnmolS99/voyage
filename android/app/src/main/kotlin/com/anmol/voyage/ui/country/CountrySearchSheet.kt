@@ -27,7 +27,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -71,8 +70,12 @@ fun CountrySearchSheet(
     onSelect: (GeoJsonCountry) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
 ) {
+    // Held here rather than as a defaulted parameter: a default argument is
+    // evaluated at the call site, so an experimental one would force every
+    // caller to opt in too.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     var query by rememberSaveable { mutableStateOf("") }
     val index = remember(countries) { CountrySearchIndex.ofCountries(countries) }
     val results = remember(index, query) { index.search(query) }
