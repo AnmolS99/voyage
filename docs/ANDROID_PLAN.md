@@ -45,6 +45,12 @@ change.
 | 2026-08-09 | The selection stays an inline card; the bottom sheet is the *details* view | A modal sheet on every tap would scrim the map and hide the one thing selecting a country changes there — the thicker status-colored border and the capital star. So the summary stays non-blocking and "Details" opens the sheet: the same split iOS makes between its bottom panel and `CountryExploreView`. |
 | 2026-08-09 | Search is a sheet behind an icon, not a docked Material 3 `SearchBar` | A docked search bar owns the top of the screen permanently, and the map is the screen. The icon keeps the map full-bleed and leaves the top-left corner free for the globe/map toggle in Phase 7. |
 | 2026-08-09 | Country search folds accents and ranks prefix matches first | iOS filters with `localizedCaseInsensitiveContains` and leaves the result alphabetical, which buries `India` under `Indonesia`-style matches and leaves `Türkiye` unreachable from an English keyboard. Result ordering in a search field is not one of the cross-platform invariants (those are the parser's and the renderers'), so Android ranks by prefix and normalizes with NFD. |
+| 2026-08-11 | The globe draws into a `TextureView`, not a `SurfaceView` | A SurfaceView is its own window layer: it punches a hole through the app window and shows **black** until its first buffer is composited. Compose navigation builds a new one on every return to Home, and the tab-switch animation plays over that black hole — so the transition read as a long black flash even though Filament's first frame was 78 ms after composition. A TextureView draws inside the view hierarchy, so it is simply transparent until then and the theme background shows through. Measured cost: none — still 60 fps on the emulator. |
+| 2026-08-11 | Globe geometry and compiled material bytes are cached for the life of the process | Both are pure functions of files that never change at runtime, and both were being rebuilt every time Home was re-entered — ~300 ms of triangulation plus ~190 ms of shader compilation on each return from another tab or from the flat map. Caching them takes a return to the globe from ~500 ms and a spinner to ~64 ms and no spinner. |
+| 2026-08-11 | Globe materials compiled on device with `filamat`, not `matc` at build time | Filament's `matc` is a native binary from its release tarball; wiring it into Gradle would put a platform-specific toolchain in the build and on the CI runner. `filamat-android` compiles the two globe materials at startup for a few ms instead. Revisit if the material count grows. |
+| 2026-08-11 | Globe materials are **unlit**, and post-processing is disabled | CLAUDE.md requires globe and map to show identical country colors. A lit model runs every palette value through the lighting equation, and Filament's post-processing pass applies tone mapping — both shift #34BE82 to something else. Unlit + no post-processing puts palette values on screen unchanged, and the two settings are coupled: no post-processing also disables the linear→sRGB encode, so colors are passed through without conversion. |
+| 2026-08-11 | The far hemisphere is hidden by the opaque ocean sphere, not by backface culling | iOS winds fills single-sided and lets the GPU cull the far side. Here the ocean sphere (r=1.0) already occludes the fills behind it (r=1.003) through the depth buffer, so culling is off and winding never has to be reasoned about. Revisit in 7.10 if fill rate shows up in a profile. |
+| 2026-08-11 | The globe camera is owned by the render loop, not held as Compose state | A drag changes the camera up to once per frame; as Compose state that would recompose the globe and re-resolve all 181 country colors per frame, for a value only the renderer reads. |
 | 2026-08-11 | Globe geometry (7.3) emits plain float/int buffers (`CountryMesh`/`OutlineMesh`), not Filament objects | Keeps the triangulation pipeline unit-testable on the JVM — where CI (which has no emulator) actually runs it — and Filament merely wraps the buffers in 7.4/7.5. The same reasoning that keeps map appearance rules outside the map renderer. |
 
 ---
@@ -366,13 +372,22 @@ adb shell am start -n com.anmol.voyage/.MainActivity
 The flagship feature and the largest phase. Sub-steps are ordered so there's
 something on screen early.
 
-- [ ] 7.1 Filament integration: `SurfaceView`/`AndroidUiDispatcher` render
-      loop hosted in Compose, camera + lighting rig
-- [ ] 7.2 Ocean sphere + atmosphere glow (layer order per iOS: ocean →
+- [x] 7.1 Filament integration: `SurfaceView`/`AndroidUiDispatcher` render
+      loop hosted in Compose, camera + lighting rig — done 2026-08-11.
+      `ui/globe/GlobeSurface.kt` hosts a `SurfaceView` via `UiHelper` and drives
+      it from a `Choreographer` callback (one thread, vsync-paced for free);
+      `ui/globe/GlobeRenderer.kt` owns the engine/scene/view/camera. No lighting
+      rig: the materials are unlit (see the decision log), which is also why an
+      IBL is not needed to avoid a black globe. `globe/GlobeCamera.kt` is the
+      orbit camera — 45° vertical FOV and the 1.1…10.0 distance clamps from iOS
+- [~] 7.2 Ocean sphere + atmosphere glow (layer order per iOS: ocean →
       fills → outlines → atmosphere). Bring the three Earth textures over from the
       iOS asset catalog here, into `shared/` — the flat map wants the same ones and
       is waiting on them (see Phase 4), along with the transparent-fill branch that
       lets a texture show through unvisited countries
+      — **ocean sphere done** 2026-08-11 (`globe/UvSphere.kt`, generated because
+      Filament has no primitive shapes; it also does the hidden-surface work, see
+      the decision log). Atmosphere glow and the Earth textures are still open
 - [x] 7.3 Port `Earcut` (mapbox/earcut port — consider porting the Swift port
       1:1 so both stay diffable) + `PolygonTriangulator`: triangulation in
       lon/lat space, ~2.5° subdivision, `latLonToSphere()`, hole support
@@ -388,22 +403,80 @@ something on screen early.
       tests, including triangulating all 181 polygon countries from
       `shared/data/world.geojson` with zero grid fallbacks — the same
       "no fallbacks needed" invariant iOS documents
-- [ ] 7.4 Country fill meshes as Filament renderables; single-sided winding
-      (backface culling handles the far hemisphere, as on iOS)
+- [x] 7.4 Country fill meshes as Filament renderables; single-sided winding
+      (backface culling handles the far hemisphere, as on iOS) — done
+      2026-08-11, with the far hemisphere hidden by the ocean sphere instead of
+      by culling (see the decision log). One renderable and one material
+      instance per country, so recoloring a country never rebuilds geometry.
+      Colors verified by sampling the rendered frame: ocean #2F86A6, land
+      #34BE82, visited+selected #FFFF4C — exact palette values
 - [ ] 7.5 Border outlines: constant screen-width via a Filament material that
       widens centerline vertices along a miter attribute (same trick as the
       iOS shader modifier); merged sector meshes; measure before porting the
       per-frame horizon culling — Filament may not need it
-- [ ] 7.6 Gestures: rotate (trackball feel matching iOS), pinch zoom with the
+- [x] 7.6 Gestures: rotate (trackball feel matching iOS), pinch zoom with the
       same distance clamps, tap → analytic ray/sphere intersection → lat/lon →
-      `CountryHitTester` (reuse the fix from iOS PR #50)
+      `CountryHitTester` (reuse the fix from iOS PR #50) — done 2026-08-11 via
+      `detectTransformGestures`, the same detector the flat map uses. Rotation
+      speed scales with camera distance so the surface tracks the finger at any
+      zoom. Taps go through `GlobeCamera.latLonAt` → the 7.3
+      `raySphereSurfaceDirection`, never a mesh hit-test. Mouse wheel and
+      trackpad zoom too — a mouse is a real pointer on Chromebooks, DeX and
+      tablets, and on the emulator pinch otherwise needs a modifier key.
+      Verified by `GlobeGestureTest` on the emulator, since neither a pinch nor
+      a scroll can be injected from a JVM test
 - [ ] 7.7 Selected-country overlay outline (thicker, status-colored, raised)
-- [ ] 7.8 Startup: build geometry on a background thread; if cold-start is
+- [~] 7.8 Startup: build geometry on a background thread; if cold-start is
       worse than iOS, add a binary geometry cache generated at build time
       (Android's `globe.scn` equivalent)
-- [ ] 7.9 Globe ⇄ map toggle wired to `VoyageState.viewMode`
+      — **background build + process-wide cache done** 2026-08-11.
+      `globe/GlobeGeometryCache.kt` triangulates once and is prewarmed from
+      `VoyageApplication`, queued behind the parser on the countries lazy;
+      compiled material bytes are cached the same way. Measured on the Pixel 9
+      emulator: first show 247 ms from renderer creation to first frame,
+      returning to the globe 64 ms. The build-time binary cache — the real
+      `globe.scn` equivalent, which would also cut the first ~440 ms — is still
+      open
+- [x] 7.9 Globe ⇄ map toggle wired to `VoyageState.viewMode` — done
+      2026-08-11. `MapScreen` became `ui/home/HomeScreen.kt`, which owns the
+      search button, selection card and both sheets once and swaps only the
+      surface in the middle. A fresh install now opens on the globe, as iOS
+      does
 - [ ] 7.10 Performance pass on a mid-range device (e.g. Pixel a-series):
       60fps rotation, no jank on selection
+- [ ] 7.11 Keep one Filament engine alive for the Activity instead of building
+      a new one per navigation. Today `GlobeSurfaceHost` is created and
+      destroyed by the composable that draws the globe, so every trip to
+      another tab — or to the flat map — tears the engine down and rebuilds it,
+      re-uploading all 181 meshes on the way back. It is the last piece of
+      globe state still scoped to a composition rather than to the process or
+      the Activity; `GlobeGeometryCache` and the compiled material bytes were
+      moved out for the same reason.
+
+      **Measured before starting, so the win is not oversold** (Pixel 9
+      emulator, debug build, tap → first globe frame ≈ 214 ms):
+
+      | | |
+      | --- | --- |
+      | Compose navigation → `GlobeBody` composes | ~95 ms |
+      | Engine + materials rebuilt | ~20–24 ms |
+      | 181 meshes re-uploaded | ~12 ms |
+      | `TextureView` attached → surface available | ~26 ms |
+      | Teardown on the way out (main thread) | ~11–17 ms |
+
+      So this removes roughly 35–45 ms of the ~200 ms directly. The rest is
+      Compose navigation and surface creation, and **a detached view loses its
+      surface either way** — keeping the engine avoids rebuilding the renderer,
+      not re-creating the surface. If the goal is a genuinely instant switch,
+      this likely has to be paired with keeping the globe's view attached
+      (hoisted above the `NavHost` and hidden rather than removed).
+
+      Two traps for whoever picks this up: a `ViewModel` is the obvious place
+      to put it and the wrong one, because holding a `View` or a `Context`
+      there leaks the Activity across a configuration change — scope it to the
+      composition above the `NavHost` instead, so it survives navigation but
+      dies with the Activity. And `Engine.destroy()` must still run exactly
+      once, on the thread that owns it.
 
 **Definition of done:** globe and map pass a side-by-side consistency check
 against each other *and* against iOS (colors, selection, borders, stars);
@@ -513,7 +586,7 @@ Update the table as phases complete.
 | 4 — 2D map | ✅ Done (2026-08-07) |
 | 5 — State & persistence | 🟡 Built + CI green (2026-08-08); on-device process-death and backup checks still to run |
 | 6 — Country details | 🟡 Built + tests green (2026-08-09); on-device pass of the find → details → mark → persist loop still to run |
-| 7 — 3D globe | 🟡 7.3 triangulation pipeline ported + tested (2026-08-11); Filament renderer (7.1, 7.2, 7.4+) next — needs an emulator to verify |
+| 7 — 3D globe | 🟡 Globe renders and is interactive on the emulator (2026-08-11): 7.1, 7.3, 7.4, 7.6, 7.9 done, 7.2 partial (ocean only), 7.8 partial (in-memory cache; build-time cache still open). Remaining: border outlines (7.5), selected overlay (7.7), Earth textures + atmosphere (7.2), perf pass (7.10), engine lifetime across navigation (7.11) |
 | 8 — Achievements | Not started |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | Not started |

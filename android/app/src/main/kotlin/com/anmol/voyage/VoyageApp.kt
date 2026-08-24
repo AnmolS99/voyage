@@ -20,7 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anmol.voyage.navigation.VoyageDestination
 import com.anmol.voyage.state.VoyageState
-import com.anmol.voyage.ui.map.MapScreen
+import com.anmol.voyage.ui.home.HomeScreen
 import com.anmol.voyage.ui.screens.PlaceholderScreen
 
 /**
@@ -86,7 +86,7 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
                 composable(destination.route) {
                     val subtitleRes = destination.subtitleRes
                     when {
-                        destination == VoyageDestination.Home -> MapScreen(state = state)
+                        destination == VoyageDestination.Home -> HomeScreen(state = state)
                         // Destinations a later phase still owns.
                         subtitleRes != null -> PlaceholderScreen(
                             title = stringResource(destination.titleRes),

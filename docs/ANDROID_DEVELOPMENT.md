@@ -84,11 +84,13 @@ android/
 │       │   │   ├── MainActivity.kt          # splash + edge-to-edge + Compose entry
 │       │   │   ├── VoyageApp.kt             # NavigationBar shell + NavHost
 │       │   │   ├── data/                    # models, GeoJSON parser, cache, hit testing
-│       │   │   ├── globe/                   # 3D globe geometry: earcut, triangulation, outlines (Phase 7)
+│       │   │   ├── globe/                   # 3D globe geometry + camera: earcut, triangulation, outlines, orbit/tap math
 │       │   │   ├── navigation/              # top-level destinations
 │       │   │   ├── state/                   # VoyageState + its persisted document
 │       │   │   └── ui/
 │       │   │       ├── country/             # selection card, details sheet, search sheet
+│       │   │       ├── globe/               # Filament renderer, materials, surface + gestures
+│       │   │       ├── home/                # HomeScreen: chrome shared by globe and map
 │       │   │       ├── map/                 # flat map: projection, paths, styles, Canvas
 │       │   │       ├── screens/             # placeholders for unbuilt phases
 │       │   │       └── theme/               # ColorPalette.kt, Theme.kt
@@ -116,9 +118,17 @@ android/
   applies across platforms too, so what a country *looks like* is decided outside
   the renderers: `ui/map/CountryStyle.kt` for fills, borders and widths,
   `ui/map/CapitalMarker.kt` for the capital star, `ui/map/MapProjection.kt` for
-  the geometry. The Filament globe (Phase 7) reuses them rather than restating
-  them, and they are unit-tested without a renderer. `ui/map/WorldMap.kt` is a
-  port of `ios/voyage/MapView.swift` — change one, change the other.
+  the geometry, and `globe/GlobeCamera.kt` for the globe's projection. The
+  Filament globe reuses them rather than restating them, and they are unit-tested
+  without a renderer. `ui/home/HomeScreen.kt` holds everything the two renderers
+  share — search, selection card, sheets — so only the surface differs.
+  `ui/map/WorldMap.kt` is a port of `ios/voyage/MapView.swift` — change one,
+  change the other.
+
+  One deliberate exception is live: `ui/globe/GlobeCountryFill.kt` shows
+  selection with brighter fills, because the globe has no borders to move the
+  status onto until Phase 7.5. It is documented to collapse into
+  `CountryStyle.kt` when the outlines land.
 - **Shared data is referenced in place** from `shared/data/` via
   `assets.srcDirs` in `app/build.gradle.kts` — never copied into `android/`.
   The app reads it through `AssetManager`; JVM unit tests read the same files
@@ -249,9 +259,30 @@ country-details data (flag emoji, search matching and ordering, the
 country ⇄ highlights join), and the globe geometry pipeline: the earcut port,
 sphere projection and tap-ray math, and `GlobeGeometryWorldTest`, which
 triangulates every country in `shared/data/world.geojson` and asserts none of
-them need the grid-fill fallback.
+them need the grid-fill fallback, and the globe's orbit camera — whose
+`latLonAt` inverse has to agree with the position the renderer places the camera
+at, or taps land on the wrong country.
 They read `shared/data` straight off disk, so they need no device, and they are
-what CI runs. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
+what CI runs. Gestures are the exception and live in `app/src/androidTest/`
+(`WorldMapGestureTest`, `GlobeGestureTest`), because a pinch or a scroll wheel
+cannot be injected from a JVM test — run them with
+`./gradlew connectedDebugAndroidTest` against a booted emulator.
+
+To pinch-zoom in the emulator by hand, hold **⌘** (Ctrl on Windows/Linux) and
+drag — two pointer dots appear. The mouse wheel zooms without any modifier.
+
+**The globe renders into a `TextureView`.** Not a `SurfaceView`, which is a
+separate window layer and shows black until its first buffer lands — visible on
+every tab switch, because Compose navigation builds a new one each time. Timing
+logs will not show this: Filament's first frame is fast, and the black belongs
+to the window, not the renderer.
+
+**Anything derived from `shared/data` belongs in a process-wide cache, not in a
+composable.** `CountryDataCache` holds the parsed countries and
+`GlobeGeometryCache` the triangulated globe; both are prewarmed off the main
+thread from `VoyageApplication.onCreate`. Held in composition instead, they are
+rebuilt on every navigation away and back — which is a pure performance bug, so
+nothing looks wrong and only a stopwatch catches it. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
 unconfined coroutine scope, so loading and saving run inline on the test thread
 and assertions can read the store immediately after a mutation.
 
