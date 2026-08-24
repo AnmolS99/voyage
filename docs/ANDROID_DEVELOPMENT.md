@@ -271,6 +271,12 @@ cannot be injected from a JVM test — run them with
 To pinch-zoom in the emulator by hand, hold **⌘** (Ctrl on Windows/Linux) and
 drag — two pointer dots appear. The mouse wheel zooms without any modifier.
 
+**The globe renders into a `TextureView`.** Not a `SurfaceView`, which is a
+separate window layer and shows black until its first buffer lands — visible on
+every tab switch, because Compose navigation builds a new one each time. Timing
+logs will not show this: Filament's first frame is fast, and the black belongs
+to the window, not the renderer.
+
 **Anything derived from `shared/data` belongs in a process-wide cache, not in a
 composable.** `CountryDataCache` holds the parsed countries and
 `GlobeGeometryCache` the triangulated globe; both are prewarmed off the main
