@@ -12,6 +12,7 @@ splashscreen = "1.2.0"
 datastore = "1.2.1"
 kotlinxSerialization = "1.11.0"
 kotlinxCoroutines = "1.11.0"
+filament = "1.75.0"
 junit = "4.13.2"
 androidxJunit = "1.3.0"
 espresso = "3.7.0"
@@ -31,6 +32,12 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 # Declared even though AndroidX brings it in transitively: the app uses it
 # directly, and unit tests need it on their compile classpath.
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+
+# Filament: Google's real-time renderer, the Android analogue of SceneKit
+# (see the Android plan's decision log). filamat compiles the globe's materials
+# at runtime, which keeps matc — a native toolchain — out of the build and CI.
+filament-android = { group = "com.google.android.filament", name = "filament-android", version.ref = "filament" }
+filamat-android = { group = "com.google.android.filament", name = "filamat-android", version.ref = "filament" }
 
 # Versions of every compose artifact below come from the BOM.
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

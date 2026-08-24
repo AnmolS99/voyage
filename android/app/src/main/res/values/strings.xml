@@ -13,6 +13,8 @@
 
     <!-- Map -->
     <string name="map_search_countries">Search countries</string>
+    <string name="home_show_map">Show flat map</string>
+    <string name="home_show_globe">Show globe</string>
 
     <!-- Country selection card and details sheet -->
     <string name="country_capital">Capital: %1$s</string>

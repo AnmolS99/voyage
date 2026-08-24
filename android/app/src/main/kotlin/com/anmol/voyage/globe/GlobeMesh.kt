@@ -11,8 +11,34 @@ package com.anmol.voyage.globe
 /** A point on (or direction from the center of) the globe, single precision. */
 data class Vec3(val x: Float, val y: Float, val z: Float)
 
-/** A direction in double precision, used by tap-ray math. */
-data class Vec3d(val x: Double, val y: Double, val z: Double)
+/**
+ * A direction in double precision, used by the tap-ray and camera math.
+ *
+ * The operators live on the type rather than as private helpers in one file:
+ * both [PolygonTriangulator]'s ray/sphere intersection and [GlobeCamera]'s
+ * inverse projection need them, and a second private copy is how the two would
+ * drift apart.
+ */
+data class Vec3d(val x: Double, val y: Double, val z: Double) {
+
+    operator fun plus(other: Vec3d) = Vec3d(x + other.x, y + other.y, z + other.z)
+
+    operator fun minus(other: Vec3d) = Vec3d(x - other.x, y - other.y, z - other.z)
+
+    operator fun times(scalar: Double) = Vec3d(x * scalar, y * scalar, z * scalar)
+
+    operator fun div(scalar: Double) = Vec3d(x / scalar, y / scalar, z / scalar)
+
+    infix fun dot(other: Vec3d): Double = x * other.x + y * other.y + z * other.z
+
+    infix fun cross(other: Vec3d) = Vec3d(
+        x = y * other.z - z * other.y,
+        y = z * other.x - x * other.z,
+        z = x * other.y - y * other.x,
+    )
+
+    fun normalized(): Vec3d = this / kotlin.math.sqrt(this dot this)
+}
 
 /**
  * A country's fill mesh: triangles on the sphere surface.

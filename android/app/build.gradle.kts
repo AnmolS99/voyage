@@ -77,6 +77,8 @@ dependencies {
     implementation(libs.androidx.datastore)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.filament.android)
+    implementation(libs.filamat.android)
 
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)

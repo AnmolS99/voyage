@@ -32,7 +32,7 @@ data class PersistedState(
     val checkedCities: Map<String, Set<String>> = emptyMap(),
     /** Checked top attractions, keyed by country name. */
     val checkedAttractions: Map<String, Set<String>> = emptyMap(),
-    val viewMode: ViewMode = ViewMode.Map,
+    val viewMode: ViewMode = ViewMode.Globe,
     val globeStyle: GlobeStyle = GlobeStyle.Realistic,
     val mapStyle: GlobeStyle = GlobeStyle.Realistic,
     val themeMode: ThemeMode = ThemeMode.System,
