@@ -693,15 +693,4 @@ object PolygonTriangulator {
         )
     }
 
-    // Double-precision vector helpers for the tap-ray math
-
-    private operator fun Vec3d.plus(other: Vec3d) = Vec3d(x + other.x, y + other.y, z + other.z)
-
-    private operator fun Vec3d.times(scalar: Double) = Vec3d(x * scalar, y * scalar, z * scalar)
-
-    private operator fun Vec3d.div(scalar: Double) = Vec3d(x / scalar, y / scalar, z / scalar)
-
-    private fun Vec3d.dot(other: Vec3d): Double = x * other.x + y * other.y + z * other.z
-
-    private fun Vec3d.normalized(): Vec3d = this / sqrt(dot(this))
 }

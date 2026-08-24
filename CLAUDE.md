@@ -39,8 +39,15 @@ same `shared/data/` files and both assert the same parser fixture — see
 of `ios/voyage/MapView.swift`, so the consistency rule in
 [Globe and Map Consistency](#globe-and-map-consistency) covers four renderers, not
 two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,
-`ui/map/CapitalMarker.kt`, and `ui/map/MapProjection.kt` rather than in the
-renderer.
+`ui/map/CapitalMarker.kt`, `ui/map/MapProjection.kt`, and
+`globe/GlobeCamera.kt` rather than in the renderer, and
+`ui/home/HomeScreen.kt` holds the chrome both Android renderers share.
+
+The Android globe renders with **Filament** (`ui/globe/`), not SceneKit. Two
+constraints there are easy to break: its materials are **unlit** and its view
+has **post-processing disabled**, which together are what put exact palette
+colors on screen — enabling either one shifts every country color, and
+`GlobeCountryFill.kt` documents the coupling.
 
 ## Git Conventions
 
