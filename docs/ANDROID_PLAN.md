@@ -444,6 +444,39 @@ something on screen early.
       does
 - [ ] 7.10 Performance pass on a mid-range device (e.g. Pixel a-series):
       60fps rotation, no jank on selection
+- [ ] 7.11 Keep one Filament engine alive for the Activity instead of building
+      a new one per navigation. Today `GlobeSurfaceHost` is created and
+      destroyed by the composable that draws the globe, so every trip to
+      another tab — or to the flat map — tears the engine down and rebuilds it,
+      re-uploading all 181 meshes on the way back. It is the last piece of
+      globe state still scoped to a composition rather than to the process or
+      the Activity; `GlobeGeometryCache` and the compiled material bytes were
+      moved out for the same reason.
+
+      **Measured before starting, so the win is not oversold** (Pixel 9
+      emulator, debug build, tap → first globe frame ≈ 214 ms):
+
+      | | |
+      | --- | --- |
+      | Compose navigation → `GlobeBody` composes | ~95 ms |
+      | Engine + materials rebuilt | ~20–24 ms |
+      | 181 meshes re-uploaded | ~12 ms |
+      | `TextureView` attached → surface available | ~26 ms |
+      | Teardown on the way out (main thread) | ~11–17 ms |
+
+      So this removes roughly 35–45 ms of the ~200 ms directly. The rest is
+      Compose navigation and surface creation, and **a detached view loses its
+      surface either way** — keeping the engine avoids rebuilding the renderer,
+      not re-creating the surface. If the goal is a genuinely instant switch,
+      this likely has to be paired with keeping the globe's view attached
+      (hoisted above the `NavHost` and hidden rather than removed).
+
+      Two traps for whoever picks this up: a `ViewModel` is the obvious place
+      to put it and the wrong one, because holding a `View` or a `Context`
+      there leaks the Activity across a configuration change — scope it to the
+      composition above the `NavHost` instead, so it survives navigation but
+      dies with the Activity. And `Engine.destroy()` must still run exactly
+      once, on the thread that owns it.
 
 **Definition of done:** globe and map pass a side-by-side consistency check
 against each other *and* against iOS (colors, selection, borders, stars);
@@ -553,7 +586,7 @@ Update the table as phases complete.
 | 4 — 2D map | ✅ Done (2026-08-07) |
 | 5 — State & persistence | 🟡 Built + CI green (2026-08-08); on-device process-death and backup checks still to run |
 | 6 — Country details | 🟡 Built + tests green (2026-08-09); on-device pass of the find → details → mark → persist loop still to run |
-| 7 — 3D globe | 🟡 Globe renders and is interactive on the emulator (2026-08-11): 7.1, 7.3, 7.4, 7.6, 7.9 done, 7.2 partial (ocean only). Remaining: border outlines (7.5), selected overlay (7.7), Earth textures + atmosphere (7.2), startup/geometry cache (7.8), perf pass (7.10) |
+| 7 — 3D globe | 🟡 Globe renders and is interactive on the emulator (2026-08-11): 7.1, 7.3, 7.4, 7.6, 7.9 done, 7.2 partial (ocean only), 7.8 partial (in-memory cache; build-time cache still open). Remaining: border outlines (7.5), selected overlay (7.7), Earth textures + atmosphere (7.2), perf pass (7.10), engine lifetime across navigation (7.11) |
 | 8 — Achievements | Not started |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | Not started |
