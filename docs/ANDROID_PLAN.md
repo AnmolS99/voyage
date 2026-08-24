@@ -45,6 +45,7 @@ change.
 | 2026-08-09 | The selection stays an inline card; the bottom sheet is the *details* view | A modal sheet on every tap would scrim the map and hide the one thing selecting a country changes there — the thicker status-colored border and the capital star. So the summary stays non-blocking and "Details" opens the sheet: the same split iOS makes between its bottom panel and `CountryExploreView`. |
 | 2026-08-09 | Search is a sheet behind an icon, not a docked Material 3 `SearchBar` | A docked search bar owns the top of the screen permanently, and the map is the screen. The icon keeps the map full-bleed and leaves the top-left corner free for the globe/map toggle in Phase 7. |
 | 2026-08-09 | Country search folds accents and ranks prefix matches first | iOS filters with `localizedCaseInsensitiveContains` and leaves the result alphabetical, which buries `India` under `Indonesia`-style matches and leaves `Türkiye` unreachable from an English keyboard. Result ordering in a search field is not one of the cross-platform invariants (those are the parser's and the renderers'), so Android ranks by prefix and normalizes with NFD. |
+| 2026-08-11 | Globe geometry (7.3) emits plain float/int buffers (`CountryMesh`/`OutlineMesh`), not Filament objects | Keeps the triangulation pipeline unit-testable on the JVM — where CI (which has no emulator) actually runs it — and Filament merely wraps the buffers in 7.4/7.5. The same reasoning that keeps map appearance rules outside the map renderer. |
 
 ---
 
@@ -136,12 +137,13 @@ Google's 14-day closed-testing requirement.
 below):** these steps need payment details and identity documents, so they have
 to be done by hand at <https://play.google.com/console>.
 
-- [~] Register Google Play developer account ($25 one-time) + identity
-      verification — **registered 2026-08-07, awaiting Google's identity
-      verification**; the console stays limited until it clears
+- [x] Register Google Play developer account ($25 one-time) + identity
+      verification — registered 2026-08-07; **identity verification cleared
+      2026-08-11**, the console is fully unlocked
 - [ ] Create the app entry in Play Console — applicationId **`com.anmol.voyage`**
       (matches the iOS bundle id; already baked into the scaffold and permanent
-      once the Play entry exists). Blocked on verification completing
+      once the Play entry exists). Unblocked 2026-08-11 — an owner-only manual
+      step in the console
 - [ ] Note the requirement: ≥12 testers opted in for 14 consecutive days of
       closed testing before production access can be requested — recruit
       testers early
@@ -371,9 +373,21 @@ something on screen early.
       iOS asset catalog here, into `shared/` — the flat map wants the same ones and
       is waiting on them (see Phase 4), along with the transparent-fill branch that
       lets a texture show through unvisited countries
-- [ ] 7.3 Port `Earcut` (mapbox/earcut port — consider porting the Swift port
+- [x] 7.3 Port `Earcut` (mapbox/earcut port — consider porting the Swift port
       1:1 so both stay diffable) + `PolygonTriangulator`: triangulation in
       lon/lat space, ~2.5° subdivision, `latLonToSphere()`, hole support
+      — done 2026-08-11, taken first (out of sub-step order) because it is
+      the one sub-step that is pure logic and thus verifiable without an
+      emulator. `globe/Earcut.kt` is the 1:1 diffable port (minus Swift's ARC
+      cycle bookkeeping, which the JVM's GC makes unnecessary);
+      `globe/PolygonTriangulator.kt` covers fills with holes + area
+      validation, the grid-fill fallback, curvature subdivision, the miter
+      outline strips, sectored outlines, and the 7.6 tap-ray helpers
+      (`raySphereSurfaceDirection`, `sphereToLatLon`). Emits
+      `CountryMesh`/`OutlineMesh` buffers (see the decision log). 29 JVM
+      tests, including triangulating all 181 polygon countries from
+      `shared/data/world.geojson` with zero grid fallbacks — the same
+      "no fallbacks needed" invariant iOS documents
 - [ ] 7.4 Country fill meshes as Filament renderables; single-sided winding
       (backface culling handles the far hemisphere, as on iOS)
 - [ ] 7.5 Border outlines: constant screen-width via a Filament material that
@@ -494,12 +508,12 @@ Update the table as phases complete.
 | --- | --- |
 | 0 — Environment & tooling | ✅ Done (2026-08-06) |
 | 1 — Repo restructure | ✅ Done (2026-08-06) |
-| 2 — Scaffold + Play account | 🟡 Scaffold done (2026-08-06); Play account registered 2026-08-07, awaiting Google identity verification |
+| 2 — Scaffold + Play account | 🟡 Scaffold done (2026-08-06); Play account verified 2026-08-11 — creating the app entry (manual, owner-only) is the remaining item |
 | 3 — Data layer | ✅ Done (2026-08-07) |
 | 4 — 2D map | ✅ Done (2026-08-07) |
 | 5 — State & persistence | 🟡 Built + CI green (2026-08-08); on-device process-death and backup checks still to run |
 | 6 — Country details | 🟡 Built + tests green (2026-08-09); on-device pass of the find → details → mark → persist loop still to run |
-| 7 — 3D globe | Not started |
+| 7 — 3D globe | 🟡 7.3 triangulation pipeline ported + tested (2026-08-11); Filament renderer (7.1, 7.2, 7.4+) next — needs an emulator to verify |
 | 8 — Achievements | Not started |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | Not started |
