@@ -10,12 +10,14 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.viewinterop.AndroidView
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.globe.GlobeCamera
 import com.anmol.voyage.globe.SphereMesh
 import com.google.android.filament.android.UiHelper
+import kotlin.math.exp
 
 /**
  * The globe's rendering surface: a Filament-backed [SurfaceView] hosted in
@@ -35,6 +37,7 @@ internal fun GlobeSurface(
     hitTester: CountryHitTester,
     onCountryTapped: (String?) -> Unit,
     modifier: Modifier = Modifier,
+    onCameraChange: (GlobeCamera) -> Unit = {},
 ) {
     val host = remember(backgroundColor) { GlobeSurfaceHost(backgroundColor.toFilamentColor()) }
 
@@ -60,7 +63,7 @@ internal fun GlobeSurface(
         modifier = modifier
             .pointerInput(host) {
                 detectTransformGestures { _, pan, zoom, _ ->
-                    host.updateCamera { camera ->
+                    host.updateCamera(onCameraChange) { camera ->
                         val degreesPerPixel = camera.degreesPerPixel(size.height.toFloat())
                         camera
                             // Dragging right spins the globe east-to-west under
@@ -71,6 +74,22 @@ internal fun GlobeSurface(
                                 deltaLongitude = -pan.x * degreesPerPixel,
                             )
                             .zoomedBy(zoom)
+                    }
+                }
+            }
+            .pointerInput(host) {
+                // Wheel and trackpad zoom. A touchscreen has pinch, but a mouse
+                // is a first-class pointer on Chromebooks, DeX, tablets with a
+                // mouse attached — and on the emulator, where pinch otherwise
+                // needs a modifier key most people never find.
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        if (event.type != PointerEventType.Scroll) continue
+                        val scroll = event.changes.sumOf { it.scrollDelta.y.toDouble() }.toFloat()
+                        if (scroll == 0f) continue
+                        host.updateCamera(onCameraChange) { it.zoomedBy(zoomForScroll(scroll)) }
+                        event.changes.forEach { it.consume() }
                     }
                 }
             }
@@ -121,8 +140,9 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         }
     }
 
-    fun updateCamera(transform: (GlobeCamera) -> GlobeCamera) {
+    fun updateCamera(onCameraChange: (GlobeCamera) -> Unit, transform: (GlobeCamera) -> GlobeCamera) {
         camera = transform(camera)
+        onCameraChange(camera)
     }
 
     /** The country under a tap, or null for a tap that missed the globe. */
@@ -182,3 +202,18 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         renderer.destroy()
     }
 }
+
+/**
+ * Turns one scroll step into a zoom factor.
+ *
+ * Scroll deltas are ~±1 per wheel notch but arbitrary and much smaller on a
+ * precision trackpad, so this is exponential rather than linear: every unit of
+ * scroll is a constant *ratio* of zoom, which keeps the feel the same at both
+ * ends of the 1.1…10.0 distance range and can never flip the sign of the
+ * distance the way a subtractive step could.
+ *
+ * Scrolling up (negative delta) zooms in, matching every map on the platform.
+ */
+internal fun zoomForScroll(scrollDelta: Float): Float = exp(-scrollDelta * SCROLL_ZOOM_RATE)
+
+private const val SCROLL_ZOOM_RATE = 0.2f

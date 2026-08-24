@@ -418,7 +418,11 @@ something on screen early.
       `detectTransformGestures`, the same detector the flat map uses. Rotation
       speed scales with camera distance so the surface tracks the finger at any
       zoom. Taps go through `GlobeCamera.latLonAt` → the 7.3
-      `raySphereSurfaceDirection`, never a mesh hit-test
+      `raySphereSurfaceDirection`, never a mesh hit-test. Mouse wheel and
+      trackpad zoom too — a mouse is a real pointer on Chromebooks, DeX and
+      tablets, and on the emulator pinch otherwise needs a modifier key.
+      Verified by `GlobeGestureTest` on the emulator, since neither a pinch nor
+      a scroll can be injected from a JVM test
 - [ ] 7.7 Selected-country overlay outline (thicker, status-colored, raised)
 - [ ] 7.8 Startup: build geometry on a background thread; if cold-start is
       worse than iOS, add a binary geometry cache generated at build time

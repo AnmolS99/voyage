@@ -263,7 +263,13 @@ them need the grid-fill fallback, and the globe's orbit camera — whose
 `latLonAt` inverse has to agree with the position the renderer places the camera
 at, or taps land on the wrong country.
 They read `shared/data` straight off disk, so they need no device, and they are
-what CI runs. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
+what CI runs. Gestures are the exception and live in `app/src/androidTest/`
+(`WorldMapGestureTest`, `GlobeGestureTest`), because a pinch or a scroll wheel
+cannot be injected from a JVM test — run them with
+`./gradlew connectedDebugAndroidTest` against a booted emulator.
+
+To pinch-zoom in the emulator by hand, hold **⌘** (Ctrl on Windows/Linux) and
+drag — two pointer dots appear. The mouse wheel zooms without any modifier. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
 unconfined coroutine scope, so loading and saving run inline on the test thread
 and assertions can read the store immediately after a mutation.
 
