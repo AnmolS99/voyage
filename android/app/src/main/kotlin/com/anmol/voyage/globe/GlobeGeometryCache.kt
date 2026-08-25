@@ -6,10 +6,18 @@ import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.GeoJsonCountry
 import kotlin.concurrent.thread
 
-/** Everything the globe draws, as buffers ready to hand to a renderer. */
+/**
+ * Everything the globe draws, as buffers ready to hand to a renderer.
+ *
+ * @property outlineSectors The world's borders, split into longitude sectors so
+ *   the renderer can drop the ones past the globe's horizon. Every country's
+ *   rings are in exactly one sector; together they are the same mesh a single
+ *   merged outline would be.
+ */
 class GlobeGeometry(
     val ocean: SphereMesh,
     val countries: List<NamedCountryMesh>,
+    val outlineSectors: List<OutlineMesh>,
 )
 
 /**
@@ -67,14 +75,28 @@ object GlobeGeometryCache {
 
     private fun build(countries: List<GeoJsonCountry>): GlobeGeometry {
         val started = SystemClock.elapsedRealtime()
-        // Point-feature microstates produce no fill mesh — they are dots, and
-        // get their markers with the capital stars in Phase 7.5.
-        val meshes = countries.mapNotNull { country ->
+        // Point-feature microstates produce no fill mesh and no border — they
+        // are dots, and still have no marker on the globe (Phase 7.2's open
+        // half, with the capital star).
+        val polygonCountries = countries.filter { !it.isPointCountry }
+        val meshes = polygonCountries.mapNotNull { country ->
             PolygonTriangulator.createCountryGeometry(country.polygons, country.holes)
                 ?.let { NamedCountryMesh(country.name, it) }
         }
-        Log.i(TAG, "triangulated ${meshes.size} countries in ${SystemClock.elapsedRealtime() - started} ms")
-        return GlobeGeometry(ocean = UvSphere.build(), countries = meshes)
+        val outlines = PolygonTriangulator.createSectoredOutlineGeometries(
+            polygonCountries.flatMap { it.polygons },
+        )
+        Log.i(
+            TAG,
+            "triangulated ${meshes.size} countries and ${outlines.size} outline sectors " +
+                "(${outlines.sumOf { it.vertexCount }} outline vertices) " +
+                "in ${SystemClock.elapsedRealtime() - started} ms",
+        )
+        return GlobeGeometry(
+            ocean = UvSphere.build(),
+            countries = meshes,
+            outlineSectors = outlines,
+        )
     }
 
     private const val TAG = "GlobeGeometryCache"

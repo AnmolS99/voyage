@@ -96,7 +96,58 @@ data class GlobeCamera(
         return PolygonTriangulator.sphereToLatLon(surface)
     }
 
+    /**
+     * How much to shrink world-sized decorations so they keep a constant size on
+     * screen — today the border outlines, and whatever else the globe grows.
+     *
+     * Perspective makes anything on the globe's near face cover a span
+     * proportional to `1 / (distance - radius)`, so a world-space width has to
+     * scale by the inverse to look unchanged. 1.0 at the default distance.
+     *
+     * The lower clamp is the scale at the closest zoom, so it never binds inside
+     * the usable range: width stays constant all the way down rather than the
+     * outlines fattening once past a floor. iOS
+     * `GlobeView.Coordinator.screenScale` and its clamp, exactly.
+     */
+    val screenScale: Float
+        get() {
+            val minimum = rawScreenScale(MIN_DISTANCE)
+            return rawScreenScale(distance).coerceIn(minimum, 1.0f)
+        }
+
+    /**
+     * Whether a mesh with this bounding sphere lies entirely beyond the globe's
+     * horizon — everything it draws is on the far side and hidden by the globe.
+     *
+     * A point p on the unit sphere is visible from a camera at distance d iff
+     * `dot(p, camDir) >= 1/d`. For a bounding sphere (center c, radius r),
+     * `dot(p, camDir) <= dot(c, camDir) + r` for every point it contains, so the
+     * whole mesh is safely behind the horizon once that upper bound falls below
+     * it. Ported from iOS `cullFarSideOutlineSectors`, [HORIZON_MARGIN] included
+     * to keep sectors from popping right at the limb.
+     *
+     * Conservative by construction: it can answer false for a mesh that happens
+     * to be invisible, never true for one with a visible vertex.
+     */
+    fun isBeyondHorizon(center: Vec3, boundingRadius: Float): Boolean {
+        if (distance <= 1.0f) return false
+        // The camera orbits a globe fixed at the origin, so its position *is*
+        // its direction from the globe's center, once normalized.
+        val eye = position.normalized()
+        val dot = center.x * eye.x + center.y * eye.y + center.z * eye.z
+        return dot + boundingRadius < 1.0 / distance - HORIZON_MARGIN
+    }
+
     companion object {
+        /** Keeps the horizon test from popping meshes right at the limb. */
+        const val HORIZON_MARGIN = 0.02
+
+        /** The globe's own radius; the ocean sphere is built at exactly this. */
+        private const val GLOBE_RADIUS = 1.0f
+
+        private fun rawScreenScale(distance: Float): Float =
+            (distance - GLOBE_RADIUS) / (DEFAULT_DISTANCE - GLOBE_RADIUS)
+
         /** Matches iOS `SCNCamera.fieldOfView = 45`. */
         const val FOV_DEGREES = 45.0
         private const val FOV_RADIANS = FOV_DEGREES * PI / 180.0

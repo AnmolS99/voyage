@@ -1,6 +1,7 @@
 package com.anmol.voyage.globe
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -109,5 +110,62 @@ class GlobeCameraTest {
         val near = GlobeCamera(distance = 2f).degreesPerPixel(2400f)
         assertTrue("zoomed in should rotate less per pixel", near < far)
         assertEquals(0.0, GlobeCamera().degreesPerPixel(0f), 0.0)
+    }
+
+    // Screen scale — what keeps border outlines a constant width on screen
+
+    @Test
+    fun `screen scale is 1 at the default distance and shrinks toward the globe`() {
+        assertEquals(1f, GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE).screenScale, 1e-6f)
+        // iOS `screenScale`: (d - 1) / (4 - 1)
+        assertEquals(1f / 3f, GlobeCamera(distance = 2f).screenScale, 1e-6f)
+    }
+
+    @Test
+    fun `screen scale never binds inside the usable zoom range`() {
+        // The clamp sits exactly at the closest zoom, so borders stay a constant
+        // width all the way in instead of fattening once past a floor.
+        val closest = GlobeCamera(distance = GlobeCamera.MIN_DISTANCE).screenScale
+        assertEquals((GlobeCamera.MIN_DISTANCE - 1f) / 3f, closest, 1e-6f)
+        assertTrue(
+            "the clamp binds before the closest zoom",
+            GlobeCamera(distance = GlobeCamera.MIN_DISTANCE + 0.01f).screenScale > closest,
+        )
+    }
+
+    @Test
+    fun `screen scale is capped at 1 when zoomed out`() {
+        // Zoomed out, borders keep their base width rather than growing with the
+        // distance the formula would otherwise hand back.
+        assertEquals(1f, GlobeCamera(distance = GlobeCamera.MAX_DISTANCE).screenScale, 1e-6f)
+    }
+
+    // Horizon culling
+
+    @Test
+    fun `a mesh on the far side is beyond the horizon`() {
+        val camera = GlobeCamera(latitude = 0.0, longitude = 0.0)
+        // The camera looks at (0, 0), which sits on +X; the antipode is on -X.
+        assertTrue(camera.isBeyondHorizon(Vec3(-1f, 0f, 0f), boundingRadius = 0.05f))
+        assertFalse(camera.isBeyondHorizon(Vec3(1f, 0f, 0f), boundingRadius = 0.05f))
+    }
+
+    @Test
+    fun `a bounding sphere reaching past the horizon is kept`() {
+        val camera = GlobeCamera(latitude = 0.0, longitude = 0.0)
+        // Centered on the far side, but large enough to hold visible geometry —
+        // the test has to answer "keep" or borders vanish mid-drag.
+        assertFalse(camera.isBeyondHorizon(Vec3(-0.5f, 0f, 0f), boundingRadius = 1.0f))
+    }
+
+    @Test
+    fun `zooming in pushes the horizon further around the globe`() {
+        // At the closest zoom the visible cap shrinks toward a point, so a patch
+        // just off-center is already behind the horizon; from far away it is not.
+        val patch = Vec3(0.80f, 0.60f, 0f)
+        val closest = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = GlobeCamera.MIN_DISTANCE)
+        val farthest = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = GlobeCamera.MAX_DISTANCE)
+        assertTrue(closest.isBeyondHorizon(patch, 0.01f))
+        assertFalse(farthest.isBeyondHorizon(patch, 0.01f))
     }
 }

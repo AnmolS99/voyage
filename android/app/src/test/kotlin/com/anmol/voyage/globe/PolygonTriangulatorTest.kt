@@ -198,7 +198,8 @@ class PolygonTriangulatorTest {
 
         assertNotNull(mesh)
         assertEquals(64, mesh!!.vertexCount)
-        assertEquals(mesh.positions.size, mesh.miters.size)
+        // Four floats per vertex against three: the miter's w carries the gradient
+        assertEquals(mesh.vertexCount * 4, mesh.miters.size)
         assertEquals(32 * 6, mesh.indices.size)
     }
 
@@ -224,23 +225,106 @@ class PolygonTriangulatorTest {
         val mesh = PolygonTriangulator.createBorderOutlineGeometry(listOf(square(0.0, 0.0, 20.0)))!!
 
         for (v in 0 until mesh.vertexCount) {
-            val x = mesh.miters[v * 3]
-            val y = mesh.miters[v * 3 + 1]
-            val z = mesh.miters[v * 3 + 2]
+            val x = mesh.miters[v * 4]
+            val y = mesh.miters[v * 4 + 1]
+            val z = mesh.miters[v * 4 + 2]
             val length = sqrt(x * x + y * y + z * z)
             assertTrue("miter length $length out of range", length >= 1.0f - 1e-3f && length <= 2.0f + 1e-3f)
         }
     }
 
     @Test
+    fun `outline gradient runs bottom-left to top-right of the shape's box`() {
+        val mesh = PolygonTriangulator.createBorderOutlineGeometry(listOf(square(0.0, 0.0, 20.0)))!!
+
+        // The parameter is the same (u + v) / 2 the fill's UVs produce, so the
+        // globe's border gradient runs the way the flat map's brush does.
+        var southWest = Float.POSITIVE_INFINITY
+        var northEast = Float.NEGATIVE_INFINITY
+        for (v in 0 until mesh.vertexCount) {
+            val t = mesh.miters[v * 4 + 3]
+            assertTrue("gradient $t outside 0…1", t >= 0f && t <= 1f)
+            val lat = latLonOf(mesh.positions, v).lat
+            val lon = latLonOf(mesh.positions, v).lon
+            // The square spans 0…20 in both axes; its two extreme corners pin
+            // the ends of the diagonal.
+            if (lat < 0.5 && lon < 0.5) southWest = minOf(southWest, t)
+            if (lat > 19.5 && lon > 19.5) northEast = maxOf(northEast, t)
+        }
+        assertEquals(0f, southWest, 1e-3f)
+        assertEquals(1f, northEast, 1e-3f)
+    }
+
+    @Test
+    fun `outline bounding sphere encloses every vertex`() {
+        val mesh = PolygonTriangulator.createBorderOutlineGeometry(listOf(square(30.0, 40.0, 12.0)))!!
+
+        for (v in 0 until mesh.vertexCount) {
+            val dx = mesh.positions[v * 3] - mesh.center.x
+            val dy = mesh.positions[v * 3 + 1] - mesh.center.y
+            val dz = mesh.positions[v * 3 + 2] - mesh.center.z
+            assertTrue(
+                "vertex $v outside the bounding sphere",
+                sqrt(dx * dx + dy * dy + dz * dz) <= mesh.boundingRadius + 1e-4f,
+            )
+        }
+        // A 12° patch is far smaller than the globe it sits on — the whole point
+        // of the sphere is that Filament and the horizon test can skip it.
+        assertTrue("bounding radius ${mesh.boundingRadius} is not local", mesh.boundingRadius < 0.3f)
+    }
+
+    @Test
+    fun `selected outline sits above the shared borders`() {
+        val square = listOf(square(0.0, 0.0, 10.0))
+        val shared = PolygonTriangulator.createBorderOutlineGeometry(square)!!
+        val selected = PolygonTriangulator.createBorderOutlineGeometry(
+            polygons = square,
+            radius = PolygonTriangulator.SELECTED_OUTLINE_RADIUS,
+        )!!
+
+        // iOS raises its overlay with a shader uniform; here it is baked into the
+        // radius, and the 0.001 gap is the one iOS raises by.
+        assertEquals(0.001f, radiusOf(selected, 0) - radiusOf(shared, 0), 1e-5f)
+    }
+
+    private fun radiusOf(mesh: OutlineMesh, vertex: Int): Float {
+        val x = mesh.positions[vertex * 3]
+        val y = mesh.positions[vertex * 3 + 1]
+        val z = mesh.positions[vertex * 3 + 2]
+        return sqrt(x * x + y * y + z * z)
+    }
+
+    private fun latLonOf(positions: FloatArray, vertex: Int) = PolygonTriangulator.sphereToLatLon(
+        Vec3d(
+            positions[vertex * 3].toDouble(),
+            positions[vertex * 3 + 1].toDouble(),
+            positions[vertex * 3 + 2].toDouble(),
+        ).normalized(),
+    )
+
+    @Test
     fun `sectored outlines partition the rings`() {
         // One ring near 170°W, one at the prime meridian, one near 170°E
         val rings = listOf(square(0.0, -175.0, 4.0), square(0.0, -2.0, 4.0), square(0.0, 171.0, 4.0))
-        val sectors = PolygonTriangulator.createSectoredOutlineGeometries(rings, sectors = 12)
+        val sectors = PolygonTriangulator.createSectoredOutlineGeometries(rings)
 
         assertEquals(3, sectors.size)
         val single = PolygonTriangulator.createBorderOutlineGeometry(rings)!!
         assertEquals(single.vertexCount, sectors.sumOf { it.vertexCount })
+    }
+
+    @Test
+    fun `sectors split by latitude as well as longitude`() {
+        // Two rings sharing a longitude band, one far north and one far south.
+        // Bucketing by longitude alone would merge them into a slab spanning the
+        // globe, which the horizon test can never cull.
+        val rings = listOf(square(60.0, 0.0, 4.0), square(-70.0, 0.0, 4.0))
+        val sectors = PolygonTriangulator.createSectoredOutlineGeometries(rings)
+
+        assertEquals(2, sectors.size)
+        for (sector in sectors) {
+            assertTrue("sector radius ${sector.boundingRadius} spans the globe", sector.boundingRadius < 0.5f)
+        }
     }
 
     // Helpers

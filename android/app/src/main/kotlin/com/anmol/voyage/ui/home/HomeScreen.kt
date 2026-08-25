@@ -40,6 +40,8 @@ import com.anmol.voyage.ui.country.CountrySearchSheet
 import com.anmol.voyage.ui.country.CountrySelectionCard
 import com.anmol.voyage.ui.globe.GlobeCountryFills
 import com.anmol.voyage.globe.GlobeGeometry
+import com.anmol.voyage.globe.OutlineMesh
+import com.anmol.voyage.globe.SelectedOutlineCache
 import com.anmol.voyage.ui.globe.GlobeSurface
 import com.anmol.voyage.ui.globe.rememberGlobeGeometry
 import com.anmol.voyage.ui.map.CountryPaths
@@ -174,6 +176,21 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
     val background = MaterialTheme.colorScheme.background
     val geometry: GlobeGeometry? = rememberGlobeGeometry(data?.countries)
     val hitTester = data?.hitTester
+
+    // The selected country's border is its own mesh, built off the main thread:
+    // outlining Russia is tens of thousands of points and would drop a frame on
+    // the tap that selected it.
+    val selectedName = state.selectedCountry
+    val selectedOutline by produceState<OutlineMesh?>(null, selectedName, data) {
+        val name = selectedName
+        val countries = data?.countries
+        value = if (name == null || countries == null) {
+            null
+        } else {
+            withContext(Dispatchers.Default) { SelectedOutlineCache.of(countries, name) }
+        }
+    }
+
     if (geometry == null || hitTester == null) {
         HomeLoading()
         return
@@ -182,6 +199,7 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
     GlobeSurface(
         ocean = geometry.ocean,
         countries = geometry.countries,
+        outlineSectors = geometry.outlineSectors,
         colorFor = { name ->
             GlobeCountryFills.of(
                 isVisited = state.isVisited(name),
@@ -196,6 +214,13 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
             if (name == null) state.clearSelection() else state.selectCountry(name, hitTester.center(name))
         },
         modifier = Modifier.fillMaxSize(),
+        selectedOutline = selectedOutline,
+        selectedOutlineColor = selectedName?.let {
+            GlobeCountryFills.selectedBorderOf(
+                isVisited = state.isVisited(it),
+                isWishlist = state.isInWishlist(it),
+            )
+        },
     )
 }
 
