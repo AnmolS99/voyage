@@ -112,6 +112,63 @@ class GlobeCameraTest {
         assertEquals(0.0, GlobeCamera().degreesPerPixel(0f), 0.0)
     }
 
+    // Forward projection — where a marker lands on screen
+
+    @Test
+    fun `projecting a tap's own point puts it back under the finger`() {
+        // The pairing that matters: screenPositionOf must undo latLonAt exactly,
+        // or a capital star drifts off its capital as the globe turns.
+        val camera = GlobeCamera(latitude = 12.0, longitude = -40.0, distance = 3.0f)
+        val width = 1080f
+        val height = 2400f
+
+        for (x in listOf(400f, 540f, 700f)) {
+            for (y in listOf(1000f, 1200f, 1400f)) {
+                val hit = camera.latLonAt(x, y, width, height)
+                assertNotNull("tap at ($x, $y) missed the globe", hit)
+                val back = camera.screenPositionOf(hit!!.lat, hit.lon, width, height)
+                assertNotNull("projecting ($x, $y) back gave nothing", back)
+                assertEquals(x, back!!.x, 0.5f)
+                assertEquals(y, back.y, 0.5f)
+            }
+        }
+    }
+
+    @Test
+    fun `the point the camera looks at projects to the viewport center`() {
+        val camera = GlobeCamera(latitude = 25.0, longitude = 100.0)
+        val point = camera.screenPositionOf(25.0, 100.0, 1000f, 2000f)
+
+        assertNotNull(point)
+        assertEquals(500f, point!!.x, 0.5f)
+        assertEquals(1000f, point.y, 0.5f)
+    }
+
+    @Test
+    fun `a point on the far side does not project`() {
+        val camera = GlobeCamera(latitude = 0.0, longitude = 0.0)
+        // The antipode of what the camera looks at, and a point just past the limb.
+        assertNull(camera.screenPositionOf(0.0, 180.0, 1000f, 2000f))
+        assertNull(camera.screenPositionOf(0.0, 100.0, 1000f, 2000f))
+        assertNotNull(camera.screenPositionOf(0.0, 0.0, 1000f, 2000f))
+    }
+
+    @Test
+    fun `the horizon tightens as the camera moves in`() {
+        // At 60° away the point is visible from far out and gone up close, which
+        // is what makes a marker round the limb instead of clinging to it.
+        val far = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = GlobeCamera.MAX_DISTANCE)
+        val near = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = 1.5f)
+        assertNotNull(far.screenPositionOf(0.0, 60.0, 1000f, 2000f))
+        assertNull(near.screenPositionOf(0.0, 60.0, 1000f, 2000f))
+    }
+
+    @Test
+    fun `projection reports nothing for a viewport with no area`() {
+        val camera = GlobeCamera()
+        assertNull(camera.screenPositionOf(0.0, 0.0, 0f, 0f))
+    }
+
     // Screen scale — what keeps border outlines a constant width on screen
 
     @Test

@@ -42,6 +42,10 @@ two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,
 `ui/map/CapitalMarker.kt`, `ui/map/MapProjection.kt`, and
 `globe/GlobeCamera.kt` rather than in the renderer, and
 `ui/home/HomeScreen.kt` holds the chrome both Android renderers share.
+Capital stars and microstate dots are drawn by `ui/map/CountryMarkers.kt` for
+**both** Android renderers — the globe draws them as a Compose overlay above the
+Filament surface rather than as meshes in the scene, so the two share one
+drawing path and markers keep a constant screen size for free.
 
 The Android globe renders with **Filament** (`ui/globe/`), not SceneKit. Two
 constraints there are easy to break: its materials are **unlit** and its view

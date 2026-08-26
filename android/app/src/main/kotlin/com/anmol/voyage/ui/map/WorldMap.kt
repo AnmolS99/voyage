@@ -13,24 +13,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
-
-/** Marker sizes in screen terms, matching the iOS map's points. */
-private val DOT_RADIUS = 5.dp
-private val CAPITAL_STAR_RADIUS = 6.dp
-private val CAPITAL_STAR_OUTLINE = 1.dp
 
 /**
  * The flat world map: an equirectangular Compose `Canvas` port of iOS `MapView`.
@@ -59,12 +48,7 @@ fun WorldMap(
     var offset by remember(projection) { mutableStateOf(Offset.Zero) }
 
     val oceanColor = if (darkTheme) VoyagePalette.oceanDark else VoyagePalette.oceanMap
-    val density = LocalDensity.current
-    val dotRadiusPx = with(density) { DOT_RADIUS.toPx() }
-    val starOutlinePx = with(density) { CAPITAL_STAR_OUTLINE.toPx() }
-    val starPath = remember(density) {
-        CapitalMarker.starPath(with(density) { CAPITAL_STAR_RADIUS.toPx() })
-    }
+    val starPath = rememberCapitalStarPath()
 
     Canvas(
         modifier = modifier
@@ -138,16 +122,7 @@ fun WorldMap(
                 offsetX = offset.x,
                 offsetY = offset.y,
             )
-            val center = Offset(x, y)
-            val style = state.styleFor(country.name)
-            val bounds = Rect(center = center, radius = dotRadiusPx)
-            drawCircle(style.fill.brush(bounds), radius = dotRadiusPx, center = center)
-            drawCircle(
-                brush = style.border.brush(bounds),
-                radius = dotRadiusPx,
-                center = center,
-                style = Stroke(width = style.borderWidth.toPx()),
-            )
+            drawMicrostateDot(Offset(x, y), state.styleFor(country.name))
         }
 
         // The capital star marks the selected country only, as on the globe.
@@ -161,14 +136,7 @@ fun WorldMap(
                 offsetX = offset.x,
                 offsetY = offset.y,
             )
-            translate(left = x, top = y) {
-                drawPath(starPath, SolidColor(VoyagePalette.capitalMarker))
-                drawPath(
-                    path = starPath,
-                    brush = SolidColor(VoyagePalette.capitalMarkerOutline),
-                    style = Stroke(width = starOutlinePx),
-                )
-            }
+            drawCapitalStar(Offset(x, y), starPath)
         }
     }
 }
@@ -180,15 +148,3 @@ private fun VoyageState.styleFor(name: String): CountryStyle = CountryStyles.of(
     isSelected = selectedCountry == name,
 )
 
-/**
- * Resolves a shading to a brush. The visited+wishlist gradient runs bottom-left to
- * top-right across the shape being painted, so it needs that shape's bounds.
- */
-private fun MapShading.brush(bounds: Rect): Brush = when (this) {
-    is MapShading.Solid -> SolidColor(color)
-    MapShading.VisitedWishlist -> Brush.linearGradient(
-        colors = listOf(VoyagePalette.visited, VoyagePalette.wishlist),
-        start = Offset(bounds.left, bounds.bottom),
-        end = Offset(bounds.right, bounds.top),
-    )
-}

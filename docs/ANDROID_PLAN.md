@@ -380,6 +380,31 @@ something on screen early.
       rig: the materials are unlit (see the decision log), which is also why an
       IBL is not needed to avoid a black globe. `globe/GlobeCamera.kt` is the
       orbit camera — 45° vertical FOV and the 1.1…10.0 distance clamps from iOS
+- [x] 7.2b Capital star + microstate dots on the globe — done 2026-08-26.
+      Not a numbered sub-step originally; it sat between 7.2 and the phase's
+      definition of done ("colors, selection, borders, **stars**") and was the
+      last consistency gap once 7.5/7.7 landed. Both markers are drawn as a
+      **Compose overlay above the Filament surface**, not as meshes in the
+      scene, which is what lets the globe and the map share one drawing path
+      (`ui/map/CountryMarkers.kt`) rather than agree by coincidence. It also
+      makes "constant size on screen" free: iOS draws its star as world-space
+      geometry and needs `capitalMarkerScale`'s `sqrt(zoomScale)` to undo the
+      perspective shrink, and this needs nothing.
+
+      The overlay needs the camera, which was deliberately *not* Compose state
+      so a drag would not recompose 181 country colors. It is snapshot state
+      now, read inside the `Canvas` draw lambda — a draw-phase read invalidates
+      only the drawing, so the original reason still holds. Placement is
+      `GlobeCamera.screenPositionOf`, the exact inverse of `latLonAt`, tested by
+      round-tripping against it; it returns null past the horizon, so markers
+      round the limb instead of clinging to it.
+
+      Also pinned: `GlobeGeometryWorldTest` now asserts every country is drawn
+      by exactly one path. `isPointCountry` and `pointCoordinate != null` are
+      not each other's negation — a *polygon* feature flagged
+      `renderAs: "point"` would fall through both filters and be invisible on
+      both renderers with nothing failing. The shipped data has no such feature;
+      the test is there so a regenerated one that does fails loudly
 - [~] 7.2 Ocean sphere + atmosphere glow (layer order per iOS: ocean →
       fills → outlines → atmosphere). Bring the three Earth textures over from the
       iOS asset catalog here, into `shared/` — the flat map wants the same ones and
@@ -387,7 +412,9 @@ something on screen early.
       lets a texture show through unvisited countries
       — **ocean sphere done** 2026-08-11 (`globe/UvSphere.kt`, generated because
       Filament has no primitive shapes; it also does the hidden-surface work, see
-      the decision log). Atmosphere glow and the Earth textures are still open
+      the decision log). Atmosphere glow and the Earth textures are still open.
+      The capital star and microstate dots this sub-step also implied are
+      done — see 7.2b above
 - [x] 7.3 Port `Earcut` (mapbox/earcut port — consider porting the Swift port
       1:1 so both stay diffable) + `PolygonTriangulator`: triangulation in
       lon/lat space, ~2.5° subdivision, `latLonToSphere()`, hole support

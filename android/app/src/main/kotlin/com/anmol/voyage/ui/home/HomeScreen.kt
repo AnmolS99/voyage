@@ -33,18 +33,21 @@ import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountryDetail
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.GeoJsonCountry
+import com.anmol.voyage.data.LatLon
 import com.anmol.voyage.state.ViewMode
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.CountryDetailSheet
 import com.anmol.voyage.ui.country.CountrySearchSheet
 import com.anmol.voyage.ui.country.CountrySelectionCard
 import com.anmol.voyage.ui.globe.GlobeCountryFills
+import com.anmol.voyage.ui.globe.GlobeDot
 import com.anmol.voyage.globe.GlobeGeometry
 import com.anmol.voyage.globe.OutlineMesh
 import com.anmol.voyage.globe.SelectedOutlineCache
 import com.anmol.voyage.ui.globe.GlobeSurface
 import com.anmol.voyage.ui.globe.rememberGlobeGeometry
 import com.anmol.voyage.ui.map.CountryPaths
+import com.anmol.voyage.ui.map.CountryStyles
 import com.anmol.voyage.ui.map.MapProjection
 import com.anmol.voyage.ui.map.WorldMap
 import com.anmol.voyage.ui.map.buildCountryPaths
@@ -196,6 +199,21 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
         return
     }
 
+    // Microstates have no shape to fill, so the globe marks them the way the map
+    // does — a dot in their status colors. 25 countries, resolved per
+    // recomposition; the projection that places them happens in the draw phase.
+    val dots = data.countries.mapNotNull { country ->
+        val coordinate = country.pointCoordinate ?: return@mapNotNull null
+        GlobeDot(
+            position = coordinate,
+            style = CountryStyles.of(
+                isVisited = state.isVisited(country.name),
+                isWishlist = state.isInWishlist(country.name),
+                isSelected = selectedName == country.name,
+            ),
+        )
+    }
+
     GlobeSurface(
         ocean = geometry.ocean,
         countries = geometry.countries,
@@ -214,6 +232,11 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
             if (name == null) state.clearSelection() else state.selectCountry(name, hitTester.center(name))
         },
         modifier = Modifier.fillMaxSize(),
+        dots = dots,
+        capital = selectedName
+            ?.let { name -> data.countries.firstOrNull { it.name == name } }
+            ?.capital
+            ?.let { LatLon(lat = it.lat, lon = it.lon) },
         selectedOutline = selectedOutline,
         selectedOutlineColor = selectedName?.let {
             GlobeCountryFills.selectedBorderOf(

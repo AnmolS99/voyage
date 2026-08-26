@@ -3,31 +3,49 @@ package com.anmol.voyage.ui.globe
 import android.view.Choreographer
 import android.view.Surface
 import android.view.TextureView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.viewinterop.AndroidView
 import com.anmol.voyage.data.CountryHitTester
+import com.anmol.voyage.data.LatLon
 import com.anmol.voyage.globe.GlobeCamera
 import com.anmol.voyage.globe.NamedCountryMesh
 import com.anmol.voyage.globe.OutlineMesh
 import com.anmol.voyage.globe.SphereMesh
+import com.anmol.voyage.ui.map.CountryStyle
+import com.anmol.voyage.ui.map.drawCapitalStar
+import com.anmol.voyage.ui.map.drawMicrostateDot
+import com.anmol.voyage.ui.map.rememberCapitalStarPath
 import com.google.android.filament.android.UiHelper
 import kotlin.math.exp
 
+/** One Point-feature country's dot: where it is, and how it is currently painted. */
+internal data class GlobeDot(val position: LatLon, val style: CountryStyle)
+
 /**
  * The globe's rendering surface: a Filament-backed [SurfaceView] hosted in
- * Compose, with the rotate / pinch / tap gestures on top of it.
+ * Compose, with the rotate / pinch / tap gestures on top of it, and the markers
+ * drawn as a Compose layer above it.
  *
  * The render loop is driven by [Choreographer] rather than a background thread,
  * which is what Filament's own Android samples do: it keeps every Engine call
  * on one thread and paces frames to the display's vsync for free.
+ *
+ * @param dots the microstates, which have no shape to fill and are drawn as
+ *   screen-space dots exactly as the flat map draws them.
+ * @param capital the selected country's capital, marked with a star.
  */
 @Composable
 internal fun GlobeSurface(
@@ -40,6 +58,8 @@ internal fun GlobeSurface(
     hitTester: CountryHitTester,
     onCountryTapped: (String?) -> Unit,
     modifier: Modifier = Modifier,
+    dots: List<GlobeDot> = emptyList(),
+    capital: LatLon? = null,
     selectedOutline: OutlineMesh? = null,
     selectedOutlineColor: GlobeFill? = null,
     onCameraChange: (GlobeCamera) -> Unit = {},
@@ -71,7 +91,9 @@ internal fun GlobeSurface(
         onDispose { }
     }
 
-    AndroidView(
+    val starPath = rememberCapitalStarPath()
+
+    Box(
         modifier = modifier
             .pointerInput(host) {
                 detectTransformGestures { _, pan, zoom, _ ->
@@ -110,10 +132,41 @@ internal fun GlobeSurface(
                     onCountryTapped(host.countryAt(offset.x, offset.y, hitTester))
                 }
             },
-        factory = { context ->
-            TextureView(context).also { view -> host.attach(view) }
-        },
-    )
+    ) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                TextureView(context).also { view -> host.attach(view) }
+            },
+        )
+
+        // Markers ride above the Filament surface rather than in the scene, so
+        // they are the same screen-space drawing the flat map does — see
+        // `CountryMarkers`. This Canvas takes no pointer input, so taps fall
+        // through to the gesture handlers on the Box.
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // Read inside the draw lambda on purpose: that subscribes only the
+            // draw phase, so a drag repaints the markers without recomposing the
+            // globe and re-resolving all 181 country colors.
+            val camera = host.cameraState.value
+
+            for (dot in dots) {
+                val point = camera.screenPositionOf(
+                    lat = dot.position.lat,
+                    lon = dot.position.lon,
+                    viewportWidth = size.width,
+                    viewportHeight = size.height,
+                ) ?: continue
+                drawMicrostateDot(Offset(point.x, point.y), dot.style)
+            }
+
+            // The capital star marks the selected country only, as on the map.
+            val marked = capital?.let {
+                camera.screenPositionOf(it.lat, it.lon, size.width, size.height)
+            }
+            if (marked != null) drawCapitalStar(Offset(marked.x, marked.y), starPath)
+        }
+    }
 }
 
 /**
@@ -133,15 +186,26 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
     private var viewportHeight = 0f
 
     /**
-     * The camera, owned here rather than held as Compose state.
+     * The camera, owned here rather than hoisted into the composable.
      *
      * A drag changes it up to once per frame, and recomposing the whole globe
-     * for that would re-resolve all 181 country colors each time for a value
-     * only the render loop reads. Everything that touches it — the gesture
-     * handlers, the tap hit-test and [doFrame] — runs on the main thread, so it
-     * needs no synchronization.
+     * for that would re-resolve all 181 country colors each time. Everything
+     * that touches it — the gesture handlers, the tap hit-test and [doFrame] —
+     * runs on the main thread, so it needs no synchronization.
+     *
+     * It is snapshot state all the same, because the marker overlay has to
+     * repaint with it. Reading [cameraState] from a draw lambda subscribes only
+     * the draw phase, so a drag invalidates the markers' drawing and nothing
+     * above it — which is the distinction that kept this out of Compose state in
+     * the first place, not snapshot state as such.
      */
-    private var camera = GlobeCamera()
+    val cameraState = mutableStateOf(GlobeCamera())
+
+    private var camera: GlobeCamera
+        get() = cameraState.value
+        set(value) {
+            cameraState.value = value
+        }
 
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {

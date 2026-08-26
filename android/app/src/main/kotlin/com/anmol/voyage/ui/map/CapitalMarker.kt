@@ -9,8 +9,9 @@ import kotlin.math.sin
  * The five-pointed star that marks a capital city, as on printed maps — the port
  * of iOS `CapitalMarker`.
  *
- * The map and (from Phase 7) the globe must draw capitals identically, so the
- * shape lives here instead of being rebuilt per view; only the radius differs.
+ * The map and the globe must draw capitals identically, so the shape lives here
+ * instead of being rebuilt per view. Both get it through
+ * `rememberCapitalStarPath`, at one size — see `CountryMarkers`.
  */
 object CapitalMarker {
 
@@ -24,9 +25,12 @@ object CapitalMarker {
 
     /**
      * A star centered on the origin with one point facing up, in a +Y-is-down
-     * space (Compose `Canvas`, like Core Graphics on iOS). The globe's engine uses
-     * +Y-up and will need the sign flipped — hence iOS's `yUp` flag, which this
-     * gains when Phase 7 needs it.
+     * space (Compose `Canvas`, like Core Graphics on iOS).
+     *
+     * There is deliberately no `yUp` flag here, where iOS has one. iOS needs it
+     * because its globe extrudes this path into a mesh placed in a +Y-up scene;
+     * Android's globe draws the star as a screen-space overlay, so both callers
+     * want the one +Y-down orientation.
      */
     fun starPath(outerRadius: Float): Path {
         val path = Path()

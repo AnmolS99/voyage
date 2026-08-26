@@ -7,6 +7,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.tan
 
+/** A point in view coordinates, in pixels from the viewport's top-left. */
+data class ScreenPoint(val x: Float, val y: Float)
+
 /**
  * Where the camera is and what a screen tap points at.
  *
@@ -97,6 +100,55 @@ data class GlobeCamera(
     }
 
     /**
+     * Where a point on the globe lands on screen, or null when it is not there
+     * to be seen.
+     *
+     * The exact inverse of [latLonAt], and the reason both live here: the globe's
+     * markers — capital stars and microstate dots — are drawn as a Compose
+     * overlay in screen space, exactly as the flat map draws them, rather than as
+     * meshes in the scene. That keeps the two renderers sharing one drawing path
+     * instead of agreeing by coincidence, and it makes "constant size on screen"
+     * free rather than something the marker has to compensate for.
+     *
+     * Returns null when the point is on the globe's far side or behind the
+     * camera. Unlike [isBeyondHorizon] this uses the exact horizon with no
+     * margin: a marker should disappear as it rounds the limb, where a sector
+     * kept a margin so its geometry never popped early.
+     */
+    fun screenPositionOf(
+        lat: Double,
+        lon: Double,
+        viewportWidth: Float,
+        viewportHeight: Float,
+    ): ScreenPoint? {
+        if (viewportWidth <= 0f || viewportHeight <= 0f) return null
+
+        val point = surfacePoint(lat, lon)
+        val eye = position
+        // Visible exactly when the point has rounded past the horizon toward the
+        // camera — the same test isBeyondHorizon makes, for a single point.
+        if ((point dot eye.normalized()) < 1.0 / distance) return null
+
+        val forward = (Vec3d(0.0, 0.0, 0.0) - eye).normalized()
+        val right = forward.cross(Vec3d(0.0, 1.0, 0.0)).normalized()
+        val up = right.cross(forward).normalized()
+
+        val toPoint = point - eye
+        val depth = toPoint dot forward
+        if (depth <= 0.0) return null
+
+        val tanHalfFov = tan(FOV_RADIANS / 2.0)
+        val aspect = viewportWidth / viewportHeight
+        val ndcX = (toPoint dot right) / (depth * tanHalfFov * aspect)
+        val ndcY = (toPoint dot up) / (depth * tanHalfFov)
+
+        return ScreenPoint(
+            x = ((ndcX + 1.0) / 2.0 * viewportWidth).toFloat(),
+            y = ((1.0 - ndcY) / 2.0 * viewportHeight).toFloat(),
+        )
+    }
+
+    /**
      * How much to shrink world-sized decorations so they keep a constant size on
      * screen — today the border outlines, and whatever else the globe grows.
      *
@@ -139,6 +191,24 @@ data class GlobeCamera(
     }
 
     companion object {
+        /**
+         * The unit-sphere point at [lat]/[lon], in double precision.
+         *
+         * `PolygonTriangulator.latLonToSphere` is the same mapping in single
+         * precision, deliberately, so mesh vertices land exactly where iOS puts
+         * them. Marker projection is camera math rather than geometry, so it
+         * keeps the doubles the rest of this class works in.
+         */
+        private fun surfacePoint(lat: Double, lon: Double): Vec3d {
+            val latRad = lat * PI / 180.0
+            val lonRad = -lon * PI / 180.0
+            return Vec3d(
+                x = cos(latRad) * cos(lonRad),
+                y = sin(latRad),
+                z = cos(latRad) * sin(lonRad),
+            )
+        }
+
         /** Keeps the horizon test from popping meshes right at the limb. */
         const val HORIZON_MARGIN = 0.02
 

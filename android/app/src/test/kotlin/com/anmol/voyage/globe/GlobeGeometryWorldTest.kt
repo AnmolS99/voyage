@@ -188,6 +188,30 @@ class GlobeGeometryWorldTest {
         )
     }
 
+    @Test
+    fun `every country is drawn by exactly one path`() {
+        // Both renderers split the world the same way: a country either gets a
+        // shape (globe fill mesh / map path — `!isPointCountry`) or a dot (globe
+        // overlay / map marker — `pointCoordinate != null`). The two predicates
+        // are not each other's negation, and nothing makes them agree: the parser
+        // sets `isPointCountry` from a `renderAs: "point"` property but only sets
+        // `pointCoordinate` for a `Point` geometry. Flag a *polygon* feature
+        // `renderAs: "point"` and it falls through both filters — no shape, no
+        // dot, invisible on the globe and on the map, with nothing failing.
+        //
+        // The shipped dataset has no such feature. This is here so a regenerated
+        // one that does fails loudly instead.
+        val invisible = countries.filter { it.isPointCountry && it.pointCoordinate == null }
+        assertTrue(
+            "these countries would render as neither shape nor dot: ${invisible.map { it.name }}",
+            invisible.isEmpty(),
+        )
+
+        val dotted = countries.count { it.pointCoordinate != null }
+        assertEquals(25, dotted)
+        assertEquals(countries.size, dotted + countries.count { !it.isPointCountry })
+    }
+
     private fun allBorderRings() = countries.filter { !it.isPointCountry }.flatMap { it.polygons }
 
     @Test
