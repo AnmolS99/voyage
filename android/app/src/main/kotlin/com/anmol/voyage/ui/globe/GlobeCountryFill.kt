@@ -1,13 +1,17 @@
 package com.anmol.voyage.ui.globe
 
 import androidx.compose.ui.graphics.Color
+import com.anmol.voyage.ui.map.CountryStyles
+import com.anmol.voyage.ui.map.MapShading
 import com.anmol.voyage.ui.theme.VoyagePalette
 
 /**
- * The fill colors for one country on the globe.
+ * One painted surface on the globe: a country's fill, or an outline.
  *
  * [colorB] and [gradient] carry the visited+wishlist diagonal; for every other
- * state the fill is flat [colorA] and `colorB` is ignored.
+ * state the surface is flat [colorA] and `colorB` is ignored. Both the country
+ * material and the outline material take exactly this trio, which is why one
+ * type covers fills and borders alike.
  */
 internal data class GlobeFill(
     val colorA: Color,
@@ -18,35 +22,42 @@ internal data class GlobeFill(
 /**
  * How a country is painted on the globe.
  *
- * **This deliberately differs from `CountryStyles` for one state, and only
- * until Phase 7.5 lands.** On both iOS renderers a *selected* country keeps a
- * plain land-green fill and shows its visited/wishlist status on a thickened,
- * status-colored border. This globe has no borders yet — 7.5 (outline meshes)
- * and 7.7 (the selected overlay) are separate sub-steps — so applying that rule
- * verbatim would make selection invisible and tap-to-select untestable.
+ * The rules themselves live in [CountryStyles], shared with the flat map, which
+ * is what CLAUDE.md's globe/map consistency rule asks for: status outranks
+ * selection, so a selected country's *fill* drops to plain land green and its
+ * visited/wishlist status moves to a thickened border. This file only translates
+ * a [MapShading] into the uniforms the Filament materials take.
  *
- * Until the outlines land, selection is shown with the palette's brighter
- * `…Selected` variants instead. Those values already exist in `VoyagePalette`
- * (ported from `AppColors` in Phase 2) and are otherwise unused, and this is the
- * same trade the map made in Phase 4 with its interim selection card. When 7.5
- * lands, this object should collapse into `CountryStyles` rather than continuing
- * to state a second set of rules.
+ * (Until Phase 7.5 the globe had no borders and had to state a second set of
+ * rules here — selection shown with the palette's brighter `…Selected` variants.
+ * Now that the outlines exist, those variants are unused on Android, exactly as
+ * they are on iOS.)
  */
 internal object GlobeCountryFills {
 
-    fun of(isVisited: Boolean, isWishlist: Boolean, isSelected: Boolean): GlobeFill = when {
-        isVisited && isWishlist -> GlobeFill(
-            colorA = if (isSelected) VoyagePalette.visitedSelected else VoyagePalette.visited,
-            colorB = if (isSelected) VoyagePalette.wishlistSelected else VoyagePalette.wishlist,
+    /** The country's fill. */
+    fun of(isVisited: Boolean, isWishlist: Boolean, isSelected: Boolean): GlobeFill =
+        CountryStyles.of(isVisited, isWishlist, isSelected).fill.toGlobeFill()
+
+    /**
+     * The selected country's overlay border. Always asked for a selected
+     * country, because that is the only one drawn with an overlay — the rest
+     * share the black sector outlines.
+     */
+    fun selectedBorderOf(isVisited: Boolean, isWishlist: Boolean): GlobeFill =
+        CountryStyles.of(isVisited, isWishlist, isSelected = true).border.toGlobeFill()
+
+    private fun MapShading.toGlobeFill(): GlobeFill = when (this) {
+        is MapShading.Solid -> GlobeFill(colorA = color, colorB = color, gradient = false)
+        // Yellow at the bottom-left of the country's box, purple at the top
+        // right — the direction the outline's gradient parameter runs in, and
+        // the one the map's linear brush runs in.
+        MapShading.VisitedWishlist -> GlobeFill(
+            colorA = VoyagePalette.visited,
+            colorB = VoyagePalette.wishlist,
             gradient = true,
         )
-
-        isVisited -> flat(if (isSelected) VoyagePalette.visitedSelected else VoyagePalette.visited)
-        isWishlist -> flat(if (isSelected) VoyagePalette.wishlistSelected else VoyagePalette.wishlist)
-        else -> flat(if (isSelected) VoyagePalette.landSelected else VoyagePalette.land)
     }
-
-    private fun flat(color: Color) = GlobeFill(colorA = color, colorB = color, gradient = false)
 }
 
 /**

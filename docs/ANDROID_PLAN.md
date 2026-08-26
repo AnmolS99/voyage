@@ -410,10 +410,36 @@ something on screen early.
       instance per country, so recoloring a country never rebuilds geometry.
       Colors verified by sampling the rendered frame: ocean #2F86A6, land
       #34BE82, visited+selected #FFFF4C — exact palette values
-- [ ] 7.5 Border outlines: constant screen-width via a Filament material that
+- [x] 7.5 Border outlines: constant screen-width via a Filament material that
       widens centerline vertices along a miter attribute (same trick as the
       iOS shader modifier); merged sector meshes; measure before porting the
-      per-frame horizon culling — Filament may not need it
+      per-frame horizon culling — Filament may not need it — done 2026-08-25.
+      `GlobeMaterials.outline` is the widening material: the miter direction
+      rides in a `CUSTOM0` vertex attribute and `materialVertex` pushes each
+      vertex along it by a `thickness` uniform, so zoom writes one float instead
+      of rebuilding 335,776 vertices. `GlobeCamera.screenScale` is the iOS
+      `screenScale` formula and clamp, now unit-tested rather than living inside
+      a renderer.
+
+      **The culling measurement changed the design.** Ported verbatim, iOS's
+      longitude-only sectors cull *nothing*: a longitude wedge runs pole to
+      pole, so its bounding sphere is nearly the globe's own and
+      `dot(center, cameraDir) + radius < 1/distance` can never fire. Measured
+      over `world.geojson`, averaged across 200 viewpoints at the default
+      camera distance:
+
+      | sectors | border vertices culled |
+      | --- | --- |
+      | 12 × 1 (the iOS bucketing) | 0.0% |
+      | 12 × 4 | 39.3% (worst viewpoint 16.1%) |
+      | 16 × 8 | 46.9%, for 102 draw calls instead of 45 |
+
+      So Android buckets rings into a lon × lat grid, 12 × 4, giving 45
+      non-empty sectors. `GlobeGeometryWorldTest` pins both the win and the
+      safety property (a culled sector never contains a vertex the camera can
+      see), and asserts the longitude-only degenerate case so the grid cannot be
+      quietly simplified away. **This is worth porting back to iOS**, where the
+      same culling is presumably also shedding ~0%
 - [x] 7.6 Gestures: rotate (trackball feel matching iOS), pinch zoom with the
       same distance clamps, tap → analytic ray/sphere intersection → lat/lon →
       `CountryHitTester` (reuse the fix from iOS PR #50) — done 2026-08-11 via
@@ -425,7 +451,23 @@ something on screen early.
       tablets, and on the emulator pinch otherwise needs a modifier key.
       Verified by `GlobeGestureTest` on the emulator, since neither a pinch nor
       a scroll can be injected from a JVM test
-- [ ] 7.7 Selected-country overlay outline (thicker, status-colored, raised)
+- [x] 7.7 Selected-country overlay outline (thicker, status-colored, raised)
+      — done 2026-08-25. The selected country's rings are outlined on their own
+      (`SelectedOutlineCache`, off the main thread and memoized per country) at
+      `SELECTED_OUTLINE_RADIUS`; baking the 0.001 lift into the radius replaces
+      the second `outlineRaise` uniform iOS needs because it reuses one cached
+      geometry for both. The overlay draws at 5/3 the shared thickness, in the
+      country's status color — including the visited+wishlist diagonal, which
+      the outline material gets from a gradient parameter carried in the miter
+      attribute's unused `w`.
+
+      **This is what let the globe stop breaking the consistency rule.** With
+      no borders, the globe could not follow iOS's "status outranks selection"
+      rule — moving a status onto the border would have made selection invisible
+      — so `GlobeCountryFills` stated a second set of rules and brightened the
+      fill instead. It now delegates to `CountryStyles`, the same object the
+      flat map uses, and only translates a shading into Filament uniforms.
+      `GlobeCountryFillTest` asserts the shared conclusions
 - [~] 7.8 Startup: build geometry on a background thread; if cold-start is
       worse than iOS, add a binary geometry cache generated at build time
       (Android's `globe.scn` equivalent)
@@ -443,7 +485,12 @@ something on screen early.
       surface in the middle. A fresh install now opens on the globe, as iOS
       does
 - [ ] 7.10 Performance pass on a mid-range device (e.g. Pixel a-series):
-      60fps rotation, no jank on selection
+      60fps rotation, no jank on selection — **still open: no such device
+      here.** What is measured, on the Pixel 9 emulator with the 7.5 outlines
+      in the scene (`dumpsys gfxinfo`, eight drag gestures): 268 frames, 2.6%
+      janky, 50th/90th/99th percentile 16/17/19 ms, no missed vsyncs. That is
+      60fps, but the emulator renders through the host GPU and says nothing
+      about a real mid-range phone, which is the one thing this sub-step asks
 - [ ] 7.11 Keep one Filament engine alive for the Activity instead of building
       a new one per navigation. Today `GlobeSurfaceHost` is created and
       destroyed by the composable that draws the globe, so every trip to

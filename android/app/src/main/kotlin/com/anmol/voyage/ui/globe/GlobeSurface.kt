@@ -16,6 +16,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.globe.GlobeCamera
 import com.anmol.voyage.globe.NamedCountryMesh
+import com.anmol.voyage.globe.OutlineMesh
 import com.anmol.voyage.globe.SphereMesh
 import com.google.android.filament.android.UiHelper
 import kotlin.math.exp
@@ -32,12 +33,15 @@ import kotlin.math.exp
 internal fun GlobeSurface(
     ocean: SphereMesh,
     countries: List<NamedCountryMesh>,
+    outlineSectors: List<OutlineMesh>,
     colorFor: (String) -> GlobeFill,
     oceanColor: androidx.compose.ui.graphics.Color,
     backgroundColor: androidx.compose.ui.graphics.Color,
     hitTester: CountryHitTester,
     onCountryTapped: (String?) -> Unit,
     modifier: Modifier = Modifier,
+    selectedOutline: OutlineMesh? = null,
+    selectedOutlineColor: GlobeFill? = null,
     onCameraChange: (GlobeCamera) -> Unit = {},
 ) {
     val host = remember(backgroundColor) { GlobeSurfaceHost(backgroundColor.toFilamentColor()) }
@@ -47,8 +51,8 @@ internal fun GlobeSurface(
     }
 
     // Geometry is uploaded once per mesh set; recoloring below never touches it.
-    DisposableEffect(host, ocean, countries) {
-        host.setGeometry(ocean, countries)
+    DisposableEffect(host, ocean, countries, outlineSectors) {
+        host.setGeometry(ocean, countries, outlineSectors)
         onDispose { }
     }
 
@@ -59,6 +63,13 @@ internal fun GlobeSurface(
     // DisposableEffect above has uploaded the geometry.
     val fills = countries.map { colorFor(it.name) }
     SideEffect { host.applyColors(countries, fills, oceanColor) }
+
+    // The overlay border is a mesh upload, not a uniform write, so it is keyed
+    // on both the shape and its color and re-runs only when one of them changes.
+    DisposableEffect(host, selectedOutline, selectedOutlineColor) {
+        host.setSelectedOutline(selectedOutline, selectedOutlineColor)
+        onDispose { }
+    }
 
     AndroidView(
         modifier = modifier
@@ -181,8 +192,26 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         choreographer.postFrameCallback(frameCallback)
     }
 
-    fun setGeometry(ocean: SphereMesh, countries: List<NamedCountryMesh>) {
-        if (!destroyed) renderer.setGeometry(ocean, countries)
+    fun setGeometry(
+        ocean: SphereMesh,
+        countries: List<NamedCountryMesh>,
+        outlines: List<OutlineMesh>,
+    ) {
+        if (!destroyed) renderer.setGeometry(ocean, countries, outlines)
+    }
+
+    fun setSelectedOutline(outline: OutlineMesh?, color: GlobeFill?) {
+        if (destroyed) return
+        if (outline == null || color == null) {
+            renderer.setSelectedOutline(null, EMPTY_COLOR, EMPTY_COLOR, gradient = false)
+        } else {
+            renderer.setSelectedOutline(
+                outline = outline,
+                colorA = color.colorA.toFilamentColor(),
+                colorB = color.colorB.toFilamentColor(),
+                gradient = color.gradient,
+            )
+        }
     }
 
     fun applyColors(
@@ -226,3 +255,6 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
 internal fun zoomForScroll(scrollDelta: Float): Float = exp(-scrollDelta * SCROLL_ZOOM_RATE)
 
 private const val SCROLL_ZOOM_RATE = 0.2f
+
+/** Placeholder for the clearing call, which ignores its colors. */
+private val EMPTY_COLOR = floatArrayOf(0f, 0f, 0f, 0f)

@@ -49,6 +49,16 @@ has **post-processing disabled**, which together are what put exact palette
 colors on screen — enabling either one shifts every country color, and
 `GlobeCountryFill.kt` documents the coupling.
 
+Border outlines work as they do on iOS — zero-width strips widened at render
+time so they keep a constant on-screen width — but the pieces sit elsewhere:
+the miter direction is a `CUSTOM0` vertex attribute widened by
+`GlobeMaterials.outline` instead of a SceneKit shader modifier, and the zoom
+scaling is `GlobeCamera.screenScale` rather than renderer code. **Android's
+outline sectors are a lon × lat grid where iOS uses longitude alone**, because
+a pole-to-pole wedge's bounding sphere is nearly the globe's own and the
+horizon test can never cull it; see Phase 7.5 in
+[docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) for the measurement.
+
 ## Git Conventions
 
 Use conventional commits and conventional branch naming.

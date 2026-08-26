@@ -56,10 +56,16 @@ class GlobeGestureTest {
                     ?.let { NamedCountryMesh(country.name, it) }
             }
 
+        val outlines = PolygonTriangulator.createSectoredOutlineGeometries(
+            cache.countries.filter { it.name == "Brazil" || it.name == "Australia" }
+                .flatMap { it.polygons },
+        )
+
         composeTestRule.setContent {
             GlobeSurface(
                 ocean = UvSphere.build(segments = 32, rings = 16),
                 countries = meshes,
+                outlineSectors = outlines,
                 colorFor = { GlobeCountryFills.of(isVisited = false, isWishlist = false, isSelected = false) },
                 oceanColor = Color.Blue,
                 backgroundColor = Color.Black,

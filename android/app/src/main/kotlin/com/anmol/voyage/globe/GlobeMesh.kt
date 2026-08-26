@@ -68,11 +68,23 @@ class CountryMesh(
  * vertices along their miter (the Filament analogue of the iOS
  * `outlineShaderModifier`), so zoom changes one uniform instead of rebuilding
  * ~335k vertices. Without that displacement the geometry has zero width.
+ *
+ * @property miters **Four** floats per vertex, not three: `xyz` is the miter
+ *   direction and `w` is the visited+wishlist gradient parameter — 0 at the
+ *   bottom-left of the outlined shape's lon/lat box, 1 at its top-right, the
+ *   same diagonal `CountryStyles` documents for the flat map. They travel
+ *   together because Filament custom vertex attributes are `vec4`, so the
+ *   gradient rides along in a component the miter was wasting anyway.
+ * @property center Center of the mesh's bounding sphere, and [boundingRadius]
+ *   its radius. The renderer needs both: Filament culls by bounding volume, and
+ *   hiding the sectors past the globe's horizon is a test on this sphere.
  */
 class OutlineMesh(
     val positions: FloatArray,
     val miters: FloatArray,
     val indices: IntArray,
+    val center: Vec3,
+    val boundingRadius: Float,
 ) {
     val vertexCount: Int get() = positions.size / 3
 }

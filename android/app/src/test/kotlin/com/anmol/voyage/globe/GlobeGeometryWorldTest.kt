@@ -102,7 +102,7 @@ class GlobeGeometryWorldTest {
         assertNotNull(single)
 
         val sectors = PolygonTriangulator.createSectoredOutlineGeometries(allRings)
-        assertTrue(sectors.isNotEmpty() && sectors.size <= 12)
+        assertTrue(sectors.isNotEmpty() && sectors.size <= 12 * 4)
         assertEquals(single!!.vertexCount, sectors.sumOf { it.vertexCount })
         assertEquals(single.indices.size, sectors.sumOf { it.indices.size })
     }
@@ -112,17 +112,96 @@ class GlobeGeometryWorldTest {
         val allRings = countries.filter { !it.isPointCountry }.flatMap { it.polygons }
         val mesh = PolygonTriangulator.createBorderOutlineGeometry(allRings)!!
 
-        assertEquals(mesh.positions.size, mesh.miters.size)
+        assertEquals(mesh.vertexCount * 4, mesh.miters.size)
         for (v in 0 until mesh.vertexCount) {
-            val x = mesh.miters[v * 3]
-            val y = mesh.miters[v * 3 + 1]
-            val z = mesh.miters[v * 3 + 2]
+            val x = mesh.miters[v * 4]
+            val y = mesh.miters[v * 4 + 1]
+            val z = mesh.miters[v * 4 + 2]
             val length = sqrt(x * x + y * y + z * z)
             assertTrue(
                 "miter length $length at vertex $v out of range",
                 length.isFinite() && length >= 1.0f - 1e-2f && length <= 2.0f + 1e-2f,
             )
         }
+    }
+
+    @Test
+    fun `horizon culling never hides a border the camera can see`() {
+        val sectors = PolygonTriangulator.createSectoredOutlineGeometries(allBorderRings())
+
+        // The safety property of GlobeRenderer.cullFarSideOutlineSectors: a
+        // hidden sector must contain no vertex on the visible cap, or borders
+        // vanish mid-drag. Swept over the whole globe, not one viewpoint.
+        for (latitude in -80..80 step 20) {
+            for (longitude in -180 until 180 step 30) {
+                val camera = GlobeCamera(latitude.toDouble(), longitude.toDouble())
+                val eye = camera.position.normalized()
+                for (sector in sectors) {
+                    if (!camera.isBeyondHorizon(sector.center, sector.boundingRadius)) continue
+                    for (v in 0 until sector.vertexCount) {
+                        val dot = sector.positions[v * 3] * eye.x +
+                            sector.positions[v * 3 + 1] * eye.y +
+                            sector.positions[v * 3 + 2] * eye.z
+                        assertTrue(
+                            "a vertex visible from ($latitude, $longitude) was culled",
+                            dot < 1.0 / camera.distance,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `horizon culling drops a real share of the world's border vertices`() {
+        val sectors = PolygonTriangulator.createSectoredOutlineGeometries(allBorderRings())
+        val total = sectors.sumOf { it.vertexCount }
+
+        // The measurement that justifies the lat × lon grid over the iOS
+        // longitude-only bucketing, which sheds 0.0% here — see
+        // `createSectoredOutlineGeometries`. Guards the grid against being
+        // quietly simplified back into slabs that never cull.
+        var samples = 0
+        var culledFraction = 0.0
+        for (latitude in -60..60 step 30) {
+            for (longitude in -180 until 180 step 30) {
+                val camera = GlobeCamera(latitude.toDouble(), longitude.toDouble())
+                val culled = sectors
+                    .filter { camera.isBeyondHorizon(it.center, it.boundingRadius) }
+                    .sumOf { it.vertexCount }
+                culledFraction += culled.toDouble() / total
+                samples++
+            }
+        }
+        val average = culledFraction / samples
+        assertTrue("horizon culling only sheds ${(average * 100).toInt()}% of border vertices", average > 0.30)
+
+        val longitudeOnly = PolygonTriangulator.createSectoredOutlineGeometries(
+            polygons = allBorderRings(),
+            latitudeBands = 1,
+        )
+        val camera = GlobeCamera(latitude = 20.0, longitude = 0.0)
+        assertEquals(
+            "a pole-to-pole slab should never fall entirely behind the horizon",
+            0,
+            longitudeOnly.count { camera.isBeyondHorizon(it.center, it.boundingRadius) },
+        )
+    }
+
+    private fun allBorderRings() = countries.filter { !it.isPointCountry }.flatMap { it.polygons }
+
+    @Test
+    fun `world outline vertex count stays within the budget the culling assumes`() {
+        val allRings = countries.filter { !it.isPointCountry }.flatMap { it.polygons }
+        val mesh = PolygonTriangulator.createBorderOutlineGeometry(allRings)!!
+
+        // Recorded so a geometry-detail change shows up as a number rather than a
+        // frame-rate report: the outline mesh is the scene's dominant cost, which
+        // is why the sectors exist at all.
+        assertTrue(
+            "outline vertex count ${mesh.vertexCount} outside the expected range",
+            mesh.vertexCount in 300_000..500_000,
+        )
     }
 
     /** Reverse-maps a mesh vertex to (lat, lon). */
