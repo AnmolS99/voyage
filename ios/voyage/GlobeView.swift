@@ -85,6 +85,28 @@ struct GlobeView: UIViewRepresentable {
             }
         }
 
+        /// Keeps the horizon test from popping sectors right at the limb.
+        static let horizonMargin: Float = 0.02
+
+        /// Whether a mesh with this bounding sphere lies entirely beyond the globe's
+        /// horizon — everything it draws is on the far side, hidden by the globe itself.
+        ///
+        /// A point p on the unit sphere is visible from a camera at distance d iff
+        /// dot(p, camDir) >= 1/d. For a bounding sphere (center c, radius r),
+        /// dot(p, camDir) <= dot(c, camDir) + r for every point it contains, so the whole
+        /// mesh is safely behind the horizon once that upper bound falls below it.
+        ///
+        /// Conservative by construction: it can answer false for a mesh that happens to
+        /// be invisible, never true for one with a visible vertex. Android's
+        /// `GlobeCamera.isBeyondHorizon` is the same test.
+        static func isBeyondHorizon(center: simd_float3,
+                                    radius: Float,
+                                    cameraDirection: simd_float3,
+                                    distance: Float) -> Bool {
+            guard distance > 1.0 else { return false }
+            return simd_dot(center, cameraDirection) + radius < 1.0 / distance - horizonMargin
+        }
+
         // Outline thickness (world units) at the default camera distance. Zoomed in,
         // the shader uniform is scaled down so outlines keep a constant on-screen width
         // instead of drowning small countries in black.
@@ -861,11 +883,6 @@ extension GlobeView.Coordinator: SCNSceneRendererDelegate {
     /// mesh dominates the scene's vertex count, and frustum culling never removes the
     /// far side (the whole globe fits the frustum except at close zoom), so without
     /// this every border vertex is processed every frame.
-    ///
-    /// A point p on the unit sphere is visible from a camera at distance d iff
-    /// dot(p, camDir) >= 1/d (the horizon). For a sector with bounding sphere
-    /// (center c, radius r), dot(p, camDir) <= dot(c, camDir) + r for all its points,
-    /// so the sector is safely hidden when dot(c, camDir) + r < 1/d - margin.
     private func cullFarSideOutlineSectors() {
         guard !outlineSectors.isEmpty,
               let cameraNode = sceneView?.pointOfView,
@@ -878,10 +895,12 @@ extension GlobeView.Coordinator: SCNSceneRendererDelegate {
         guard distance > 1.0 else { return }
 
         let cameraDirection = camera / distance
-        let horizon = 1.0 / distance - 0.02 // small margin against popping at the limb
 
         for sector in outlineSectors {
-            let hidden = simd_dot(sector.center, cameraDirection) + sector.radius < horizon
+            let hidden = GlobeView.Coordinator.isBeyondHorizon(center: sector.center,
+                                                              radius: sector.radius,
+                                                              cameraDirection: cameraDirection,
+                                                              distance: distance)
             if sector.node.isHidden != hidden {
                 sector.node.isHidden = hidden
             }

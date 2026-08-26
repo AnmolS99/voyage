@@ -485,19 +485,41 @@ class PolygonTriangulator {
                             + normalize(_geometry.position.xyz) * outlineRaise;
     """
 
-    /// Buckets outline rings into longitude sectors and builds one outline geometry per
-    /// sector. Per-frame horizon culling can then skip sectors on the globe's far side —
+    /// Buckets outline rings into sectors of the globe and builds one outline geometry
+    /// per sector, so per-frame horizon culling can skip the sectors on the far side —
     /// the outline mesh dominates the scene's vertex count, and as a single geometry it
     /// would be fully vertex-processed every frame regardless of what faces the camera.
-    /// Rings are assigned whole (by centroid longitude), so wide rings simply make their
-    /// sector's bounding volume larger and it culls less often.
-    static func createSectoredOutlineGeometries(polygons: [[[Double]]], sectors: Int = 12) -> [SCNGeometry] {
-        var buckets: [[[[Double]]]] = Array(repeating: [], count: sectors)
+    /// Rings are assigned whole (by centroid), so a wide ring simply enlarges its
+    /// sector's bounding volume and it culls less often.
+    ///
+    /// **Sectors are a lon x lat grid, not longitude alone**, and the difference is the
+    /// whole point. A longitude wedge runs pole to pole, so its bounding sphere is nearly
+    /// the globe's own and the horizon test in `GlobeView.Coordinator.isBeyondHorizon`
+    /// can essentially never fire. Measured over `world.geojson` with the real
+    /// `SCNNode.boundingSphere` values, at the default camera distance, averaged across
+    /// 169 viewpoints:
+    ///
+    /// | sectors | culled |
+    /// | --- | --- |
+    /// | 12 x 1 (longitude alone) | 0.0% |
+    /// | 12 x 4 | 39.2% (worst viewpoint 14.1%) |
+    /// | 16 x 8 | 46.6%, for 102 draw calls instead of 45 |
+    ///
+    /// So the default is 12 x 4: it takes most of the available win, and finer grids buy
+    /// single-digit percentages for double the draw calls. Empty cells — most of the
+    /// ocean — produce no geometry at all. Android measured the same and ships the same
+    /// grid; see its `PolygonTriangulator.createSectoredOutlineGeometries`.
+    static func createSectoredOutlineGeometries(polygons: [[[Double]]],
+                                                longitudeBands: Int = 12,
+                                                latitudeBands: Int = 4) -> [SCNGeometry] {
+        var buckets: [[[[Double]]]] = Array(repeating: [], count: longitudeBands * latitudeBands)
         for polygon in polygons {
             guard let cleaned = cleanRing(polygon) else { continue }
             let centroidLon = cleaned.reduce(0.0) { $0 + $1[0] } / Double(cleaned.count)
-            let index = min(sectors - 1, max(0, Int((centroidLon + 180.0) / 360.0 * Double(sectors))))
-            buckets[index].append(polygon)
+            let centroidLat = cleaned.reduce(0.0) { $0 + $1[1] } / Double(cleaned.count)
+            let lonIndex = min(longitudeBands - 1, max(0, Int((centroidLon + 180.0) / 360.0 * Double(longitudeBands))))
+            let latIndex = min(latitudeBands - 1, max(0, Int((centroidLat + 90.0) / 180.0 * Double(latitudeBands))))
+            buckets[latIndex * longitudeBands + lonIndex].append(polygon)
         }
         return buckets.compactMap { $0.isEmpty ? nil : createBorderOutlineGeometry(polygons: $0) }
     }

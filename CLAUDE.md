@@ -53,11 +53,10 @@ Border outlines work as they do on iOS — zero-width strips widened at render
 time so they keep a constant on-screen width — but the pieces sit elsewhere:
 the miter direction is a `CUSTOM0` vertex attribute widened by
 `GlobeMaterials.outline` instead of a SceneKit shader modifier, and the zoom
-scaling is `GlobeCamera.screenScale` rather than renderer code. **Android's
-outline sectors are a lon × lat grid where iOS uses longitude alone**, because
-a pole-to-pole wedge's bounding sphere is nearly the globe's own and the
-horizon test can never cull it; see Phase 7.5 in
-[docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) for the measurement.
+scaling is `GlobeCamera.screenScale` rather than renderer code. The outline
+sector grid is a decision Android made first and iOS adopted — see
+[Globe Rendering](#globe-rendering) — so changing it is a two-platform change;
+Phase 7.5 in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) has the measurement.
 
 ## Git Conventions
 
@@ -176,10 +175,14 @@ geometry shader modifier (`PolygonTriangulator.outlineShaderModifier`) widens th
 scales that uniform with camera distance — no geometry is rebuilt when zooming or when
 selection thickens/raises a country's outline.
 
-All black borders are merged into a few longitude-sector nodes (`outline_sector_N`)
+All black borders are merged into lon x lat sector nodes (`outline_sector_N`)
 sharing one material/uniform. The outline mesh dominates the scene's vertex count, so
 `GlobeView.Coordinator.renderer(_:updateAtTime:)` hides sectors beyond the globe's
-horizon each frame (frustum culling alone never removes the far side). Fills and
+horizon each frame (frustum culling alone never removes the far side). The sector grid
+is 12 longitude x 4 latitude on **both** platforms, and the latitude split is load-bearing:
+longitude-only wedges run pole to pole and never fall entirely behind the horizon, so they
+cull 0% — see `PolygonTriangulator.createSectoredOutlineGeometries` and
+`OutlineSectorCullingTests`, which pin the measurement on each platform. Fills and
 outlines are single-sided — winding faces outward so the GPU backface-culls the far
 hemisphere. The selected country's outline is a separate overlay node
 (`selected_outline`, managed by `GlobeView.Coordinator.updateSelectedOutline`) drawn
