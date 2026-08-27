@@ -188,7 +188,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
         }
     }
 
-    // Black border outlines merged into a few longitude-sector nodes, so the app can
+    // Black border outlines merged into lon x lat sector nodes, so the app can
     // hide far-side sectors each frame (the outline mesh dominates vertex count).
     // The app replaces these materials with the shader-driven one at load.
     for (index, outlineGeometry) in PolygonTriangulator.createSectoredOutlineGeometries(polygons: allOutlinePolygons).enumerated() {

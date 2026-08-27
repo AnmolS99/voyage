@@ -438,8 +438,16 @@ something on screen early.
       non-empty sectors. `GlobeGeometryWorldTest` pins both the win and the
       safety property (a culled sector never contains a vertex the camera can
       see), and asserts the longitude-only degenerate case so the grid cannot be
-      quietly simplified away. **This is worth porting back to iOS**, where the
-      same culling is presumably also shedding ~0%
+      quietly simplified away.
+
+      **Ported back to iOS**, which was indeed shedding ~0%. Re-measured there
+      against the real `SCNNode.boundingSphere` values rather than assumed —
+      SceneKit's bounding sphere turns out to be the same box-derived one, and
+      the numbers land within 0.3pp of Android's: 0.0% at 12 × 1, 39.2% (worst
+      14.1%) at 12 × 4, 46.6% at 16 × 8. iOS now buckets 12 × 4 too, with
+      `ios/voyageTests/OutlineSectorCullingTests.swift` mirroring the two tests
+      here, so the grid is pinned on both platforms. `globe.scn` bakes the
+      sector nodes and was regenerated for it.
 - [x] 7.6 Gestures: rotate (trackball feel matching iOS), pinch zoom with the
       same distance clamps, tap → analytic ray/sphere intersection → lat/lon →
       `CountryHitTester` (reuse the fix from iOS PR #50) — done 2026-08-11 via

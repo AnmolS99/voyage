@@ -611,22 +611,28 @@ object PolygonTriangulator {
      * assigned whole (by centroid), so a wide ring simply enlarges its sector's
      * bounding volume and it culls less often.
      *
-     * **Sectors are a lon × lat grid, where iOS uses longitude alone**, and the
-     * difference is the whole feature. A longitude wedge runs pole to pole, so
-     * its bounding sphere is nearly the globe's own and the horizon test —
+     * **Sectors are a lon × lat grid, not longitude alone**, and the difference
+     * is the whole feature. A longitude wedge runs pole to pole, so its
+     * bounding sphere is nearly the globe's own and the horizon test —
      * `dot(center, cameraDir) + radius < 1/distance` — can essentially never
      * fire. Measured over `world.geojson` at the default camera distance,
      * averaged across 200 viewpoints:
      *
      * | sectors | culled |
      * | --- | --- |
-     * | 12 × 1 (the iOS bucketing) | 0.0% |
+     * | 12 × 1 (longitude alone) | 0.0% |
      * | 12 × 4 | 39.3% (worst viewpoint 16.1%) |
      * | 16 × 8 | 46.9%, for 102 draw calls instead of 45 |
      *
      * So the default is 12 × 4: it takes most of the available win, and the
      * grid beyond it buys single-digit percentages for double the draw calls.
      * Empty cells — most of the ocean — produce no mesh at all.
+     *
+     * This grid started here, but it is no longer Android's alone: iOS shipped
+     * longitude-only sectors until the same measurement was run against its
+     * `SCNNode.boundingSphere` values and reproduced the 0.0%. Both platforms
+     * now bucket 12 × 4 — see iOS
+     * `PolygonTriangulator.createSectoredOutlineGeometries`.
      */
     fun createSectoredOutlineGeometries(
         polygons: List<Ring>,

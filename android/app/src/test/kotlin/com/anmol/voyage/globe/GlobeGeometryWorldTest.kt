@@ -157,7 +157,7 @@ class GlobeGeometryWorldTest {
         val sectors = PolygonTriangulator.createSectoredOutlineGeometries(allBorderRings())
         val total = sectors.sumOf { it.vertexCount }
 
-        // The measurement that justifies the lat × lon grid over the iOS
+        // The measurement that justifies the lat × lon grid over plain
         // longitude-only bucketing, which sheds 0.0% here — see
         // `createSectoredOutlineGeometries`. Guards the grid against being
         // quietly simplified back into slabs that never cull.

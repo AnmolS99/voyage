@@ -134,7 +134,7 @@ class GlobeScene {
             }
         }
 
-        // Country borders live in a few longitude-sector nodes (culled per frame when on
+        // Country borders live in lon x lat sector nodes (culled per frame when on
         // the globe's far side). All share ONE shader-driven material instance, so zoom
         // code updates a single uniform — the cached .scn's materials lack the modifier.
         let material = makeOutlineMaterial()
@@ -224,7 +224,7 @@ class GlobeScene {
             }
         }
 
-        // Black border outlines merged into a few longitude-sector nodes sharing one
+        // Black border outlines merged into lon x lat sector nodes sharing one
         // material/uniform; far-side sectors are hidden per frame. The selected
         // country's colored outline is a separate node managed by
         // GlobeView.Coordinator, drawn thicker and raised above these.
