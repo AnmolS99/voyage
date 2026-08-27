@@ -40,14 +40,16 @@ import com.anmol.voyage.ui.country.CountryDetailSheet
 import com.anmol.voyage.ui.country.CountrySearchSheet
 import com.anmol.voyage.ui.country.CountrySelectionCard
 import com.anmol.voyage.ui.globe.GlobeCountryFills
-import com.anmol.voyage.ui.globe.GlobeDot
+import com.anmol.voyage.ui.globe.GlobeDotStyle
 import com.anmol.voyage.globe.GlobeGeometry
 import com.anmol.voyage.globe.OutlineMesh
 import com.anmol.voyage.globe.SelectedOutlineCache
 import com.anmol.voyage.ui.globe.GlobeSurface
 import com.anmol.voyage.ui.globe.rememberGlobeGeometry
 import com.anmol.voyage.ui.map.CountryPaths
+import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFill
 import com.anmol.voyage.ui.map.CountryStyles
+import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.anmol.voyage.ui.map.MapProjection
 import com.anmol.voyage.ui.map.WorldMap
 import com.anmol.voyage.ui.map.buildCountryPaths
@@ -200,17 +202,20 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
     }
 
     // Microstates have no shape to fill, so the globe marks them the way the map
-    // does — a dot in their status colors. 25 countries, resolved per
-    // recomposition; the projection that places them happens in the draw phase.
-    val dots = data.countries.mapNotNull { country ->
-        val coordinate = country.pointCoordinate ?: return@mapNotNull null
-        GlobeDot(
-            position = coordinate,
-            style = CountryStyles.of(
-                isVisited = state.isVisited(country.name),
-                isWishlist = state.isInWishlist(country.name),
-                isSelected = selectedName == country.name,
-            ),
+    // does — a dot in their status colors. Only the colors are resolved here;
+    // the dots themselves are meshes built once with the rest of the geometry.
+    val density = LocalDensity.current
+    val dotStyles = geometry.microstateDots.map { dot ->
+        val style = CountryStyles.of(
+            isVisited = state.isVisited(dot.name),
+            isWishlist = state.isInWishlist(dot.name),
+            isSelected = selectedName == dot.name,
+        )
+        GlobeDotStyle(
+            name = dot.name,
+            fill = style.fill.toGlobeFill(),
+            border = style.border.toGlobeFill(),
+            borderWidthPx = with(density) { style.borderWidth.toPx() },
         )
     }
 
@@ -218,6 +223,7 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
         ocean = geometry.ocean,
         countries = geometry.countries,
         outlineSectors = geometry.outlineSectors,
+        microstateDots = geometry.microstateDots,
         colorFor = { name ->
             GlobeCountryFills.of(
                 isVisited = state.isVisited(name),
@@ -232,7 +238,7 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
             if (name == null) state.clearSelection() else state.selectCountry(name, hitTester.center(name))
         },
         modifier = Modifier.fillMaxSize(),
-        dots = dots,
+        dotStyles = dotStyles,
         capital = selectedName
             ?.let { name -> data.countries.firstOrNull { it.name == name } }
             ?.capital

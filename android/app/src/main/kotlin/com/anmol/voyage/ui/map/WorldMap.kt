@@ -48,6 +48,7 @@ fun WorldMap(
     var offset by remember(projection) { mutableStateOf(Offset.Zero) }
 
     val oceanColor = if (darkTheme) VoyagePalette.oceanDark else VoyagePalette.oceanMap
+    val sizes = rememberMarkerSizes()
     val starPath = rememberCapitalStarPath()
 
     Canvas(
@@ -122,7 +123,7 @@ fun WorldMap(
                 offsetX = offset.x,
                 offsetY = offset.y,
             )
-            drawMicrostateDot(Offset(x, y), state.styleFor(country.name))
+            drawMicrostateDot(Offset(x, y), state.styleFor(country.name), sizes)
         }
 
         // The capital star marks the selected country only, as on the globe.
@@ -136,7 +137,7 @@ fun WorldMap(
                 offsetX = offset.x,
                 offsetY = offset.y,
             )
-            drawCapitalStar(Offset(x, y), starPath)
+            drawCapitalStar(Offset(x, y), starPath, sizes)
         }
     }
 }

@@ -66,6 +66,7 @@ class GlobeGestureTest {
                 ocean = UvSphere.build(segments = 32, rings = 16),
                 countries = meshes,
                 outlineSectors = outlines,
+                microstateDots = emptyList(),
                 colorFor = { GlobeCountryFills.of(isVisited = false, isWishlist = false, isSelected = false) },
                 oceanColor = Color.Blue,
                 backgroundColor = Color.Black,

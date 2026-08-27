@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import kotlin.math.tan
 import org.junit.Test
 
 /**
@@ -112,61 +113,38 @@ class GlobeCameraTest {
         assertEquals(0.0, GlobeCamera().degreesPerPixel(0f), 0.0)
     }
 
-    // Forward projection — where a marker lands on screen
+    // Marker sizing — what keeps dots and the capital star a constant size
 
     @Test
-    fun `projecting a tap's own point puts it back under the finger`() {
-        // The pairing that matters: screenPositionOf must undo latLonAt exactly,
-        // or a capital star drifts off its capital as the globe turns.
-        val camera = GlobeCamera(latitude = 12.0, longitude = -40.0, distance = 3.0f)
-        val width = 1080f
+    fun `a pixel covers less of the world as the camera moves in`() {
         val height = 2400f
+        val far = GlobeCamera(distance = 7f).pixelSizeInWorld(height)
+        val near = GlobeCamera(distance = 2f).pixelSizeInWorld(height)
+        assertTrue("zoomed in, a pixel should cover less world", near < far)
 
-        for (x in listOf(400f, 540f, 700f)) {
-            for (y in listOf(1000f, 1200f, 1400f)) {
-                val hit = camera.latLonAt(x, y, width, height)
-                assertNotNull("tap at ($x, $y) missed the globe", hit)
-                val back = camera.screenPositionOf(hit!!.lat, hit.lon, width, height)
-                assertNotNull("projecting ($x, $y) back gave nothing", back)
-                assertEquals(x, back!!.x, 0.5f)
-                assertEquals(y, back.y, 0.5f)
-            }
+        // Linear in the distance to the globe's near face, which is what makes a
+        // marker of a fixed pixel size cover the same pixels at every zoom.
+        assertEquals((2f - 1f) / (7f - 1f), near / far, 1e-5f)
+    }
+
+    @Test
+    fun `a marker of a fixed pixel size spans the same pixels at any zoom`() {
+        val height = 2400f
+        val radiusPx = 13f
+        // Half the viewport, in world units, at the globe's near face.
+        fun halfViewport(distance: Float) =
+            tan(Math.toRadians(GlobeCamera.FOV_DEGREES / 2.0)).toFloat() * (distance - 1f)
+
+        for (distance in listOf(1.5f, 4f, 9f)) {
+            val world = radiusPx * GlobeCamera(distance = distance).pixelSizeInWorld(height)
+            val pixels = world / halfViewport(distance) * (height / 2f)
+            assertEquals("marker changed size at distance $distance", radiusPx, pixels, 1e-2f)
         }
     }
 
     @Test
-    fun `the point the camera looks at projects to the viewport center`() {
-        val camera = GlobeCamera(latitude = 25.0, longitude = 100.0)
-        val point = camera.screenPositionOf(25.0, 100.0, 1000f, 2000f)
-
-        assertNotNull(point)
-        assertEquals(500f, point!!.x, 0.5f)
-        assertEquals(1000f, point.y, 0.5f)
-    }
-
-    @Test
-    fun `a point on the far side does not project`() {
-        val camera = GlobeCamera(latitude = 0.0, longitude = 0.0)
-        // The antipode of what the camera looks at, and a point just past the limb.
-        assertNull(camera.screenPositionOf(0.0, 180.0, 1000f, 2000f))
-        assertNull(camera.screenPositionOf(0.0, 100.0, 1000f, 2000f))
-        assertNotNull(camera.screenPositionOf(0.0, 0.0, 1000f, 2000f))
-    }
-
-    @Test
-    fun `the horizon tightens as the camera moves in`() {
-        // At 60° away the point is visible from far out and gone up close, which
-        // is what makes a marker round the limb instead of clinging to it.
-        val far = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = GlobeCamera.MAX_DISTANCE)
-        val near = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = 1.5f)
-        assertNotNull(far.screenPositionOf(0.0, 60.0, 1000f, 2000f))
-        assertNull(near.screenPositionOf(0.0, 60.0, 1000f, 2000f))
-    }
-
-    @Test
-    fun `projection reports nothing for a viewport with no area`() {
-        val camera = GlobeCamera()
-        assertNull(camera.screenPositionOf(0.0, 0.0, 0f, 0f))
+    fun `pixel size reports nothing for a viewport with no height`() {
+        assertEquals(0f, GlobeCamera().pixelSizeInWorld(0f), 0f)
     }
 
     // Screen scale — what keeps border outlines a constant width on screen

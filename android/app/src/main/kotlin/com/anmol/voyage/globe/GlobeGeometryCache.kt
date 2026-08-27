@@ -18,6 +18,8 @@ class GlobeGeometry(
     val ocean: SphereMesh,
     val countries: List<NamedCountryMesh>,
     val outlineSectors: List<OutlineMesh>,
+    /** One dot per Point-feature microstate, keyed by name so it can be recolored. */
+    val microstateDots: List<MicrostateDot>,
 )
 
 /**
@@ -76,9 +78,16 @@ object GlobeGeometryCache {
     private fun build(countries: List<GeoJsonCountry>): GlobeGeometry {
         val started = SystemClock.elapsedRealtime()
         // Point-feature microstates produce no fill mesh and no border — they
-        // are dots, and still have no marker on the globe (Phase 7.2's open
-        // half, with the capital star).
+        // are dots instead, built just below.
         val polygonCountries = countries.filter { !it.isPointCountry }
+        val dots = countries.mapNotNull { country ->
+            val at = country.pointCoordinate ?: return@mapNotNull null
+            MicrostateDot(
+                name = country.name,
+                ring = MarkerMeshes.disc(at.lat, at.lon, DOT_RING_RADIUS),
+                fill = MarkerMeshes.disc(at.lat, at.lon, DOT_FILL_RADIUS),
+            )
+        }
         val meshes = polygonCountries.mapNotNull { country ->
             PolygonTriangulator.createCountryGeometry(country.polygons, country.holes)
                 ?.let { NamedCountryMesh(country.name, it) }
@@ -96,8 +105,17 @@ object GlobeGeometryCache {
             ocean = UvSphere.build(),
             countries = meshes,
             outlineSectors = outlines,
+            microstateDots = dots,
         )
     }
+
+    /**
+     * Sphere radii for the two layers of a dot, above the fills (1.003) and the
+     * borders (1.005) so a dot is never buried by the country under it. The ring
+     * sits just below its fill so the two never z-fight.
+     */
+    private const val DOT_RING_RADIUS = 1.0058f
+    private const val DOT_FILL_RADIUS = 1.0062f
 
     private const val TAG = "GlobeGeometryCache"
 }

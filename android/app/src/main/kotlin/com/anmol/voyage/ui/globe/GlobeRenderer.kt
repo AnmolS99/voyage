@@ -1,7 +1,10 @@
 package com.anmol.voyage.ui.globe
 
 import android.view.Surface
+import androidx.compose.ui.graphics.Color
 import com.anmol.voyage.globe.GlobeCamera
+import com.anmol.voyage.globe.MarkerMesh
+import com.anmol.voyage.globe.MicrostateDot
 import com.anmol.voyage.globe.NamedCountryMesh
 import com.anmol.voyage.globe.OutlineMesh
 import com.anmol.voyage.globe.SphereMesh
@@ -19,6 +22,7 @@ import com.google.android.filament.Skybox
 import com.google.android.filament.SwapChain
 import com.google.android.filament.VertexBuffer
 import com.google.android.filament.View
+import com.anmol.voyage.ui.theme.VoyagePalette
 import com.google.android.filament.Viewport
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -35,7 +39,8 @@ import kotlin.math.abs
  *
  * Scene layer order follows iOS: ocean sphere (radius 1.0) → country fills
  * (1.003) → border outlines (1.005) → the selected country's overlay outline
- * (1.006). The atmosphere shell is Phase 7.2 and is not built here yet.
+ * (1.006) → microstate dots and the capital star (1.0058…1.0066). The atmosphere
+ * shell is Phase 7.2 and is not built here yet.
  */
 internal class GlobeRenderer(backgroundColor: FloatArray) {
 
@@ -79,6 +84,29 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
 
     /** Last thickness scale written to the outline materials — throttles uniform writes. */
     private var outlineScale = Float.NaN
+
+    /** World units per screen pixel last written to the markers; NaN forces a rewrite. */
+    private var markerScale = Float.NaN
+
+    /** One microstate's two material instances, plus the size they are drawn at. */
+    private class Dot(
+        val ring: MaterialInstance,
+        val fill: MaterialInstance,
+    ) {
+        /** Outer and inner radii in pixels, from the country's current style. */
+        var ringRadiusPx = 0f
+        var fillRadiusPx = 0f
+    }
+
+    private val dots = mutableMapOf<String, Dot>()
+
+    /** The selected country's capital star: outline behind, fill on top. */
+    private var capitalStar: Renderable? = null
+    private var capitalStarOutline: Renderable? = null
+    private var capitalStarMaterial: MaterialInstance? = null
+    private var capitalStarOutlineMaterial: MaterialInstance? = null
+    private var capitalStarRadiusPx = 0f
+    private var capitalStarOutlinePx = 0f
 
     /** A sector outline entity plus the bounding sphere the horizon test uses. */
     private class OutlineSector(val entity: Int, val mesh: OutlineMesh) {
@@ -138,7 +166,43 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         val eye = globeCamera.position
         camera.lookAt(eye.x, eye.y, eye.z, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         setOutlineThickness(globeCamera)
+        setMarkerSizes(globeCamera)
         cullFarSideOutlineSectors(globeCamera)
+    }
+
+    /**
+     * Sizes the markers so they cover the same pixels at every zoom, exactly as
+     * the flat map's do outside its pan/zoom matrix.
+     *
+     * The dots and the star are the one thing on the globe measured in screen
+     * terms rather than world terms — a microstate has to stay visible and
+     * tappable when zoomed out, which is why the map draws them this way and why
+     * the globe follows. iOS instead gives its globe markers a fixed world size
+     * and compensates the star with `sqrt(zoomScale)`, which is why its globe
+     * and map disagree about marker size and Android's do not.
+     */
+    private fun setMarkerSizes(globeCamera: GlobeCamera) {
+        if (viewportHeight == 0) return
+        val scale = globeCamera.pixelSizeInWorld(viewportHeight.toFloat())
+        if (!markerScale.isNaN() && abs(scale - markerScale) <= scale * 0.005f) return
+        markerScale = scale
+
+        for (dot in dots.values) {
+            dot.ring.setParameter("thickness", dot.ringRadiusPx * scale)
+            dot.fill.setParameter("thickness", dot.fillRadiusPx * scale)
+        }
+        // Half a stroke out, half a stroke in — what the map's centered `Stroke`
+        // on the star's own path covers. (The map's miter joins also spike a
+        // little past the five points; that is a stroking artifact, not a
+        // decision, and is not modelled here.)
+        capitalStarOutlineMaterial?.setParameter(
+            "thickness",
+            (capitalStarRadiusPx + capitalStarOutlinePx / 2f) * scale,
+        )
+        capitalStarMaterial?.setParameter(
+            "thickness",
+            (capitalStarRadiusPx - capitalStarOutlinePx / 2f) * scale,
+        )
     }
 
     /**
@@ -195,6 +259,7 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         ocean: SphereMesh,
         countries: List<NamedCountryMesh>,
         outlines: List<OutlineMesh>,
+        microstateDots: List<MicrostateDot>,
     ) {
         releaseGeometry()
 
@@ -232,9 +297,7 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         // One material instance shared by every sector — see `outlineMaterial`.
         val outlineInstance = materials.outline.createInstance()
         materialInstances += outlineInstance
-        outlineInstance.setParameter("colorA", 0f, 0f, 0f, 1f)
-        outlineInstance.setParameter("colorB", 0f, 0f, 0f, 1f)
-        outlineInstance.setParameter("gradient", 0f)
+        outlineInstance.setFill(GlobeFill(Color.Black, Color.Black, gradient = false))
         outlineInstance.setParameter("thickness", BASE_OUTLINE_THICKNESS)
         outlineMaterial = outlineInstance
         // A written scale is stale the moment the materials are new.
@@ -243,7 +306,7 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         for (outline in outlines) {
             val renderable = addRenderable(
                 positions = outline.positions,
-                secondary = Secondary.miters(outline.miters),
+                secondary = Secondary.offsets(outline.miters),
                 indices = outline.indices,
                 material = outlineInstance,
                 // A real box per sector, unlike the fills: this is the one place
@@ -254,6 +317,69 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
             track(renderable)
             outlineSectors += OutlineSector(renderable.entity, outline)
         }
+
+        // Microstates are dots in the scene, not an overlay above it. An overlay
+        // draws from its own copy of the camera, so during a drag it lands a
+        // frame away from the surface underneath and visibly trails the borders;
+        // in the scene the dots move under the same matrix as everything else.
+        for (dot in microstateDots) {
+            val ring = materials.outline.createInstance()
+            val fill = materials.outline.createInstance()
+            materialInstances += ring
+            materialInstances += fill
+            dots[dot.name] = Dot(ring = ring, fill = fill)
+            track(addMarkerRenderable(dot.ring, ring))
+            track(addMarkerRenderable(dot.fill, fill))
+        }
+    }
+
+    /**
+     * Paints one microstate's dot. [radiusPx] and [borderWidthPx] are the map's
+     * own screen measurements: the ring reaches half a border outside them and
+     * the fill stops half a border inside, which is what a stroked circle looks
+     * like.
+     */
+    fun setDotAppearance(
+        name: String,
+        fill: GlobeFill,
+        border: GlobeFill,
+        radiusPx: Float,
+        borderWidthPx: Float,
+    ) {
+        val dot = dots[name] ?: return
+        dot.ring.setFill(border)
+        dot.fill.setFill(fill)
+        dot.ringRadiusPx = radiusPx + borderWidthPx / 2f
+        dot.fillRadiusPx = radiusPx - borderWidthPx / 2f
+        // A new size only reaches the shader on the next size pass, which the
+        // render loop runs every frame; nothing here needs the camera.
+        markerScale = Float.NaN
+    }
+
+    /**
+     * Marks [capital] with a star, or clears it when null.
+     *
+     * Rebuilt on selection rather than kept per country: unlike the dots, only
+     * one star is ever on screen.
+     */
+    fun setCapitalStar(outline: MarkerMesh?, fill: MarkerMesh?, radiusPx: Float, outlinePx: Float) {
+        releaseCapitalStar()
+        if (outline == null || fill == null) return
+
+        capitalStarRadiusPx = radiusPx
+        capitalStarOutlinePx = outlinePx
+
+        val outlineInstance = materials.outline.createInstance()
+        outlineInstance.setFill(GlobeFill(VoyagePalette.capitalMarkerOutline, VoyagePalette.capitalMarkerOutline, false))
+        capitalStarOutlineMaterial = outlineInstance
+        capitalStarOutline = addMarkerRenderable(outline, outlineInstance)
+
+        val fillInstance = materials.outline.createInstance()
+        fillInstance.setFill(GlobeFill(VoyagePalette.capitalMarker, VoyagePalette.capitalMarker, false))
+        capitalStarMaterial = fillInstance
+        capitalStar = addMarkerRenderable(fill, fillInstance)
+
+        markerScale = Float.NaN
     }
 
     /**
@@ -265,14 +391,12 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
      * changes rather than kept per country: one country's border is a small
      * upload, and keeping 206 of them resident on the GPU is not.
      */
-    fun setSelectedOutline(outline: OutlineMesh?, colorA: FloatArray, colorB: FloatArray, gradient: Boolean) {
+    fun setSelectedOutline(outline: OutlineMesh?, color: GlobeFill?) {
         releaseSelectedOutline()
-        if (outline == null) return
+        if (outline == null || color == null) return
 
         val instance = materials.outline.createInstance()
-        instance.setParameter("colorA", colorA[0], colorA[1], colorA[2], colorA[3])
-        instance.setParameter("colorB", colorB[0], colorB[1], colorB[2], colorB[3])
-        instance.setParameter("gradient", if (gradient) 1.0f else 0.0f)
+        instance.setFill(color)
         instance.setParameter(
             "thickness",
             BASE_OUTLINE_THICKNESS *
@@ -283,26 +407,35 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
 
         selectedOutline = addRenderable(
             positions = outline.positions,
-            secondary = Secondary.miters(outline.miters),
+            secondary = Secondary.offsets(outline.miters),
             indices = outline.indices,
             material = instance,
             boundingBox = outline.box(),
         )
     }
 
-    /**
-     * Paints one country. [colorB] and [gradient] drive the visited+wishlist
-     * diagonal; a flat country passes `gradient = 0`.
-     */
-    fun setCountryColor(name: String, colorA: FloatArray, colorB: FloatArray, gradient: Boolean) {
-        val instance = countryMaterials[name] ?: return
-        instance.setParameter("colorA", colorA[0], colorA[1], colorA[2], colorA[3])
-        instance.setParameter("colorB", colorB[0], colorB[1], colorB[2], colorB[3])
-        instance.setParameter("gradient", if (gradient) 1.0f else 0.0f)
+    /** Paints one country. */
+    fun setCountryColor(name: String, fill: GlobeFill) {
+        countryMaterials[name]?.setFill(fill)
     }
 
-    fun setOceanColor(color: FloatArray) {
-        oceanMaterial?.setParameter("baseColor", color[0], color[1], color[2], color[3])
+    /**
+     * Writes a [GlobeFill] into a material. The country and outline shaders take
+     * the same trio — flat [GlobeFill.colorA], or the visited+wishlist diagonal
+     * between both colors when `gradient` is set — so one writer covers fills,
+     * borders and markers alike.
+     */
+    private fun MaterialInstance.setFill(fill: GlobeFill) {
+        val a = fill.colorA.toFilamentColor()
+        val b = fill.colorB.toFilamentColor()
+        setParameter("colorA", a[0], a[1], a[2], a[3])
+        setParameter("colorB", b[0], b[1], b[2], b[3])
+        setParameter("gradient", if (fill.gradient) 1.0f else 0.0f)
+    }
+
+    fun setOceanColor(color: Color) {
+        val components = color.toFilamentColor()
+        oceanMaterial?.setParameter("baseColor", components[0], components[1], components[2], components[3])
     }
 
     /** Renders one frame. Returns false when the surface is not ready. */
@@ -351,7 +484,7 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
                 VertexBuffer.AttributeType.FLOAT2,
             )
 
-            fun miters(data: FloatArray) = Secondary(
+            fun offsets(data: FloatArray) = Secondary(
                 data,
                 VertexBuffer.VertexAttribute.CUSTOM0,
                 VertexBuffer.AttributeType.FLOAT4,
@@ -399,6 +532,35 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         return Renderable(entity, vertexBuffer, indexBuffer)
     }
 
+    /**
+     * Uploads one marker. Every vertex sits at the marker's center until the
+     * material pushes it out, so the bounding box has to cover where the marker
+     * will end up rather than where its vertices are — [MARKER_BOX_HALF_EXTENT]
+     * is comfortably wider than any marker at any zoom.
+     */
+    private fun addMarkerRenderable(mesh: MarkerMesh, material: MaterialInstance): Renderable =
+        addRenderable(
+            positions = mesh.positions,
+            secondary = Secondary.offsets(mesh.offsets),
+            indices = mesh.indices,
+            material = material,
+            boundingBox = Box(
+                mesh.center.x, mesh.center.y, mesh.center.z,
+                MARKER_BOX_HALF_EXTENT, MARKER_BOX_HALF_EXTENT, MARKER_BOX_HALF_EXTENT,
+            ),
+        )
+
+    private fun releaseCapitalStar() {
+        capitalStar?.let { destroy(it) }
+        capitalStar = null
+        capitalStarOutline?.let { destroy(it) }
+        capitalStarOutline = null
+        capitalStarMaterial?.let { engine.destroyMaterialInstance(it) }
+        capitalStarMaterial = null
+        capitalStarOutlineMaterial?.let { engine.destroyMaterialInstance(it) }
+        capitalStarOutlineMaterial = null
+    }
+
     /** Adds a renderable to the bulk geometry, which [releaseGeometry] frees together. */
     private fun track(renderable: Renderable) {
         entities += renderable.entity
@@ -423,6 +585,7 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
 
     private fun releaseGeometry() {
         releaseSelectedOutline()
+        releaseCapitalStar()
         for (entity in entities) {
             scene.removeEntity(entity)
             engine.destroyEntity(entity)
@@ -437,8 +600,10 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         materialInstances.clear()
         countryMaterials.clear()
         outlineSectors.clear()
+        dots.clear()
         oceanMaterial = null
         outlineMaterial = null
+        markerScale = Float.NaN
     }
 
     companion object {
@@ -456,6 +621,13 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
 
         /** Encloses the whole globe, outlines and all. */
         private val GLOBE_BOX = Box(0f, 0f, 0f, 1.01f, 1.01f, 1.01f)
+
+        /**
+         * Half-width of a marker's bounding box. Markers are a point of geometry
+         * expanded by the material, so this has to bound the *drawn* size: at the
+         * furthest zoom a 6dp star is well under 0.05 world units.
+         */
+        private const val MARKER_BOX_HALF_EXTENT = 0.08f
 
         init {
             Filament.init()
