@@ -110,12 +110,13 @@ Each is asserted by tests, on both platforms where it applies:
   `GlobeCamera.degreesPerDp` and `GlobeCamera.AUTO_ROTATION_DEGREES_PER_SECOND`,
   mirroring `GlobeInertia.swift`, `GlobeView.Coordinator.panRotationSpeed` and
   the `rotateBy(y: 2π)` action; changing any of them is a two-platform change.
-- **A pinch bottoms out at distance 8.0** (`GlobeCameraTest`,
-  `GlobeGestureTest`). iOS's gestures clamp there, and a pinch is the only way
-  out on Android, so it is the smallest the globe gets on either platform. iOS's
-  `maxCameraDistance` of 10.0 is a looser clamp on the state, reachable only
-  through its zoom-out button; splitting the two apart is for whenever Android
-  grows one.
+- **A pinch bottoms out at distance 6.0** (`GlobeCameraTest`,
+  `GlobeGestureTest`) — the globe still spanning about 40% of the screen's
+  height. Deliberately tighter than iOS, whose pinch reaches 8.0 and whose
+  zoom-out button reaches 10.0, and **the one place the globe's motion is not a
+  port**: there is nothing to see that far out. A pinch is the only way out on
+  Android, so this single clamp is the whole story; if Android grows a zoom-out
+  button, that is when to give the state its own looser clamp the way iOS does.
 - **Selecting a country flies the camera to it in 0.8 s** (`GlobeFlightTest`,
   `GlobeGestureTest`). `GlobeFlight` ports `GlobeView.Coordinator.flyTo`: the
   duration, Core Animation's `easeInEaseOut` curve, the shortest way round in

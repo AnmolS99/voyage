@@ -216,15 +216,18 @@ data class GlobeCamera(
         /**
          * How far out the globe can be pushed.
          *
-         * iOS's *gestures* clamp here — `handlePinch` and `handleDoubleTapDrag`
-         * both `min(8.0, ...)` — and this is the only way out on Android, so 8.0
-         * is the limit a person actually meets on either platform. iOS's
-         * `GlobeState.maxCameraDistance` of 10.0 is a looser clamp on the state
-         * itself, reachable only through its zoom-out button, which Android has
-         * no equivalent of. If one ever lands here, that is the moment to split
-         * the two apart rather than now.
+         * Tighter than iOS on purpose, and the one place this globe's motion is
+         * deliberately not a port. iOS lets a pinch reach 8.0 and its zoom-out
+         * button 10.0 (`GlobeState.maxCameraDistance`), by which point the globe
+         * is a small ball in a lot of empty screen. There is nothing to see out
+         * there, so Android stops at 6.0 — still comfortably the whole world in
+         * frame, about 40% of the screen's height.
+         *
+         * A pinch is the only way out here; if Android ever grows a zoom-out
+         * button, that is the moment to give the state its own looser clamp the
+         * way iOS does, not now.
          */
-        const val MAX_DISTANCE = 8.0f
+        const val MAX_DISTANCE = 6.0f
 
         /**
          * How far from the equator a drag can tilt the camera. iOS's

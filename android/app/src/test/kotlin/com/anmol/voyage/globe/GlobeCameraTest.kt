@@ -73,7 +73,7 @@ class GlobeCameraTest {
 
     @Test
     fun `a tap in the corner misses the globe`() {
-        val camera = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = 10f)
+        val camera = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = GlobeCamera.MAX_DISTANCE)
         assertNull(camera.latLonAt(2f, 2f, 1080f, 2400f))
     }
 
@@ -109,16 +109,23 @@ class GlobeCameraTest {
     }
 
     @Test
-    fun `a pinch cannot push the globe further out than iOS lets it go`() {
-        // iOS `handlePinch` and `handleDoubleTapDrag` both clamp to 8.0, and a
-        // pinch is the only way out on Android, so this is the smallest the globe
-        // can be made on either platform. Its 10.0 state clamp belongs to a
-        // zoom-out button Android does not have.
-        assertEquals(8.0f, GlobeCamera.MAX_DISTANCE, 0f)
+    fun `a pinch cannot shrink the globe into a speck`() {
+        // Deliberately tighter than iOS, whose pinch reaches 8.0 and whose
+        // zoom-out button reaches 10.0. There is nothing to see that far out.
+        assertEquals(6.0f, GlobeCamera.MAX_DISTANCE, 0f)
 
         var camera = GlobeCamera()
         repeat(50) { camera = camera.zoomedBy(0.5f) }
-        assertEquals(8.0f, camera.distance, 1e-6f)
+        assertEquals(6.0f, camera.distance, 1e-6f)
+
+        // Far enough out that the whole globe is still comfortably in frame: it
+        // spans about 40% of the viewport's height at the limit.
+        val globeHeight = 2.0 * Math.toDegrees(kotlin.math.asin(1.0 / camera.distance))
+        val viewportHeight = GlobeCamera.FOV_DEGREES
+        assertTrue(
+            "the globe covers ${globeHeight / viewportHeight} of the screen at full zoom-out",
+            globeHeight / viewportHeight > 0.35,
+        )
     }
 
     @Test
@@ -151,14 +158,10 @@ class GlobeCameraTest {
     @Test
     fun `pan speed grows with the square of distance once zoomed out`() {
         val base = GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE).degreesPerDp
-        // Twice the distance, four times the speed: the globe stays quick to
-        // spin when it is small on screen.
-        assertEquals(4.0 * base, GlobeCamera(distance = 8f).degreesPerDp, 1e-6)
-        assertEquals(
-            2.25 * base,
-            GlobeCamera(distance = 1.5f * GlobeCamera.DEFAULT_DISTANCE).degreesPerDp,
-            1e-6,
-        )
+        // Half again the distance, a bit over twice the speed: the globe stays
+        // quick to spin when it is small on screen.
+        assertEquals(2.25 * base, GlobeCamera(distance = 6f).degreesPerDp, 1e-6)
+        assertEquals(1.5625 * base, GlobeCamera(distance = 5f).degreesPerDp, 1e-6)
     }
 
     @Test
@@ -187,7 +190,7 @@ class GlobeCameraTest {
 
     @Test
     fun `dragging covers less ground when zoomed in`() {
-        val far = GlobeCamera(distance = 8f).degreesPerDp
+        val far = GlobeCamera(distance = GlobeCamera.MAX_DISTANCE).degreesPerDp
         val near = GlobeCamera(distance = 2f).degreesPerDp
         assertTrue("zoomed in should rotate less per dp", near < far)
     }
@@ -223,13 +226,13 @@ class GlobeCameraTest {
     @Test
     fun `a pixel covers less of the world as the camera moves in`() {
         val height = 2400f
-        val far = GlobeCamera(distance = 7f).pixelSizeInWorld(height)
+        val far = GlobeCamera(distance = 6f).pixelSizeInWorld(height)
         val near = GlobeCamera(distance = 2f).pixelSizeInWorld(height)
         assertTrue("zoomed in, a pixel should cover less world", near < far)
 
         // Linear in the distance to the globe's near face, which is what makes a
         // marker of a fixed pixel size cover the same pixels at every zoom.
-        assertEquals((2f - 1f) / (7f - 1f), near / far, 1e-5f)
+        assertEquals((2f - 1f) / (6f - 1f), near / far, 1e-5f)
     }
 
     @Test
@@ -240,7 +243,7 @@ class GlobeCameraTest {
         fun halfViewport(distance: Float) =
             tan(Math.toRadians(GlobeCamera.FOV_DEGREES / 2.0)).toFloat() * (distance - 1f)
 
-        for (distance in listOf(1.5f, 4f, 9f)) {
+        for (distance in listOf(1.5f, 4f, 6f)) {
             val world = radiusPx * GlobeCamera(distance = distance).pixelSizeInWorld(height)
             val pixels = world / halfViewport(distance) * (height / 2f)
             assertEquals("marker changed size at distance $distance", radiusPx, pixels, 1e-2f)
