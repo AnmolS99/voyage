@@ -42,8 +42,9 @@ internal class GlobeDotStyle(
 )
 
 /**
- * The globe's rendering surface: a Filament-backed [SurfaceView] hosted in
- * Compose, with the rotate / pinch / tap gestures on top of it.
+ * The globe's rendering surface: a Filament-backed [TextureView] hosted in
+ * Compose, with the rotate / pinch / tap gestures on top of it. It is a
+ * TextureView and not a SurfaceView on purpose — see [GlobeSurfaceHost.attach].
  *
  * The render loop is driven by [Choreographer] rather than a background thread,
  * which is what Filament's own Android samples do: it keeps every Engine call
@@ -153,7 +154,7 @@ internal fun GlobeSurface(
 }
 
 /**
- * Binds a [GlobeRenderer] to a SurfaceView and a Choreographer loop.
+ * Binds a [GlobeRenderer] to a [TextureView] and a Choreographer loop.
  *
  * Kept out of the composable so the engine's lifetime is tied to one object
  * that `DisposableEffect` can destroy, rather than to several remembered values

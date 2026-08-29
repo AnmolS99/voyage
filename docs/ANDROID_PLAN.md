@@ -52,6 +52,7 @@ change.
 | 2026-08-11 | The far hemisphere is hidden by the opaque ocean sphere, not by backface culling | iOS winds fills single-sided and lets the GPU cull the far side. Here the ocean sphere (r=1.0) already occludes the fills behind it (r=1.003) through the depth buffer, so culling is off and winding never has to be reasoned about. Revisit in 7.10 if fill rate shows up in a profile. |
 | 2026-08-11 | The globe camera is owned by the render loop, not held as Compose state | A drag changes the camera up to once per frame; as Compose state that would recompose the globe and re-resolve all 181 country colors per frame, for a value only the renderer reads. |
 | 2026-08-11 | Globe geometry (7.3) emits plain float/int buffers (`CountryMesh`/`OutlineMesh`), not Filament objects | Keeps the triangulation pipeline unit-testable on the JVM — where CI (which has no emulator) actually runs it — and Filament merely wraps the buffers in 7.4/7.5. The same reasoning that keeps map appearance rules outside the map renderer. |
+| 2026-08-29 | The Android toolchain is CLI-only; the Phase 0 Android Studio first-run check is dropped | Every build, test, install and device measurement in this project runs through the Gradle wrapper and `adb`, and CI runs the same commands. A GUI sync would verify a path nothing uses. Studio stays installed for the profiler and layout inspector. |
 
 ---
 
@@ -68,14 +69,20 @@ Get an Android development environment working on this machine.
 - [x] Create an emulator (Pixel-class device, latest stable API image) and
       verify it boots — AVD `voyage_pixel9_api36` (Pixel 9, Android 16)
 - [x] Verify `gradle`/`adb` work from the terminal (needed for CI-parity local builds)
-- [x] Open Android Studio once (first-run wizard; it should auto-detect the SDK)
-      and confirm a project syncs — the one step that needs the GUI
+- [x] ~~Open Android Studio once (first-run wizard; it should auto-detect the
+      SDK) and confirm a project syncs~~ — **dropped 2026-08-29**: every build,
+      test and device run in this project goes through the Gradle wrapper and
+      `adb`, and CI does the same, so a GUI sync would verify a path nothing
+      uses. Android Studio remains available if a profiler or layout inspector
+      is ever wanted
 
 **Definition of done:** a "Hello World" Compose template project builds and
-runs on the emulator from both Android Studio and the command line.
+runs on the emulator from the command line (originally "from both Android
+Studio and the command line" — see the decision log).
 *Verified 2026-08-06 via CLI: Compose app built with the Gradle wrapper
 (AGP 8.8 / Kotlin 2.1 / Gradle 8.10.2 on JDK 17), installed and rendered on
-the Android 16 emulator. Android Studio first-run check remains.*
+the Android 16 emulator. The Android Studio first-run check was dropped
+2026-08-29 rather than done — see the item above.*
 
 ---
 
@@ -146,13 +153,16 @@ to be done by hand at <https://play.google.com/console>.
 - [x] Register Google Play developer account ($25 one-time) + identity
       verification — registered 2026-08-07; **identity verification cleared
       2026-08-11**, the console is fully unlocked
-- [ ] Create the app entry in Play Console — applicationId **`com.anmol.voyage`**
+- [x] Create the app entry in Play Console — applicationId **`com.anmol.voyage`**
       (matches the iOS bundle id; already baked into the scaffold and permanent
-      once the Play entry exists). Unblocked 2026-08-11 — an owner-only manual
-      step in the console
-- [ ] Note the requirement: ≥12 testers opted in for 14 consecutive days of
+      once the Play entry exists). Created 2026-08-29, so the id is now fixed on
+      both stores
+- [x] Note the requirement: ≥12 testers opted in for 14 consecutive days of
       closed testing before production access can be requested — recruit
-      testers early
+      testers early. Noted; the run itself is tracked once, in Phase 11, since
+      it needs a signed build on a closed track. It is the schedule's long pole
+      and does not depend on Phases 8–10 landing first — the release plumbing
+      can be built in parallel with them
 
 **Project scaffold:**
 
@@ -239,7 +249,9 @@ iOS prewarm.
 parser on the simulator. The first parse in a fresh process costs ~620–740 ms —
 ART warmup rather than parser cost (dex AOT does not move it; the same code
 parses in ~25 ms on a warm host JVM), and it runs off the main thread. A
-baseline profile is queued in Phase 11 to close that cold-start gap.*
+baseline profile is queued in Phase 11 to close that cold-start gap. The DoD
+says "mid-range device" and these are emulator numbers; re-measure them on the
+A55 (`adb logcat -s CountryDataCache:I`) to close that wording honestly.*
 
 ---
 
@@ -355,8 +367,8 @@ visited → map recolors → highlight checkmarks persist.
 matching and ordering, detail assembly against the real `shared/data` files,
 including a check that capitals are spelled identically in both files), 96 unit
 tests total. Like Phase 5 this was built in a Linux container with no Android
-SDK, so the loop itself has not been driven on a device — run it once an
-emulator is at hand:*
+SDK, so the loop itself has not been driven on a device — run it on the Galaxy
+A55 that has been on hand since 2026-08-29:*
 
 ```bash
 cd android && ./gradlew installDebug
@@ -374,8 +386,10 @@ something on screen early.
 
 - [x] 7.1 Filament integration: `SurfaceView`/`AndroidUiDispatcher` render
       loop hosted in Compose, camera + lighting rig — done 2026-08-11.
-      `ui/globe/GlobeSurface.kt` hosts a `SurfaceView` via `UiHelper` and drives
-      it from a `Choreographer` callback (one thread, vsync-paced for free);
+      `ui/globe/GlobeSurface.kt` hosts the surface via `UiHelper` and drives
+      it from a `Choreographer` callback (one thread, vsync-paced for free).
+      It ended up a **`TextureView`**, not the `SurfaceView` this sub-step
+      first named — see the decision log entry of the same day;
       `ui/globe/GlobeRenderer.kt` owns the engine/scene/view/camera. No lighting
       rig: the materials are unlit (see the decision log), which is also why an
       IBL is not needed to avoid a black globe. `globe/GlobeCamera.kt` is the
@@ -714,14 +728,14 @@ Update the table as phases complete.
 
 | Phase | Status |
 | --- | --- |
-| 0 — Environment & tooling | ✅ Done (2026-08-06) |
+| 0 — Environment & tooling | ✅ Done (2026-08-06; the Android Studio first-run check was dropped 2026-08-29 — the toolchain is CLI-only) |
 | 1 — Repo restructure | ✅ Done (2026-08-06) |
-| 2 — Scaffold + Play account | 🟡 Scaffold done (2026-08-06); Play account verified 2026-08-11 — creating the app entry (manual, owner-only) is the remaining item |
+| 2 — Scaffold + Play account | ✅ Done (scaffold 2026-08-06; Play account verified 2026-08-11; app entry created 2026-08-29). The ≥12-tester / 14-day closed test is tracked in Phase 11, not here |
 | 3 — Data layer | ✅ Done (2026-08-07) |
 | 4 — 2D map | ✅ Done (2026-08-07) |
-| 5 — State & persistence | 🟡 Built + CI green (2026-08-08); on-device process-death and backup checks still to run |
-| 6 — Country details | 🟡 Built + tests green (2026-08-09); on-device pass of the find → details → mark → persist loop still to run |
-| 7 — 3D globe | 🟡 Globe renders and is interactive on the emulator (2026-08-11): 7.1, 7.3, 7.4, 7.6, 7.9 done, 7.2 partial (ocean only), 7.8 partial (in-memory cache; build-time cache still open). Remaining: border outlines (7.5), selected overlay (7.7), Earth textures + atmosphere (7.2), perf pass (7.10), engine lifetime across navigation (7.11) |
+| 5 — State & persistence | 🟡 Built + CI green (2026-08-08); on-device process-death and backup checks still to run — no longer blocked, a Galaxy A55 is on hand since 2026-08-29 |
+| 6 — Country details | 🟡 Built + tests green (2026-08-09); on-device pass of the find → details → mark → persist loop still to run — same, unblocked since 2026-08-29 |
+| 7 — 3D globe | 🟡 Globe renders, is interactive, and matches the flat map (last checked 2026-08-29 on a Galaxy A55): 7.1, 7.2b, 7.3, 7.4, 7.5, 7.6, 7.7, 7.9, 7.10 done; 7.2 partial (ocean only), 7.8 partial (in-memory cache; build-time cache still open). Remaining: Earth textures + atmosphere glow (7.2), the build-time geometry cache (7.8), engine lifetime across navigation (7.11) |
 | 8 — Achievements | Not started |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | Not started |
