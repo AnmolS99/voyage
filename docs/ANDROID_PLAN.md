@@ -30,15 +30,16 @@ port.
 | 4 — 2D map | ✅ 2026-08-07. Projection, hit-testing, gestures, microstate dots |
 | 5 — State & persistence | 🟡 Built, tests green 2026-08-08; two on-device checks never run — see [Open work](#open-work) |
 | 6 — Country details | 🟡 Built, tests green 2026-08-09; the loop has never been driven on a device — see [Open work](#open-work) |
-| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29). 7.1, 7.2b, 7.3–7.7, 7.9, 7.10 done; 7.2, 7.8, 7.11 open |
+| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29). 7.1, 7.2b, 7.3–7.7, 7.9, 7.10 done; 7.2, 7.8, 7.11 open |
 | 8 — Achievements | Not started |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | Not started |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
-Suite as of 2026-08-29: 178 JVM unit tests across 22 classes, green; gesture
-tests are instrumented and run locally, not in CI.
+Suite as of 2026-08-29: 204 JVM unit tests across 24 classes, green; gesture
+tests are instrumented and run locally, not in CI (18, green on the Pixel 9
+API 36 emulator).
 
 ## Decision log
 
@@ -72,10 +73,14 @@ tests are instrumented and run locally, not in CI.
 | 2026-08-11 | Globe geometry emits plain float/int buffers, not Filament objects | Keeps triangulation unit-testable on the JVM, where CI actually runs. |
 | 2026-08-26 | Capital stars and microstate dots are meshes in the scene, not a Compose overlay | An overlay draws from its own copy of the camera and visibly trailed the globe by a frame while dragging. Markers are sized in `dp` on both renderers, so globe and map agree — iOS's do not. |
 | 2026-08-29 | Android toolchain is CLI-only; the Phase 0 Studio first-run check is dropped | Every build, test, install and measurement goes through the Gradle wrapper and `adb`, and CI runs the same commands. |
+| 2026-08-29 | A camera flight interpolates the camera's *position*, not its angle and distance separately | It is what Core Animation was doing for iOS's `SCNTransaction`, so the flight follows the same chord. Lerping the two apart looks nearly identical — a couple of degrees and a tenth of a unit off at the midpoint — but there is no reason to differ. `GlobeCamera.at` clamps the one case where that chord passes *inside* the globe (crossing the equator at close zoom), which iOS does not. |
+| 2026-08-29 | A touch cancels a camera flight | iOS leaves the animation running under the finger, where the drag and the animation write the same transform and the globe stutters between them. One writer per frame is the whole point of the render-loop design. |
+| 2026-08-29 | The idle spin is stepped in the render loop, not run as an animation | It shares one clock and one camera with momentum, so the two can never both be writing the globe's position; iOS's `SCNAction` is a second writer, and its gesture handlers spend three lines resynchronising from the presentation node because of it. |
+| 2026-08-29 | Globe spin physics ported from iOS verbatim, and measured in **dp** rather than pixels | iOS's pan constants are radians per *point*, and a point and a dp are the same physical size, so the same finger travel turns the globe the same amount on both platforms at any screen density. The projection-derived speed it replaced was self-consistent and about 2.4x slower than iOS at the default zoom. |
 
 ## Pinned invariants
 
-Both are asserted by tests, on both platforms where they apply:
+Each is asserted by tests, on both platforms where it applies:
 
 - **The outline sector grid is 12 lon × 4 lat** (`GlobeGeometryWorldTest`,
   `OutlineSectorCullingTests`). The latitude split is load-bearing: iOS's
@@ -96,6 +101,25 @@ Both are asserted by tests, on both platforms where they apply:
   `isPointCountry` and `pointCoordinate != null` are not each other's negation:
   a *polygon* feature flagged `renderAs: "point"` would fall through both
   filters and be invisible on both renderers with nothing failing.
+- **The globe spins with iOS's physics** (`GlobeInertiaTest`,
+  `GlobeCameraTest`). A flick decays to 5% of its speed per second and coasts
+  about `v / ln(20)` degrees before stopping — roughly 3 s; pan speed is 0.005
+  rad per dp at the default distance, growing with the square of camera distance
+  and capped at finger tracking below it; and an untouched globe turns once a
+  minute. The constants live in `GlobeInertia.kt`,
+  `GlobeCamera.degreesPerDp` and `GlobeCamera.AUTO_ROTATION_DEGREES_PER_SECOND`,
+  mirroring `GlobeInertia.swift`, `GlobeView.Coordinator.panRotationSpeed` and
+  the `rotateBy(y: 2π)` action; changing any of them is a two-platform change.
+- **Selecting a country flies the camera to it in 0.8 s** (`GlobeFlightTest`,
+  `GlobeGestureTest`). `GlobeFlight` ports `GlobeView.Coordinator.flyTo`: the
+  duration, Core Animation's `easeInEaseOut` curve, the shortest way round in
+  longitude, and the 2.8 distance it settles at. A flight outranks momentum and
+  the idle spin, and any touch cancels it.
+- **The idle spin runs until you touch the globe, and only deselecting brings it
+  back** (`VoyageStateTest`, `GlobeGestureTest`). `VoyageState.isAutoRotating`
+  starts true and is never persisted, matching `GlobeState.isAutoRotating`: a
+  drag, a zoom or a selection ends it, and `clearSelection` is the only thing
+  that starts it again.
 
 ## Open work
 

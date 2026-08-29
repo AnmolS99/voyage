@@ -83,10 +83,13 @@ class GlobeCameraTest {
     }
 
     @Test
-    fun `rotation clamps latitude short of the poles`() {
-        val camera = GlobeCamera(latitude = 80.0, longitude = 0.0)
-        assertEquals(89.0, camera.rotatedBy(deltaLatitude = 50.0, deltaLongitude = 0.0).latitude, 1e-9)
-        assertEquals(-89.0, camera.rotatedBy(deltaLatitude = -200.0, deltaLongitude = 0.0).latitude, 1e-9)
+    fun `rotation clamps latitude where iOS clamps it`() {
+        // iOS pins `currentRotationX` to ±.pi / 2.5, which is ±72°.
+        assertEquals(72.0, Math.toDegrees(Math.PI / 2.5), 1e-9)
+
+        val camera = GlobeCamera(latitude = 60.0, longitude = 0.0)
+        assertEquals(72.0, camera.rotatedBy(deltaLatitude = 50.0, deltaLongitude = 0.0).latitude, 1e-9)
+        assertEquals(-72.0, camera.rotatedBy(deltaLatitude = -200.0, deltaLongitude = 0.0).latitude, 1e-9)
     }
 
     @Test
@@ -106,11 +109,100 @@ class GlobeCameraTest {
     }
 
     @Test
+    fun `every camera is built through the same limits`() {
+        // `at` is the one door in, so a drag, a pinch and a flight cannot each
+        // develop their own idea of how far the camera may go.
+        val extreme = GlobeCamera.at(latitude = 200.0, longitude = 540.0, distance = 99f)
+        assertEquals(GlobeCamera.MAX_LATITUDE, extreme.latitude, 1e-9)
+        assertEquals(180.0, kotlin.math.abs(extreme.longitude), 1e-9)
+        assertEquals(GlobeCamera.MAX_DISTANCE, extreme.distance, 1e-6f)
+
+        val below = GlobeCamera.at(latitude = -91.0, longitude = -190.0, distance = 0.1f)
+        assertEquals(-GlobeCamera.MAX_LATITUDE, below.latitude, 1e-9)
+        assertEquals(170.0, below.longitude, 1e-9)
+        assertEquals(GlobeCamera.MIN_DISTANCE, below.distance, 1e-6f)
+    }
+
+    // Pan speed — the iOS curve, which is what makes a drag feel the same
+
+    @Test
+    fun `pan speed at the default distance is the iOS base speed`() {
+        // iOS `basePanRotationSpeed`: 0.005 radians per point of finger travel.
+        assertEquals(
+            Math.toDegrees(0.005),
+            GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE).degreesPerDp,
+            1e-6,
+        )
+    }
+
+    @Test
+    fun `pan speed grows with the square of distance once zoomed out`() {
+        val base = GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE).degreesPerDp
+        // Twice the distance, four times the speed: the globe stays quick to
+        // spin when it is small on screen.
+        assertEquals(4.0 * base, GlobeCamera(distance = 8f).degreesPerDp, 1e-6)
+        assertEquals(
+            2.25 * base,
+            GlobeCamera(distance = 1.5f * GlobeCamera.DEFAULT_DISTANCE).degreesPerDp,
+            1e-6,
+        )
+    }
+
+    @Test
+    fun `zoomed in, pan speed is capped below the quadratic curve`() {
+        val base = GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE).degreesPerDp
+
+        // At distance 2 the quadratic alone would give a quarter of base speed;
+        // the finger-tracking cap takes it lower still.
+        val near = GlobeCamera(distance = 2f).degreesPerDp
+        assertTrue("cap should bind below the reference distance, got $near", near < 0.25 * base)
+
+        // The cap is the tightest at the closest zoom, where fine control matters.
+        val closest = GlobeCamera(distance = GlobeCamera.MIN_DISTANCE).degreesPerDp
+        assertTrue("closest zoom should be the slowest, got $closest", closest < near)
+    }
+
+    @Test
+    fun `pan speed is continuous across the reference distance`() {
+        val below = GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE - 1e-3f).degreesPerDp
+        val at = GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE).degreesPerDp
+        val above = GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE + 1e-3f).degreesPerDp
+        // Only the curve's own slope apart, with no step where the branches meet.
+        assertEquals(at, below, 1e-3)
+        assertEquals(at, above, 1e-3)
+    }
+
+    @Test
     fun `dragging covers less ground when zoomed in`() {
-        val far = GlobeCamera(distance = 8f).degreesPerPixel(2400f)
-        val near = GlobeCamera(distance = 2f).degreesPerPixel(2400f)
-        assertTrue("zoomed in should rotate less per pixel", near < far)
-        assertEquals(0.0, GlobeCamera().degreesPerPixel(0f), 0.0)
+        val far = GlobeCamera(distance = 8f).degreesPerDp
+        val near = GlobeCamera(distance = 2f).degreesPerDp
+        assertTrue("zoomed in should rotate less per dp", near < far)
+    }
+
+    // The idle spin
+
+    @Test
+    fun `an untouched globe turns once a minute`() {
+        var camera = GlobeCamera(latitude = 20.0, longitude = 0.0)
+        // A minute of 120 Hz frames.
+        repeat(60 * 120) { camera = camera.autoRotated(1f / 120f) }
+
+        // iOS's `rotateBy(y: 2π)` over 60 s: one full turn, back where it started.
+        assertEquals(0.0, camera.longitude, 1e-3)
+        assertEquals("the spin should not tilt the globe", 20.0, camera.latitude, 1e-9)
+    }
+
+    @Test
+    fun `the idle spin turns the way Earth does`() {
+        val turned = GlobeCamera(latitude = 0.0, longitude = 0.0).autoRotated(1f)
+
+        // Longitude running backwards is the globe turning eastward under a
+        // fixed camera — the same direction dragging right sends it.
+        assertEquals(-GlobeCamera.AUTO_ROTATION_DEGREES_PER_SECOND, turned.longitude, 1e-6)
+        assertTrue(
+            "it should agree with a rightward drag",
+            GlobeCamera().rotatedBy(0.0, -1.0).longitude < 0.0,
+        )
     }
 
     // Marker sizing — what keeps dots and the capital star a constant size

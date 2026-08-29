@@ -41,27 +41,50 @@ data class GlobeCamera(
         }
 
     /** Applies a drag, in degrees, clamping latitude so the globe never flips over. */
-    fun rotatedBy(deltaLatitude: Double, deltaLongitude: Double): GlobeCamera = copy(
-        latitude = (latitude + deltaLatitude).coerceIn(-MAX_LATITUDE, MAX_LATITUDE),
-        longitude = wrapLongitude(longitude + deltaLongitude),
-    )
-
-    /** Applies a pinch. [scale] > 1 zooms in, matching Compose's gesture convention. */
-    fun zoomedBy(scale: Float): GlobeCamera =
-        copy(distance = (distance / scale).coerceIn(MIN_DISTANCE, MAX_DISTANCE))
+    fun rotatedBy(deltaLatitude: Double, deltaLongitude: Double): GlobeCamera =
+        at(latitude + deltaLatitude, longitude + deltaLongitude, distance)
 
     /**
-     * Degrees of rotation per pixel of drag.
+     * Advances the idle spin by [dt] seconds.
      *
-     * Scaled by distance so the globe tracks the finger at every zoom: close in,
-     * a pixel covers less of the surface. iOS does the same in
-     * `GlobeView.Coordinator.panRotationSpeed`.
+     * iOS turns its globe node a full circle every 60 seconds; here the globe is
+     * fixed and the camera orbits, so the same motion is the camera's longitude
+     * running backwards at [AUTO_ROTATION_DEGREES_PER_SECOND]. Rotating the globe
+     * about its polar axis and moving the camera the other way around it are the
+     * same picture, and the direction is the one Earth actually turns: new land
+     * arrives at the left limb.
      */
-    fun degreesPerPixel(viewportHeight: Float): Double {
-        if (viewportHeight <= 0f) return 0.0
-        val visibleDegrees = 2.0 * Math.toDegrees(tan(FOV_RADIANS / 2.0)) * distance / 2.0
-        return visibleDegrees / viewportHeight
-    }
+    fun autoRotated(dt: Float): GlobeCamera =
+        rotatedBy(0.0, -AUTO_ROTATION_DEGREES_PER_SECOND * dt)
+
+    /** Applies a pinch. [scale] > 1 zooms in, matching Compose's gesture convention. */
+    fun zoomedBy(scale: Float): GlobeCamera = at(latitude, longitude, distance / scale)
+
+    /**
+     * Degrees of rotation per dp of finger travel — iOS's pan curve, ported.
+     *
+     * Speed grows with the square of camera distance so the globe stays quick to
+     * spin when zoomed out. That falloff alone overshoots close in, though,
+     * because the on-screen arc a rotation sweeps grows as
+     * `1 / (distance - radius)`: at the minimum distance the surface ran ahead of
+     * the finger. Zoomed in past [DEFAULT_DISTANCE] the speed is therefore capped
+     * at finger tracking, and the cap tightens to [FULL_ZOOM_TRACKING_FACTOR] of
+     * finger speed at the closest zoom, ramping back to 1:1 by the reference
+     * distance so the extra damping lands where fine control matters. Both
+     * branches agree at the reference distance, so speed is continuous.
+     *
+     * Per *dp*, not per pixel: iOS's constants are radians per point, and a point
+     * and a dp are the same physical size, so the globe moves the same distance
+     * under the same finger travel on both platforms regardless of screen
+     * density. This replaced a projection-derived speed that was correct in its
+     * own terms and about 2.4x slower than iOS at the default zoom — matching the
+     * feel matters more here than deriving it, since the constants below are what
+     * was actually tuned against a finger.
+     *
+     * iOS `GlobeView.Coordinator.panRotationSpeed`.
+     */
+    val degreesPerDp: Double
+        get() = Math.toDegrees(panRadiansPerDp(distance).toDouble())
 
     /**
      * Turns a tap into a point on the globe, or null if it missed.
@@ -157,6 +180,20 @@ data class GlobeCamera(
     }
 
     companion object {
+        /**
+         * A camera at a place, with every limit already applied: latitude
+         * clamped short of the pole, longitude wrapped into ±180°, distance
+         * clamped to the zoom range.
+         *
+         * The one way to build a camera from raw numbers, so a drag, a pinch and
+         * a flight cannot each end up with their own idea of the limits.
+         */
+        fun at(latitude: Double, longitude: Double, distance: Float) = GlobeCamera(
+            latitude = latitude.coerceIn(-MAX_LATITUDE, MAX_LATITUDE),
+            longitude = wrapLongitude(longitude),
+            distance = distance.coerceIn(MIN_DISTANCE, MAX_DISTANCE),
+        )
+
         /** Keeps the horizon test from popping meshes right at the limb. */
         const val HORIZON_MARGIN = 0.02
 
@@ -176,11 +213,43 @@ data class GlobeCamera(
         const val MAX_DISTANCE = 10.0f
 
         /**
-         * Latitude stops just short of the poles: at exactly ±90° the camera's
-         * forward vector is parallel to the world up vector and the view basis
-         * collapses.
+         * How far from the equator a drag can tilt the camera. iOS's
+         * `±.pi / 2.5` clamp on `currentRotationX`, in degrees.
+         *
+         * Well short of the poles, which the view basis needs anyway: at exactly
+         * ±90° the camera's forward vector is parallel to the world up vector and
+         * the basis collapses.
          */
-        private const val MAX_LATITUDE = 89.0
+        const val MAX_LATITUDE = 72.0
+
+        /**
+         * How fast an untouched globe turns. iOS runs `rotateBy(y: 2π)` over 60
+         * seconds, which is this.
+         */
+        const val AUTO_ROTATION_DEGREES_PER_SECOND = 360.0 / 60.0
+
+        /** Radians of rotation per point of finger travel at [DEFAULT_DISTANCE]. */
+        private const val BASE_PAN_SPEED = 0.005f
+
+        /**
+         * Fraction of finger speed the globe tracks at when fully zoomed in.
+         * Below 1.0 the surface deliberately lags the finger, trading 1:1 feel
+         * for finer control when a single country fills the screen.
+         */
+        private const val FULL_ZOOM_TRACKING_FACTOR = 0.6f
+
+        private fun panRadiansPerDp(distance: Float): Float {
+            val distanceRatio = distance / DEFAULT_DISTANCE
+            val quadratic = BASE_PAN_SPEED * distanceRatio * distanceRatio
+            if (distance >= DEFAULT_DISTANCE) return quadratic
+
+            val zoomOutProgress = (distance - MIN_DISTANCE) / (DEFAULT_DISTANCE - MIN_DISTANCE)
+            val tracking = FULL_ZOOM_TRACKING_FACTOR +
+                (1f - FULL_ZOOM_TRACKING_FACTOR) * zoomOutProgress.coerceIn(0f, 1f)
+            // The unclamped ratio, as iOS uses here: `screenScale` clamps for the
+            // outline widths, and the cap wants the raw perspective factor.
+            return minOf(quadratic, BASE_PAN_SPEED * tracking * rawScreenScale(distance))
+        }
 
         private fun wrapLongitude(value: Double): Double {
             var wrapped = (value + 180.0) % 360.0

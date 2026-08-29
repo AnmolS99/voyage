@@ -238,6 +238,9 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
             if (name == null) state.clearSelection() else state.selectCountry(name, hitTester.center(name))
         },
         modifier = Modifier.fillMaxSize(),
+        focus = state.selectedCountryCenter,
+        autoRotating = state.isAutoRotating,
+        onInteraction = state::stopAutoRotation,
         dotStyles = dotStyles,
         capital = selectedName
             ?.let { name -> data.countries.firstOrNull { it.name == name } }

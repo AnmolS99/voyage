@@ -63,11 +63,23 @@ class VoyageState(
 
     /**
      * Geographic center of [selectedCountry]. The map does not recenter on
-     * selection (neither does iOS's), but the globe flies its camera here — it is
-     * computed at selection time on both platforms, so the value is kept ready
-     * for Phase 7 rather than recomputed there.
+     * selection (neither does iOS's); the globe flies its camera here, as iOS's
+     * `centerOnSelectedCountry` does. Computed at selection time on both
+     * platforms rather than in the renderer.
      */
     var selectedCountryCenter: LatLon? by mutableStateOf(null)
+        private set
+
+    /**
+     * Whether the globe is turning on its own, as it does before it is touched.
+     *
+     * Not persisted, exactly as on iOS: `GlobeState.isAutoRotating` starts true
+     * on every launch, and the globe greets you spinning whatever you left it
+     * doing. Selection is what turns it off and deselection what turns it back
+     * on — see [selectCountry] and [clearSelection] — plus the globe itself,
+     * which reports a drag or a zoom through [stopAutoRotation].
+     */
+    var isAutoRotating by mutableStateOf(true)
         private set
 
     val visitedCountries: Set<String> get() = persisted.visitedCountries
@@ -114,11 +126,25 @@ class VoyageState(
     fun selectCountry(name: String, center: LatLon? = null) {
         selectedCountry = name
         selectedCountryCenter = center
+        // A country you are looking at should not drift off the screen.
+        isAutoRotating = false
     }
 
     fun clearSelection() {
         selectedCountry = null
         selectedCountryCenter = null
+        isAutoRotating = true
+    }
+
+    /**
+     * Called by the globe when a drag or a zoom starts.
+     *
+     * Interaction ends the idle spin for good; only deselecting brings it back,
+     * which is iOS's rule — its gesture handlers set `isAutoRotating = false` and
+     * nothing but `deselectCountry`/`resetSelection` sets it true again.
+     */
+    fun stopAutoRotation() {
+        isAutoRotating = false
     }
 
     // ---- Visited ----
