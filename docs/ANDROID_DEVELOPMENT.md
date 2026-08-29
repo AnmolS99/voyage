@@ -125,10 +125,10 @@ android/
   `ui/map/WorldMap.kt` is a port of `ios/voyage/MapView.swift` — change one,
   change the other.
 
-  One deliberate exception is live: `ui/globe/GlobeCountryFill.kt` shows
-  selection with brighter fills, because the globe has no borders to move the
-  status onto until Phase 7.5. It is documented to collapse into
-  `CountryStyle.kt` when the outlines land.
+  There is no exception left: `ui/globe/GlobeCountryFill.kt` used to state its
+  own rules while the globe had no borders to move a status onto, and since the
+  outlines landed it delegates to `CountryStyle.kt` and only translates a
+  shading into Filament uniforms.
 - **Shared data is referenced in place** from `shared/data/` via
   `assets.srcDirs` in `app/build.gradle.kts` — never copied into `android/`.
   The app reads it through `AssetManager`; JVM unit tests read the same files

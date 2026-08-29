@@ -1,649 +1,181 @@
 # Voyage — Android Port Plan
 
-A step-by-step plan for building and releasing the Android version of Voyage.
-Work through the phases **in order, one at a time**. Each phase has a
-*Definition of done* — don't start the next phase until it's met. Check off
-items (`- [x]`) as they land, and keep this document updated when decisions
-change.
+Phases run in order; a phase is done when its *Definition of done* is met.
+Completed phases are recorded in **Status** and not re-described here — the code
+and [ANDROID_DEVELOPMENT.md](ANDROID_DEVELOPMENT.md) are where they live. What
+follows the status table is what is still open, plus the decisions behind the
+port.
 
 ## Guiding principles
 
-- **Native feel on every platform.** Where iOS uses SwiftUI/SceneKit idioms,
-  Android uses Jetpack Compose + Material 3 idioms (dynamic color, predictive
-  back, edge-to-edge, Material motion). Feature parity, not pixel parity.
-- **One source of truth for data.** `world.geojson`, `country_highlights.json`,
-  and the Supabase schema are shared assets consumed by both apps — never
+- **Native feel.** Compose + Material 3 idioms where iOS uses SwiftUI/SceneKit
+  ones. Feature parity, not pixel parity.
+- **One source of truth for data.** `shared/` is consumed by both apps, never
   forked per platform.
-- **The iOS app stays green.** Every phase that touches shared files or repo
-  layout must end with the iOS build, tests, and TestFlight workflow passing.
-- **Same rendering invariants.** The globe/map consistency rule from the iOS
-  app applies on Android too: globe view and map view must look and behave
-  identically except for projection.
+- **The iOS app stays green.** Anything touching `shared/` or repo layout ends
+  with iOS building and its tests passing, in the same PR.
+- **Same rendering invariants.** Globe and map must look and behave identically
+  except for projection — on Android that is four renderers' worth of rules, so
+  they live outside the renderers (`CountryStyle`, `MapProjection`,
+  `CapitalMarker`, `GlobeCamera`).
+
+## Status
+
+| Phase | Status |
+| --- | --- |
+| 0 — Environment & tooling | ✅ 2026-08-06. CLI-only toolchain; the Android Studio first-run check was dropped 2026-08-29 |
+| 1 — Repo restructure | ✅ 2026-08-06. `ios/` + `android/` + `shared/`, history preserved |
+| 2 — Scaffold + Play account | ✅ Scaffold 2026-08-06; account verified 2026-08-11; Play Console app entry created 2026-08-29, so `com.anmol.voyage` is now permanent on both stores |
+| 3 — Data layer | ✅ 2026-08-07. Parser + both platforms asserting `shared/fixtures/expected_countries.json`. One gap: the DoD says "mid-range device" and the timings are emulator ones — see [Open work](#open-work) |
+| 4 — 2D map | ✅ 2026-08-07. Projection, hit-testing, gestures, microstate dots |
+| 5 — State & persistence | 🟡 Built, tests green 2026-08-08; two on-device checks never run — see [Open work](#open-work) |
+| 6 — Country details | 🟡 Built, tests green 2026-08-09; the loop has never been driven on a device — see [Open work](#open-work) |
+| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29). 7.1, 7.2b, 7.3–7.7, 7.9, 7.10 done; 7.2, 7.8, 7.11 open |
+| 8 — Achievements | Not started |
+| 9 — Daily Challenge | Not started |
+| 10 — Settings & polish | Not started |
+| 11 — Release & launch | Not started |
+| 12 — Ongoing routines | Not started |
+
+Suite as of 2026-08-29: 178 JVM unit tests across 22 classes, green; gesture
+tests are instrumented and run locally, not in CI.
 
 ## Decision log
 
-| Date | Decision | Rationale |
+| Date | Decision | Why |
 | --- | --- | --- |
-| 2026-08-06 | Fully native Kotlin + Jetpack Compose (no KMP) | Zero risk to the finished iOS app; best native UX. Cost: logic ported by hand, guarded by shared test fixtures. |
-| 2026-08-06 | Monorepo: `ios/` + `android/` + `shared/` | Single source of truth for geo data, Supabase schema, docs, and this plan. |
-| 2026-08-06 | 3D globe rendered with **Filament** (google/filament) | Google's production 3D engine; closest Android analogue to SceneKit. Custom geometry built from the same triangulation pipeline as iOS. |
-| 2026-08-06 | Persistence: Jetpack DataStore + Android Auto Backup, local-only | No account system for v1. Cross-platform sync (Supabase auth) is explicitly out of scope; revisit after launch. |
-| 2026-08-06 | Google Play account: **not yet registered** | New personal accounts must run a closed test with ≥12 testers for 14 days before production access — register early (Phase 2). |
-| 2026-08-06 | minSdk 26, targetSdk = latest stable | Filament and Compose are comfortable at 26; dynamic color (31+) degrades gracefully. |
-| 2026-08-06 | applicationId `com.anmol.voyage` | Matches the iOS bundle id; one identity across stores. Permanent once the Play entry is created. |
-| 2026-08-06 | AGP 9 built-in Kotlin instead of the `kotlin-android` plugin | AGP 9 defaults to `android.builtInKotlin=true` and the old plugin is incompatible with the new DSL; opting out is removed in AGP 10. |
-| 2026-08-06 | Five bottom-bar destinations, not four | The iOS app has five tabs (a Challenges tab was added after this plan was written); the shell mirrors what iOS actually ships. |
-| 2026-08-07 | GeoJSON parsed with kotlinx.serialization streaming, not a hand-written reader | `decodeFromStream` hits ~25 ms on a warm JVM for the 3.2 MB file; only the geometry `coordinates` union needs a custom serializer. A hand-rolled tokenizer would be faster in theory and a permanent maintenance cost in practice. |
-| 2026-08-07 | The shared fixture is generated by a third implementation (Python), not exported from iOS | Three independent implementations agreeing makes the fixture a drift guard; an export of one platform's output would only ever restate that platform. The iOS suite passing against it is the gate. |
-| 2026-08-07 | Map appearance rules live outside the renderer (`MapProjection`, `CountryStyles`, `CapitalMarker`) | CLAUDE.md makes "globe and map look identical" a rule, and on iOS it is upheld by remembering to edit two files. Extracting the rules lets the Filament globe *reuse* them in Phase 7 instead of restating them, and makes them unit-testable without a renderer. |
-| 2026-08-07 | Gestures verified by instrumented tests, not JVM tests | A pinch cannot be injected from a JVM test, and `Path`/`Canvas` are Android framework classes that are stubbed there. Rather than add Robolectric, geometry and gestures are covered by four Compose UI tests on the emulator; the pure logic (projection, colors, hit-testing) stays on the JVM where CI can run it. |
-| 2026-08-07 | Interim selection card on the map instead of waiting for Phase 6 | Visited/wishlist colors were otherwise unreachable from the UI, so the phase could not be verified. It is ~60 lines and is replaced by the real details bottom sheet in Phase 6. |
-| 2026-08-08 | App state stays Compose state, not `StateFlow` as this plan first said | Every reader is a composable, so a flow would only be collected back into Compose state at each call site. The persisted half is a single snapshot object either way, which is what a non-Compose consumer would observe if one ever appears. |
-| 2026-08-08 | One versioned JSON document in a typed DataStore, not `datastore-preferences` | A write is then always a complete, self-consistent snapshot, and the document can carry a schema version — the thing the deferred cross-platform sync will need. Loose preference keys can version only themselves. |
-| 2026-08-08 | Appearance is `ThemeMode` (system/light/dark), not iOS's `isDarkMode` boolean | "Follow the system" is the Android default users expect; `Light`/`Dark` still map onto the iOS boolean exactly. |
-| 2026-08-08 | View mode is persisted, unlike iOS, which starts every launch on the globe | Android can kill and restore the process at any moment; coming back to a different view than the one left behind reads as a bug. Defaults to the map until the Filament globe exists (Phase 7). |
-| 2026-08-09 | The selection stays an inline card; the bottom sheet is the *details* view | A modal sheet on every tap would scrim the map and hide the one thing selecting a country changes there — the thicker status-colored border and the capital star. So the summary stays non-blocking and "Details" opens the sheet: the same split iOS makes between its bottom panel and `CountryExploreView`. |
-| 2026-08-09 | Search is a sheet behind an icon, not a docked Material 3 `SearchBar` | A docked search bar owns the top of the screen permanently, and the map is the screen. The icon keeps the map full-bleed and leaves the top-left corner free for the globe/map toggle in Phase 7. |
-| 2026-08-09 | Country search folds accents and ranks prefix matches first | iOS filters with `localizedCaseInsensitiveContains` and leaves the result alphabetical, which buries `India` under `Indonesia`-style matches and leaves `Türkiye` unreachable from an English keyboard. Result ordering in a search field is not one of the cross-platform invariants (those are the parser's and the renderers'), so Android ranks by prefix and normalizes with NFD. |
-| 2026-08-11 | The globe draws into a `TextureView`, not a `SurfaceView` | A SurfaceView is its own window layer: it punches a hole through the app window and shows **black** until its first buffer is composited. Compose navigation builds a new one on every return to Home, and the tab-switch animation plays over that black hole — so the transition read as a long black flash even though Filament's first frame was 78 ms after composition. A TextureView draws inside the view hierarchy, so it is simply transparent until then and the theme background shows through. Measured cost: none — still 60 fps on the emulator. |
-| 2026-08-11 | Globe geometry and compiled material bytes are cached for the life of the process | Both are pure functions of files that never change at runtime, and both were being rebuilt every time Home was re-entered — ~300 ms of triangulation plus ~190 ms of shader compilation on each return from another tab or from the flat map. Caching them takes a return to the globe from ~500 ms and a spinner to ~64 ms and no spinner. |
-| 2026-08-11 | Globe materials compiled on device with `filamat`, not `matc` at build time | Filament's `matc` is a native binary from its release tarball; wiring it into Gradle would put a platform-specific toolchain in the build and on the CI runner. `filamat-android` compiles the two globe materials at startup for a few ms instead. Revisit if the material count grows. |
-| 2026-08-11 | Globe materials are **unlit**, and post-processing is disabled | CLAUDE.md requires globe and map to show identical country colors. A lit model runs every palette value through the lighting equation, and Filament's post-processing pass applies tone mapping — both shift #34BE82 to something else. Unlit + no post-processing puts palette values on screen unchanged, and the two settings are coupled: no post-processing also disables the linear→sRGB encode, so colors are passed through without conversion. |
-| 2026-08-11 | The far hemisphere is hidden by the opaque ocean sphere, not by backface culling | iOS winds fills single-sided and lets the GPU cull the far side. Here the ocean sphere (r=1.0) already occludes the fills behind it (r=1.003) through the depth buffer, so culling is off and winding never has to be reasoned about. Revisit in 7.10 if fill rate shows up in a profile. |
-| 2026-08-11 | The globe camera is owned by the render loop, not held as Compose state | A drag changes the camera up to once per frame; as Compose state that would recompose the globe and re-resolve all 181 country colors per frame, for a value only the renderer reads. |
-| 2026-08-11 | Globe geometry (7.3) emits plain float/int buffers (`CountryMesh`/`OutlineMesh`), not Filament objects | Keeps the triangulation pipeline unit-testable on the JVM — where CI (which has no emulator) actually runs it — and Filament merely wraps the buffers in 7.4/7.5. The same reasoning that keeps map appearance rules outside the map renderer. |
+| 2026-08-06 | Fully native Kotlin + Compose, no KMP | Zero risk to the shipped iOS app; logic ported by hand and guarded by shared fixtures. |
+| 2026-08-06 | Monorepo: `ios/` + `android/` + `shared/` | One source of truth for geo data, Supabase schema and docs. |
+| 2026-08-06 | Globe rendered with **Filament** | Google's production engine; the closest Android analogue to SceneKit. |
+| 2026-08-06 | Persistence: DataStore + Auto Backup, local only | No account system for v1; cross-platform sync is explicitly deferred. |
+| 2026-08-06 | minSdk 26, targetSdk latest stable | Filament and Compose are comfortable at 26; dynamic color (31+) degrades gracefully. |
+| 2026-08-06 | applicationId `com.anmol.voyage` | Matches the iOS bundle id. Permanent since the Play entry was created. |
+| 2026-08-06 | AGP built-in Kotlin, not the `kotlin-android` plugin | AGP 9 defaults to it and the old plugin is incompatible with the new DSL. |
+| 2026-08-06 | Five bottom-bar destinations, not four | iOS gained a Challenges tab after this plan was written. |
+| 2026-08-07 | GeoJSON via kotlinx.serialization streaming, not a hand-written reader | ~25 ms on a warm JVM for 3.2 MB; a hand-rolled tokenizer is faster in theory and a permanent maintenance cost in practice. |
+| 2026-08-07 | The shared fixture is generated by a third implementation (Python) | Three independent implementations agreeing makes it a drift guard; an export of one platform's output would only restate that platform. |
+| 2026-08-07 | Map appearance rules live outside the renderer | Lets the Filament globe *reuse* them instead of restating them, and makes them unit-testable without a renderer. |
+| 2026-08-07 | Gestures covered by instrumented tests, not Robolectric | A pinch cannot be injected from a JVM test; pure logic stays on the JVM where CI runs. |
+| 2026-08-08 | App state is Compose state, not `StateFlow` | Every reader is a composable; a flow would only be collected back into Compose state at each call site. |
+| 2026-08-08 | One versioned JSON document in a typed DataStore | Every write is a complete, self-consistent snapshot that can carry a schema version — what the deferred sync will need. |
+| 2026-08-08 | Appearance is `ThemeMode` (system/light/dark), not iOS's boolean | "Follow the system" is the Android default users expect. |
+| 2026-08-08 | View mode is persisted, unlike iOS | Android can kill the process at any moment; returning to a different view than the one left behind reads as a bug. |
+| 2026-08-09 | Selection is an inline card; the bottom sheet is the *details* view | A modal sheet would scrim the map and hide the one thing selection changes there. |
+| 2026-08-09 | Search is a sheet behind an icon, not a docked `SearchBar` | A docked bar permanently owns the top of the screen, and the map *is* the screen. |
+| 2026-08-09 | Search folds accents and ranks prefix matches first | iOS's `contains` filter buries `India` under `Indonesia` and leaves `Türkiye` unreachable from an English keyboard. Result ordering is not one of the cross-platform invariants. |
+| 2026-08-11 | The globe draws into a `TextureView`, not a `SurfaceView` | A SurfaceView shows **black** until its first buffer composites, and Compose navigation builds a new one on every return to Home — the tab transition read as a long black flash. No measured cost. |
+| 2026-08-11 | Globe geometry and compiled material bytes cached for the life of the process | Both are pure functions of files that never change at runtime; rebuilding them per navigation cost ~500 ms and a spinner on every return. |
+| 2026-08-11 | Materials compiled on device with `filamat`, not `matc` at build time | `matc` is a platform-specific native binary that would land in the build and on CI runners; compiling two materials at startup costs a few ms. |
+| 2026-08-11 | Globe materials are **unlit**, and post-processing is disabled | Both settings shift palette colors — a lighting equation and tone mapping. Coupled: no post-processing also disables the linear→sRGB encode. |
+| 2026-08-11 | The far hemisphere is hidden by the opaque ocean sphere, not by backface culling | The ocean (r=1.0) already occludes fills (r=1.003) through the depth buffer, so winding never has to be reasoned about. |
+| 2026-08-11 | The globe camera is owned by the render loop, not Compose state | A drag changes it once per frame; as state that would recompose and re-resolve 181 country colors per frame, for a value only the renderer reads. |
+| 2026-08-11 | Globe geometry emits plain float/int buffers, not Filament objects | Keeps triangulation unit-testable on the JVM, where CI actually runs. |
+| 2026-08-26 | Capital stars and microstate dots are meshes in the scene, not a Compose overlay | An overlay draws from its own copy of the camera and visibly trailed the globe by a frame while dragging. Markers are sized in `dp` on both renderers, so globe and map agree — iOS's do not. |
+| 2026-08-29 | Android toolchain is CLI-only; the Phase 0 Studio first-run check is dropped | Every build, test, install and measurement goes through the Gradle wrapper and `adb`, and CI runs the same commands. |
 
----
+## Pinned invariants
 
-## Phase 0 — Environment & tooling
+Both are asserted by tests, on both platforms where they apply:
 
-Get an Android development environment working on this machine.
+- **The outline sector grid is 12 lon × 4 lat** (`GlobeGeometryWorldTest`,
+  `OutlineSectorCullingTests`). The latitude split is load-bearing: iOS's
+  original longitude-only wedges run pole to pole, so they never fall behind the
+  horizon and cull nothing. Measured over `world.geojson`, 200 viewpoints at the
+  default camera distance:
 
-- [x] Install Android Studio (latest stable) + Android SDK, platform tools
-      — Studio via Homebrew cask; SDK at `~/Library/Android/sdk` (platform-tools,
-      platforms 35+36, build-tools 35.0.0, emulator, cmdline-tools)
-- [x] Install JDK 17 (Homebrew `openjdk@17`; `JAVA_HOME`/`ANDROID_HOME` exported
-      in `~/.zshrc`) — note: Studio's embedded JBR is JDK 25, fine for the IDE
-      but CLI builds use 17
-- [x] Create an emulator (Pixel-class device, latest stable API image) and
-      verify it boots — AVD `voyage_pixel9_api36` (Pixel 9, Android 16)
-- [x] Verify `gradle`/`adb` work from the terminal (needed for CI-parity local builds)
-- [x] Open Android Studio once (first-run wizard; it should auto-detect the SDK)
-      and confirm a project syncs — the one step that needs the GUI
+  | sectors | border vertices culled |
+  | --- | --- |
+  | 12 × 1 (the original iOS bucketing) | 0.0% |
+  | 12 × 4 | 39.3% (worst viewpoint 16.1%) |
+  | 16 × 8 | 46.9%, for 102 draw calls instead of 45 |
 
-**Definition of done:** a "Hello World" Compose template project builds and
-runs on the emulator from both Android Studio and the command line.
-*Verified 2026-08-06 via CLI: Compose app built with the Gradle wrapper
-(AGP 8.8 / Kotlin 2.1 / Gradle 8.10.2 on JDK 17), installed and rendered on
-the Android 16 emulator. Android Studio first-run check remains.*
+  iOS was re-measured against real `SCNNode.boundingSphere` values and landed
+  within 0.3pp, so it buckets 12 × 4 too. Changing the grid is a two-platform
+  change.
+- **Every country is drawn by exactly one path** (`GlobeGeometryWorldTest`).
+  `isPointCountry` and `pointCoordinate != null` are not each other's negation:
+  a *polygon* feature flagged `renderAs: "point"` would fall through both
+  filters and be invisible on both renderers with nothing failing.
 
----
+## Open work
 
-## Phase 1 — Repo restructure
+### Carried over from completed phases
 
-Reshape the repo into a multi-platform monorepo **without changing any iOS
-behavior**. This is the riskiest "boring" phase — do it as one focused PR.
+- **Phase 3 — re-measure parsing on hardware.** The DoD says "mid-range device"
+  and was signed off on Pixel 9 emulator numbers (~20 ms to read the asset,
+  ~205–225 ms warm parse against iOS's ~240 ms; ~620–740 ms first parse, which
+  is ART warmup, not parser cost). Run `adb logcat -s CountryDataCache:I` on a
+  cold launch on the A55.
+- **Phase 5 — the device half of the DoD.** Built in a container with no SDK, so
+  these have never run:
 
-Target layout:
+  ```bash
+  adb shell am kill com.anmol.voyage        # relaunch: the visited mark must survive
+  adb shell bmgr backupnow com.anmol.voyage
+  adb uninstall com.anmol.voyage && ./gradlew installDebug   # marks must come back
+  ```
 
-```
-voyage/
-├── ios/                      # everything currently at root that is iOS-specific
-│   ├── voyage/               # app sources (minus shared data files)
-│   ├── voyage.xcodeproj/
-│   ├── voyageTests/
-│   ├── GlobeCacheGenerator/
-│   ├── fastlane/
-│   ├── Gemfile
-│   └── Secrets.xcconfig(.example)
-├── android/                  # created in Phase 2
-├── shared/
-│   ├── data/                 # world.geojson, country_highlights.json
-│   ├── supabase/             # schemas, migrations, seed.sql
-│   └── fixtures/             # cross-platform test fixtures (Phase 3)
-├── scripts/                  # update_geometry.sh, merge_geometry.py (now write to shared/data)
-├── docs/                     # this plan + platform docs
-├── .github/workflows/
-├── CLAUDE.md
-└── README.md
-```
+- **Phase 6 — drive the loop once on the device.** Search → pick a country →
+  Details → tick a city → back out and reopen: the tick is still there and the
+  map shows the country in its status color.
+- **Gesture tests have only ever run on the emulator.** `./gradlew
+  connectedDebugAndroidTest` against the A55 (it uninstalls the app afterwards).
 
-Steps:
+### Phase 7 — 3D globe, remaining sub-steps
 
-- [x] Move iOS project into `ios/` (use `git mv` to preserve history)
-- [x] Move `world.geojson` and `country_highlights.json` to `shared/data/`;
-      update the Xcode project to reference them there (file references carry
-      `name` + a `../../shared/data/…` path; verified all three data files land
-      in the built `.app` bundle unchanged)
-- [x] Move `supabase/` to `shared/supabase/`; update any config paths
-- [x] Update `scripts/update_geometry.sh` + `merge_geometry.py` paths
-- [x] Update `.github/workflows/testflight.yml` working-directory/paths
-      (job-level `defaults.run.working-directory: ios`; artifact path is
-      repo-relative since `upload-artifact` ignores that default)
-- [x] Update GlobeCacheGenerator input/output paths
-- [x] Update CLAUDE.md: new layout, plus a pointer to this plan
-- [x] Full verification: iOS build ✅, full test suite ✅ (TEST SUCCEEDED),
-      GlobeCacheGenerator build ✅
-- [x] Final gate: a TestFlight workflow run from this branch
-      (`gh workflow run testflight.yml --ref refactor/monorepo-restructure`)
-      — proves CI works with the new layout before merge
-
-**Definition of done:** repo has the new layout, `git log --follow` still
-tracks moved files, and a TestFlight build produced from the restructured repo
-installs and runs correctly.
-
----
-
-## Phase 2 — Android project scaffold + Play account registration
-
-Two independent tracks; start the Play account clock ticking now because of
-Google's 14-day closed-testing requirement.
-
-**Play account (admin track — owner-only, can run in parallel with everything
-below):** these steps need payment details and identity documents, so they have
-to be done by hand at <https://play.google.com/console>.
-
-- [x] Register Google Play developer account ($25 one-time) + identity
-      verification — registered 2026-08-07; **identity verification cleared
-      2026-08-11**, the console is fully unlocked
-- [ ] Create the app entry in Play Console — applicationId **`com.anmol.voyage`**
-      (matches the iOS bundle id; already baked into the scaffold and permanent
-      once the Play entry exists). Unblocked 2026-08-11 — an owner-only manual
-      step in the console
-- [ ] Note the requirement: ≥12 testers opted in for 14 consecutive days of
-      closed testing before production access can be requested — recruit
-      testers early
-
-**Project scaffold:**
-
-- [x] Create `android/` Gradle project: Kotlin DSL, version catalog
-      (`libs.versions.toml`), single `app` module, Compose + Material 3
-      — AGP 9.3.1 with **built-in Kotlin** (no `org.jetbrains.kotlin.android`
-      plugin; only the Compose compiler plugin is applied), Kotlin 2.3.21,
-      Gradle wrapper 9.6.1, Compose BOM 2026.06.01, sources in `src/main/kotlin`
-- [x] applicationId `com.anmol.voyage`; minSdk 26, compileSdk/targetSdk 37
-      (API 37.1 — current AndroidX requires compiling against 37+)
-- [x] App theme: `ui/theme/ColorPalette.kt` (`VoyagePalette`) ports every
-      `AppColors` value 1:1, light + dark Material 3 schemes built from it
-      (tonal container roles derived from the palette, not added to it),
-      dynamic color opt-in for chrome only — never for country-status colors.
-      `ColorPaletteTest` pins the values documented in CLAUDE.md
-- [x] `NavigationBar` shell with placeholder screens — **five** destinations,
-      not four: the iOS `TabView` gained a Challenges tab, so the bar mirrors
-      Home / Daily / Challenges / Achievements / Settings. The Achievements item
-      is labelled "Medals" in the bar (five full-length labels don't fit) while
-      the screen keeps the iOS wording
-- [x] Edge-to-edge + predictive back enabled from day one
-      (`enableEdgeToEdge()`, `enableOnBackInvokedCallback`); back from any tab
-      returns to Home, verified on the emulator
-- [x] Adaptive app icon + Splash Screen API — icon layers (foreground +
-      monochrome themed layer) generated from the iOS artwork by
-      `android/tools/generate_launcher_icons.py`; `core-splashscreen` handover
-      theme, `Theme.Voyage.Starting` → `Theme.Voyage`
-- [x] `docs/ANDROID_DEVELOPMENT.md`: how to build, run, test; referenced from
-      CLAUDE.md
-- [x] CI: `.github/workflows/android-ci.yml` — `assembleDebug`,
-      `testDebugUnitTest`, `lintDebug` on every PR touching `android/` or
-      `shared/`, with the debug APK uploaded as an artifact
-
-**Definition of done:** the empty five-tab app runs on the emulator looking
-like a real Material 3 app, and CI builds it on every PR.
-*Scaffold verified 2026-08-06 on the Android 16 emulator: `assembleDebug` ✅,
-7 unit tests ✅, `lintDebug` clean of errors ✅, five-tab shell renders in light
-and dark with the Voyage palette, launcher icon matches the iOS artwork. Play
-account registration is the remaining item.*
-
----
-
-## Phase 3 — Data layer (models, GeoJSON parsing, shared fixtures)
-
-Port the data foundation before any rendering. This is where hand-ported
-logic gets locked down by tests.
-
-- [x] Port models: `Country`, `Capital`, highlights (cities/attractions),
-      continent groupings (`ContinentData`) — `data/GeoJsonCountry.kt`,
-      `data/CountryHighlights.kt`, `data/Continent.kt`. Rings are flat
-      `DoubleArray`s (`[lon0, lat0, …]`), the layout the Compose map and
-      Filament both want; `ContinentIndex` takes the country list as a
-      constructor argument instead of iOS's global + `resetCache()`
-- [x] Port `GeoJSONParser` → Kotlin (kotlinx.serialization streaming or a
-      tuned JSON reader — 170k coordinates must parse fast) —
-      `Json.decodeFromStream` with a custom geometry serializer, since
-      `coordinates` nests to a different depth per geometry type and can only
-      be decoded once `type` has been read
-- [x] `CountryDataCache` equivalent: parse once, prewarm off the main thread
-      at app start (mirror `voyageApp.init` behavior) — `by lazy` (synchronized)
-      + a prewarm thread from `VoyageApplication.onCreate`
-- [x] Bundle `shared/data/*.{geojson,json}` via Gradle `assets.srcDirs`
-      pointing at `../shared/data` — **no file copies** (verified: both files
-      land in the debug APK's `assets/`)
-- [x] Create `shared/fixtures/expected_countries.json`: canonical country
-      count, ISO codes, names, capitals, per-country ring/point counts —
-      206 countries, 170,955 coordinates, plus per-country bounding boxes so
-      coordinate drift is caught, not just ring counts. Generated by
-      `scripts/generate_country_fixture.py`, which restates the parsing rules
-      independently and is validated by the iOS suite passing against it;
-      `update_geometry.sh` regenerates it and CI checks it is current
-- [x] Android unit tests assert parser output matches the fixture exactly —
-      `GeoJsonParserTest` (8), plus `CountryDataCacheTest` (4) and
-      `ContinentIndexTest` (7); 26 unit tests green
-- [x] iOS: add a test asserting the same fixture (guards both ports against
-      drift whenever `world.geojson` is regenerated) — `GeoJSONFixtureTests`,
-      full iOS suite 107/107 green
-
-**Definition of done:** both platforms' test suites validate against the same
-fixture file; parsing on a mid-range device completes in the same ballpark as
-iOS prewarm.
-*Met 2026-08-07. Pixel 9 emulator, debug build: ~20 ms to read the asset, then
-~205–225 ms per parse once the process is warm, against ~240 ms for the iOS
-parser on the simulator. The first parse in a fresh process costs ~620–740 ms —
-ART warmup rather than parser cost (dex AOT does not move it; the same code
-parses in ~25 ms on a warm host JVM), and it runs off the main thread. A
-baseline profile is queued in Phase 11 to close that cold-start gap.*
-
----
-
-## Phase 4 — 2D map view + tap-to-country
-
-Build the flat map **before** the 3D globe: it exercises parsing, colors,
-projection, and hit-testing with far less rendering risk, and it ships a
-usable "explore" surface early.
-
-- [x] Compose `Canvas` map with the same projection as iOS `MapView` —
-      `ui/map/MapProjection.kt` owns the 2:1 equirectangular projection, the
-      letterboxing, the inverse used by taps, and the pan clamp, so the renderer
-      and the hit tester cannot disagree about where a country is
-- [x] Country fills using palette colors; borders; capital stars —
-      `ui/map/CountryStyle.kt` (fill/border/width rules), `ui/map/CapitalMarker.kt`
-      (the five-pointed star, shared with the globe in Phase 7),
-      `ui/map/MapPaths.kt` (even-odd fill paths so enclaves stay transparent)
-- [x] Port `CountryHitTester` (point-in-polygon) for tap-to-select —
-      `data/CountryHitTester.kt` + `data/Polygons.kt`, exposed as
-      `CountryDataCache.hitTester`; takes its countries as an argument rather
-      than reaching for a singleton
-- [x] Pan/zoom gestures (`transformable`), selection highlight logic with the
-      same priority rules as iOS (visited/wishlist over selection) —
-      `detectTransformGestures` rather than `transformable`, because it reports the
-      centroid that anchored zoom needs; status outranks selection by moving to the
-      border, exactly as `MapView.swift` does
-- [x] Microstate dots for the 25 Point-feature countries — drawn in screen space
-      at a fixed radius, so they stay visible and tappable at any zoom
-
-**Definition of done:** tapping any country/microstate on the map selects it
-correctly (spot-check the same tricky cases iOS handles: enclaves, islands,
-microstates), colors match the palette table exactly.
-*Met 2026-08-07 on the Pixel 9 emulator. Taps verified by driving the running app
-and reading back the selection: Lesotho inside South Africa's hole (10px from a
-tap that correctly gives South Africa), the Singapore and Vatican City dots,
-Vatican City vs. neighbouring Italy, Iceland, Norway, Algeria, Brazil, Australia.
-Fill colors sampled from screenshots are exact palette values — visited #F2F013,
-wishlist #9966CC, land #34BE82, ocean #31739B — and a both-lists country shows the
-yellow→purple gradient running bottom-left to top-right. 24 new JVM tests (hit
-tester, projection, color rules) and 4 instrumented gesture tests, all green.*
-
-*Deferred from this phase:* the iOS map draws an Earth texture under the country
-fills and switches unvisited fills to transparent when one is present. The
-textures live in the iOS asset catalog and are needed by the globe, so they come
-across in Phase 7 (7.2) together with the transparent-fill branch. Until then
-Android draws the ocean and land colors directly, which is the same path iOS takes
-when a texture fails to load.
-
----
-
-## Phase 5 — App state & persistence
-
-- [x] `VoyageState` (analogue of `GlobeState`): visited/wishlist countries,
-      checked cities/attractions, view mode, style prefs, dark mode — single
-      source of truth, activity-scoped `ViewModel`. Everything that outlives the
-      process is held in one `PersistedState` snapshot; the selection deliberately
-      is not, matching iOS. Exposed as Compose state rather than `StateFlow`
-      (see the decision log); appearance is a three-way `ThemeMode`
-      (system/light/dark) rather than iOS's boolean
-- [x] Persist via Jetpack DataStore; keep the on-disk model versioned so a
-      future sync feature can migrate it — typed (JSON) DataStore, not
-      `datastore-preferences`: `state/PersistedState.kt` is one versioned
-      document with `migrated()` applied on every read (it carries the iOS
-      renamed-country table), `state/StateStore.kt` is the seam the JVM tests
-      substitute, `state/DataStoreStateStore.kt` is the real one
-- [x] Enable Auto Backup (`android:allowBackup` + backup rules) so state
-      survives device migration — `res/xml/backup_rules.xml` (API ≤ 30) and
-      `res/xml/data_extraction_rules.xml` (31+, cloud backup and device
-      transfer), both scoped to `files/datastore/`
-- [x] Unit tests: mutation methods (`addVisit`, `toggleCheckedCity`, …) mirror
-      iOS semantics — `VoyageStateTest` (14), `PersistedStateTest` (9),
-      `PreferencesTest` (2); 77 unit tests total
-
-**Definition of done:** visited/wishlist selections survive process death and
-reinstall-with-backup; state mutations have test coverage.
-*Test coverage met 2026-08-08 (Android CI green: `assembleDebug`,
-`testDebugUnitTest`, `lintDebug`). The device half of the DoD is still
-outstanding — this phase was built in a Linux container with no Android SDK or
-emulator, so the two on-device checks below have not been run:*
-
-```bash
-cd android && ./gradlew installDebug
-adb shell am start -n com.anmol.voyage/.MainActivity
-# 1. Process death: mark a country visited, then
-adb shell am kill com.anmol.voyage      # relaunch — the mark must still be there
-# 2. Backup/restore:
-adb shell bmgr backupnow com.anmol.voyage
-adb uninstall com.anmol.voyage && ./gradlew installDebug   # marks must come back
-```
-
-## Phase 6 — Country details & highlights UI
-
-- [x] Country detail as a Material 3 bottom sheet (Android-native analogue of
-      the iOS panel): flag, name, capital, visited/wishlist toggle —
-      `ui/country/CountryDetailSheet.kt`. The *selection* stays an inline card
-      (`ui/country/CountrySelectionCard.kt`, replacing Phase 4's interim one)
-      because a modal sheet would scrim the map and hide the selection styling;
-      see the decision log. `data/CountryDetail.kt` joins country + highlights
-      off the main thread, `data/FlagEmoji.kt` ports `flagEmojiFromCode`
-- [x] Highlights checklists (top cities & attractions) wired to `VoyageState` —
-      checkable `ListItem` rows writing through `toggleCheckedCity` /
-      `toggleCheckedAttraction`, per-section progress counts, and the capital
-      badged in the cities list as iOS does
-- [x] Search field to find/select a country by name —
-      `ui/country/CountrySearchSheet.kt` over `data/CountrySearchIndex.kt`,
-      which folds accents (`Türkiye` from an English keyboard) and ranks prefix
-      matches first; rows carry visited/wishlist toggles, as the iOS
-      `CountryListView` rows do
-
-**Definition of done:** full loop works — find country → open details → mark
-visited → map recolors → highlight checkmarks persist.
-*Logic and data verified 2026-08-09: 19 new JVM tests (flag emoji, search
-matching and ordering, detail assembly against the real `shared/data` files,
-including a check that capitals are spelled identically in both files), 96 unit
-tests total. Like Phase 5 this was built in a Linux container with no Android
-SDK, so the loop itself has not been driven on a device — run it once an
-emulator is at hand:*
-
-```bash
-cd android && ./gradlew installDebug
-adb shell am start -n com.anmol.voyage/.MainActivity
-# search → pick a country → Details → tick a city → back out and reopen:
-# the tick is still there, and the map shows the country in its status color
-```
-
----
-
-## Phase 7 — 3D globe (Filament)
-
-The flagship feature and the largest phase. Sub-steps are ordered so there's
-something on screen early.
-
-- [x] 7.1 Filament integration: `SurfaceView`/`AndroidUiDispatcher` render
-      loop hosted in Compose, camera + lighting rig — done 2026-08-11.
-      `ui/globe/GlobeSurface.kt` hosts a `SurfaceView` via `UiHelper` and drives
-      it from a `Choreographer` callback (one thread, vsync-paced for free);
-      `ui/globe/GlobeRenderer.kt` owns the engine/scene/view/camera. No lighting
-      rig: the materials are unlit (see the decision log), which is also why an
-      IBL is not needed to avoid a black globe. `globe/GlobeCamera.kt` is the
-      orbit camera — 45° vertical FOV and the 1.1…10.0 distance clamps from iOS
-- [x] 7.2b Capital star + microstate dots on the globe — done 2026-08-26.
-      Not a numbered sub-step originally; it sat between 7.2 and the phase's
-      definition of done ("colors, selection, borders, **stars**") and was the
-      last consistency gap once 7.5/7.7 landed. Both markers are **meshes in
-      the Filament scene** (`globe/MarkerMesh.kt`), as they are on iOS.
-
-      **They were briefly a Compose overlay above the surface, and that was
-      wrong.** An overlay is a second producer drawing from its own copy of the
-      camera, and it is not synchronized with the Filament buffer underneath —
-      during a drag the dots visibly trailed the borders by a frame. Nothing
-      about the overlay could fix that reliably; it depended on `TextureView`
-      invalidation ordering. In the scene the markers move under the same camera
-      matrix as everything else and cannot drift by construction. The camera
-      went back to being plain (non-snapshot) state, since nothing outside the
-      render loop reads it again.
-
-      Markers are still measured in **screen** terms, unlike iOS's — a dot is
-      5 dp on the globe exactly as on the map, so a microstate stays visible and
-      tappable at every zoom. That works the same way the 7.5 outlines do: every
-      vertex sits at the marker's center with its offset direction stored per
-      vertex, and `GlobeMaterials.outline` — reused unchanged — pushes it out by
-      a uniform, so a zoom writes one float instead of rebuilding the mesh.
-      `GlobeCamera.pixelSizeInWorld` converts the dp size to that uniform. iOS
-      instead gives its globe markers a fixed *world* size and compensates the
-      star with `capitalMarkerScale`'s `sqrt(zoomScale)`, so its globe and map
-      disagree about marker size; Android's agree.
-
-      What the two renderers still share is the shape (`CapitalMarker`, which
-      regains the `yUp` flag iOS has, since the globe's tangent plane is +Y-up
-      and a `Canvas` is +Y-down), the colors (`CountryStyles`) and the sizes
-      (`MarkerSizes`). The drawing itself cannot be shared and should not be.
-
-      Also pinned: `GlobeGeometryWorldTest` now asserts every country is drawn
-      by exactly one path. `isPointCountry` and `pointCoordinate != null` are
-      not each other's negation — a *polygon* feature flagged
-      `renderAs: "point"` would fall through both filters and be invisible on
-      both renderers with nothing failing. The shipped data has no such feature;
-      the test is there so a regenerated one that does fails loudly.
-      `MarkerMeshTest` pins the tangent frame's handedness, which is not
-      cosmetic: `normal × up` instead of `up × normal` passes every size and
-      flatness check and draws the star upside down
-- [~] 7.2 Ocean sphere + atmosphere glow (layer order per iOS: ocean →
-      fills → outlines → atmosphere). Bring the three Earth textures over from the
-      iOS asset catalog here, into `shared/` — the flat map wants the same ones and
-      is waiting on them (see Phase 4), along with the transparent-fill branch that
-      lets a texture show through unvisited countries
-      — **ocean sphere done** 2026-08-11 (`globe/UvSphere.kt`, generated because
-      Filament has no primitive shapes; it also does the hidden-surface work, see
-      the decision log). Atmosphere glow and the Earth textures are still open.
-      The capital star and microstate dots this sub-step also implied are
-      done — see 7.2b above
-- [x] 7.3 Port `Earcut` (mapbox/earcut port — consider porting the Swift port
-      1:1 so both stay diffable) + `PolygonTriangulator`: triangulation in
-      lon/lat space, ~2.5° subdivision, `latLonToSphere()`, hole support
-      — done 2026-08-11, taken first (out of sub-step order) because it is
-      the one sub-step that is pure logic and thus verifiable without an
-      emulator. `globe/Earcut.kt` is the 1:1 diffable port (minus Swift's ARC
-      cycle bookkeeping, which the JVM's GC makes unnecessary);
-      `globe/PolygonTriangulator.kt` covers fills with holes + area
-      validation, the grid-fill fallback, curvature subdivision, the miter
-      outline strips, sectored outlines, and the 7.6 tap-ray helpers
-      (`raySphereSurfaceDirection`, `sphereToLatLon`). Emits
-      `CountryMesh`/`OutlineMesh` buffers (see the decision log). 29 JVM
-      tests, including triangulating all 181 polygon countries from
-      `shared/data/world.geojson` with zero grid fallbacks — the same
-      "no fallbacks needed" invariant iOS documents
-- [x] 7.4 Country fill meshes as Filament renderables; single-sided winding
-      (backface culling handles the far hemisphere, as on iOS) — done
-      2026-08-11, with the far hemisphere hidden by the ocean sphere instead of
-      by culling (see the decision log). One renderable and one material
-      instance per country, so recoloring a country never rebuilds geometry.
-      Colors verified by sampling the rendered frame: ocean #2F86A6, land
-      #34BE82, visited+selected #FFFF4C — exact palette values
-- [x] 7.5 Border outlines: constant screen-width via a Filament material that
-      widens centerline vertices along a miter attribute (same trick as the
-      iOS shader modifier); merged sector meshes; measure before porting the
-      per-frame horizon culling — Filament may not need it — done 2026-08-25.
-      `GlobeMaterials.outline` is the widening material: the miter direction
-      rides in a `CUSTOM0` vertex attribute and `materialVertex` pushes each
-      vertex along it by a `thickness` uniform, so zoom writes one float instead
-      of rebuilding 335,776 vertices. `GlobeCamera.screenScale` is the iOS
-      `screenScale` formula and clamp, now unit-tested rather than living inside
-      a renderer.
-
-      **The culling measurement changed the design.** Ported verbatim, iOS's
-      longitude-only sectors cull *nothing*: a longitude wedge runs pole to
-      pole, so its bounding sphere is nearly the globe's own and
-      `dot(center, cameraDir) + radius < 1/distance` can never fire. Measured
-      over `world.geojson`, averaged across 200 viewpoints at the default
-      camera distance:
-
-      | sectors | border vertices culled |
-      | --- | --- |
-      | 12 × 1 (the iOS bucketing) | 0.0% |
-      | 12 × 4 | 39.3% (worst viewpoint 16.1%) |
-      | 16 × 8 | 46.9%, for 102 draw calls instead of 45 |
-
-      So Android buckets rings into a lon × lat grid, 12 × 4, giving 45
-      non-empty sectors. `GlobeGeometryWorldTest` pins both the win and the
-      safety property (a culled sector never contains a vertex the camera can
-      see), and asserts the longitude-only degenerate case so the grid cannot be
-      quietly simplified away.
-
-      **Ported back to iOS**, which was indeed shedding ~0%. Re-measured there
-      against the real `SCNNode.boundingSphere` values rather than assumed —
-      SceneKit's bounding sphere turns out to be the same box-derived one, and
-      the numbers land within 0.3pp of Android's: 0.0% at 12 × 1, 39.2% (worst
-      14.1%) at 12 × 4, 46.6% at 16 × 8. iOS now buckets 12 × 4 too, with
-      `ios/voyageTests/OutlineSectorCullingTests.swift` mirroring the two tests
-      here, so the grid is pinned on both platforms. `globe.scn` bakes the
-      sector nodes and was regenerated for it.
-- [x] 7.6 Gestures: rotate (trackball feel matching iOS), pinch zoom with the
-      same distance clamps, tap → analytic ray/sphere intersection → lat/lon →
-      `CountryHitTester` (reuse the fix from iOS PR #50) — done 2026-08-11 via
-      `detectTransformGestures`, the same detector the flat map uses. Rotation
-      speed scales with camera distance so the surface tracks the finger at any
-      zoom. Taps go through `GlobeCamera.latLonAt` → the 7.3
-      `raySphereSurfaceDirection`, never a mesh hit-test. Mouse wheel and
-      trackpad zoom too — a mouse is a real pointer on Chromebooks, DeX and
-      tablets, and on the emulator pinch otherwise needs a modifier key.
-      Verified by `GlobeGestureTest` on the emulator, since neither a pinch nor
-      a scroll can be injected from a JVM test
-- [x] 7.7 Selected-country overlay outline (thicker, status-colored, raised)
-      — done 2026-08-25. The selected country's rings are outlined on their own
-      (`SelectedOutlineCache`, off the main thread and memoized per country) at
-      `SELECTED_OUTLINE_RADIUS`; baking the 0.001 lift into the radius replaces
-      the second `outlineRaise` uniform iOS needs because it reuses one cached
-      geometry for both. The overlay draws at 5/3 the shared thickness, in the
-      country's status color — including the visited+wishlist diagonal, which
-      the outline material gets from a gradient parameter carried in the miter
-      attribute's unused `w`.
-
-      **This is what let the globe stop breaking the consistency rule.** With
-      no borders, the globe could not follow iOS's "status outranks selection"
-      rule — moving a status onto the border would have made selection invisible
-      — so `GlobeCountryFills` stated a second set of rules and brightened the
-      fill instead. It now delegates to `CountryStyles`, the same object the
-      flat map uses, and only translates a shading into Filament uniforms.
-      `GlobeCountryFillTest` asserts the shared conclusions
-- [~] 7.8 Startup: build geometry on a background thread; if cold-start is
-      worse than iOS, add a binary geometry cache generated at build time
-      (Android's `globe.scn` equivalent)
-      — **background build + process-wide cache done** 2026-08-11.
-      `globe/GlobeGeometryCache.kt` triangulates once and is prewarmed from
-      `VoyageApplication`, queued behind the parser on the countries lazy;
-      compiled material bytes are cached the same way. Measured on the Pixel 9
-      emulator: first show 247 ms from renderer creation to first frame,
-      returning to the globe 64 ms. The build-time binary cache — the real
-      `globe.scn` equivalent, which would also cut the first ~440 ms — is still
-      open
-- [x] 7.9 Globe ⇄ map toggle wired to `VoyageState.viewMode` — done
-      2026-08-11. `MapScreen` became `ui/home/HomeScreen.kt`, which owns the
-      search button, selection card and both sheets once and swaps only the
-      surface in the middle. A fresh install now opens on the globe, as iOS
-      does
-- [x] 7.10 Performance pass on a mid-range device (e.g. Pixel a-series):
-      60fps rotation, no jank on selection — **done 2026-08-29 on a Samsung
-      Galaxy A55 5G** (SM-A556B, Exynos 1480 / Xclipse 530, Android 16, 1080x2340
-      at 120 Hz, Vulkan pipeline). Method as on the emulator: `dumpsys gfxinfo`
-      reset, then sixteen drag gestures across the globe; taps measured
-      separately as ten country selections.
-
-      | Run | Frames | Janky | 50th / 90th / 99th | Missed vsync |
-      | --- | --- | --- | --- | --- |
-      | Drag, debug | 949 | 0.1% | 11 / 12 / 13 ms | 0 |
-      | Drag, release (R8) | 947 | 0.0% | 10 / 11 / 12 ms | 0 |
-      | Drag, release, ~30 s sustained | 3674 | 0.2% | 10 / 12 / 13 ms | 0 |
-      | Selection taps, debug | 837 | 3.7% | 11 / 13 / 29 ms | 8 |
-      | Selection taps, release | 880 | 0.7% | 10 / 12 / 14 ms | 0 |
-
-      Three things worth keeping:
-
-      - The target is met with room to spare, and the device gives a *higher*
-        bar than the emulator did: the A55's panel runs at 120 Hz and the globe
-        holds it — 947 frames in 7.7 s of continuous dragging, 121 fps
-        sustained, against an 8.3 ms budget rather than 16.7 ms. GPU time is
-        6 ms at the 50th percentile and 7 ms at the 90th, so roughly 1.3 ms of
-        headroom per frame at the 90th percentile; that is the number to watch
-        if anything is ever added to the globe's draw.
-      - **Selection jank is a debug-build artifact.** The 29 ms 99th percentile
-        and eight missed vsyncs above come from the debug build; the same tap
-        sequence on the release build never misses a vsync. Perf claims for
-        this phase should be made against release builds — the emulator
-        baseline this replaces was debug, which makes it doubly pessimistic.
-      - No thermal throttling: ~30 s of unbroken dragging moved the AP sensor
-        36.1 °C → 37.2 °C with every `mStatus=0`, and the percentiles at the
-        end of the run match the start.
-
-      Two things verified on the same device while it was attached, because
-      they can only be checked on real hardware: the release build renders
-      correctly with R8 + resource shrinking on (a Phase 11 pre-check — nothing
-      in the geometry pipeline, Filament materials or kotlinx.serialization is
-      stripped), and the palette survives a real display pipeline. Screen
-      captures come back tagged Display P3; converted to sRGB, the globe's land
-      is exactly `#34BE82` and its ocean `#2E86A6` (palette `#2F86A6`, off by
-      one from 8-bit rounding), and the flat map's land is the same `#34BE82`
-      to the bit. The map's ocean is `#32729B` rather than the globe's — which
-      is `VoyagePalette.oceanMap`, the deliberately darker flat-map ocean iOS
-      also has (`AppColors.oceanMap`), not a drift
-- [ ] 7.11 Keep one Filament engine alive for the Activity instead of building
-      a new one per navigation. Today `GlobeSurfaceHost` is created and
-      destroyed by the composable that draws the globe, so every trip to
-      another tab — or to the flat map — tears the engine down and rebuilds it,
-      re-uploading all 181 meshes on the way back. It is the last piece of
-      globe state still scoped to a composition rather than to the process or
-      the Activity; `GlobeGeometryCache` and the compiled material bytes were
-      moved out for the same reason.
-
-      **Measured before starting, so the win is not oversold** (Pixel 9
-      emulator, debug build, tap → first globe frame ≈ 214 ms):
-
-      | | |
-      | --- | --- |
-      | Compose navigation → `GlobeBody` composes | ~95 ms |
-      | Engine + materials rebuilt | ~20–24 ms |
-      | 181 meshes re-uploaded | ~12 ms |
-      | `TextureView` attached → surface available | ~26 ms |
-      | Teardown on the way out (main thread) | ~11–17 ms |
-
-      So this removes roughly 35–45 ms of the ~200 ms directly. The rest is
-      Compose navigation and surface creation, and **a detached view loses its
-      surface either way** — keeping the engine avoids rebuilding the renderer,
-      not re-creating the surface. If the goal is a genuinely instant switch,
-      this likely has to be paired with keeping the globe's view attached
-      (hoisted above the `NavHost` and hidden rather than removed).
-
-      Two traps for whoever picks this up: a `ViewModel` is the obvious place
-      to put it and the wrong one, because holding a `View` or a `Context`
-      there leaks the Activity across a configuration change — scope it to the
-      composition above the `NavHost` instead, so it survives navigation but
-      dies with the Activity. And `Engine.destroy()` must still run exactly
-      once, on the thread that owns it.
+- **7.2 Earth textures + atmosphere glow.** The ocean sphere is done. Still open:
+  bringing the three Earth textures over from the iOS asset catalog into
+  `shared/`, the atmosphere glow, and the transparent-fill branch that lets a
+  texture show through unvisited countries. The flat map wants the same textures
+  and is waiting on this too.
+- **7.8 Build-time geometry cache.** The in-memory half is done (triangulate
+  once, prewarm off the main thread): first show 247 ms, returning to the globe
+  64 ms on the emulator. A binary cache generated at build time — Android's
+  `globe.scn` equivalent — would cut the remaining first ~440 ms.
+- **7.11 One Filament engine per Activity.** Today `GlobeSurfaceHost` dies with
+  the composable, so every trip to another tab rebuilds the engine and re-uploads
+  181 meshes. Measured on the emulator: ~35–45 ms of a ~200 ms switch, the rest
+  being Compose navigation and surface creation — **a detached view loses its
+  surface either way**, so a genuinely instant switch also needs the globe's view
+  hoisted above the `NavHost` and hidden rather than removed. Two traps: a
+  `ViewModel` is the obvious home and the wrong one (holding a `View` or
+  `Context` there leaks the Activity across configuration changes — scope it to
+  the composition above the `NavHost`), and `Engine.destroy()` must still run
+  exactly once, on the thread that owns it.
 
 **Definition of done:** globe and map pass a side-by-side consistency check
-against each other *and* against iOS (colors, selection, borders, stars);
-smooth on mid-range hardware.
-
----
+against each other *and* against iOS (colors, selection, borders, stars); smooth
+on mid-range hardware. *The hardware half is met — 2026-08-29 on a Galaxy A55
+(120 Hz panel, release build): 121 fps sustained while dragging, no missed
+vsyncs, ~1.3 ms of GPU headroom at the 90th percentile, no thermal throttling.
+Selection jank appears only in debug builds, so perf claims here belong against
+release builds. Palette values survive the real display pipeline: converted back
+from the Display P3 capture, globe and map land are both exactly `#34BE82`.*
 
 ## Phase 8 — Achievements
 
 - [ ] Port achievement definitions + progress model (`Achievement.swift`,
       including Continental Drifter and Wonders logic)
 - [ ] Achievements screen: Material card grid with progress indicators
-- [ ] Medal detail: full-screen overlay with Y-axis-spinnable medal — use
-      Compose `graphicsLayer` rotation (no 3D engine needed; avoids the
-      SceneKit cap-texture class of problems entirely)
-- [ ] Unit tests: same completion thresholds as iOS (port the
-      `AchievementCompletionTests` cases)
+- [ ] Medal detail: full-screen overlay with a Y-axis-spinnable medal via
+      `graphicsLayer` rotation — no 3D engine, which avoids the SceneKit
+      cap-texture class of problems entirely
+- [ ] Unit tests porting the `AchievementCompletionTests` cases
 
 **Definition of done:** achievement progress matches iOS for identical
-visited-country sets (add fixture-driven test).
+visited-country sets (fixture-driven).
 
 ## Phase 9 — Daily Challenge
 
-- [ ] Supabase client via **supabase-kt**; credentials injected from a
-      gitignored `secrets.properties` → `BuildConfig` (Android's
-      `Secrets.xcconfig` analogue; document in ANDROID_DEVELOPMENT.md)
-- [ ] Port models (`DailyChallenge`, `QuestionType`, `ChallengeResult`) and
+- [ ] Supabase client via **supabase-kt**; credentials from a gitignored
+      `secrets.properties` → `BuildConfig` (the `Secrets.xcconfig` analogue —
+      document it in ANDROID_DEVELOPMENT.md)
+- [ ] Port `DailyChallenge`, `QuestionType`, `ChallengeResult` and
       `ChallengeStore` (DataStore, keyed by date, mid-game persistence)
-- [ ] Calendar month grid: available/locked/solved/failed states per iOS flow
-- [ ] Play screen: clue (silhouette via Compose Canvas / flag / country name),
-      guess field with filtered dropdown, 5 attempts, green/red validation
-- [ ] Result view + confetti; ISO-code → country resolution via the data cache
+- [ ] Calendar month grid: available/locked/solved/failed states
+- [ ] Play screen: clue (silhouette via Canvas / flag / name), guess field with
+      filtered dropdown, 5 attempts, green/red validation
+- [ ] Result view + confetti; ISO code → country via the data cache
 - [ ] Same case-insensitive validation rules as iOS
 
 **Definition of done:** the same date shows the same challenge with the same
@@ -651,79 +183,56 @@ accepted answers on both platforms; mid-game state survives leaving the app.
 
 ## Phase 10 — Settings & native polish
 
-- [ ] Settings screen: view style prefs, dark mode (system/light/dark) — the
-      state and its persistence already exist (`VoyageState.themeMode`,
-      `globeStyle`, `mapStyle` from Phase 5); this is the UI that sets them
-- [ ] Haptics on key interactions (selection, achievement unlock)
-- [ ] Polish pass: Material motion for transitions, themed (monochrome) icon,
-      correct behavior across font scales and window sizes (foldables get the
-      map/globe full-bleed)
-- [ ] Accessibility pass: TalkBack labels for countries/controls, contrast
+- [ ] Settings screen — the state already exists (`themeMode`, `globeStyle`,
+      `mapStyle` from Phase 5); this is the UI that sets it
+- [ ] Haptics on selection and achievement unlock
+- [ ] Material motion for transitions, themed (monochrome) icon, correct
+      behavior across font scales and window sizes (foldables get the globe and
+      map full-bleed)
+- [ ] Accessibility: TalkBack labels for countries and controls, contrast
 
-**Definition of done:** app feels indistinguishable from a first-party
-Material app in navigation, motion, and system integration.
-
----
+**Definition of done:** indistinguishable from a first-party Material app in
+navigation, motion, and system integration.
 
 ## Phase 11 — Release infrastructure & launch
 
 Mirror the iOS rule: **releases are built by CI, never locally.**
 
-- [ ] Generate upload keystore; store keystore + passwords in GitHub Actions
-      secrets (document recovery: Play App Signing holds the real signing key)
+The ≥12-tester / 14-day closed test is the schedule's long pole. It needs a
+signed build on a closed track but **not** Phases 8–10, so the plumbing below can
+be built in parallel with them and testers recruited early.
+
+- [ ] Upload keystore → GitHub Actions secrets (Play App Signing holds the real
+      signing key; document recovery)
 - [ ] Enroll in Play App Signing
-- [ ] Play Console service-account JSON for API publishing → GitHub secret
-- [ ] Fastlane android lane (`supply`) or `gradle-play-publisher` — prefer
-      Fastlane for symmetry with iOS
-- [ ] `.github/workflows/android-release.yml`: build signed AAB → upload to
-      **internal testing** track, dispatched like the TestFlight workflow
-      (`gh workflow run android-release.yml --ref <branch>`)
+- [ ] Play Console service-account JSON → GitHub secret
+- [ ] Fastlane `supply` lane, for symmetry with iOS
+- [ ] `.github/workflows/android-release.yml`: signed AAB → internal testing,
+      dispatched like the TestFlight workflow
 - [ ] Baseline profile (`androidx.baselineprofile`) covering startup + GeoJSON
-      parsing — measured in Phase 3 as the fix for a ~3× cold-parse premium
-      that is ART warmup rather than parser cost
-- [ ] Version strategy: `versionName` mirrors iOS MARKETING_VERSION (still
-      user-controlled — never bump without being asked); `versionCode`
-      auto-increments in CI
-- [ ] Store listing: description, screenshots (phone + tablet), feature
-      graphic, privacy policy URL, Data Safety form (Supabase network calls,
-      no PII collected), content rating questionnaire
-- [ ] Internal testing → fix round → promote to **closed testing**
-- [ ] Run the mandatory closed test: ≥12 testers, 14 consecutive days
+      parsing — the fix for the ~3× cold-parse premium measured in Phase 3
+- [ ] Versioning: `versionName` mirrors iOS MARKETING_VERSION (user-controlled —
+      never bump unasked); `versionCode` auto-increments in CI
+- [ ] Store listing: description, screenshots (phone + tablet), feature graphic,
+      privacy policy URL, Data Safety form (Supabase calls, no PII), content
+      rating
+- [ ] Internal testing → fix round → closed testing
+- [ ] Run the closed test: ≥12 testers, 14 consecutive days
 - [ ] Apply for production access → staged rollout (10% → 50% → 100%)
 
 **Definition of done:** production release live on Google Play, built and
 published entirely through CI.
 
+*Already checked ahead of this phase (2026-08-29, A55): the release build with R8
+and resource shrinking on renders correctly — nothing in the geometry pipeline,
+Filament materials or kotlinx.serialization is stripped.*
+
 ## Phase 12 — Ongoing routines (post-launch)
 
-- [ ] Update CLAUDE.md with the cross-platform feature workflow:
-      *any change to `shared/` must build + pass tests on both platforms in
-      the same PR; feature changes ship to both platforms unless explicitly
-      platform-specific*
-- [ ] Cross-platform consistency tests (Phase 3 fixtures) run in both CI
-      workflows on `shared/` changes
-- [ ] Release cadence: cut iOS + Android releases together from the same tag
-- [ ] Backlog (explicitly deferred): cross-platform account sync via Supabase
-      auth; widgets; Wear OS complication — evaluate after launch
-
----
-
-## Progress tracking
-
-Update the table as phases complete.
-
-| Phase | Status |
-| --- | --- |
-| 0 — Environment & tooling | ✅ Done (2026-08-06) |
-| 1 — Repo restructure | ✅ Done (2026-08-06) |
-| 2 — Scaffold + Play account | 🟡 Scaffold done (2026-08-06); Play account verified 2026-08-11 — creating the app entry (manual, owner-only) is the remaining item |
-| 3 — Data layer | ✅ Done (2026-08-07) |
-| 4 — 2D map | ✅ Done (2026-08-07) |
-| 5 — State & persistence | 🟡 Built + CI green (2026-08-08); on-device process-death and backup checks still to run |
-| 6 — Country details | 🟡 Built + tests green (2026-08-09); on-device pass of the find → details → mark → persist loop still to run |
-| 7 — 3D globe | 🟡 Globe renders and is interactive on the emulator (2026-08-11): 7.1, 7.3, 7.4, 7.6, 7.9 done, 7.2 partial (ocean only), 7.8 partial (in-memory cache; build-time cache still open). Remaining: border outlines (7.5), selected overlay (7.7), Earth textures + atmosphere (7.2), perf pass (7.10), engine lifetime across navigation (7.11) |
-| 8 — Achievements | Not started |
-| 9 — Daily Challenge | Not started |
-| 10 — Settings & polish | Not started |
-| 11 — Release & launch | Not started |
-| 12 — Ongoing routines | Not started |
+- [ ] Add the cross-platform workflow to CLAUDE.md: any change to `shared/`
+      builds and passes tests on both platforms in the same PR; features ship to
+      both unless explicitly platform-specific
+- [ ] Run the fixture consistency tests in both CI workflows on `shared/` changes
+- [ ] Cut iOS and Android releases together from the same tag
+- [ ] Deferred backlog: cross-platform account sync via Supabase auth; widgets;
+      Wear OS complication

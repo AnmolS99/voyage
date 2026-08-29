@@ -64,7 +64,8 @@ the miter direction is a `CUSTOM0` vertex attribute widened by
 scaling is `GlobeCamera.screenScale` rather than renderer code. The outline
 sector grid is a decision Android made first and iOS adopted — see
 [Globe Rendering](#globe-rendering) — so changing it is a two-platform change;
-Phase 7.5 in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) has the measurement.
+"Pinned invariants" in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) has the
+measurement.
 
 ## Git Conventions
 
