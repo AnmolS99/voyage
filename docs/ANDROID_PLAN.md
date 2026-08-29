@@ -380,6 +380,47 @@ something on screen early.
       rig: the materials are unlit (see the decision log), which is also why an
       IBL is not needed to avoid a black globe. `globe/GlobeCamera.kt` is the
       orbit camera — 45° vertical FOV and the 1.1…10.0 distance clamps from iOS
+- [x] 7.2b Capital star + microstate dots on the globe — done 2026-08-26.
+      Not a numbered sub-step originally; it sat between 7.2 and the phase's
+      definition of done ("colors, selection, borders, **stars**") and was the
+      last consistency gap once 7.5/7.7 landed. Both markers are **meshes in
+      the Filament scene** (`globe/MarkerMesh.kt`), as they are on iOS.
+
+      **They were briefly a Compose overlay above the surface, and that was
+      wrong.** An overlay is a second producer drawing from its own copy of the
+      camera, and it is not synchronized with the Filament buffer underneath —
+      during a drag the dots visibly trailed the borders by a frame. Nothing
+      about the overlay could fix that reliably; it depended on `TextureView`
+      invalidation ordering. In the scene the markers move under the same camera
+      matrix as everything else and cannot drift by construction. The camera
+      went back to being plain (non-snapshot) state, since nothing outside the
+      render loop reads it again.
+
+      Markers are still measured in **screen** terms, unlike iOS's — a dot is
+      5 dp on the globe exactly as on the map, so a microstate stays visible and
+      tappable at every zoom. That works the same way the 7.5 outlines do: every
+      vertex sits at the marker's center with its offset direction stored per
+      vertex, and `GlobeMaterials.outline` — reused unchanged — pushes it out by
+      a uniform, so a zoom writes one float instead of rebuilding the mesh.
+      `GlobeCamera.pixelSizeInWorld` converts the dp size to that uniform. iOS
+      instead gives its globe markers a fixed *world* size and compensates the
+      star with `capitalMarkerScale`'s `sqrt(zoomScale)`, so its globe and map
+      disagree about marker size; Android's agree.
+
+      What the two renderers still share is the shape (`CapitalMarker`, which
+      regains the `yUp` flag iOS has, since the globe's tangent plane is +Y-up
+      and a `Canvas` is +Y-down), the colors (`CountryStyles`) and the sizes
+      (`MarkerSizes`). The drawing itself cannot be shared and should not be.
+
+      Also pinned: `GlobeGeometryWorldTest` now asserts every country is drawn
+      by exactly one path. `isPointCountry` and `pointCoordinate != null` are
+      not each other's negation — a *polygon* feature flagged
+      `renderAs: "point"` would fall through both filters and be invisible on
+      both renderers with nothing failing. The shipped data has no such feature;
+      the test is there so a regenerated one that does fails loudly.
+      `MarkerMeshTest` pins the tangent frame's handedness, which is not
+      cosmetic: `normal × up` instead of `up × normal` passes every size and
+      flatness check and draws the star upside down
 - [~] 7.2 Ocean sphere + atmosphere glow (layer order per iOS: ocean →
       fills → outlines → atmosphere). Bring the three Earth textures over from the
       iOS asset catalog here, into `shared/` — the flat map wants the same ones and
@@ -387,7 +428,9 @@ something on screen early.
       lets a texture show through unvisited countries
       — **ocean sphere done** 2026-08-11 (`globe/UvSphere.kt`, generated because
       Filament has no primitive shapes; it also does the hidden-surface work, see
-      the decision log). Atmosphere glow and the Earth textures are still open
+      the decision log). Atmosphere glow and the Earth textures are still open.
+      The capital star and microstate dots this sub-step also implied are
+      done — see 7.2b above
 - [x] 7.3 Port `Earcut` (mapbox/earcut port — consider porting the Swift port
       1:1 so both stay diffable) + `PolygonTriangulator`: triangulation in
       lon/lat space, ~2.5° subdivision, `latLonToSphere()`, hole support

@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import kotlin.math.tan
 import org.junit.Test
 
 /**
@@ -110,6 +111,40 @@ class GlobeCameraTest {
         val near = GlobeCamera(distance = 2f).degreesPerPixel(2400f)
         assertTrue("zoomed in should rotate less per pixel", near < far)
         assertEquals(0.0, GlobeCamera().degreesPerPixel(0f), 0.0)
+    }
+
+    // Marker sizing — what keeps dots and the capital star a constant size
+
+    @Test
+    fun `a pixel covers less of the world as the camera moves in`() {
+        val height = 2400f
+        val far = GlobeCamera(distance = 7f).pixelSizeInWorld(height)
+        val near = GlobeCamera(distance = 2f).pixelSizeInWorld(height)
+        assertTrue("zoomed in, a pixel should cover less world", near < far)
+
+        // Linear in the distance to the globe's near face, which is what makes a
+        // marker of a fixed pixel size cover the same pixels at every zoom.
+        assertEquals((2f - 1f) / (7f - 1f), near / far, 1e-5f)
+    }
+
+    @Test
+    fun `a marker of a fixed pixel size spans the same pixels at any zoom`() {
+        val height = 2400f
+        val radiusPx = 13f
+        // Half the viewport, in world units, at the globe's near face.
+        fun halfViewport(distance: Float) =
+            tan(Math.toRadians(GlobeCamera.FOV_DEGREES / 2.0)).toFloat() * (distance - 1f)
+
+        for (distance in listOf(1.5f, 4f, 9f)) {
+            val world = radiusPx * GlobeCamera(distance = distance).pixelSizeInWorld(height)
+            val pixels = world / halfViewport(distance) * (height / 2f)
+            assertEquals("marker changed size at distance $distance", radiusPx, pixels, 1e-2f)
+        }
+    }
+
+    @Test
+    fun `pixel size reports nothing for a viewport with no height`() {
+        assertEquals(0f, GlobeCamera().pixelSizeInWorld(0f), 0f)
     }
 
     // Screen scale — what keeps border outlines a constant width on screen

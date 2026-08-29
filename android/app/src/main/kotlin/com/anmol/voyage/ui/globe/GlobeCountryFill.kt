@@ -47,7 +47,8 @@ internal object GlobeCountryFills {
     fun selectedBorderOf(isVisited: Boolean, isWishlist: Boolean): GlobeFill =
         CountryStyles.of(isVisited, isWishlist, isSelected = true).border.toGlobeFill()
 
-    private fun MapShading.toGlobeFill(): GlobeFill = when (this) {
+    /** Translates any shading `CountryStyles` produces into the material's uniforms. */
+    fun MapShading.toGlobeFill(): GlobeFill = when (this) {
         is MapShading.Solid -> GlobeFill(colorA = color, colorB = color, gradient = false)
         // Yellow at the bottom-left of the country's box, purple at the top
         // right — the direction the outline's gradient parameter runs in, and

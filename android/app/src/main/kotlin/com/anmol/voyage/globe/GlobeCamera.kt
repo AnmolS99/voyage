@@ -97,6 +97,24 @@ data class GlobeCamera(
     }
 
     /**
+     * How many world units one screen pixel covers, at the globe's near face.
+     *
+     * This is what lets the markers be measured in `dp` like the flat map's:
+     * multiply a pixel size by this and the resulting world size covers those
+     * pixels at the current zoom. Distinct from [screenScale], which is a
+     * *ratio* against the default distance and is what the borders use — a
+     * border has a base world width to scale, a marker has a target pixel size
+     * to hit.
+     */
+    fun pixelSizeInWorld(viewportHeight: Float): Float {
+        if (viewportHeight <= 0f) return 0f
+        // The globe's near face is (distance - radius) in front of the camera,
+        // where the viewport spans 2·tan(fov/2)·depth world units.
+        val depth = (distance - GLOBE_RADIUS).coerceAtLeast(0f)
+        return (2.0 * tan(FOV_RADIANS / 2.0) * depth / viewportHeight).toFloat()
+    }
+
+    /**
      * How much to shrink world-sized decorations so they keep a constant size on
      * screen — today the border outlines, and whatever else the globe grows.
      *
@@ -143,7 +161,7 @@ data class GlobeCamera(
         const val HORIZON_MARGIN = 0.02
 
         /** The globe's own radius; the ocean sphere is built at exactly this. */
-        private const val GLOBE_RADIUS = 1.0f
+        const val GLOBE_RADIUS = 1.0f
 
         private fun rawScreenScale(distance: Float): Float =
             (distance - GLOBE_RADIUS) / (DEFAULT_DISTANCE - GLOBE_RADIUS)

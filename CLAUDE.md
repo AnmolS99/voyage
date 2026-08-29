@@ -42,6 +42,14 @@ two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,
 `ui/map/CapitalMarker.kt`, `ui/map/MapProjection.kt`, and
 `globe/GlobeCamera.kt` rather than in the renderer, and
 `ui/home/HomeScreen.kt` holds the chrome both Android renderers share.
+Capital stars and microstate dots are **meshes in the globe's scene**
+(`globe/MarkerMesh.kt`), not a Compose overlay above it: an overlay draws from
+its own copy of the camera and visibly trails the globe by a frame while
+dragging. The two renderers share the shape (`ui/map/CapitalMarker.kt`), the
+colors (`ui/map/CountryStyle.kt`) and the sizes (`ui/map/CountryMarkers.kt`) —
+but not the drawing. Marker size is specified in `dp` on both, so a dot is the
+same size on the globe as on the map; the globe gets there with the same
+displace-by-a-uniform trick the border outlines use.
 
 The Android globe renders with **Filament** (`ui/globe/`), not SceneKit. Two
 constraints there are easy to break: its materials are **unlit** and its view
