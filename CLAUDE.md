@@ -77,8 +77,9 @@ time so they keep a constant on-screen width — but the pieces sit elsewhere:
 the miter direction is a `CUSTOM0` vertex attribute widened by
 `GlobeMaterials.outline` instead of a SceneKit shader modifier, and the zoom
 scaling is `GlobeCamera.screenScale` rather than renderer code. The outline
-sector grid is a decision Android made first and iOS adopted — see
-[Globe Rendering](#globe-rendering) — so changing it is a two-platform change;
+sector grid and the 6.0 zoom-out limit are decisions Android made first and iOS
+adopted — see [Globe Rendering](#globe-rendering) — so changing either is a
+two-platform change;
 "Pinned invariants" in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) has the
 measurement.
 

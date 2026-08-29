@@ -150,7 +150,14 @@ class GlobeState: ObservableObject {
     /// double-sided translucent glow tints the whole view — and by the camera's
     /// zNear, which must clear the globe surface at `minCameraDistance - 1`.
     static let minCameraDistance: Float = 1.1
-    static let maxCameraDistance: Float = 10.0
+    /// Furthest the camera may get from the globe's center.
+    ///
+    /// Far enough out that the whole world is in frame — the globe still spans
+    /// about 40% of the screen's height — and no further: past this it is a small
+    /// ball in a lot of empty space, with nothing to see that the last step out
+    /// did not already show. Android clamps to the same 6.0, and its
+    /// `GlobeCameraTest` pins it as this does.
+    static let maxCameraDistance: Float = 6.0
     @Published var isDarkMode: Bool = false
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?

@@ -216,16 +216,13 @@ data class GlobeCamera(
         /**
          * How far out the globe can be pushed.
          *
-         * Tighter than iOS on purpose, and the one place this globe's motion is
-         * deliberately not a port. iOS lets a pinch reach 8.0 and its zoom-out
-         * button 10.0 (`GlobeState.maxCameraDistance`), by which point the globe
-         * is a small ball in a lot of empty screen. There is nothing to see out
-         * there, so Android stops at 6.0 — still comfortably the whole world in
-         * frame, about 40% of the screen's height.
-         *
-         * A pinch is the only way out here; if Android ever grows a zoom-out
-         * button, that is the moment to give the state its own looser clamp the
-         * way iOS does, not now.
+         * Far enough that the whole world is in frame — the globe still spans
+         * about 40% of the screen's height — and no further: past this it is a
+         * small ball in a lot of empty space. Decided here and adopted by iOS,
+         * which used to let a pinch reach 8.0 and its zoom-out button 10.0;
+         * `GlobeState.maxCameraDistance` is now this value and
+         * `voyageTests.testZoomOutStopsWhereAndroidDoes` pins it, so changing it
+         * is a two-platform change.
          */
         const val MAX_DISTANCE = 6.0f
 
