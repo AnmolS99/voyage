@@ -535,13 +535,50 @@ something on screen early.
       search button, selection card and both sheets once and swaps only the
       surface in the middle. A fresh install now opens on the globe, as iOS
       does
-- [ ] 7.10 Performance pass on a mid-range device (e.g. Pixel a-series):
-      60fps rotation, no jank on selection — **still open: no such device
-      here.** What is measured, on the Pixel 9 emulator with the 7.5 outlines
-      in the scene (`dumpsys gfxinfo`, eight drag gestures): 268 frames, 2.6%
-      janky, 50th/90th/99th percentile 16/17/19 ms, no missed vsyncs. That is
-      60fps, but the emulator renders through the host GPU and says nothing
-      about a real mid-range phone, which is the one thing this sub-step asks
+- [x] 7.10 Performance pass on a mid-range device (e.g. Pixel a-series):
+      60fps rotation, no jank on selection — **done 2026-08-29 on a Samsung
+      Galaxy A55 5G** (SM-A556B, Exynos 1480 / Xclipse 530, Android 16, 1080x2340
+      at 120 Hz, Vulkan pipeline). Method as on the emulator: `dumpsys gfxinfo`
+      reset, then sixteen drag gestures across the globe; taps measured
+      separately as ten country selections.
+
+      | Run | Frames | Janky | 50th / 90th / 99th | Missed vsync |
+      | --- | --- | --- | --- | --- |
+      | Drag, debug | 949 | 0.1% | 11 / 12 / 13 ms | 0 |
+      | Drag, release (R8) | 947 | 0.0% | 10 / 11 / 12 ms | 0 |
+      | Drag, release, ~30 s sustained | 3674 | 0.2% | 10 / 12 / 13 ms | 0 |
+      | Selection taps, debug | 837 | 3.7% | 11 / 13 / 29 ms | 8 |
+      | Selection taps, release | 880 | 0.7% | 10 / 12 / 14 ms | 0 |
+
+      Three things worth keeping:
+
+      - The target is met with room to spare, and the device gives a *higher*
+        bar than the emulator did: the A55's panel runs at 120 Hz and the globe
+        holds it — 947 frames in 7.7 s of continuous dragging, 121 fps
+        sustained, against an 8.3 ms budget rather than 16.7 ms. GPU time is
+        6 ms at the 50th percentile and 7 ms at the 90th, so roughly 1.3 ms of
+        headroom per frame at the 90th percentile; that is the number to watch
+        if anything is ever added to the globe's draw.
+      - **Selection jank is a debug-build artifact.** The 29 ms 99th percentile
+        and eight missed vsyncs above come from the debug build; the same tap
+        sequence on the release build never misses a vsync. Perf claims for
+        this phase should be made against release builds — the emulator
+        baseline this replaces was debug, which makes it doubly pessimistic.
+      - No thermal throttling: ~30 s of unbroken dragging moved the AP sensor
+        36.1 °C → 37.2 °C with every `mStatus=0`, and the percentiles at the
+        end of the run match the start.
+
+      Two things verified on the same device while it was attached, because
+      they can only be checked on real hardware: the release build renders
+      correctly with R8 + resource shrinking on (a Phase 11 pre-check — nothing
+      in the geometry pipeline, Filament materials or kotlinx.serialization is
+      stripped), and the palette survives a real display pipeline. Screen
+      captures come back tagged Display P3; converted to sRGB, the globe's land
+      is exactly `#34BE82` and its ocean `#2E86A6` (palette `#2F86A6`, off by
+      one from 8-bit rounding), and the flat map's land is the same `#34BE82`
+      to the bit. The map's ocean is `#32729B` rather than the globe's — which
+      is `VoyagePalette.oceanMap`, the deliberately darker flat-map ocean iOS
+      also has (`AppColors.oceanMap`), not a drift
 - [ ] 7.11 Keep one Filament engine alive for the Activity instead of building
       a new one per navigation. Today `GlobeSurfaceHost` is created and
       destroyed by the composable that draws the globe, so every trip to
