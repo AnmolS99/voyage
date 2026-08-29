@@ -157,6 +157,10 @@ class GlobeState: ObservableObject {
     /// ball in a lot of empty space, with nothing to see that the last step out
     /// did not already show. Android clamps to the same 6.0, and its
     /// `GlobeCameraTest` pins it as this does.
+    ///
+    /// Every route out reads this: both gesture handlers used to undercut it
+    /// with their own `min(8.0, ...)`, which made the constant a description of
+    /// nothing — `zoomIn()`/`zoomOut()`, the only other readers, have no callers.
     static let maxCameraDistance: Float = 6.0
     @Published var isDarkMode: Bool = false
     @Published var isAutoRotating: Bool = true

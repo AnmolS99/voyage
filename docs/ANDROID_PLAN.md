@@ -114,9 +114,11 @@ Each is asserted by tests, on both platforms where it applies:
   `voyageTests.testZoomOutStopsWhereAndroidDoes`) — the globe still spanning
   about 40% of the screen's height, and nothing worth seeing further out. This
   one started on Android and iOS adopted it, replacing a pinch that stopped at
-  8.0 and a zoom-out button that reached 10.0; every route out now goes through
-  `GlobeState.maxCameraDistance`, which the two gesture handlers used to
-  undercut with their own literal. Changing it is a two-platform change.
+  8.0. iOS's `GlobeState.maxCameraDistance` said 10.0, but both gesture handlers
+  undercut it with their own `min(8.0, ...)` literal and the only things that
+  read the constant — `zoomIn()`/`zoomOut()` — have no callers, so 10.0 was
+  never reachable. Every route out now goes through the constant, and changing
+  it is a two-platform change.
 - **Selecting a country flies the camera to it in 0.8 s** (`GlobeFlightTest`,
   `GlobeGestureTest`). `GlobeFlight` ports `GlobeView.Coordinator.flyTo`: the
   duration, Core Animation's `easeInEaseOut` curve, the shortest way round in

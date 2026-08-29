@@ -110,10 +110,9 @@ class GlobeCameraTest {
 
     @Test
     fun `a pinch cannot shrink the globe into a speck`() {
-        // Shared with iOS, which adopted this from here: `GlobeState`'s
-        // maxCameraDistance was 10.0 with its gestures undercutting it at 8.0,
-        // and both are now 6.0. `testZoomOutStopsWhereAndroidDoes` is the other
-        // half of this assertion.
+        // Shared with iOS, which adopted this from here: its pinch stopped at
+        // 8.0 and now stops at 6.0.
+        // `testZoomOutStopsWhereAndroidDoes` is the other half of this assertion.
         assertEquals(6.0f, GlobeCamera.MAX_DISTANCE, 0f)
 
         var camera = GlobeCamera()
