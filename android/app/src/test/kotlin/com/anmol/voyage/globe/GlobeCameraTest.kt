@@ -109,6 +109,19 @@ class GlobeCameraTest {
     }
 
     @Test
+    fun `a pinch cannot push the globe further out than iOS lets it go`() {
+        // iOS `handlePinch` and `handleDoubleTapDrag` both clamp to 8.0, and a
+        // pinch is the only way out on Android, so this is the smallest the globe
+        // can be made on either platform. Its 10.0 state clamp belongs to a
+        // zoom-out button Android does not have.
+        assertEquals(8.0f, GlobeCamera.MAX_DISTANCE, 0f)
+
+        var camera = GlobeCamera()
+        repeat(50) { camera = camera.zoomedBy(0.5f) }
+        assertEquals(8.0f, camera.distance, 1e-6f)
+    }
+
+    @Test
     fun `every camera is built through the same limits`() {
         // `at` is the one door in, so a drag, a pinch and a flight cannot each
         // develop their own idea of how far the camera may go.

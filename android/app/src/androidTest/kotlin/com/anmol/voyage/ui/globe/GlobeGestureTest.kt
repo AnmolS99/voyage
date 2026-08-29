@@ -164,6 +164,22 @@ class GlobeGestureTest {
             "distance ${latest.distance} escaped the clamp",
             latest.distance >= GlobeCamera.MIN_DISTANCE - 1e-4f,
         )
+
+        // And the far end: pinching together cannot shrink the globe past the
+        // point iOS's own gestures stop at.
+        repeat(6) {
+            composeTestRule.onNodeWithTag(GLOBE).performTouchInput {
+                pinch(
+                    start0 = center + Offset(-400f, 0f),
+                    end0 = center + Offset(-20f, 0f),
+                    start1 = center + Offset(400f, 0f),
+                    end1 = center + Offset(20f, 0f),
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        assertEquals(GlobeCamera.MAX_DISTANCE, latest.distance, 1e-4f)
     }
 
     @Test

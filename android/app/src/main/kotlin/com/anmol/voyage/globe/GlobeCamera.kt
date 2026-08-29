@@ -207,10 +207,24 @@ data class GlobeCamera(
         const val FOV_DEGREES = 45.0
         private const val FOV_RADIANS = FOV_DEGREES * PI / 180.0
 
-        /** iOS `GlobeState.zoomLevel` and its clamps. */
+        /** iOS `GlobeState.zoomLevel` and its starting value. */
         const val DEFAULT_DISTANCE = 4.0f
+
+        /** iOS `GlobeState.minCameraDistance`. */
         const val MIN_DISTANCE = 1.1f
-        const val MAX_DISTANCE = 10.0f
+
+        /**
+         * How far out the globe can be pushed.
+         *
+         * iOS's *gestures* clamp here — `handlePinch` and `handleDoubleTapDrag`
+         * both `min(8.0, ...)` — and this is the only way out on Android, so 8.0
+         * is the limit a person actually meets on either platform. iOS's
+         * `GlobeState.maxCameraDistance` of 10.0 is a looser clamp on the state
+         * itself, reachable only through its zoom-out button, which Android has
+         * no equivalent of. If one ever lands here, that is the moment to split
+         * the two apart rather than now.
+         */
+        const val MAX_DISTANCE = 8.0f
 
         /**
          * How far from the equator a drag can tilt the camera. iOS's
