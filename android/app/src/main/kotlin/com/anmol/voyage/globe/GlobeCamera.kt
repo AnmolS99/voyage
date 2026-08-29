@@ -220,7 +220,7 @@ data class GlobeCamera(
          * about 40% of the screen's height — and no further: past this it is a
          * small ball in a lot of empty space. Decided here and adopted by iOS,
          * whose pinch used to stop at 8.0; `GlobeState.maxCameraDistance` is now
-         * this value and `voyageTests.testZoomOutStopsWhereAndroidDoes` pins it,
+         * this value and `voyageTests.testZoomRangeMatchesAndroid` pins it,
          * so changing it is a two-platform change.
          */
         const val MAX_DISTANCE = 6.0f

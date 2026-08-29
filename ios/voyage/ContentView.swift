@@ -144,7 +144,6 @@ class GlobeState: ObservableObject {
     @Published var wishlistCountries: Set<String> = []
     @Published var checkedCities: [String: Set<String>] = [:]
     @Published var checkedAttractions: [String: Set<String>] = [:]
-    @Published var zoomLevel: Float = 4.0
     /// Closest the camera may get to the globe's center. The floor is set by the
     /// atmosphere shell (radius 1.08) — the camera has to stay outside it, or its
     /// double-sided translucent glow tints the whole view — and by the camera's
@@ -158,9 +157,9 @@ class GlobeState: ObservableObject {
     /// did not already show. Android clamps to the same 6.0, and its
     /// `GlobeCameraTest` pins it as this does.
     ///
-    /// Every route out reads this: both gesture handlers used to undercut it
-    /// with their own `min(8.0, ...)`, which made the constant a description of
-    /// nothing — `zoomIn()`/`zoomOut()`, the only other readers, have no callers.
+    /// Read by `handlePinch` and `handleDoubleTapDrag`, which are the only two
+    /// ways to zoom: they used to undercut it with their own `min(8.0, ...)`,
+    /// which left the constant describing nothing.
     static let maxCameraDistance: Float = 6.0
     @Published var isDarkMode: Bool = false
     @Published var isAutoRotating: Bool = true
@@ -445,14 +444,6 @@ class GlobeState: ObservableObject {
         targetCountryCenter = nil
         isAutoRotating = true
         saveData()
-    }
-
-    func zoomIn() {
-        zoomLevel = max(Self.minCameraDistance, zoomLevel - 0.5)
-    }
-
-    func zoomOut() {
-        zoomLevel = min(Self.maxCameraDistance, zoomLevel + 0.5)
     }
 
     // Get flag emoji for a country

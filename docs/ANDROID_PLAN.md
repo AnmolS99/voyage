@@ -111,13 +111,14 @@ Each is asserted by tests, on both platforms where it applies:
   mirroring `GlobeInertia.swift`, `GlobeView.Coordinator.panRotationSpeed` and
   the `rotateBy(y: 2π)` action; changing any of them is a two-platform change.
 - **The camera stops at distance 6.0** (`GlobeCameraTest`, `GlobeGestureTest`,
-  `voyageTests.testZoomOutStopsWhereAndroidDoes`) — the globe still spanning
+  `voyageTests.testZoomRangeMatchesAndroid`) — the globe still spanning
   about 40% of the screen's height, and nothing worth seeing further out. This
   one started on Android and iOS adopted it, replacing a pinch that stopped at
   8.0. iOS's `GlobeState.maxCameraDistance` said 10.0, but both gesture handlers
   undercut it with their own `min(8.0, ...)` literal and the only things that
-  read the constant — `zoomIn()`/`zoomOut()` — have no callers, so 10.0 was
-  never reachable. Every route out now goes through the constant, and changing
+  read the constant — a `zoomIn`/`zoomOut`/`updateZoom` cluster with no callers,
+  since deleted — were unreachable, so 10.0 described nothing. The two gesture
+  handlers are now the only zoom paths and both read the constant, so changing
   it is a two-platform change.
 - **Selecting a country flies the camera to it in 0.8 s** (`GlobeFlightTest`,
   `GlobeGestureTest`). `GlobeFlight` ports `GlobeView.Coordinator.flyTo`: the
