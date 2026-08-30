@@ -38,9 +38,31 @@
     <string name="search_close">Close</string>
     <string name="search_no_results">No countries match “%1$s”.</string>
 
+    <!-- Achievements -->
+    <string name="achievements_unlocked">%1$d of %2$d</string>
+    <string name="achievements_unlocked_label">Achievements Unlocked</string>
+    <string name="achievement_globetrotter">Globetrotter</string>
+    <string name="achievement_capital_collector">Capital Collector</string>
+    <string name="achievement_wonders">Wonders of the World</string>
+    <string name="achievement_continental_drifter">Continental Drifter</string>
+    <string name="achievement_explorer">Explorer of %1$s</string>
+    <string name="achievement_unit_countries">countries</string>
+    <string name="achievement_unit_capitals">capitals</string>
+    <string name="achievement_unit_wonders">wonders</string>
+    <string name="achievement_unit_continents">continents</string>
+    <string name="achievement_progress">%1$d/%2$d %3$s</string>
+    <string name="achievement_percentage">%1$d%%</string>
+    <string name="achievement_earned">Visited</string>
+    <string name="achievement_remaining">Remaining</string>
+    <string name="achievement_section">%1$s (%2$d)</string>
+    <string name="achievement_show_details">Show details</string>
+    <string name="achievement_hide_details">Hide details</string>
+    <string name="achievement_show_medal">Show the %1$s medal</string>
+    <string name="medal_drag_to_spin">Drag to spin</string>
+    <string name="medal_close">Close</string>
+
     <!-- Placeholder copy, removed as each phase lands its real screen -->
     <string name="placeholder_daily">The daily geography challenge calendar lands here.</string>
     <string name="placeholder_challenges">Longer-form challenges land here.</string>
-    <string name="placeholder_achievements">Medals and progress land here.</string>
     <string name="placeholder_settings">Appearance and style preferences land here.</string>
 </resources>

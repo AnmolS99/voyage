@@ -83,6 +83,17 @@ two-platform change;
 "Pinned invariants" in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) has the
 measurement.
 
+The Achievements tab (`ui/achievements/`) ports `ios/voyage/AchievementsView.swift`,
+but only its presentation lives there: which medals exist and what counts toward
+each is `data/AchievementCatalog.kt`, so both platforms assert the same rules
+against the same shared data — `AchievementTest` and `AchievementCompletionTests`,
+pinned in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md). The medal coin is drawn
+rather than rendered by a 3D engine — as a cylinder in projection, so it keeps
+the thickness of iOS's `SCNCylinder` as it turns — and it spins on the globe's
+decay curve (`GlobeInertia.decayed`), exactly as iOS's coin borrows
+`GlobeInertia` — so retuning that curve moves the globe *and* the medal, on both
+platforms.
+
 ## Git Conventions
 
 Use conventional commits and conventional branch naming.
