@@ -42,6 +42,21 @@ two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,
 `ui/map/CapitalMarker.kt`, `ui/map/MapProjection.kt`, and
 `globe/GlobeCamera.kt` rather than in the renderer, and
 `ui/home/HomeScreen.kt` holds the chrome both Android renderers share.
+The globe's **spin physics are shared with iOS, not reinvented**:
+`globe/GlobeInertia.kt` ports `ios/voyage/GlobeInertia.swift` (same damping, in
+degrees per second rather than radians), and `GlobeCamera.degreesPerDp` ports
+`GlobeView.Coordinator.panRotationSpeed` — measured per **dp**, since a dp and an
+iOS point are the same physical size. The idle spin an untouched globe
+does — one turn a minute, ended by a drag or a selection and resumed only by
+deselecting — is `VoyageState.isAutoRotating` driving
+`GlobeCamera.autoRotated`, where iOS runs an `SCNAction` off
+`GlobeState.isAutoRotating`. Selecting a country flies the camera to it via
+`globe/GlobeFlight.kt`, a port of `GlobeView.Coordinator.flyTo` down to its
+easing curve. Both platforms integrate one step per rendered frame — on Android a
+flight, a coasting flick and the idle spin are three cases of one `advance()`
+step, so exactly one of them writes the camera per frame — and the decay curve,
+pan speed, idle rate and flight timing are pinned by tests on each; retuning any
+of them is a two-platform change.
 Capital stars and microstate dots are **meshes in the globe's scene**
 (`globe/MarkerMesh.kt`), not a Compose overlay above it: an overlay draws from
 its own copy of the camera and visibly trails the globe by a frame while
@@ -62,8 +77,9 @@ time so they keep a constant on-screen width — but the pieces sit elsewhere:
 the miter direction is a `CUSTOM0` vertex attribute widened by
 `GlobeMaterials.outline` instead of a SceneKit shader modifier, and the zoom
 scaling is `GlobeCamera.screenScale` rather than renderer code. The outline
-sector grid is a decision Android made first and iOS adopted — see
-[Globe Rendering](#globe-rendering) — so changing it is a two-platform change;
+sector grid and the 6.0 zoom-out limit are decisions Android made first and iOS
+adopted — see [Globe Rendering](#globe-rendering) — so changing either is a
+two-platform change;
 "Pinned invariants" in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) has the
 measurement.
 

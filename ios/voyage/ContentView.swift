@@ -144,13 +144,23 @@ class GlobeState: ObservableObject {
     @Published var wishlistCountries: Set<String> = []
     @Published var checkedCities: [String: Set<String>] = [:]
     @Published var checkedAttractions: [String: Set<String>] = [:]
-    @Published var zoomLevel: Float = 4.0
     /// Closest the camera may get to the globe's center. The floor is set by the
     /// atmosphere shell (radius 1.08) — the camera has to stay outside it, or its
     /// double-sided translucent glow tints the whole view — and by the camera's
     /// zNear, which must clear the globe surface at `minCameraDistance - 1`.
     static let minCameraDistance: Float = 1.1
-    static let maxCameraDistance: Float = 10.0
+    /// Furthest the camera may get from the globe's center.
+    ///
+    /// Far enough out that the whole world is in frame — the globe still spans
+    /// about 40% of the screen's height — and no further: past this it is a small
+    /// ball in a lot of empty space, with nothing to see that the last step out
+    /// did not already show. Android clamps to the same 6.0, and its
+    /// `GlobeCameraTest` pins it as this does.
+    ///
+    /// Read by `handlePinch` and `handleDoubleTapDrag`, which are the only two
+    /// ways to zoom: they used to undercut it with their own `min(8.0, ...)`,
+    /// which left the constant describing nothing.
+    static let maxCameraDistance: Float = 6.0
     @Published var isDarkMode: Bool = false
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
@@ -434,14 +444,6 @@ class GlobeState: ObservableObject {
         targetCountryCenter = nil
         isAutoRotating = true
         saveData()
-    }
-
-    func zoomIn() {
-        zoomLevel = max(Self.minCameraDistance, zoomLevel - 0.5)
-    }
-
-    func zoomOut() {
-        zoomLevel = min(Self.maxCameraDistance, zoomLevel + 0.5)
     }
 
     // Get flag emoji for a country

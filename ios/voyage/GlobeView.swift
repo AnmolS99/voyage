@@ -208,39 +208,6 @@ struct GlobeView: UIViewRepresentable {
             stopInertia()
         }
 
-        func zoomIn() {
-            guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.3
-            cameraNode.position.z = max(GlobeState.minCameraDistance, cameraNode.position.z - 0.5)
-            updateZoomDependentSizing(cameraDistance: Float(cameraNode.position.z))
-            SCNTransaction.commit()
-        }
-
-        func zoomOut() {
-            guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.3
-            cameraNode.position.z = min(10.0, cameraNode.position.z + 0.5)
-            updateZoomDependentSizing(cameraDistance: Float(cameraNode.position.z))
-            SCNTransaction.commit()
-        }
-
-        func updateZoom() {
-            guard let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.3
-            let cameraDistance = Float(globeState.zoomLevel)
-            cameraNode.position = SCNVector3(
-                0,
-                cameraDistance * sin(currentRotationX),
-                cameraDistance * cos(currentRotationX)
-            )
-            aimCameraAtGlobeCenter(cameraNode)
-            updateZoomDependentSizing(cameraDistance: cameraDistance)
-            SCNTransaction.commit()
-        }
-
         /// Points the camera at the globe's center with zero roll.
         ///
         /// Always passes an explicit world up: the parameterless `look(at:)` reuses the
@@ -472,7 +439,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = currentDistance - Float(gesture.scale - 1) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(GlobeState.minCameraDistance, min(8.0, newDistance))
+                newDistance = max(GlobeState.minCameraDistance, min(GlobeState.maxCameraDistance, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,
@@ -512,7 +479,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = doubleTapDragStartDistance + Float(deltaY) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(GlobeState.minCameraDistance, min(8.0, newDistance))
+                newDistance = max(GlobeState.minCameraDistance, min(GlobeState.maxCameraDistance, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,

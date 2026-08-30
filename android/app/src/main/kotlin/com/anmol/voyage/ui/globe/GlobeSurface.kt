@@ -3,6 +3,8 @@ package com.anmol.voyage.ui.globe
 import android.view.Choreographer
 import android.view.Surface
 import android.view.TextureView
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.runtime.Composable
@@ -10,12 +12,19 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.viewinterop.AndroidView
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
 import com.anmol.voyage.globe.GlobeCamera
+import com.anmol.voyage.globe.GlobeFlight
+import com.anmol.voyage.globe.GlobeInertia
 import com.anmol.voyage.globe.MarkerMeshes
 import com.anmol.voyage.globe.MicrostateDot
 import com.anmol.voyage.globe.NamedCountryMesh
@@ -53,6 +62,13 @@ internal class GlobeDotStyle(
  * @param dotStyles how each microstate's dot is currently painted. The dots
  *   themselves are meshes in the scene, uploaded with the rest of the geometry.
  * @param capital the selected country's capital, marked with a star.
+ * @param focus a place to fly the camera to, once, when it changes. The selected
+ *   country's center, so picking a country brings it into view.
+ * @param autoRotating whether the globe turns on its own — true until something
+ *   is selected or the globe is dragged.
+ * @param onInteraction a drag or a zoom started, which ends the idle spin. A tap
+ *   does not report here: on iOS a tap that misses every country leaves the
+ *   globe turning, and one that hits stops it by selecting a country.
  */
 @Composable
 internal fun GlobeSurface(
@@ -70,6 +86,9 @@ internal fun GlobeSurface(
     capital: LatLon? = null,
     selectedOutline: OutlineMesh? = null,
     selectedOutlineColor: GlobeFill? = null,
+    focus: LatLon? = null,
+    autoRotating: Boolean = false,
+    onInteraction: () -> Unit = {},
     onCameraChange: (GlobeCamera) -> Unit = {},
 ) {
     val host = remember(backgroundColor) { GlobeSurfaceHost(backgroundColor.toFilamentColor()) }
@@ -108,23 +127,37 @@ internal fun GlobeSurface(
         onDispose { }
     }
 
+    // Keyed on the place, so selecting a country flies to it exactly once and
+    // re-selecting it after a deselect flies again — the guard iOS spends
+    // `hasAnimatedToCountry` and `lastAnimatedCountry` on, for free.
+    DisposableEffect(host, focus) {
+        if (focus != null) host.flyTo(focus)
+        onDispose { }
+    }
+
+    // The camera is the host's, not Compose state, so the callback that reports
+    // it has to be pushed down rather than passed at each call: the render loop
+    // moves the camera on its own now, while a flick is coasting.
+    SideEffect {
+        host.onCameraChange = onCameraChange
+        host.onInteraction = onInteraction
+        host.autoRotating = autoRotating
+    }
+
     AndroidView(
         modifier = modifier
             .pointerInput(host) {
                 detectTransformGestures { _, pan, zoom, _ ->
-                    host.updateCamera(onCameraChange) { camera ->
-                        val degreesPerPixel = camera.degreesPerPixel(size.height.toFloat())
-                        camera
-                            // Dragging right spins the globe east-to-west under
-                            // the finger, so the surface tracks the touch rather
-                            // than running away from it.
-                            .rotatedBy(
-                                deltaLatitude = pan.y * degreesPerPixel,
-                                deltaLongitude = -pan.x * degreesPerPixel,
-                            )
-                            .zoomedBy(zoom)
-                    }
+                    host.drag(pan / density, zoom)
                 }
+            }
+            .pointerInput(host) {
+                // Sits alongside the transform detector rather than inside it,
+                // because what inertia needs is the two things that detector does
+                // not report: when the gesture starts (to kill a spin still in
+                // flight, as a tap does on iOS) and how fast the finger was
+                // travelling when it left the screen.
+                trackFlicks(host)
             }
             .pointerInput(host) {
                 // Wheel and trackpad zoom. A touchscreen has pinch, but a mouse
@@ -137,7 +170,7 @@ internal fun GlobeSurface(
                         if (event.type != PointerEventType.Scroll) continue
                         val scroll = event.changes.sumOf { it.scrollDelta.y.toDouble() }.toFloat()
                         if (scroll == 0f) continue
-                        host.updateCamera(onCameraChange) { it.zoomedBy(zoomForScroll(scroll)) }
+                        host.zoom(zoomForScroll(scroll))
                         event.changes.forEach { it.consume() }
                     }
                 }
@@ -184,16 +217,129 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
      */
     private var camera = GlobeCamera()
 
+    /** The spin left over from the last flick, stepped once per frame. */
+    private val inertia = GlobeInertia()
+
+    /** A camera flight in progress, or null. Outranks both kinds of spin. */
+    private var flight: GlobeFlight? = null
+
+    private var lastFrameNanos = 0L
+
+    /** Reported to the composable after every camera move, coasting included. */
+    var onCameraChange: (GlobeCamera) -> Unit = {}
+
+    /** Reported once at the start of each drag or zoom. */
+    var onInteraction: () -> Unit = {}
+
+    /** Whether to keep turning the globe when nothing else is moving it. */
+    var autoRotating: Boolean = false
+
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (destroyed) return
             choreographer.postFrameCallback(this)
+            advance(frameTimeNanos)
             renderer.setCamera(camera)
             renderer.render(frameTimeNanos)
         }
     }
 
-    fun updateCamera(onCameraChange: (GlobeCamera) -> Unit, transform: (GlobeCamera) -> GlobeCamera) {
+    /**
+     * Moves the globe by everything that is not a finger: one frame of coasting
+     * from the last flick, or of the idle spin when nothing was flicked.
+     *
+     * Integrating here rather than off a timer is what makes the motion even:
+     * one step per rendered frame, paced by the same vsync that will show it.
+     * iOS does this in `renderer(_:updateAtTime:)` for the same reason, and
+     * clamps the step the same way — a frame the app was not scheduled for
+     * (a tab switch, a stall) must not teleport the globe.
+     *
+     * Momentum wins over the idle spin while it lasts, as it does on iOS, where
+     * the interactive spin overwrites the auto-rotation action's transform every
+     * frame it is active. In practice the two rarely overlap: a drag stops the
+     * idle spin, and only a deselect during the second or two a flick is still
+     * coasting can turn it back on mid-flight.
+     */
+    private fun advance(frameTimeNanos: Long) {
+        val elapsed = if (lastFrameNanos == 0L) 0f else (frameTimeNanos - lastFrameNanos) / NANOS_PER_SECOND
+        lastFrameNanos = frameTimeNanos
+        val dt = elapsed.coerceIn(0f, MAX_FRAME_STEP)
+        if (dt <= 0f) return
+        val flying = flight
+        when {
+            flying != null -> {
+                updateCamera { flying.step(dt) }
+                if (flying.isFinished) flight = null
+            }
+            inertia.isActive -> updateCamera { inertia.step(dt, it) }
+            autoRotating -> updateCamera { it.autoRotated(dt) }
+        }
+    }
+
+    /**
+     * Starts a flight to [target], from wherever the globe is now.
+     *
+     * Any momentum is dropped rather than added to the flight: the camera has
+     * one writer per frame, and a flick still coasting would otherwise be
+     * fighting the flight for the same 0.8 seconds.
+     */
+    fun flyTo(target: LatLon) {
+        inertia.reset()
+        flight = GlobeFlight(camera, latitude = target.lat, longitude = target.lon)
+    }
+
+    /**
+     * A drag: rotate under the finger and pinch, in one gesture as iOS does.
+     *
+     * [pan] is in dp, not pixels — see [GlobeCamera.degreesPerDp].
+     */
+    fun drag(pan: Offset, zoom: Float) {
+        onInteraction()
+        updateCamera { camera ->
+            val degreesPerDp = camera.degreesPerDp
+            camera
+                // Dragging right spins the globe east-to-west under the finger,
+                // so the surface tracks the touch rather than running away from
+                // it.
+                .rotatedBy(
+                    deltaLatitude = pan.y * degreesPerDp,
+                    deltaLongitude = -pan.x * degreesPerDp,
+                )
+                .zoomedBy(zoom)
+        }
+    }
+
+    /**
+     * Any new touch stops the globe moving by itself — a spin still coasting, as
+     * a tap or a drag does on iOS, and a camera flight along with it. iOS leaves
+     * its flight animating under the finger, where the drag and the animation
+     * write the same transform and the globe stutters between them; a touch
+     * taking the wheel is the behavior that gesture was asking for.
+     */
+    fun stopMotion() {
+        inertia.reset()
+        flight = null
+    }
+
+    /**
+     * Hands the globe the finger's parting speed, in dp per second.
+     *
+     * Converted through the same pan curve a drag uses, so the first coasting
+     * frame carries on at the speed the finger left at instead of stepping.
+     */
+    fun flick(velocity: Velocity) {
+        val degreesPerDp = camera.degreesPerDp
+        inertia.latitude = (velocity.y * degreesPerDp).toFloat()
+        inertia.longitude = (-velocity.x * degreesPerDp).toFloat()
+    }
+
+    /** A wheel or trackpad zoom, which ends the idle spin as a pinch does. */
+    fun zoom(scale: Float) {
+        onInteraction()
+        updateCamera { it.zoomedBy(scale) }
+    }
+
+    private fun updateCamera(transform: (GlobeCamera) -> GlobeCamera) {
         camera = transform(camera)
         onCameraChange(camera)
     }
@@ -300,6 +446,52 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         renderer.destroy()
     }
 }
+
+/**
+ * Watches a whole touch gesture for the two things the transform detector does
+ * not report: its start, and the finger's speed at its end.
+ *
+ * The pan it accumulates is the centroid's, matching what
+ * `detectTransformGestures` applies to the camera — so the spin a flick leaves
+ * behind continues at the speed the globe was already turning, not at the speed
+ * of some other measure of the gesture. Positions are fed in dp and stamped with
+ * the event's own time, so the velocity comes back in dp/s directly.
+ *
+ * Nothing here consumes: this observes a gesture the detectors above own.
+ */
+private suspend fun PointerInputScope.trackFlicks(host: GlobeSurfaceHost) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false)
+        host.stopMotion()
+
+        val velocity = VelocityTracker()
+        var travel = Offset.Zero
+        var event: PointerEvent
+        do {
+            event = awaitPointerEvent()
+            // Pointers that were down before this event and still are: a finger
+            // arriving or leaving moves the centroid without moving the globe.
+            val moving = event.changes.filter { it.pressed && it.previousPressed }
+            if (moving.isNotEmpty()) {
+                var pan = Offset.Zero
+                for (change in moving) pan += change.position - change.previousPosition
+                travel += pan / (moving.size * density)
+                velocity.addPosition(moving.first().uptimeMillis, travel)
+            }
+        } while (event.changes.any { it.pressed })
+
+        host.flick(velocity.calculateVelocity())
+    }
+}
+
+/** Nanoseconds in a second, as a float — [Choreographer] counts in nanos. */
+private const val NANOS_PER_SECOND = 1_000_000_000f
+
+/**
+ * The longest step a single frame may take, in seconds. iOS clamps its frame
+ * delta to the same 0.1 s.
+ */
+private const val MAX_FRAME_STEP = 0.1f
 
 /**
  * Turns one scroll step into a zoom factor.

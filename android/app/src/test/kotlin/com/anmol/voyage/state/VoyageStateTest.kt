@@ -232,6 +232,47 @@ class VoyageStateTest {
     }
 
     @Test
+    fun `the globe turns on its own until something is selected`() {
+        val state = state()
+
+        // iOS `GlobeState.isAutoRotating` starts true on every launch.
+        assertTrue("a fresh globe should be turning", state.isAutoRotating)
+
+        state.selectCountry("Norway", LatLon(lat = 61.0, lon = 8.0))
+        assertFalse("selecting should stop the spin", state.isAutoRotating)
+
+        state.clearSelection()
+        assertTrue("deselecting should start it again", state.isAutoRotating)
+    }
+
+    @Test
+    fun `dragging the globe stops the spin for good`() {
+        val state = state()
+
+        state.stopAutoRotation()
+        assertFalse(state.isAutoRotating)
+
+        // Selecting and deselecting is the only way back, as on iOS: nothing
+        // resumes the spin just because the finger left the screen.
+        state.selectCountry("Peru")
+        assertFalse(state.isAutoRotating)
+        state.clearSelection()
+        assertTrue(state.isAutoRotating)
+    }
+
+    @Test
+    fun `auto-rotation is never written to the store`() {
+        val store = InMemoryStateStore()
+        val state = stateOver(store)
+
+        state.stopAutoRotation()
+
+        // iOS does not persist it either — the globe greets you spinning.
+        assertEquals(0, store.saveCount)
+        assertTrue(stateOver(store).isAutoRotating)
+    }
+
+    @Test
     fun `resetting clears what the user marked but keeps their preferences`() {
         val store = InMemoryStateStore(
             PersistedState(
@@ -253,6 +294,7 @@ class VoyageStateTest {
         assertEquals(emptyMap<String, Set<String>>(), state.checkedCities)
         assertEquals(emptyMap<String, Set<String>>(), state.checkedAttractions)
         assertNull(state.selectedCountry)
+        assertTrue("a reset globe turns again, as iOS's does", state.isAutoRotating)
         assertEquals(ThemeMode.Dark, state.themeMode)
         assertEquals(GlobeStyle.Stylized, state.globeStyle)
         assertEquals(PersistedState(themeMode = ThemeMode.Dark, globeStyle = GlobeStyle.Stylized), store.state)

@@ -258,6 +258,28 @@ final class voyageTests: XCTestCase {
             "Ray pointing away from the globe should not hit")
     }
 
+    /// The zoom range, which is a two-platform constant: Android's
+    /// `GlobeCameraTest` asserts the same 1.1…6.0 and that a pinch bottoms out
+    /// there.
+    ///
+    /// The clamping itself lives in `handlePinch` and `handleDoubleTapDrag` —
+    /// the only two ways to zoom — where a `UIPinchGestureRecognizer` cannot be
+    /// driven from a unit test. Both read these constants and hold no literals
+    /// of their own, so pinning the constants pins the behavior; Android's
+    /// instrumented `zoomStaysWithinTheDistanceClamps` covers the gesture end.
+    func testZoomRangeMatchesAndroid() {
+        XCTAssertEqual(GlobeState.maxCameraDistance, 6.0, accuracy: 0,
+                       "Zoom-out limit changed; Android clamps to the same value")
+        XCTAssertEqual(GlobeState.minCameraDistance, 1.1, accuracy: 0,
+                       "Zoom-in floor changed; Android clamps to the same value")
+
+        // Far enough out that the whole globe is still comfortably in frame: its
+        // silhouette spans about 40% of a 45-degree viewport at the limit.
+        let globeDegrees = 2 * asin(1.0 / Double(GlobeState.maxCameraDistance)) * 180 / .pi
+        XCTAssertGreaterThan(globeDegrees / 45.0, 0.35,
+                             "At the zoom-out limit the globe should still fill much of the screen")
+    }
+
     private func unitVector(lat: Double, lon: Double) -> simd_double3 {
         let latRad = lat * .pi / 180
         let lonRad = -lon * .pi / 180

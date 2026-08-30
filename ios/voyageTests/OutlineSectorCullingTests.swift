@@ -11,7 +11,8 @@ import simd
 /// against the same `shared/data/world.geojson`.
 final class OutlineSectorCullingTests: XCTestCase {
 
-    /// The camera distance the sector grid was tuned at — iOS `GlobeState.zoomLevel`'s default.
+    /// The camera distance the sector grid was tuned at — where `GlobeScene` puts
+    /// the camera, and Android's `GlobeCamera.DEFAULT_DISTANCE`.
     private let cameraDistance: Float = 4.0
 
     /// A sector as the coordinator sees it: `SCNNode.boundingSphere` plus its vertices.
