@@ -30,7 +30,7 @@ internal class GlobeInertia {
 
     /** Whether the globe is still coasting fast enough to be worth stepping. */
     val isActive: Boolean
-        get() = abs(latitude) > STOPPED || abs(longitude) > STOPPED
+        get() = isCoasting(latitude) || isCoasting(longitude)
 
     /**
      * Advances the spin by [dt] seconds and returns the camera it moved to.
@@ -51,9 +51,8 @@ internal class GlobeInertia {
             deltaLatitude = (latitude * dt).toDouble(),
             deltaLongitude = (longitude * dt).toDouble(),
         )
-        val factor = DAMPING.pow(dt)
-        latitude *= factor
-        longitude *= factor
+        latitude = decayed(latitude, dt)
+        longitude = decayed(longitude, dt)
         return moved
     }
 
@@ -62,11 +61,26 @@ internal class GlobeInertia {
         longitude = 0f
     }
 
-    private companion object {
+    /**
+     * The decay curve itself, apart from the globe that usually spins by it.
+     *
+     * The achievement medal coasts on these too — iOS's `MedalOverlayView`
+     * spins its coin with a `GlobeInertia` of its own, and a medal that slowed
+     * down differently from the globe would be a second feel to tune. What the
+     * medal cannot reuse is [step], which moves a [GlobeCamera]; the medal turns
+     * about one axis and holds a bare angle.
+     */
+    internal companion object {
         /** Fraction of the velocity left after one second. iOS's `damping`. */
         const val DAMPING = 0.05f
 
         /** iOS gives up below 0.001 rad/s; this is that speed in degrees. */
         val STOPPED = Math.toDegrees(0.001).toFloat()
+
+        /** What is left of [velocity] after coasting for [dt] seconds. */
+        fun decayed(velocity: Float, dt: Float): Float = velocity * DAMPING.pow(dt)
+
+        /** Whether [velocity] is still fast enough to be worth stepping. */
+        fun isCoasting(velocity: Float): Boolean = abs(velocity) > STOPPED
     }
 }

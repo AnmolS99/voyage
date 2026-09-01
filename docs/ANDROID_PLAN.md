@@ -26,20 +26,20 @@ port.
 | 0 — Environment & tooling | ✅ 2026-08-06. CLI-only toolchain; the Android Studio first-run check was dropped 2026-08-29 |
 | 1 — Repo restructure | ✅ 2026-08-06. `ios/` + `android/` + `shared/`, history preserved |
 | 2 — Scaffold + Play account | ✅ Scaffold 2026-08-06; account verified 2026-08-11; Play Console app entry created 2026-08-29, so `com.anmol.voyage` is now permanent on both stores |
-| 3 — Data layer | ✅ 2026-08-07. Parser + both platforms asserting `shared/fixtures/expected_countries.json`. One gap: the DoD says "mid-range device" and the timings are emulator ones — see [Open work](#open-work) |
+| 3 — Data layer | ✅ 2026-08-07. Parser + both platforms asserting `shared/fixtures/expected_countries.json`. Re-measured on a Galaxy A55 2026-08-30: the parse costs ~1.5 s there, not the emulator's ~0.2 s — see [Open work](#open-work) |
 | 4 — 2D map | ✅ 2026-08-07. Projection, hit-testing, gestures, microstate dots |
-| 5 — State & persistence | 🟡 Built, tests green 2026-08-08; two on-device checks never run — see [Open work](#open-work) |
-| 6 — Country details | 🟡 Built, tests green 2026-08-09; the loop has never been driven on a device — see [Open work](#open-work) |
+| 5 — State & persistence | ✅ Built, tests green 2026-08-08; device checks run on the A55 2026-08-30 — state survives a process kill, and Auto Backup restores it on reinstall |
+| 6 — Country details | ✅ Built, tests green 2026-08-09; loop driven end to end on the A55 2026-08-30 |
 | 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29). 7.1, 7.2b, 7.3–7.7, 7.9, 7.10 done; 7.2, 7.8, 7.11 open |
-| 8 — Achievements | Not started |
+| 8 — Achievements | ✅ 2026-08-30. The ten medals, their progress rings, the expandable item lists, and a spinnable coin |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | Not started |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
-Suite as of 2026-08-29: 204 JVM unit tests across 24 classes, green; gesture
+Suite as of 2026-08-30: 235 JVM unit tests across 26 classes, green; gesture
 tests are instrumented and run locally, not in CI (18, green on the Pixel 9
-API 36 emulator).
+API 36 emulator and on a Galaxy A55 / Android 16, 2026-08-30).
 
 ## Decision log
 
@@ -76,6 +76,10 @@ API 36 emulator).
 | 2026-08-29 | A camera flight interpolates the camera's *position*, not its angle and distance separately | It is what Core Animation was doing for iOS's `SCNTransaction`, so the flight follows the same chord. Lerping the two apart looks nearly identical — a couple of degrees and a tenth of a unit off at the midpoint — but there is no reason to differ. `GlobeCamera.at` clamps the one case where that chord passes *inside* the globe (crossing the equator at close zoom), which iOS does not. |
 | 2026-08-29 | A touch cancels a camera flight | iOS leaves the animation running under the finger, where the drag and the animation write the same transform and the globe stutters between them. One writer per frame is the whole point of the render-loop design. |
 | 2026-08-29 | The idle spin is stepped in the render loop, not run as an animation | It shares one clock and one camera with momentum, so the two can never both be writing the globe's position; iOS's `SCNAction` is a second writer, and its gesture handlers spend three lines resynchronising from the presentation node because of it. |
+| 2026-08-30 | The medal overlay blurs what is behind it where the platform can, and thickens its scrim where it cannot | iOS floats the coin on `.ultraThinMaterial` with no card under it. Android can blur behind a window from API 31, but it is not a given even above it — the A55 has no SurfaceFlinger background-blur support at all, and the system drops blurs for battery saver at runtime. So the overlay asks, *listens* for the answer changing, and falls back to a heavier scrim: 0.4 over a blur, 0.72 without one. Verified both ways — blurred on the Pixel 9 emulator, scrimmed on the A55. |
+| 2026-08-30 | The achievement medal is drawn, not rendered by a 3D engine | An emoji on a metal disc is a 2D drawing; iOS reaches for SceneKit and then spends most of `MedalOverlayView.swift` on what that costs — an offscreen renderer, a snapshot cache, and a flat stand-in to show until the snapshot lands. `MedalCoin` draws the coin *in projection* instead: the face narrows with the cosine of the turn while the rim band it uncovers widens with the sine, which is iOS's `SCNCylinder(radius: 1.1, height: 0.12)` seen side-on, thickness and all. The turn is passed as a function so it is re-read while drawing, never recomposed — the reason the globe keeps its camera out of Compose state. |
+| 2026-08-30 | The medal overlay is a `Dialog`, not an overlay inside the screen | It gets the whole window (the bottom bar included, as iOS's covers the tab bar), a scrim, and dismissal by the system back gesture — the exit an Android user always reaches for. What it drops is iOS's flight from the small medal's frame: that is a shared-element transition here, several times the code of the thing it decorates. |
+| 2026-08-30 | The catalog is data; titles and unit labels are string resources | `AchievementCatalog` builds from the marked sets alone, so what counts toward what is testable on the JVM and cannot drift from iOS unnoticed. iOS carries `itemLabel` as free text on the achievement; here it is an enum the UI resolves, because every other user-visible string in the app is translatable. |
 | 2026-08-29 | Globe spin physics ported from iOS verbatim, and measured in **dp** rather than pixels | iOS's pan constants are radians per *point*, and a point and a dp are the same physical size, so the same finger travel turns the globe the same amount on both platforms at any screen density. The projection-derived speed it replaced was self-consistent and about 2.4x slower than iOS at the default zoom. |
 
 ## Pinned invariants
@@ -125,6 +129,14 @@ Each is asserted by tests, on both platforms where it applies:
   duration, Core Animation's `easeInEaseOut` curve, the shortest way round in
   longitude, and the 2.8 distance it settles at. A flight outranks momentum and
   the idle spin, and any touch cancels it.
+- **Ten medals, counting the same things as iOS's** (`AchievementTest`,
+  `AchievementCompletionTests`). Globetrotter and Capital Collector run over the
+  195 UN states rather than all 206 features; the explorer medals do count
+  territories; Continental Drifter needs all seven continents, Antarctica
+  included, and counts a continent once however many of its countries are
+  visited; the eight wonders must each name an attraction that
+  `country_highlights.json` still lists, or they could never be ticked off.
+  Both platforms assert these against the same shared data.
 - **The idle spin runs until you touch the globe, and only deselecting brings it
   back** (`VoyageStateTest`, `GlobeGestureTest`). `VoyageState.isAutoRotating`
   starts true and is never persisted, matching `GlobeState.isAutoRotating`: a
@@ -135,25 +147,34 @@ Each is asserted by tests, on both platforms where it applies:
 
 ### Carried over from completed phases
 
-- **Phase 3 — re-measure parsing on hardware.** The DoD says "mid-range device"
-  and was signed off on Pixel 9 emulator numbers (~20 ms to read the asset,
-  ~205–225 ms warm parse against iOS's ~240 ms; ~620–740 ms first parse, which
-  is ART warmup, not parser cost). Run `adb logcat -s CountryDataCache:I` on a
-  cold launch on the A55.
-- **Phase 5 — the device half of the DoD.** Built in a container with no SDK, so
-  these have never run:
+All four device checks were run on a Galaxy A55 (SM-A556B, Android 16) on
+2026-08-30. Three passed as written and are closed; the fourth turned up a real
+cost, below.
 
-  ```bash
-  adb shell am kill com.anmol.voyage        # relaunch: the visited mark must survive
-  adb shell bmgr backupnow com.anmol.voyage
-  adb uninstall com.anmol.voyage && ./gradlew installDebug   # marks must come back
-  ```
+- **Phase 5 and 6 pass on hardware.** State survives `am kill` and relaunch;
+  `bmgr backupnow` succeeds and — the part that was never verified — a full
+  `adb uninstall` followed by a fresh install has Auto Backup put the document
+  back before first launch, marks, wishlist, checklists and view mode included.
+  The Phase 6 loop (search → select → Details → tick a city → back out → reopen)
+  keeps the tick and paints the country in its visited color.
+- **The GeoJSON parse costs ~1.5 s on mid-range hardware, not ~0.2 s.** Seven
+  cold launches measured 1420–1553 ms on the A55, against the ~205–225 ms warm
+  emulator figure the DoD was signed off on and iOS's ~240 ms. The emulator was
+  flattering because it runs on the host's CPU. The parse is off the main
+  thread and overlaps startup, but Home shows a spinner for the whole of it:
+  activity `TotalTime` is ~1.1 s and the map does not draw until ~1.5 s.
 
-- **Phase 6 — drive the loop once on the device.** Search → pick a country →
-  Details → tick a city → back out and reopen: the tick is still there and the
-  map shows the country in its status color.
-- **Gesture tests have only ever run on the emulator.** `./gradlew
-  connectedDebugAndroidTest` against the A55 (it uninstalls the app afterwards).
+  **The baseline profile is not the fix.** Forcing AOT compilation
+  (`cmd package compile -m speed -f`) — what a baseline profile approximates —
+  halved activity launch, 1051–1125 ms → 617–628 ms, and left the parse *slower*
+  at 1721–1778 ms across four runs, well outside the ±40 ms spread of the JIT
+  runs. The likely cause is contention rather than compilation: the main thread
+  finishes its startup work faster and competes with the prewarm thread for the
+  A55's cores. So Phase 11's baseline profile is still worth having for startup,
+  but the parse needs the thing that removes the work instead of speeding it
+  up — a prebuilt binary cache, which is what 7.8 already proposes for geometry.
+  Whatever lands should cover country data too, and be measured on the A55
+  rather than the emulator.
 
 ### Phase 7 — 3D globe, remaining sub-steps
 
@@ -186,18 +207,6 @@ Selection jank appears only in debug builds, so perf claims here belong against
 release builds. Palette values survive the real display pipeline: converted back
 from the Display P3 capture, globe and map land are both exactly `#34BE82`.*
 
-## Phase 8 — Achievements
-
-- [ ] Port achievement definitions + progress model (`Achievement.swift`,
-      including Continental Drifter and Wonders logic)
-- [ ] Achievements screen: Material card grid with progress indicators
-- [ ] Medal detail: full-screen overlay with a Y-axis-spinnable medal via
-      `graphicsLayer` rotation — no 3D engine, which avoids the SceneKit
-      cap-texture class of problems entirely
-- [ ] Unit tests porting the `AchievementCompletionTests` cases
-
-**Definition of done:** achievement progress matches iOS for identical
-visited-country sets (fixture-driven).
 
 ## Phase 9 — Daily Challenge
 
@@ -243,8 +252,9 @@ be built in parallel with them and testers recruited early.
 - [ ] Fastlane `supply` lane, for symmetry with iOS
 - [ ] `.github/workflows/android-release.yml`: signed AAB → internal testing,
       dispatched like the TestFlight workflow
-- [ ] Baseline profile (`androidx.baselineprofile`) covering startup + GeoJSON
-      parsing — the fix for the ~3× cold-parse premium measured in Phase 3
+- [ ] Baseline profile (`androidx.baselineprofile`) covering startup — worth
+      ~450 ms of activity launch on the A55, but measured *not* to help the
+      GeoJSON parse; see [Open work](#open-work)
 - [ ] Versioning: `versionName` mirrors iOS MARKETING_VERSION (user-controlled —
       never bump unasked); `versionCode` auto-increments in CI
 - [ ] Store listing: description, screenshots (phone + tablet), feature graphic,

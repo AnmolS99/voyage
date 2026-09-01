@@ -51,7 +51,6 @@ enum class VoyageDestination(
         labelRes = R.string.destination_achievements_short,
         titleRes = R.string.destination_achievements,
         icon = Icons.Rounded.EmojiEvents,
-        subtitleRes = R.string.placeholder_achievements,
     ),
     Settings(
         route = "settings",
