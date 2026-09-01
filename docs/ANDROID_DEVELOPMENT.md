@@ -71,6 +71,56 @@ The local AVD is API 36 while `targetSdk` is 37 — that combination is valid an
 worth keeping until an API 37 system image is installed, since it also exercises
 the app one platform below its target.
 
+## Release builds
+
+Play distribution needs an **app bundle** (`.aab`), signed with an *upload key*.
+Play App Signing is on for `com.anmol.voyage`, so Play re-signs with the real app
+signing key after upload — the upload key only proves the upload is ours, and
+Google can reset it if it is ever lost.
+
+The key itself lives outside the repo and its passwords are read from
+`android/keystore.properties`, which is gitignored:
+
+```bash
+cp keystore.properties.example keystore.properties
+```
+
+Fill in the two passwords. To create the key in the first place (once, ever):
+
+```bash
+keytool -genkey -v -keystore ~/voyage-android-upload.keystore -alias voyage-android-upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+The certificate fields it prompts for are not validated or shown to anyone; only
+the two-letter country code has to be well formed. **Back the keystore up** —
+it is not in the repo and not in any backup that only covers the repo.
+
+Then:
+
+```bash
+./gradlew bundleRelease
+```
+
+The bundle lands at `app/build/outputs/bundle/release/app-release.aab`, ready to
+upload under Test og publiser → Tester → Intern testing.
+
+Without `keystore.properties` the same command still succeeds and produces an
+**unsigned** bundle — a fresh clone and CI build the same way they always did,
+they just cannot produce something Play will accept. Check before uploading:
+
+```bash
+unzip -l app/build/outputs/bundle/release/app-release.aab | grep -E "META-INF/[A-Z0-9]+\.RSA"
+```
+
+Two things that bite:
+
+- **`versionCode` must increase with every upload.** It is `1` in
+  `app/build.gradle.kts` today; Play rejects a second upload at the same code.
+- **Release builds are minified** (`isMinifyEnabled`, with an empty
+  `proguard-rules.pro` — the libraries ship their own R8 rules). Debug builds
+  exercise none of that, so install a release build on a real device and open
+  every tab before handing a bundle to testers.
+
 ## Project layout
 
 ```

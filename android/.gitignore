@@ -10,5 +10,8 @@ captures/
 *.apk
 *.aab
 *.keystore
+*.jks
 !debug.keystore
 secrets.properties
+# Upload-key passwords. The example file next to it is the committed one.
+keystore.properties
