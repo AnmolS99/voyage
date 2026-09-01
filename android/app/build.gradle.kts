@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     // Kotlin itself comes from AGP's built-in Kotlin support (AGP 9+); only the
@@ -5,6 +7,21 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
 }
+
+/**
+ * Upload-key credentials for signed release builds, kept out of the repo — see
+ * docs/ANDROID_DEVELOPMENT.md. Absent on a fresh clone and in CI, where release
+ * builds stay unsigned rather than failing.
+ */
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) keystorePropertiesFile.inputStream().use(::load)
+}
+
+fun keystoreProperty(name: String): String =
+    checkNotNull(keystoreProperties.getProperty(name)?.takeIf { it.isNotBlank() }) {
+        "keystore.properties has no `$name` — copy keystore.properties.example and fill it in"
+    }
 
 android {
     namespace = "com.anmol.voyage"
@@ -25,8 +42,29 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = file(
+                    // A leading ~ is what anyone naturally writes for a key kept
+                    // in their home directory, where it belongs; the JVM does
+                    // not expand it.
+                    keystoreProperty("storeFile")
+                        .replaceFirst(Regex("^~"), System.getProperty("user.home")),
+                )
+                storePassword = keystoreProperty("storePassword")
+                keyAlias = keystoreProperty("keyAlias")
+                keyPassword = keystoreProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Null until keystore.properties exists, which leaves the bundle
+            // unsigned — what the build produced before signing existed, rather
+            // than a failure for everyone without the key.
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
