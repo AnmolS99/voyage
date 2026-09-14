@@ -62,9 +62,14 @@ Capital stars and microstate dots are **meshes in the globe's scene**
 its own copy of the camera and visibly trails the globe by a frame while
 dragging. The two renderers share the shape (`ui/map/CapitalMarker.kt`), the
 colors (`ui/map/CountryStyle.kt`) and the sizes (`ui/map/CountryMarkers.kt`) —
-but not the drawing. Marker size is specified in `dp` on both, so a dot is the
+but not the drawing. The capital star is sized in `dp` on both, so it is the
 same size on the globe as on the map; the globe gets there with the same
-displace-by-a-uniform trick the border outlines use.
+displace-by-a-uniform trick the border outlines use. Microstate dots use that
+trick too, but on the globe their size is fixed **on the sphere** — 0.8° of arc,
+the `CountryHitTester.POINT_HIT_RADIUS` taps already use, as iOS's
+`SCNCylinder(radius: 0.014)` is — so they grow with the land when zooming in and
+what is drawn is what is tappable. They never drop below the map's 5 dp when
+zoomed out (`GlobeCamera.dotRadiusInWorld`).
 
 The Android globe renders with **Filament** (`ui/globe/`), not SceneKit. Two
 constraints there are easy to break: its materials are **unlit** and its view

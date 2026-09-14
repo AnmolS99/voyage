@@ -52,8 +52,12 @@ class MicrostateDot(val name: String, val ring: MarkerMesh, val fill: MarkerMesh
  */
 object MarkerMeshes {
 
-    /** Corners around a dot. 24 is smooth at every size a dot is ever drawn. */
-    private const val DISC_SEGMENTS = 24
+    /**
+     * Corners around a dot. A dot is fixed-size on the globe, so fully zoomed in
+     * it fills a third of the screen, where 24 corners showed as a polygon; 64 is
+     * round there, and costs nothing across 25 dots.
+     */
+    private const val DISC_SEGMENTS = 64
 
     /**
      * The tangent frame at a point on the globe: which way is east, and which

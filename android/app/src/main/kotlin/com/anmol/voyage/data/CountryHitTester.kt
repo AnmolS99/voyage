@@ -59,12 +59,16 @@ class CountryHitTester(countries: List<GeoJsonCountry>) {
      * The country at a lat/lon: point countries first, then exact polygon
      * containment, then an expanding-radius search so countries smaller than a
      * fingertip stay tappable.
+     *
+     * [pointHitRadius] is how many degrees around a microstate still count as a
+     * tap on it; the globe widens it when zoomed out, where its dots stop
+     * shrinking (see `GlobeCamera.dotRadiusInWorld`).
      */
-    fun findCountry(lat: Double, lon: Double): String? {
+    fun findCountry(lat: Double, lon: Double, pointHitRadius: Double = POINT_HIT_RADIUS): String? {
         for ((name, coord) in pointCountries) {
             val dLat = lat - coord.lat
             val dLon = lon - coord.lon
-            if (sqrt(dLat * dLat + dLon * dLon) < POINT_HIT_RADIUS) return name
+            if (sqrt(dLat * dLat + dLon * dLon) < pointHitRadius) return name
         }
 
         findCountryExact(lat, lon)?.let { return it }
@@ -146,11 +150,14 @@ class CountryHitTester(countries: List<GeoJsonCountry>) {
         return LatLon(lat = latSum / count, lon = avgLon)
     }
 
-    private companion object {
-        /** Degrees of slack around a microstate's dot, matching iOS. */
+    companion object {
+        /**
+         * Degrees of slack around a microstate, matching iOS — and on the globe,
+         * on both platforms, the radius its dot is drawn at.
+         */
         const val POINT_HIT_RADIUS = 0.8
 
-        val SEARCH_RADII = doubleArrayOf(0.5, 1.0, 2.0, 3.0)
-        const val POINTS_PER_RADIUS = 8
+        private val SEARCH_RADII = doubleArrayOf(0.5, 1.0, 2.0, 3.0)
+        private const val POINTS_PER_RADIUS = 8
     }
 }

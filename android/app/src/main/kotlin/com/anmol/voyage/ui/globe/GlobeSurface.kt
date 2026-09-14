@@ -175,9 +175,9 @@ internal fun GlobeSurface(
                     }
                 }
             }
-            .pointerInput(host, hitTester) {
+            .pointerInput(host, hitTester, sizes) {
                 detectTapGestures { offset ->
-                    onCountryTapped(host.countryAt(offset.x, offset.y, hitTester))
+                    onCountryTapped(host.countryAt(offset.x, offset.y, hitTester, sizes))
                 }
             },
         factory = { context ->
@@ -344,10 +344,17 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         onCameraChange(camera)
     }
 
-    /** The country under a tap, or null for a tap that missed the globe. */
-    fun countryAt(x: Float, y: Float, hitTester: CountryHitTester): String? {
+    /**
+     * The country under a tap, or null for a tap that missed the globe.
+     *
+     * A microstate is hit anywhere its dot is drawn: the dot's radius, as arc,
+     * is the hit radius — which only differs from the default when zoomed out,
+     * where the dot holds a minimum size on screen.
+     */
+    fun countryAt(x: Float, y: Float, hitTester: CountryHitTester, sizes: MarkerSizes): String? {
         val latLon = camera.latLonAt(x, y, viewportWidth, viewportHeight) ?: return null
-        return hitTester.findCountry(latLon.lat, latLon.lon)
+        val dotRadius = camera.dotRadiusInWorld(sizes.dotRadiusPx, viewportHeight) / GlobeCamera.GLOBE_RADIUS
+        return hitTester.findCountry(latLon.lat, latLon.lon, pointHitRadius = Math.toDegrees(dotRadius.toDouble()))
     }
 
     fun attach(view: TextureView) {
