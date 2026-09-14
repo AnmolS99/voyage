@@ -77,10 +77,9 @@ object PolygonTriangulator {
      * returned as the surface direction (unit vector), or null if the ray misses.
      *
      * Tap handling uses this instead of the engine's mesh hit-test, for the same
-     * reason iOS does: the atmosphere shell and raised fills/outlines are struck
-     * first by oblique rays, and normalizing those hit points skews the tap
-     * toward screen center — by several degrees near the screen edge at close
-     * zoom.
+     * reason iOS does: raised fills/outlines are struck first by oblique rays,
+     * and normalizing those hit points skews the tap toward screen center, most
+     * of all near the screen edge at close zoom.
      *
      * Rays that narrowly miss the sphere — within [limbSlack] × radius at
      * closest approach — are clamped to the closest-approach direction so taps

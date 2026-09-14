@@ -30,10 +30,10 @@ port.
 | 4 — 2D map | ✅ 2026-08-07. Projection, hit-testing, gestures, microstate dots |
 | 5 — State & persistence | ✅ Built, tests green 2026-08-08; device checks run on the A55 2026-08-30 — state survives a process kill, and Auto Backup restores it on reinstall |
 | 6 — Country details | ✅ Built, tests green 2026-08-09; loop driven end to end on the A55 2026-08-30 |
-| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29). 7.1, 7.2b, 7.3–7.7, 7.9, 7.10 done; 7.2, 7.8, 7.11 open |
+| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29); Earth textures on globe and map 2026-09-14. 7.1–7.7, 7.9, 7.10 done; 7.8, 7.11 open |
 | 8 — Achievements | ✅ 2026-08-30. The ten medals, their progress rings, the expandable item lists, and a spinnable coin |
 | 9 — Daily Challenge | Not started |
-| 10 — Settings & polish | Not started |
+| 10 — Settings & polish | 🟡 Settings tab exists with the texture pickers (2026-09-14); the rest not started |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
@@ -81,6 +81,9 @@ API 36 emulator and on a Galaxy A55 / Android 16, 2026-08-30).
 | 2026-08-30 | The medal overlay is a `Dialog`, not an overlay inside the screen | It gets the whole window (the bottom bar included, as iOS's covers the tab bar), a scrim, and dismissal by the system back gesture — the exit an Android user always reaches for. What it drops is iOS's flight from the small medal's frame: that is a shared-element transition here, several times the code of the thing it decorates. |
 | 2026-08-30 | The catalog is data; titles and unit labels are string resources | `AchievementCatalog` builds from the marked sets alone, so what counts toward what is testable on the JVM and cannot drift from iOS unnoticed. iOS carries `itemLabel` as free text on the achievement; here it is an enum the UI resolves, because every other user-visible string in the app is translatable. |
 | 2026-09-14 | Globe microstate dots are fixed-size on the sphere, not on screen | The 2026-08-26 dp sizing held a dot at 5 dp while the land around it grew, so zooming in to find a microstate made its dot *harder* to hit, and it no longer matched the 0.8° a tap reaches. Now the dot is that 0.8° of arc at every zoom — iOS's `SCNCylinder(radius: 0.014)` — with 5 dp kept as a floor when zoomed out, where the tap radius widens to match. The star stays dp-sized, and the map's dots stay 5 dp as on iOS's map. |
+| 2026-09-14 | No atmosphere glow, on either platform | Dropped from 7.2 and removed from iOS, where no one could say why it had been added. It was a 1.08-radius sphere at 0.15 alpha and 0.3 transparency — about 5% opaque — whose only lasting effects were a blended full-screen draw and a tap-skew bug the analytic ray intersection had to work around. The 1.1 closest zoom it once justified stays. |
+| 2026-09-14 | Earth textures live in `shared/data/textures/`; Android decodes them at most 4096 px wide | One copy, read in place by both apps like `world.geojson` — iOS now bundles them from there rather than from its asset catalog. Two of the three are 8192 × 4096, which is 128 MB as a bitmap and over the 100 MB a `Canvas` will draw, so Android halves them: 32 MB, ~130 ms to decode on the A55. |
+| 2026-09-14 | Over a texture, plain land is not drawn at all | iOS's `hasTexture ? .clear : land`, expressed once as `MapShading.None` in `CountryStyles`. The globe takes an unpainted country out of the scene rather than blending it, and a microstate's border became a real ring (iOS swaps in an `SCNTube`), since the disc it was would show solid black under a missing fill. |
 | 2026-08-29 | Globe spin physics ported from iOS verbatim, and measured in **dp** rather than pixels | iOS's pan constants are radians per *point*, and a point and a dp are the same physical size, so the same finger travel turns the globe the same amount on both platforms at any screen density. The projection-derived speed it replaced was self-consistent and about 2.4x slower than iOS at the default zoom. |
 
 ## Pinned invariants
@@ -102,6 +105,12 @@ Each is asserted by tests, on both platforms where it applies:
   iOS was re-measured against real `SCNNode.boundingSphere` values and landed
   within 0.3pp, so it buckets 12 × 4 too. Changing the grid is a two-platform
   change.
+- **The ocean sphere faces outward, and its UVs are geographic** (`UvSphereTest`).
+  Its triangles were wound clockwise from 7.1 until 7.2, so Filament culled the
+  near hemisphere and drew the inside of the far one. A flat blue ocean looks
+  identical either way; a textured one showed the antipodes, mirrored. The ocean
+  material also sets `flipUV(false)`: Filament flips V by default, which put the
+  image upside down.
 - **Every country is drawn by exactly one path** (`GlobeGeometryWorldTest`).
   `isPointCountry` and `pointCoordinate != null` are not each other's negation:
   a *polygon* feature flagged `renderAs: "point"` would fall through both
@@ -179,18 +188,14 @@ cost, below.
 
 ### Phase 7 — 3D globe, remaining sub-steps
 
-- **7.2 Earth textures + atmosphere glow.** The ocean sphere is done. Still open:
-  bringing the three Earth textures over from the iOS asset catalog into
-  `shared/`, the atmosphere glow, and the transparent-fill branch that lets a
-  texture show through unvisited countries. The flat map wants the same textures
-  and is waiting on this too.
 - **7.8 Build-time geometry cache.** The in-memory half is done (triangulate
   once, prewarm off the main thread): first show 247 ms, returning to the globe
   64 ms on the emulator. A binary cache generated at build time — Android's
   `globe.scn` equivalent — would cut the remaining first ~440 ms.
 - **7.11 One Filament engine per Activity.** Today `GlobeSurfaceHost` dies with
   the composable, so every trip to another tab rebuilds the engine and re-uploads
-  181 meshes. Measured on the emulator: ~35–45 ms of a ~200 ms switch, the rest
+  181 meshes — and, since 7.2, the 4096 × 2048 Earth texture, whose cost has not
+  been measured. Measured on the emulator before the texture: ~35–45 ms of a ~200 ms switch, the rest
   being Compose navigation and surface creation — **a detached view loses its
   surface either way**, so a genuinely instant switch also needs the globe's view
   hoisted above the `NavHost` and hidden rather than removed. Two traps: a
@@ -227,8 +232,10 @@ accepted answers on both platforms; mid-game state survives leaving the app.
 
 ## Phase 10 — Settings & native polish
 
-- [ ] Settings screen — the state already exists (`themeMode`, `globeStyle`,
-      `mapStyle` from Phase 5); this is the UI that sets it
+- [~] Settings screen — the Appearance section is built (2026-09-14): globe and
+      map texture styles, as dropdown menus so more textures can be added
+      without the screen changing shape. Still open: `themeMode` (iOS puts
+      its dark-mode toggle on Home, not in Settings), reset all data, version
 - [ ] Haptics on selection and achievement unlock
 - [ ] Material motion for transitions, themed (monochrome) icon, correct
       behavior across font scales and window sizes (foldables get the globe and

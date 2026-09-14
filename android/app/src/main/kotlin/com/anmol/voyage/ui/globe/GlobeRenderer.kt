@@ -1,7 +1,9 @@
 package com.anmol.voyage.ui.globe
 
+import android.graphics.Bitmap
 import android.view.Surface
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import com.anmol.voyage.globe.GlobeCamera
 import com.anmol.voyage.globe.MarkerMesh
 import com.anmol.voyage.globe.MicrostateDot
@@ -20,10 +22,13 @@ import com.google.android.filament.Renderer
 import com.google.android.filament.Scene
 import com.google.android.filament.Skybox
 import com.google.android.filament.SwapChain
+import com.google.android.filament.Texture
+import com.google.android.filament.TextureSampler
 import com.google.android.filament.VertexBuffer
 import com.google.android.filament.View
 import com.anmol.voyage.ui.theme.VoyagePalette
 import com.google.android.filament.Viewport
+import com.google.android.filament.android.TextureHelper
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
@@ -39,8 +44,9 @@ import kotlin.math.abs
  *
  * Scene layer order follows iOS: ocean sphere (radius 1.0) → country fills
  * (1.003) → border outlines (1.005) → the selected country's overlay outline
- * (1.006) → microstate dots and the capital star (1.0058…1.0066). The atmosphere
- * shell is Phase 7.2 and is not built here yet.
+ * (1.006) → microstate dots and the capital star (1.0058…1.0066). The ocean is
+ * painted with the Earth texture, and a country with nothing to show leaves the
+ * scene so the texture shows through it.
  */
 internal class GlobeRenderer(backgroundColor: FloatArray) {
 
@@ -67,7 +73,29 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
 
     /** Country name → its material instance, so recoloring never rebuilds geometry. */
     private val countryMaterials = mutableMapOf<String, MaterialInstance>()
+
+    /** Country name → its fill entity, so an unpainted country can leave the scene. */
+    private val countryEntities = mutableMapOf<String, Int>()
     private var oceanMaterial: MaterialInstance? = null
+
+    /**
+     * The ocean's texture: the Earth image, or a 1 × 1 swatch of the ocean color
+     * when there is none. It belongs to this engine, so it outlives geometry
+     * rebuilds and is re-bound to each new ocean instance.
+     */
+    private var earthTexture: Texture? = null
+
+    /** What [earthTexture] was made from, so the same image is never uploaded twice. */
+    private var earthSource: Any? = null
+
+    private val earthSampler = TextureSampler(
+        TextureSampler.MinFilter.LINEAR_MIPMAP_LINEAR,
+        TextureSampler.MagFilter.LINEAR,
+        // Across: the sphere's u runs 0.5 → -0.5 (see UvSphere), so it has to wrap.
+        TextureSampler.WrapMode.REPEAT,
+        TextureSampler.WrapMode.CLAMP_TO_EDGE,
+        TextureSampler.WrapMode.CLAMP_TO_EDGE,
+    )
 
     /**
      * The shared border material, and the sectors drawn with it.
@@ -92,6 +120,8 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
     private class Dot(
         val ring: MaterialInstance,
         val fill: MaterialInstance,
+        /** Leaves the scene when the fill is unpainted, leaving the ring. */
+        val fillEntity: Int,
     ) {
         /** The smallest the dot gets on screen, however far out the camera is. */
         var minRadiusPx = 0f
@@ -190,9 +220,12 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
 
         for (dot in dots.values) {
             val radius = globeCamera.dotRadiusInWorld(dot.minRadiusPx, viewportHeight.toFloat())
-            val halfBorder = dot.borderWidthPx / 2f * scale
-            dot.ring.setParameter("thickness", radius + halfBorder)
-            dot.fill.setParameter("thickness", radius - halfBorder)
+            val border = dot.borderWidthPx * scale
+            // The fill stops half a border inside the radius; the ring runs from
+            // there to half a border outside it.
+            dot.fill.setParameter("thickness", radius - border / 2f)
+            dot.ring.setParameter("thickness", radius - border / 2f)
+            dot.ring.setParameter("band", border)
         }
         // Half a stroke out, half a stroke in — what the map's centered `Stroke`
         // on the star's own path covers. (The map's miter joins also spike a
@@ -269,6 +302,7 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         val oceanInstance = materials.ocean.createInstance()
         materialInstances += oceanInstance
         oceanMaterial = oceanInstance
+        earthTexture?.let { oceanInstance.setParameter("earth", it, earthSampler) }
         track(
             addRenderable(
                 positions = ocean.positions,
@@ -283,18 +317,18 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
             val instance = materials.country.createInstance()
             materialInstances += instance
             countryMaterials[country.name] = instance
-            track(
-                addRenderable(
-                    positions = country.mesh.positions,
-                    secondary = Secondary.uvs(country.mesh.uvs),
-                    indices = country.mesh.indices,
-                    material = instance,
-                    // Countries are small patches on the sphere, but a per-country
-                    // box buys nothing here: they are all within the globe, which is
-                    // either fully on screen or being zoomed into.
-                    boundingBox = GLOBE_BOX,
-                ),
+            val renderable = addRenderable(
+                positions = country.mesh.positions,
+                secondary = Secondary.uvs(country.mesh.uvs),
+                indices = country.mesh.indices,
+                material = instance,
+                // Countries are small patches on the sphere, but a per-country
+                // box buys nothing here: they are all within the globe, which is
+                // either fully on screen or being zoomed into.
+                boundingBox = GLOBE_BOX,
             )
+            track(renderable)
+            countryEntities[country.name] = renderable.entity
         }
 
         // One material instance shared by every sector — see `outlineMaterial`.
@@ -330,10 +364,45 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
             val fill = materials.outline.createInstance()
             materialInstances += ring
             materialInstances += fill
-            dots[dot.name] = Dot(ring = ring, fill = fill)
             track(addMarkerRenderable(dot.ring, ring))
-            track(addMarkerRenderable(dot.fill, fill))
+            val fillRenderable = addMarkerRenderable(dot.fill, fill)
+            track(fillRenderable)
+            dots[dot.name] = Dot(ring = ring, fill = fill, fillEntity = fillRenderable.entity)
         }
+    }
+
+    /**
+     * Paints the ocean sphere with [image], or flat [fallback] when there is none
+     * — iOS keeps its plain ocean color when `UIImage(named:)` comes back empty.
+     *
+     * An upload, so it returns early for the image already on the GPU.
+     */
+    fun setEarthTexture(image: Bitmap?, fallback: Color) {
+        val source: Any = image ?: fallback
+        if (source == earthSource) return
+
+        val bitmap = image
+            ?: Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(fallback.toArgb()) }
+        val levels = 32 - Integer.numberOfLeadingZeros(maxOf(bitmap.width, bitmap.height))
+        val texture = Texture.Builder()
+            .width(bitmap.width)
+            .height(bitmap.height)
+            .levels(levels)
+            .sampler(Texture.Sampler.SAMPLER_2D)
+            // Not SRGB8_A8 — see the ocean material.
+            .format(Texture.InternalFormat.RGBA8)
+            .usage(Texture.Usage.DEFAULT or Texture.Usage.GEN_MIPMAPPABLE)
+            .build(engine)
+        TextureHelper.setBitmap(engine, texture, 0, bitmap)
+        // The globe shows the whole image in a few hundred pixels when zoomed
+        // out; without mipmaps it shimmers as it turns.
+        if (levels > 1) texture.generateMipmaps(engine)
+
+        oceanMaterial?.setParameter("earth", texture, earthSampler)
+        // Only once nothing samples the old one.
+        earthTexture?.let { engine.destroyTexture(it) }
+        earthTexture = texture
+        earthSource = source
     }
 
     /**
@@ -344,14 +413,15 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
      */
     fun setDotAppearance(
         name: String,
-        fill: GlobeFill,
+        fill: GlobeFill?,
         border: GlobeFill,
         radiusPx: Float,
         borderWidthPx: Float,
     ) {
         val dot = dots[name] ?: return
         dot.ring.setFill(border)
-        dot.fill.setFill(fill)
+        setShown(dot.fillEntity, fill != null)
+        fill?.let { dot.fill.setFill(it) }
         dot.minRadiusPx = radiusPx
         dot.borderWidthPx = borderWidthPx
         // A new size only reaches the shader on the next size pass, which the
@@ -417,9 +487,16 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         )
     }
 
-    /** Paints one country. */
-    fun setCountryColor(name: String, fill: GlobeFill) {
-        countryMaterials[name]?.setFill(fill)
+    /** Paints one country, or takes it out of the scene when [fill] is null. */
+    fun setCountryColor(name: String, fill: GlobeFill?) {
+        val entity = countryEntities[name] ?: return
+        setShown(entity, fill != null)
+        if (fill != null) countryMaterials[name]?.setFill(fill)
+    }
+
+    /** A scene is a set, so adding a present entity or removing an absent one does nothing. */
+    private fun setShown(entity: Int, shown: Boolean) {
+        if (shown) scene.addEntity(entity) else scene.removeEntity(entity)
     }
 
     /**
@@ -434,11 +511,6 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         setParameter("colorA", a[0], a[1], a[2], a[3])
         setParameter("colorB", b[0], b[1], b[2], b[3])
         setParameter("gradient", if (fill.gradient) 1.0f else 0.0f)
-    }
-
-    fun setOceanColor(color: Color) {
-        val components = color.toFilamentColor()
-        oceanMaterial?.setParameter("baseColor", components[0], components[1], components[2], components[3])
     }
 
     /** Renders one frame. Returns false when the surface is not ready. */
@@ -456,6 +528,7 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         // Filament destroys in reverse creation order, and the engine last.
         engine.flushAndWait()
         releaseGeometry()
+        earthTexture?.let { engine.destroyTexture(it) }
         swapChain?.let { engine.destroySwapChain(it) }
         scene.skybox = null
         engine.destroySkybox(skybox)
@@ -602,6 +675,7 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         materialInstances.forEach { engine.destroyMaterialInstance(it) }
         materialInstances.clear()
         countryMaterials.clear()
+        countryEntities.clear()
         outlineSectors.clear()
         dots.clear()
         oceanMaterial = null

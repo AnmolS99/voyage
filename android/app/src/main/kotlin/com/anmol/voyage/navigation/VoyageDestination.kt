@@ -57,7 +57,6 @@ enum class VoyageDestination(
         labelRes = R.string.destination_settings,
         titleRes = R.string.destination_settings,
         icon = Icons.Rounded.Settings,
-        subtitleRes = R.string.placeholder_settings,
     ),
     ;
 

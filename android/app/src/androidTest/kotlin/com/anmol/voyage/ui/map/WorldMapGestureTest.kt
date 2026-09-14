@@ -64,6 +64,7 @@ class WorldMapGestureTest {
                     hitTester = hitTester,
                     state = state,
                     projection = mapProjection,
+                    texture = null,
                     modifier = Modifier.testTag(MAP),
                 )
             }

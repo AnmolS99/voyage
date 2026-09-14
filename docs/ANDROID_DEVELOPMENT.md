@@ -183,6 +183,10 @@ android/
   `assets.srcDirs` in `app/build.gradle.kts` — never copied into `android/`.
   The app reads it through `AssetManager`; JVM unit tests read the same files
   straight off disk (`SharedFiles`), so they need no emulator or Robolectric.
+  That includes the Earth textures in `shared/data/textures/`, one per
+  `GlobeStyle` and bundled by iOS from the same place; `EarthTextureCache`
+  decodes them at most 4096 px wide, which is what both a `Canvas` and a GPU
+  texture will take.
 - **Launcher icon** is generated from the iOS artwork; re-run after changing it:
 
   ```bash
@@ -330,7 +334,9 @@ to the window, not the renderer.
 **Anything derived from `shared/data` belongs in a process-wide cache, not in a
 composable.** `CountryDataCache` holds the parsed countries and
 `GlobeGeometryCache` the triangulated globe; both are prewarmed off the main
-thread from `VoyageApplication.onCreate`. Held in composition instead, they are
+thread from `VoyageApplication.onCreate`. `EarthTextureCache` holds the decoded
+Earth textures, and is the exception to prewarming: which style to decode is
+only known once the saved state has loaded, so Home asks for it then. Held in composition instead, they are
 rebuilt on every navigation away and back — which is a pure performance bug, so
 nothing looks wrong and only a stopwatch catches it. `VoyageStateTest` substitutes an `InMemoryStateStore` and an
 unconfined coroutine scope, so loading and saving run inline on the test thread

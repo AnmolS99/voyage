@@ -138,6 +138,47 @@ class MarkerMeshTest {
     }
 
     @Test
+    fun `a ring's two edges share directions and differ only by the outer tag`() {
+        // Over an Earth texture an unmarked dot is only this ring, so it must be a
+        // ring: the material tells the edges apart by the tag alone.
+        val mesh = MarkerMeshes.ring(lat = 12.0, lon = 45.0, sphereRadius = 1.0058f)
+        val normal = normalized(mesh.center.x, mesh.center.y, mesh.center.z)
+
+        assertEquals(0, mesh.vertexCount % 2)
+        for (corner in 0 until mesh.vertexCount / 2) {
+            val inner = corner * 2 * 4
+            val outer = inner + 4
+            for (axis in 0..2) {
+                assertEquals(mesh.offsets[inner + axis], mesh.offsets[outer + axis], 0f)
+            }
+            val x = mesh.offsets[inner]
+            val y = mesh.offsets[inner + 1]
+            val z = mesh.offsets[inner + 2]
+            assertEquals("corner $corner is not unit length", 1f, length(x, y, z), 1e-4f)
+            assertEquals("corner $corner leaves the tangent plane", 0f, x * normal[0] + y * normal[1] + z * normal[2], 1e-4f)
+
+            val gradient = mesh.offsets[inner + 3]
+            assertTrue("gradient $gradient outside 0…1", gradient in 0f..1f)
+            assertEquals(gradient + MarkerMeshes.RING_OUTER_TAG, mesh.offsets[outer + 3], 1e-5f)
+        }
+    }
+
+    @Test
+    fun `every triangle of a ring spans both edges, leaving the middle open`() {
+        val mesh = MarkerMeshes.ring(lat = 0.0, lon = 0.0, sphereRadius = 1f)
+
+        // Two triangles per corner, and no triangle made of one edge alone —
+        // which is what would cover the hole.
+        assertEquals(mesh.vertexCount * 3, mesh.indices.size)
+        for (triangle in 0 until mesh.indices.size / 3) {
+            val corners = (0..2).map { mesh.indices[triangle * 3 + it] }
+            corners.forEach { assertTrue("index $it out of bounds", it in 0 until mesh.vertexCount) }
+            val edges = corners.map { it % 2 }.toSet()
+            assertEquals("triangle $triangle lies on one edge", setOf(0, 1), edges)
+        }
+    }
+
+    @Test
     fun `the star is built from the shape the map draws`() {
         val corners = CapitalMarker.starVertices(outerRadius = 1f, yUp = true)
         val mesh = MarkerMeshes.star(lat = 48.0, lon = 2.0, sphereRadius = 1.0066f, corners = corners)

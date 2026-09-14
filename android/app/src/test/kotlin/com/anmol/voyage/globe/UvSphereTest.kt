@@ -69,6 +69,43 @@ class UvSphereTest {
     }
 
     @Test
+    fun `every triangle faces outward`() {
+        // Filament culls clockwise faces. Wound the other way, the sphere drops
+        // its near hemisphere and the camera sees the far one from inside — a
+        // flat ocean hides that, a textured one shows the wrong half of the world.
+        val sphere = UvSphere.build(segments = 24, rings = 12)
+        val p = sphere.positions
+        for (triangle in 0 until sphere.indices.size / 3) {
+            val (a, b, c) = (0..2).map { sphere.indices[triangle * 3 + it] * 3 }
+            val abX = p[b] - p[a]; val abY = p[b + 1] - p[a + 1]; val abZ = p[b + 2] - p[a + 2]
+            val acX = p[c] - p[a]; val acY = p[c + 1] - p[a + 1]; val acZ = p[c + 2] - p[a + 2]
+            val normalX = abY * acZ - abZ * acY
+            val normalY = abZ * acX - abX * acZ
+            val normalZ = abX * acY - abY * acX
+            val outward = normalX * (p[a] + p[b] + p[c]) +
+                normalY * (p[a + 1] + p[b + 1] + p[c + 1]) +
+                normalZ * (p[a + 2] + p[b + 2] + p[c + 2])
+            assertTrue("triangle $triangle faces inward", outward > 0f)
+        }
+    }
+
+    @Test
+    fun `uvs are each vertex's place on an equirectangular image`() {
+        // Checked by round trip rather than by restating the formula: the
+        // latitude and longitude a UV names must put a point exactly where
+        // `latLonToSphere` — which places every country — puts it.
+        val sphere = UvSphere.build(segments = 36, rings = 18)
+        for (v in 0 until sphere.vertexCount) {
+            val lat = 90.0 - sphere.uvs[v * 2 + 1] * 180.0
+            val lon = sphere.uvs[v * 2] * 360.0 - 180.0
+            val expected = PolygonTriangulator.latLonToSphere(lat, lon, 1f)
+            assertEquals("vertex $v x", expected.x, sphere.positions[v * 3], 1e-4f)
+            assertEquals("vertex $v y", expected.y, sphere.positions[v * 3 + 1], 1e-4f)
+            assertEquals("vertex $v z", expected.z, sphere.positions[v * 3 + 2], 1e-4f)
+        }
+    }
+
+    @Test
     fun `a sphere needs enough segments to be a sphere`() {
         runCatching { UvSphere.build(segments = 2) }.also { assertTrue(it.isFailure) }
         runCatching { UvSphere.build(rings = 1) }.also { assertTrue(it.isFailure) }

@@ -518,10 +518,9 @@ struct GlobeView: UIViewRepresentable {
         /// Exact tap → globe-surface lat/lon: unprojects the screen point into a
         /// world-space ray and intersects it with the globe sphere analytically.
         ///
-        /// A SceneKit hitTest is deliberately not used here — its nearest hit is
-        /// almost always the atmosphere shell (radius 1.08), and normalizing that
-        /// hit point misreads oblique taps: near the screen edge at close zoom the
-        /// error reaches several degrees, enough to land in a neighboring country.
+        /// A SceneKit hitTest is deliberately not used here — its nearest hit is a
+        /// fill or outline raised above the sphere, and normalizing that hit point
+        /// misreads oblique taps, most of all near the screen edge at close zoom.
         static func surfaceLatLon(at point: CGPoint, in sceneView: SCNView,
                                   globeNode: SCNNode) -> (lat: Double, lon: Double)? {
             let nearWorld = sceneView.unprojectPoint(SCNVector3(Float(point.x), Float(point.y), 0))

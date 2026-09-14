@@ -54,6 +54,8 @@ import com.anmol.voyage.data.AchievementCatalog
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.voyageCardColors
+import com.anmol.voyage.ui.theme.voyageCardElevation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -134,8 +136,8 @@ fun AchievementsScreen(state: VoyageState, modifier: Modifier = Modifier) {
 private fun SummaryCard(completed: Int, total: Int, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = cardColors(),
-        elevation = cardElevation(),
+        colors = voyageCardColors(),
+        elevation = voyageCardElevation(),
     ) {
         Column(
             modifier = Modifier
@@ -175,8 +177,8 @@ private fun AchievementCard(
     val accent = accentFor(achievement)
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = cardColors(),
-        elevation = cardElevation(),
+        colors = voyageCardColors(),
+        elevation = voyageCardElevation(),
         border = if (achievement.isCompleted) {
             BorderStroke(2.dp, accent.copy(alpha = COMPLETED_BORDER_ALPHA))
         } else {
@@ -369,24 +371,6 @@ private fun ItemList(
         )
     }
 }
-
-/**
- * Cards sit on the page, not in it.
- *
- * Material's default card container is `surfaceContainerLow`, which in this
- * theme is a shade of the same warm paper the page background is — the cards
- * disappeared into it. `surface` is the app's card color on both platforms:
- * white on the light page, the dark card grey on the dark one, exactly what
- * iOS's `AppColors.cardBackground` returns.
- */
-@Composable
-private fun cardColors() = CardDefaults.cardColors(
-    containerColor = MaterialTheme.colorScheme.surface,
-)
-
-/** A soft shadow, standing in for iOS's `.shadow(radius: 8, y: 2)`. */
-@Composable
-private fun cardElevation() = CardDefaults.cardElevation(defaultElevation = 2.dp)
 
 /** Green once earned, the app's orange while it is still in progress. */
 private fun accentFor(achievement: Achievement): Color =

@@ -35,20 +35,28 @@ internal data class GlobeFill(
  */
 internal object GlobeCountryFills {
 
-    /** The country's fill. */
-    fun of(isVisited: Boolean, isWishlist: Boolean, isSelected: Boolean): GlobeFill =
-        CountryStyles.of(isVisited, isWishlist, isSelected).fill.toGlobeFill()
+    /**
+     * The country's fill, or null where it is not drawn at all and the Earth
+     * texture shows through.
+     */
+    fun of(isVisited: Boolean, isWishlist: Boolean, isSelected: Boolean, hasTexture: Boolean): GlobeFill? =
+        CountryStyles.of(isVisited, isWishlist, isSelected, hasTexture).fill.toGlobeFillOrNull()
 
     /**
      * The selected country's overlay border. Always asked for a selected
      * country, because that is the only one drawn with an overlay — the rest
-     * share the black sector outlines.
+     * share the black sector outlines. A texture only ever changes fills, so it
+     * does not come into it.
      */
     fun selectedBorderOf(isVisited: Boolean, isWishlist: Boolean): GlobeFill =
-        CountryStyles.of(isVisited, isWishlist, isSelected = true).border.toGlobeFill()
+        CountryStyles.of(isVisited, isWishlist, isSelected = true, hasTexture = true).border.toGlobeFill()
 
-    /** Translates any shading `CountryStyles` produces into the material's uniforms. */
+    /** A shading that may be unpainted: null for [MapShading.None], the uniforms otherwise. */
+    fun MapShading.toGlobeFillOrNull(): GlobeFill? = if (this == MapShading.None) null else toGlobeFill()
+
+    /** Translates a painted shading `CountryStyles` produces into the material's uniforms. */
     fun MapShading.toGlobeFill(): GlobeFill = when (this) {
+        MapShading.None -> error("an unpainted shading has no uniforms; use toGlobeFillOrNull")
         is MapShading.Solid -> GlobeFill(colorA = color, colorB = color, gradient = false)
         // Yellow at the bottom-left of the country's box, purple at the top
         // right — the direction the outline's gradient parameter runs in, and

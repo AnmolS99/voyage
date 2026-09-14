@@ -78,7 +78,10 @@ class GlobeGestureTest {
                 countries = meshes,
                 outlineSectors = outlines,
                 microstateDots = emptyList(),
-                colorFor = { GlobeCountryFills.of(isVisited = false, isWishlist = false, isSelected = false) },
+                colorFor = {
+                    GlobeCountryFills.of(isVisited = false, isWishlist = false, isSelected = false, hasTexture = false)
+                },
+                earthTexture = null,
                 oceanColor = Color.Blue,
                 backgroundColor = Color.Black,
                 hitTester = hitTester,

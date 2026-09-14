@@ -61,8 +61,16 @@
     <string name="medal_drag_to_spin">Drag to spin</string>
     <string name="medal_close">Close</string>
 
+    <!-- Settings (wording mirrors iOS SettingsView) -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_globe_style">Globe style</string>
+    <string name="settings_map_style">Map style</string>
+    <string name="settings_appearance_footer">Choose texture styles for the globe and map views.</string>
+    <string name="style_stylized">Stylized</string>
+    <string name="style_natural">Natural</string>
+    <string name="style_realistic">Realistic</string>
+
     <!-- Placeholder copy, removed as each phase lands its real screen -->
     <string name="placeholder_daily">The daily geography challenge calendar lands here.</string>
     <string name="placeholder_challenges">Longer-form challenges land here.</string>
-    <string name="placeholder_settings">Appearance and style preferences land here.</string>
 </resources>

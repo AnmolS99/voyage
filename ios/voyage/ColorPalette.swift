@@ -50,9 +50,6 @@ enum AppColors {
         }
     }()
 
-    /// Atmosphere glow
-    static let atmosphere = UIColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.15)
-
     /// Capital star marker — shared by the globe and the map so both match.
     /// Uses the app's theme orange rather than restating its RGB.
     static let capitalMarker = buttonColor

@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -112,9 +113,11 @@ fun DrawScope.drawMicrostateDot(center: Offset, style: CountryStyle, sizes: Mark
 /**
  * Resolves a shading to a brush. The visited+wishlist gradient runs bottom-left to
  * top-right across the shape being painted, so it needs that shape's bounds.
+ * An unpainted shading is fully transparent, which Skia skips without drawing.
  */
 fun MapShading.brush(bounds: Rect): Brush = when (this) {
     is MapShading.Solid -> SolidColor(color)
+    MapShading.None -> SolidColor(Color.Transparent)
     MapShading.VisitedWishlist -> Brush.linearGradient(
         colors = listOf(VoyagePalette.visited, VoyagePalette.wishlist),
         start = Offset(bounds.left, bounds.bottom),

@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import com.anmol.voyage.ui.theme.VoyagePalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -18,8 +19,21 @@ import org.junit.Test
  */
 class GlobeCountryFillTest {
 
+    /** An untextured fill, which is always painted. */
     private fun fill(visited: Boolean = false, wishlist: Boolean = false, selected: Boolean = false) =
-        GlobeCountryFills.of(isVisited = visited, isWishlist = wishlist, isSelected = selected)
+        checkNotNull(
+            GlobeCountryFills.of(isVisited = visited, isWishlist = wishlist, isSelected = selected, hasTexture = false),
+        )
+
+    @Test
+    fun `over a texture plain land is not drawn, and a status still is`() {
+        assertNull(GlobeCountryFills.of(isVisited = false, isWishlist = false, isSelected = false, hasTexture = true))
+        assertNull(GlobeCountryFills.of(isVisited = true, isWishlist = false, isSelected = true, hasTexture = true))
+        assertEquals(
+            VoyagePalette.wishlist,
+            GlobeCountryFills.of(isVisited = false, isWishlist = true, isSelected = false, hasTexture = true)?.colorA,
+        )
+    }
 
     @Test
     fun `an untouched country is flat land green`() {

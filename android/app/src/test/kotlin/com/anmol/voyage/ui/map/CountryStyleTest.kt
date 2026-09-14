@@ -20,8 +20,28 @@ class CountryStyleTest {
     private val wishlist = MapShading.Solid(VoyagePalette.wishlist)
     private val black = MapShading.Solid(Color.Black)
 
-    private fun style(visited: Boolean = false, wishlist: Boolean = false, selected: Boolean = false) =
-        CountryStyles.of(isVisited = visited, isWishlist = wishlist, isSelected = selected)
+    private fun style(
+        visited: Boolean = false,
+        wishlist: Boolean = false,
+        selected: Boolean = false,
+        textured: Boolean = false,
+    ) = CountryStyles.of(isVisited = visited, isWishlist = wishlist, isSelected = selected, hasTexture = textured)
+
+    @Test
+    fun `over an Earth texture plain land is left unpainted`() {
+        // iOS's `hasTexture ? .clear : land`, for untouched and selected alike.
+        assertEquals(MapShading.None, style(textured = true).fill)
+        assertEquals(MapShading.None, style(selected = true, textured = true).fill)
+        assertEquals(MapShading.None, style(visited = true, selected = true, textured = true).fill)
+        assertEquals(black, style(textured = true).border)
+    }
+
+    @Test
+    fun `a texture never hides a status`() {
+        assertEquals(visited, style(visited = true, textured = true).fill)
+        assertEquals(MapShading.VisitedWishlist, style(visited = true, wishlist = true, textured = true).fill)
+        assertEquals(wishlist, style(wishlist = true, selected = true, textured = true).border)
+    }
 
     @Test
     fun `an untouched country is land green with a thin black border`() {

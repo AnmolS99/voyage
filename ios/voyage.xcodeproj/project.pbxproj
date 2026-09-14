@@ -44,6 +44,9 @@
 		E81234560033 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
 		E81234560034 /* CountryExploreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550034 /* CountryExploreView.swift */; };
 		E81234560035 /* country_highlights.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550035 /* country_highlights.json */; };
+		E81234560090 /* earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550090 /* earth_texture.jpg */; };
+		E81234560091 /* natural_earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550091 /* natural_earth_texture.jpg */; };
+		E81234560092 /* stylized_earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550092 /* stylized_earth_texture.jpg */; };
 		E81234560036 /* DailyChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550036 /* DailyChallenge.swift */; };
 		E81234560037 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550037 /* SupabaseClient.swift */; };
 		E81234560038 /* ChallengeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550038 /* ChallengeStore.swift */; };
@@ -124,6 +127,9 @@
 		E81234550032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		E81234550034 /* CountryExploreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryExploreView.swift; sourceTree = "<group>"; };
 		E81234550035 /* country_highlights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = country_highlights.json; path = "../../shared/data/country_highlights.json"; sourceTree = "<group>"; };
+		E81234550090 /* earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = earth_texture.jpg; path = "../../shared/data/textures/earth_texture.jpg"; sourceTree = "<group>"; };
+		E81234550091 /* natural_earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = natural_earth_texture.jpg; path = "../../shared/data/textures/natural_earth_texture.jpg"; sourceTree = "<group>"; };
+		E81234550092 /* stylized_earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = stylized_earth_texture.jpg; path = "../../shared/data/textures/stylized_earth_texture.jpg"; sourceTree = "<group>"; };
 		E81234550036 /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallenge.swift; sourceTree = "<group>"; };
 		E81234550037 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		E81234550038 /* ChallengeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeStore.swift; sourceTree = "<group>"; };
@@ -224,6 +230,9 @@
 				E81234550006 /* Assets.xcassets */,
 				E81234550010 /* world.geojson */,
 				E81234550035 /* country_highlights.json */,
+				E81234550090 /* earth_texture.jpg */,
+				E81234550091 /* natural_earth_texture.jpg */,
+				E81234550092 /* stylized_earth_texture.jpg */,
 				E81234550019 /* globe.scn */,
 			);
 			path = voyage;
@@ -405,6 +414,9 @@
 				E81234560019 /* globe.scn in Resources */,
 				E81234560027 /* TipJar.storekit in Resources */,
 				E81234560035 /* country_highlights.json in Resources */,
+				E81234560090 /* earth_texture.jpg in Resources */,
+				E81234560091 /* natural_earth_texture.jpg in Resources */,
+				E81234560092 /* stylized_earth_texture.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
