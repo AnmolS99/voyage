@@ -33,7 +33,7 @@ port.
 | 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29); Earth textures on globe and map 2026-09-14. 7.1–7.7, 7.9, 7.10 done; 7.8, 7.11 open |
 | 8 — Achievements | ✅ 2026-08-30. The ten medals, their progress rings, the expandable item lists, and a spinnable coin |
 | 9 — Daily Challenge | Not started |
-| 10 — Settings & polish | Not started |
+| 10 — Settings & polish | 🟡 Settings tab exists with the texture pickers (2026-09-14); the rest not started |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
@@ -232,8 +232,10 @@ accepted answers on both platforms; mid-game state survives leaving the app.
 
 ## Phase 10 — Settings & native polish
 
-- [ ] Settings screen — the state already exists (`themeMode`, `globeStyle`,
-      `mapStyle` from Phase 5); this is the UI that sets it
+- [~] Settings screen — the Appearance section is built (2026-09-14): globe and
+      map texture styles, as dropdown menus so more textures can be added
+      without the screen changing shape. Still open: `themeMode` (iOS puts
+      its dark-mode toggle on Home, not in Settings), reset all data, version
 - [ ] Haptics on selection and achievement unlock
 - [ ] Material motion for transitions, themed (monochrome) icon, correct
       behavior across font scales and window sizes (foldables get the globe and

@@ -23,6 +23,7 @@ import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.achievements.AchievementsScreen
 import com.anmol.voyage.ui.home.HomeScreen
 import com.anmol.voyage.ui.screens.PlaceholderScreen
+import com.anmol.voyage.ui.settings.SettingsScreen
 
 /**
  * App shell: a Material 3 [NavigationBar] over a [NavHost], one entry per
@@ -90,6 +91,7 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
                         destination == VoyageDestination.Home -> HomeScreen(state = state)
                         destination == VoyageDestination.Achievements ->
                             AchievementsScreen(state = state)
+                        destination == VoyageDestination.Settings -> SettingsScreen(state = state)
                         // Destinations a later phase still owns.
                         subtitleRes != null -> PlaceholderScreen(
                             title = stringResource(destination.titleRes),
