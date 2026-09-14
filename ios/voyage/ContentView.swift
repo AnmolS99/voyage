@@ -145,10 +145,8 @@ class GlobeState: ObservableObject {
     @Published var wishlistCountries: Set<String> = []
     @Published var checkedCities: [String: Set<String>] = [:]
     @Published var checkedAttractions: [String: Set<String>] = [:]
-    /// Closest the camera may get to the globe's center. The floor is set by the
-    /// atmosphere shell (radius 1.08) — the camera has to stay outside it, or its
-    /// double-sided translucent glow tints the whole view — and by the camera's
-    /// zNear, which must clear the globe surface at `minCameraDistance - 1`.
+    /// Closest the camera may get to the globe's center: just above the surface,
+    /// with the camera's zNear clearing it at `minCameraDistance - 1`.
     static let minCameraDistance: Float = 1.1
     /// Furthest the camera may get from the globe's center.
     ///

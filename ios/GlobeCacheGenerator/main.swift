@@ -114,19 +114,6 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
     oceanNode.name = "ocean"
     globeNode.addChildNode(oceanNode)
 
-    // Create atmosphere glow
-    let atmosphereSphere = SCNSphere(radius: 1.08)
-    atmosphereSphere.segmentCount = 48
-    let atmosphereMaterial = SCNMaterial()
-    atmosphereMaterial.diffuse.contents = NSColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.15)
-    atmosphereMaterial.isDoubleSided = true
-    atmosphereMaterial.transparency = 0.3
-    atmosphereSphere.materials = [atmosphereMaterial]
-
-    let atmosphereNode = SCNNode(geometry: atmosphereSphere)
-    atmosphereNode.name = "atmosphere"
-    globeNode.addChildNode(atmosphereNode)
-
     // Add countries
     var allOutlinePolygons: [[[Double]]] = []
     for country in countries {
@@ -260,7 +247,7 @@ func main() {
     // Count nodes
     var countryNodeCount = 0
     globeNode.enumerateChildNodes { node, _ in
-        if let name = node.name, !name.hasSuffix("_outline") && name != "ocean" && name != "atmosphere" {
+        if let name = node.name, !name.hasSuffix("_outline") && name != "ocean" {
             countryNodeCount += 1
         }
     }

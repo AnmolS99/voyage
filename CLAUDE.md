@@ -80,7 +80,7 @@ rule: it is uploaded as `RGBA8`, not sRGB, and the ocean material sets
 `flipUV(false)` because `UvSphere`'s UVs are already top-left like the image.
 Over a texture, plain land is `MapShading.None` in `CountryStyles` — iOS's
 `hasTexture ? .clear : land` — so the globe drops those countries from the scene
-and the map leaves them unpainted. Android has no atmosphere shell; iOS does.
+and the map leaves them unpainted.
 
 Border outlines work as they do on iOS — zero-width strips widened at render
 time so they keep a constant on-screen width — but the pieces sit elsewhere:
@@ -234,7 +234,7 @@ hemisphere. The selected country's outline is a separate overlay node
 (`selected_outline`, managed by `GlobeView.Coordinator.updateSelectedOutline`) drawn
 thicker, status-colored, and raised above the sector outlines.
 
-The globe has layers: ocean sphere (base, Earth-textured) → country polygons → border outlines → atmosphere glow (iOS only)
+The globe has layers: ocean sphere (base, Earth-textured) → country polygons → border outlines
 
 ## Globe and Map Consistency
 

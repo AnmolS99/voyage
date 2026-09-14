@@ -25,8 +25,7 @@ final class voyageTests: XCTestCase {
                !name.isEmpty,
                !name.hasSuffix("_outline"),
                !name.hasPrefix("outline_sector_"),
-               name != "ocean",
-               name != "atmosphere" {
+               name != "ocean" {
                 globeCountries.insert(name)
             }
         }
@@ -214,26 +213,6 @@ final class voyageTests: XCTestCase {
         }
     }
 
-    // Documents the bug the analytic intersection fixes: SceneKit's hitTest
-    // struck the atmosphere shell (radius 1.08) first, and normalizing that hit
-    // point drags oblique taps toward the screen center by several degrees —
-    // enough to turn an edge-of-screen tap on Luxembourg into a tap on France.
-    func testAtmosphereShellHitSkewsObliqueTaps() {
-        let cameraDistance = Double(GlobeState.minCameraDistance)
-        let origin = simd_double3(cameraDistance, 0, 0)
-        let target = unitVector(lat: 0, lon: 4)  // ~Luxembourg's offset from screen center
-
-        let exact = PolygonTriangulator.raySphereSurfaceDirection(
-            origin: origin, direction: target - origin)!
-        let shell = PolygonTriangulator.raySphereSurfaceDirection(
-            origin: origin, direction: target - origin, radius: 1.08)!
-
-        XCTAssertLessThan(angleDegrees(exact, target), 1e-6,
-                          "Analytic surface intersection should be exact")
-        XCTAssertGreaterThan(angleDegrees(shell, target), 2,
-                             "Shell hit should skew by degrees — the pre-fix misclick")
-    }
-
     // Near-misses clamp to the limb so taps just off the globe still resolve;
     // wide misses and rays pointing away return nil
     func testRaySphereLimbClampAndMisses() {
@@ -284,11 +263,6 @@ final class voyageTests: XCTestCase {
         let latRad = lat * .pi / 180
         let lonRad = -lon * .pi / 180
         return simd_double3(cos(latRad) * cos(lonRad), sin(latRad), cos(latRad) * sin(lonRad))
-    }
-
-    private func angleDegrees(_ a: simd_double3, _ b: simd_double3) -> Double {
-        let cosine = simd_dot(simd_normalize(a), simd_normalize(b))
-        return acos(min(1, max(-1, cosine))) * 180 / .pi
     }
 
     // Helper functions for tests

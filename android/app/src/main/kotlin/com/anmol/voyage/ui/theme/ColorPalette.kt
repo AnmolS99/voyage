@@ -54,9 +54,6 @@ object VoyagePalette {
     /** Wishlist when selected (brighter purple) */
     val wishlistSelected = Color(0xFFBF8CF2)
 
-    /** Atmosphere glow (15% alpha, as on iOS) */
-    val atmosphere = Color(0x2699CCFF)
-
     /** Ocean for the flat map view (slightly darker than the globe's) */
     val oceanMap = Color(0xFF31739B)
 

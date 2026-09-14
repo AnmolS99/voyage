@@ -52,7 +52,7 @@ class GlobeScene {
         cameraNode.camera = SCNCamera()
         cameraNode.camera?.fieldOfView = 45
         // Well inside `GlobeState.minCameraDistance - 1` (the globe surface at the
-        // closest zoom) so deep zoom doesn't clip the surface or the atmosphere shell.
+        // closest zoom) so deep zoom doesn't clip the surface.
         cameraNode.camera?.zNear = 0.01
         cameraNode.camera?.zFar = 100
         cameraNode.position = SCNVector3(0, 0, 4)
@@ -97,19 +97,6 @@ class GlobeScene {
         let oceanNode = SCNNode(geometry: oceanSphere)
         oceanNode.name = "ocean"
         globeNode.addChildNode(oceanNode)
-
-        // Create atmosphere glow
-        let atmosphereSphere = SCNSphere(radius: 1.08)
-        atmosphereSphere.segmentCount = 48
-        let atmosphereMaterial = SCNMaterial()
-        atmosphereMaterial.diffuse.contents = AppColors.atmosphere
-        atmosphereMaterial.isDoubleSided = true
-        atmosphereMaterial.transparency = 0.3
-        atmosphereSphere.materials = [atmosphereMaterial]
-
-        let atmosphereNode = SCNNode(geometry: atmosphereSphere)
-        atmosphereNode.name = "atmosphere"
-        globeNode.addChildNode(atmosphereNode)
 
         // Add countries from GeoJSON
         addCountriesFromGeoJSON(to: globeNode, coordinator: coordinator)

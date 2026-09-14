@@ -46,8 +46,7 @@ import kotlin.math.abs
  * (1.003) → border outlines (1.005) → the selected country's overlay outline
  * (1.006) → microstate dots and the capital star (1.0058…1.0066). The ocean is
  * painted with the Earth texture, and a country with nothing to show leaves the
- * scene so the texture shows through it. iOS's atmosphere shell is deliberately
- * not ported.
+ * scene so the texture shows through it.
  */
 internal class GlobeRenderer(backgroundColor: FloatArray) {
 

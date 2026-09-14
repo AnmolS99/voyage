@@ -31,10 +31,10 @@ class PolygonTriangulator {
     /// First crossing of a ray with a sphere of `radius` centered at the origin,
     /// returned as the surface direction (unit vector), or nil if the ray misses.
     ///
-    /// Tap handling uses this instead of SceneKit's mesh hitTest: the atmosphere
-    /// shell (radius 1.08) and raised fills/outlines are struck first by oblique
-    /// rays, and normalizing those hit points skews the tap toward screen center —
-    /// by several degrees near the screen edge at close zoom.
+    /// Tap handling uses this instead of SceneKit's mesh hitTest: raised
+    /// fills/outlines are struck first by oblique rays, and normalizing those hit
+    /// points skews the tap toward screen center, most of all near the screen edge
+    /// at close zoom.
     ///
     /// Rays that narrowly miss the sphere — within `limbSlack` × radius at closest
     /// approach — are clamped to the closest-approach direction so taps just off
