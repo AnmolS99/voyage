@@ -1,5 +1,6 @@
 package com.anmol.voyage.globe
 
+import com.anmol.voyage.data.CountryHitTester
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -249,6 +250,37 @@ class GlobeCameraTest {
             val pixels = world / halfViewport(distance) * (height / 2f)
             assertEquals("marker changed size at distance $distance", radiusPx, pixels, 1e-2f)
         }
+    }
+
+    @Test
+    fun `a microstate dot keeps iOS's size on the globe as the camera moves in`() {
+        val height = 2400f
+        val minRadiusPx = 13f
+        // iOS draws the dot's outline as SCNCylinder(radius: 0.014) at every zoom.
+        for (distance in listOf(1.1f, 2f, GlobeCamera.DEFAULT_DISTANCE)) {
+            val radius = GlobeCamera(distance = distance).dotRadiusInWorld(minRadiusPx, height)
+            assertEquals("dot changed world size at distance $distance", 0.014f, radius, 1e-4f)
+        }
+    }
+
+    @Test
+    fun `a microstate dot covers exactly the arc a tap on it reaches`() {
+        val radius = GlobeCamera(distance = 2f).dotRadiusInWorld(minRadiusPx = 13f, viewportHeight = 2400f)
+        assertEquals(
+            CountryHitTester.POINT_HIT_RADIUS,
+            Math.toDegrees((radius / GlobeCamera.GLOBE_RADIUS).toDouble()),
+            1e-6,
+        )
+    }
+
+    @Test
+    fun `zoomed out, a microstate dot stops shrinking at its minimum on-screen size`() {
+        val height = 2400f
+        val minRadiusPx = 13f
+        val camera = GlobeCamera(distance = GlobeCamera.MAX_DISTANCE)
+        val radius = camera.dotRadiusInWorld(minRadiusPx, height)
+        assertEquals(minRadiusPx * camera.pixelSizeInWorld(height), radius, 1e-6f)
+        assertTrue("the floor should be above the dot's world size here", radius > 0.014f)
     }
 
     @Test

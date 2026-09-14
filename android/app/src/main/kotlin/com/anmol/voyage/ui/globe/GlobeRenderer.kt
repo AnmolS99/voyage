@@ -88,14 +88,16 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
     /** World units per screen pixel last written to the markers; NaN forces a rewrite. */
     private var markerScale = Float.NaN
 
-    /** One microstate's two material instances, plus the size they are drawn at. */
+    /** One microstate's two material instances, plus what sizes them. */
     private class Dot(
         val ring: MaterialInstance,
         val fill: MaterialInstance,
     ) {
-        /** Outer and inner radii in pixels, from the country's current style. */
-        var ringRadiusPx = 0f
-        var fillRadiusPx = 0f
+        /** The smallest the dot gets on screen, however far out the camera is. */
+        var minRadiusPx = 0f
+
+        /** The ring's width, from the country's current style. */
+        var borderWidthPx = 0f
     }
 
     private val dots = mutableMapOf<String, Dot>()
@@ -171,15 +173,14 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
     }
 
     /**
-     * Sizes the markers so they cover the same pixels at every zoom, exactly as
-     * the flat map's do outside its pan/zoom matrix.
+     * Sizes the markers for the current zoom.
      *
-     * The dots and the star are the one thing on the globe measured in screen
-     * terms rather than world terms — a microstate has to stay visible and
-     * tappable when zoomed out, which is why the map draws them this way and why
-     * the globe follows. iOS instead gives its globe markers a fixed world size
-     * and compensates the star with `sqrt(zoomScale)`, which is why its globe
-     * and map disagree about marker size and Android's do not.
+     * The star covers the same pixels at every zoom, exactly as the flat map's
+     * does outside its pan/zoom matrix. A dot instead keeps a fixed size on the
+     * globe, as iOS's does, so it grows with the land around it and stays the
+     * area a tap on it reaches — down to a floor in pixels when zoomed out
+     * ([GlobeCamera.dotRadiusInWorld]). Its ring stays a constant width on
+     * screen either way, like every other border.
      */
     private fun setMarkerSizes(globeCamera: GlobeCamera) {
         if (viewportHeight == 0) return
@@ -188,8 +189,10 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         markerScale = scale
 
         for (dot in dots.values) {
-            dot.ring.setParameter("thickness", dot.ringRadiusPx * scale)
-            dot.fill.setParameter("thickness", dot.fillRadiusPx * scale)
+            val radius = globeCamera.dotRadiusInWorld(dot.minRadiusPx, viewportHeight.toFloat())
+            val halfBorder = dot.borderWidthPx / 2f * scale
+            dot.ring.setParameter("thickness", radius + halfBorder)
+            dot.fill.setParameter("thickness", radius - halfBorder)
         }
         // Half a stroke out, half a stroke in — what the map's centered `Stroke`
         // on the star's own path covers. (The map's miter joins also spike a
@@ -349,8 +352,8 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         val dot = dots[name] ?: return
         dot.ring.setFill(border)
         dot.fill.setFill(fill)
-        dot.ringRadiusPx = radiusPx + borderWidthPx / 2f
-        dot.fillRadiusPx = radiusPx - borderWidthPx / 2f
+        dot.minRadiusPx = radiusPx
+        dot.borderWidthPx = borderWidthPx
         // A new size only reaches the shader on the next size pass, which the
         // render loop runs every frame; nothing here needs the camera.
         markerScale = Float.NaN

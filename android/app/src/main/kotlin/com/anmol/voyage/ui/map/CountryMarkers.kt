@@ -18,13 +18,18 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * The two markers drawn on top of the world: the capital star, and the dots that
  * stand in for countries too small to have a shape.
  *
- * Both renderers size these the same way — **in screen terms, at a fixed size**,
- * regardless of what the world underneath is doing. That is what keeps a
- * microstate visible and tappable at every zoom instead of shrinking to a
- * subpixel, and it is the reason [MarkerSizes] lives here rather than in either
- * renderer: CLAUDE.md requires the globe and the map to draw capitals and dots
- * identically, and one shared measurement is a stronger guarantee than two that
- * happen to agree.
+ * The capital star is sized **in screen terms, at a fixed size**, by both
+ * renderers, regardless of what the world underneath is doing — and it is the
+ * reason [MarkerSizes] lives here rather than in either renderer: CLAUDE.md
+ * requires the globe and the map to draw capitals identically, and one shared
+ * measurement is a stronger guarantee than two that happen to agree.
+ *
+ * The microstate dot is the exception. The map draws it at [MarkerSizes.dotRadiusPx]
+ * always, as iOS's map does. The globe gives it a fixed size *on the globe*, as
+ * iOS's globe does, so zooming in grows it with the land around it rather than
+ * shrinking it against that land; [MarkerSizes.dotRadiusPx] is only its floor
+ * there, for when it would otherwise shrink to a speck zoomed out (see
+ * `GlobeCamera.dotRadiusInWorld`).
  *
  * They are *drawn* differently, and have to be. The map paints them onto its
  * `Canvas` with the helpers below, outside its pan/zoom matrix. The globe builds
@@ -33,9 +38,8 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * globe by a frame while dragging. What the two share is the shape
  * ([CapitalMarker]), the colors ([CountryStyles]) and the sizes here.
  *
- * Note that iOS's globe instead gives its markers a fixed *world* size and
- * compensates the star with `capitalMarkerScale`'s `sqrt(zoomScale)`, so its
- * globe and map disagree about how big a marker is. Android's agree.
+ * iOS's globe also gives its star a world size, compensated with
+ * `capitalMarkerScale`'s `sqrt(zoomScale)`; Android's star stays screen-sized.
  */
 
 /**

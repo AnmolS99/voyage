@@ -1,5 +1,6 @@
 package com.anmol.voyage.globe
 
+import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
 
 import kotlin.math.PI
@@ -138,6 +139,20 @@ data class GlobeCamera(
     }
 
     /**
+     * How far a microstate's dot reaches from its center, in world units — both
+     * the size it is drawn at and how far from it a tap still lands on it.
+     *
+     * Fixed on the globe, as iOS's is: the dot covers
+     * [CountryHitTester.POINT_HIT_RADIUS] of arc at every zoom, so it grows with
+     * the land around it instead of shrinking against it, and what is drawn is
+     * exactly what can be tapped. Zoomed out, where that arc becomes a speck,
+     * it holds at [minRadiusPx] on screen instead, so it never gets harder to
+     * find with a finger.
+     */
+    fun dotRadiusInWorld(minRadiusPx: Float, viewportHeight: Float): Float =
+        maxOf(DOT_RADIUS, minRadiusPx * pixelSizeInWorld(viewportHeight))
+
+    /**
      * How much to shrink world-sized decorations so they keep a constant size on
      * screen — today the border outlines, and whatever else the globe grows.
      *
@@ -199,6 +214,13 @@ data class GlobeCamera(
 
         /** The globe's own radius; the ocean sphere is built at exactly this. */
         const val GLOBE_RADIUS = 1.0f
+
+        /**
+         * A microstate dot's radius in world units: [CountryHitTester.POINT_HIT_RADIUS]
+         * of arc, about 0.014 — the radius of iOS's `SCNCylinder` dot outline.
+         */
+        private val DOT_RADIUS =
+            (Math.toRadians(CountryHitTester.POINT_HIT_RADIUS) * GLOBE_RADIUS).toFloat()
 
         private fun rawScreenScale(distance: Float): Float =
             (distance - GLOBE_RADIUS) / (DEFAULT_DISTANCE - GLOBE_RADIUS)
