@@ -637,7 +637,18 @@ object PolygonTriangulator {
         polygons: List<Ring>,
         longitudeBands: Int = 12,
         latitudeBands: Int = 4,
-    ): List<OutlineMesh> {
+    ): List<OutlineMesh> =
+        createSectoredBorderCenterlines(polygons, longitudeBands, latitudeBands).map(::createOutlineMesh)
+
+    /**
+     * The sectors [createSectoredOutlineGeometries] builds, before they are
+     * widened — the form the build caches them in (`WorldMeshesFile`).
+     */
+    fun createSectoredBorderCenterlines(
+        polygons: List<Ring>,
+        longitudeBands: Int = 12,
+        latitudeBands: Int = 4,
+    ): List<BorderCenterline> {
         val buckets = List(longitudeBands * latitudeBands) { mutableListOf<Ring>() }
         for (polygon in polygons) {
             val cleaned = cleanRing(polygon) ?: continue
@@ -655,7 +666,7 @@ object PolygonTriangulator {
                 .toInt().coerceIn(0, latitudeBands - 1)
             buckets[latIndex * longitudeBands + lonIndex].add(polygon)
         }
-        return buckets.mapNotNull { if (it.isEmpty()) null else createBorderOutlineGeometry(it) }
+        return buckets.mapNotNull { if (it.isEmpty()) null else createBorderCenterline(it) }
     }
 
     /**
@@ -663,10 +674,17 @@ object PolygonTriangulator {
      * joins. Width is applied by the outline material at render time (see
      * [OutlineMesh]); without it this geometry is degenerate (zero width).
      */
-    fun createBorderOutlineGeometry(polygons: List<Ring>, radius: Float = OUTLINE_RADIUS): OutlineMesh? {
-        val allPositions = FloatArrayBuilder()
-        val allMiters = FloatArrayBuilder()
-        val allIndices = IntArrayBuilder()
+    fun createBorderOutlineGeometry(polygons: List<Ring>, radius: Float = OUTLINE_RADIUS): OutlineMesh? =
+        createBorderCenterline(polygons, radius)?.let(::createOutlineMesh)
+
+    /**
+     * The border along [polygons], one point per densified ring vertex with the
+     * miter its strip is widened along — all of the math in an outline, and
+     * everything [createOutlineMesh] needs to build one.
+     */
+    fun createBorderCenterline(polygons: List<Ring>, radius: Float = OUTLINE_RADIUS): BorderCenterline? {
+        val points = FloatArrayBuilder()
+        val ringSizes = IntArrayBuilder()
         // The gradient parameter rides in the miter's w, so it needs the box the
         // fill's UVs use — measured over the same rings the caller passed in.
         val bounds = lonLatBounds(polygons)
@@ -686,9 +704,8 @@ object PolygonTriangulator {
                 positions[i * 3 + 2] = p.z
             }
 
-            // Build inner/outer vertex pairs; the miter offset direction is stored per
-            // vertex and applied by the outline material
-            val baseIndex = allPositions.size / 3
+            // One entry per point, with the miter offset direction the outline
+            // material pushes the strip's two edges along
             for (i in 0 until n) {
                 val px = positions[i * 3]
                 val py = positions[i * 3 + 1]
@@ -733,33 +750,68 @@ object PolygonTriangulator {
                 val gradient = boxCoords(px.toDouble(), py.toDouble(), pz.toDouble(), bounds)
                 val t = ((gradient[0] + gradient[1]) * 0.5).coerceIn(0.0, 1.0).toFloat()
 
-                allPositions.add(px, py, pz)
-                allMiters.add(-miterX, -miterY, -miterZ); allMiters.add(t)
-                allPositions.add(px, py, pz)
-                allMiters.add(miterX, miterY, miterZ); allMiters.add(t)
+                points.add(px, py, pz)
+                points.add(miterX, miterY, miterZ)
+                points.add(t)
+            }
+            ringSizes.add(n)
+        }
+
+        if (points.size == 0) return null
+        return BorderCenterline(points = points.toArray(), ringSizes = ringSizes.toArray())
+    }
+
+    /**
+     * Widens [centerline] into the strip the outline material draws: every point
+     * becomes two vertices at the same position whose miters point to opposite
+     * sides of the line, and every ring a closed quad strip between them. Pure
+     * bookkeeping — the math went into the centerline — which is why the build
+     * caches centerlines and the device runs this.
+     */
+    fun createOutlineMesh(centerline: BorderCenterline): OutlineMesh {
+        val source = centerline.points
+        val positions = FloatArray(centerline.pointCount * 2 * 3)
+        val miters = FloatArray(centerline.pointCount * 2 * 4)
+        val indices = IntArray(centerline.pointCount * 6)
+
+        var ringStart = 0
+        var slot = 0
+        for (n in centerline.ringSizes) {
+            for (i in 0 until n) {
+                val point = (ringStart + i) * BorderCenterline.STRIDE
+                // The negated miter's vertex first: the index order below relies on it.
+                for (side in 0..1) {
+                    val vertex = (ringStart + i) * 2 + side
+                    val sign = if (side == 0) -1f else 1f
+                    positions[vertex * 3] = source[point]
+                    positions[vertex * 3 + 1] = source[point + 1]
+                    positions[vertex * 3 + 2] = source[point + 2]
+                    miters[vertex * 4] = sign * source[point + 3]
+                    miters[vertex * 4 + 1] = sign * source[point + 4]
+                    miters[vertex * 4 + 2] = sign * source[point + 5]
+                    miters[vertex * 4 + 3] = source[point + 6]
+                }
             }
 
             // Connect as continuous quad strip wrapping around
             for (i in 0 until n) {
                 val next = (i + 1) % n
-                val i0 = baseIndex + i * 2
+                val i0 = (ringStart + i) * 2
                 val i1 = i0 + 1
-                val i2 = baseIndex + next * 2
+                val i2 = (ringStart + next) * 2
                 val i3 = i2 + 1
 
-                allIndices.add(i0); allIndices.add(i1); allIndices.add(i3)
-                allIndices.add(i0); allIndices.add(i3); allIndices.add(i2)
+                indices[slot++] = i0; indices[slot++] = i1; indices[slot++] = i3
+                indices[slot++] = i0; indices[slot++] = i3; indices[slot++] = i2
             }
+            ringStart += n
         }
 
-        if (allPositions.size == 0 || allIndices.size == 0) return null
-
-        val positions = allPositions.toArray()
         val (center, boundingRadius) = boundingSphere(positions)
         return OutlineMesh(
             positions = positions,
-            miters = allMiters.toArray(),
-            indices = allIndices.toArray(),
+            miters = miters,
+            indices = indices,
             center = center,
             boundingRadius = boundingRadius,
         )

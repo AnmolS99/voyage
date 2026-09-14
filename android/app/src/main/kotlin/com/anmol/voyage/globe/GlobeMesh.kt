@@ -89,6 +89,30 @@ class OutlineMesh(
     val vertexCount: Int get() = positions.size / 3
 }
 
+/**
+ * A border before it is widened into an [OutlineMesh]: one entry per point
+ * along its rings.
+ *
+ * The mesh doubles every point — one vertex for each side of the line — and adds
+ * six indices per point to stitch the strip, all of it derivable from this. So
+ * this is the form borders are cached in (`WorldMeshesFile`): a third of the
+ * bytes, and ~1.6 MB less in the APK once compressed.
+ * [PolygonTriangulator.createOutlineMesh] widens it on load.
+ *
+ * @property points [STRIDE] floats per point: its position on the sphere, the
+ *   miter direction on one side of the line (the other side takes its
+ *   negation), and the gradient parameter [OutlineMesh.miters] carries in `w`.
+ * @property ringSizes How many points each ring has, in order. Every ring closes
+ *   back on its own first point.
+ */
+class BorderCenterline(val points: FloatArray, val ringSizes: IntArray) {
+    val pointCount: Int get() = points.size / STRIDE
+
+    companion object {
+        const val STRIDE = 7
+    }
+}
+
 /** Growable primitive buffers for mesh assembly — no boxing on the hot path. */
 internal class FloatArrayBuilder(initialCapacity: Int = 1024) {
     private var storage = FloatArray(initialCapacity)

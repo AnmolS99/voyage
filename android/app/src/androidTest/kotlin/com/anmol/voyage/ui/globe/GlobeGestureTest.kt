@@ -54,7 +54,7 @@ class GlobeGestureTest {
 
     private fun showGlobe(autoRotating: Boolean = false, focus: LatLon? = null) {
         val assets = InstrumentationRegistry.getInstrumentation().targetContext.assets
-        val cache = CountryDataCache { name -> assets.open(name) }
+        val cache = CountryDataCache(openAsset = { name -> assets.open(name) })
         val hitTester = cache.hitTester
         // Two countries is enough: this exercises gestures, not geometry, and
         // triangulating all 181 would make the test slow for no added coverage.
