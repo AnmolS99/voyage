@@ -44,7 +44,7 @@ class WorldMapGestureTest {
 
     private fun showMap() {
         val assets = InstrumentationRegistry.getInstrumentation().targetContext.assets
-        val cache = CountryDataCache { name -> assets.open(name) }
+        val cache = CountryDataCache(openAsset = { name -> assets.open(name) })
         val countries = cache.countries
         val hitTester = cache.hitTester
 

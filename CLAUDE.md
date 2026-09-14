@@ -35,7 +35,11 @@ run from `android/`. The Android color palette
 `ios/voyage/ColorPalette.swift` — see [Color Palette](#color-palette) — so a
 color change must land on both platforms in the same PR. Both apps parse the
 same `shared/data/` files and both assert the same parser fixture — see
-[Shared Country Fixture](#shared-country-fixture). `ui/map/WorldMap.kt` is a port
+[Shared Country Fixture](#shared-country-fixture). Android parses at **build
+time**, not on the device: `android/tools/world-cache` runs the app's own parser
+and triangulator and packages `countries.bin` and `world_meshes.bin` as assets —
+generated per build, never checked in, and held bit for bit to a fresh parse by
+`CountriesFileTest` and `WorldMeshesFileTest`. `ui/map/WorldMap.kt` is a port
 of `ios/voyage/MapView.swift`, so the consistency rule in
 [Globe and Map Consistency](#globe-and-map-consistency) covers four renderers, not
 two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,

@@ -26,20 +26,21 @@ port.
 | 0 — Environment & tooling | ✅ 2026-08-06. CLI-only toolchain; the Android Studio first-run check was dropped 2026-08-29 |
 | 1 — Repo restructure | ✅ 2026-08-06. `ios/` + `android/` + `shared/`, history preserved |
 | 2 — Scaffold + Play account | ✅ Scaffold 2026-08-06; account verified 2026-08-11; Play Console app entry created 2026-08-29, so `com.anmol.voyage` is now permanent on both stores |
-| 3 — Data layer | ✅ 2026-08-07. Parser + both platforms asserting `shared/fixtures/expected_countries.json`. Re-measured on a Galaxy A55 2026-08-30: the parse costs ~1.5 s there, not the emulator's ~0.2 s — see [Open work](#open-work) |
+| 3 — Data layer | ✅ 2026-08-07. Parser + both platforms asserting `shared/fixtures/expected_countries.json`. Re-measured on a Galaxy A55 2026-08-30: the parse costs far more there than on the emulator — see [Open work](#open-work). Since 2026-09-14 the device no longer parses at all (7.8) |
 | 4 — 2D map | ✅ 2026-08-07. Projection, hit-testing, gestures, microstate dots |
 | 5 — State & persistence | ✅ Built, tests green 2026-08-08; device checks run on the A55 2026-08-30 — state survives a process kill, and Auto Backup restores it on reinstall |
 | 6 — Country details | ✅ Built, tests green 2026-08-09; loop driven end to end on the A55 2026-08-30 |
-| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29); Earth textures on globe and map 2026-09-14. 7.1–7.7, 7.9, 7.10 done; 7.8, 7.11 open |
+| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29); Earth textures on globe and map 2026-09-14; countries and globe meshes generated at build time 2026-09-14 (7.8). 7.1–7.10 done; 7.11 open |
 | 8 — Achievements | ✅ 2026-08-30. The ten medals, their progress rings, the expandable item lists, and a spinnable coin |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | 🟡 Settings tab exists with the texture pickers (2026-09-14); the rest not started |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
-Suite as of 2026-08-30: 235 JVM unit tests across 26 classes, green; gesture
-tests are instrumented and run locally, not in CI (18, green on the Pixel 9
-API 36 emulator and on a Galaxy A55 / Android 16, 2026-08-30).
+Suite as of 2026-09-14: 255 JVM unit tests across 29 classes, green; instrumented
+tests run locally, not in CI (23, green on the Pixel 9 API 36 emulator
+2026-09-14; the 18 gesture tests of 2026-08-30 were also green on a Galaxy A55 /
+Android 16).
 
 ## Decision log
 
@@ -84,6 +85,7 @@ API 36 emulator and on a Galaxy A55 / Android 16, 2026-08-30).
 | 2026-09-14 | No atmosphere glow, on either platform | Dropped from 7.2 and removed from iOS, where no one could say why it had been added. It was a 1.08-radius sphere at 0.15 alpha and 0.3 transparency — about 5% opaque — whose only lasting effects were a blended full-screen draw and a tap-skew bug the analytic ray intersection had to work around. The 1.1 closest zoom it once justified stays. |
 | 2026-09-14 | Earth textures live in `shared/data/textures/`; Android decodes them at most 4096 px wide | One copy, read in place by both apps like `world.geojson` — iOS now bundles them from there rather than from its asset catalog. Two of the three are 8192 × 4096, which is 128 MB as a bitmap and over the 100 MB a `Canvas` will draw, so Android halves them: 32 MB, ~130 ms to decode on the A55. |
 | 2026-09-14 | Over a texture, plain land is not drawn at all | iOS's `hasTexture ? .clear : land`, expressed once as `MapShading.None` in `CountryStyles`. The globe takes an unpainted country out of the scene rather than blending it, and a microstate's border became a real ring (iOS swaps in an `SCNTube`), since the disc it was would show solid black under a missing fill. |
+| 2026-09-14 | Countries and globe meshes are generated at build time by the app's own code: compiled a second time into `tools/world-cache`, not moved into a module, and never checked in | Parsing and triangulating cost ~1.85 s on the A55 before the globe could show; loading the result costs ~75 ms. Compiling the same source files into the generator — rather than extracting them into a JVM module — keeps them where they are, `internal` and all, while guaranteeing the cache is written by the code that would otherwise run on the device; `CountriesFileTest` and `WorldMeshesFileTest` hold it to that bit for bit. Borders are stored as centerlines and widened on load, which saves 1.6 MB compressed for a few ms of copying. Net APK cost is ~8.6 MB, `world.geojson` no longer shipping; iOS pays 17.5 MB for `globe.scn`. |
 | 2026-08-29 | Globe spin physics ported from iOS verbatim, and measured in **dp** rather than pixels | iOS's pan constants are radians per *point*, and a point and a dp are the same physical size, so the same finger travel turns the globe the same amount on both platforms at any screen density. The projection-derived speed it replaced was self-consistent and about 2.4x slower than iOS at the default zoom. |
 
 ## Pinned invariants
@@ -186,12 +188,15 @@ cost, below.
   Whatever lands should cover country data too, and be measured on the A55
   rather than the emulator.
 
+  **Closed 2026-09-14 by 7.8**, which covers both. Measured on the A55 in a
+  release build, before and after, over six and seven cold launches: the
+  countries went from ~600 ms parsed to ~14 ms loaded, and the globe's geometry —
+  which queued behind them — from ~1,240 ms triangulated to ~60 ms. Activity
+  launch did not move (~590 ms), as expected of work that was already off the
+  main thread. See "World caches" in ANDROID_DEVELOPMENT.md.
+
 ### Phase 7 — 3D globe, remaining sub-steps
 
-- **7.8 Build-time geometry cache.** The in-memory half is done (triangulate
-  once, prewarm off the main thread): first show 247 ms, returning to the globe
-  64 ms on the emulator. A binary cache generated at build time — Android's
-  `globe.scn` equivalent — would cut the remaining first ~440 ms.
 - **7.11 One Filament engine per Activity.** Today `GlobeSurfaceHost` dies with
   the composable, so every trip to another tab rebuilds the engine and re-uploads
   181 meshes — and, since 7.2, the 4096 × 2048 Earth texture, whose cost has not

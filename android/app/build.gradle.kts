@@ -79,9 +79,15 @@ android {
     }
 
     sourceSets {
-        // world.geojson and country_highlights.json are shared with iOS and are
-        // read from shared/data in place — never copied into android/.
+        // country_highlights.json and the Earth textures are shared with iOS and
+        // are read from shared/data in place — never copied into android/.
         getByName("main").assets.srcDirs("../../shared/data")
+    }
+
+    androidResources {
+        // The app reads countries.bin, which the build writes from world.geojson
+        // (GenerateWorldCache, below), so the GeoJSON itself does not ship.
+        ignoreAssetsPatterns += "!world.geojson"
     }
 
     compileOptions {
@@ -102,7 +108,57 @@ kotlin {
     jvmToolchain(17)
 }
 
+/**
+ * Writes countries.bin and world_meshes.bin from world.geojson by running
+ * tools/world-cache — the app's own parser and triangulator, compiled for the
+ * build machine. The app loads them instead of doing that work on the device,
+ * where it cost ~1.85 s on a Galaxy A55 (Phase 7.8 in docs/ANDROID_PLAN.md).
+ */
+abstract class GenerateWorldCache : JavaExec() {
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val geoJson: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    override fun exec() {
+        val output = outputDirectory.get().asFile
+        // Only what this run writes — never a file an older generator left behind.
+        output.deleteRecursively()
+        setArgs(listOf(geoJson.get().asFile.path, output.path))
+        super.exec()
+    }
+}
+
+/** tools/world-cache and its runtime dependencies, for GenerateWorldCache to run. */
+val worldCacheTool: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val generate = tasks.register<GenerateWorldCache>(
+            "generate${variant.name.replaceFirstChar { it.uppercase() }}WorldCache",
+        ) {
+            classpath = worldCacheTool
+            mainClass = "com.anmol.voyage.tools.WorldCacheGeneratorKt"
+            geoJson = layout.projectDirectory.file("../../shared/data/world.geojson")
+        }
+        // AGP chooses the directory, and packages whatever lands in it as assets.
+        variant.sources.assets?.addGeneratedSourceDirectory(generate, GenerateWorldCache::outputDirectory)
+    }
+}
+
 dependencies {
+    worldCacheTool(project(":world-cache"))
+
     implementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.androidx.core.ktx)

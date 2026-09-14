@@ -11,18 +11,24 @@ import kotlin.concurrent.thread
  * `CountryDataCache`.
  *
  * Everything is `by lazy`, which is synchronized, so the first caller from any
- * thread parses and the rest wait. Call sites should go through [shared] rather
- * than re-parsing.
+ * thread loads and the rest wait. Call sites should go through [shared] rather
+ * than loading again.
  *
  * Assets are supplied as a lambda rather than a [Context] so unit tests can read
- * the very same files straight from `shared/data/`.
+ * the very same files straight from `shared/data/`. The countries are the
+ * exception: the app reads them from `countries.bin` ([CountriesFile]), which the
+ * build generates from `world.geojson` rather than parsing it on the device, and
+ * which is not a file tests can open — so they pass [loadCountries] instead.
  */
-class CountryDataCache(private val openAsset: (String) -> InputStream) {
+class CountryDataCache(
+    private val openAsset: (String) -> InputStream,
+    loadCountries: () -> List<GeoJsonCountry> = {
+        openAsset(CountriesFile.NAME).use(CountriesFile::read)
+    },
+) {
 
     /** All countries, in `world.geojson` feature order. */
-    val countries: List<GeoJsonCountry> by lazy {
-        GeoJsonParser.parse(openAsset(WORLD_GEOJSON))
-    }
+    val countries: List<GeoJsonCountry> by lazy(loadCountries)
 
     /** Country names, for quick membership checks. */
     val countryNames: Set<String> by lazy {
@@ -55,7 +61,6 @@ class CountryDataCache(private val openAsset: (String) -> InputStream) {
     fun highlights(isoCode: String): CountryHighlights? = countryHighlights[isoCode]
 
     companion object {
-        const val WORLD_GEOJSON = "world.geojson"
         const val COUNTRY_HIGHLIGHTS = "country_highlights.json"
 
         @Volatile
@@ -70,20 +75,20 @@ class CountryDataCache(private val openAsset: (String) -> InputStream) {
 
         fun install(context: Context) {
             val assets = context.applicationContext.assets
-            instance = CountryDataCache { name -> assets.open(name) }
+            instance = CountryDataCache({ name -> assets.open(name) })
         }
 
         /**
-         * Starts GeoJSON parsing off the main thread so it overlaps the rest of
-         * startup instead of blocking the first map/globe render — the same trick
-         * `voyageApp.init` plays on iOS.
+         * Starts loading the countries off the main thread so it overlaps the
+         * rest of startup instead of blocking the first map/globe render — the
+         * same trick `voyageApp.init` plays on iOS.
          */
         fun prewarm() {
             val cache = instance ?: return
             thread(name = "country-data-prewarm", isDaemon = true) {
                 val started = SystemClock.elapsedRealtime()
                 val count = cache.countries.size
-                Log.i(TAG, "parsed $count countries in ${SystemClock.elapsedRealtime() - started} ms")
+                Log.i(TAG, "loaded $count countries in ${SystemClock.elapsedRealtime() - started} ms")
             }
         }
 

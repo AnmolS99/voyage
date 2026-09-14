@@ -97,9 +97,9 @@ private fun rememberEarthTexture(style: GlobeStyle): EarthTexture? {
  * details sheet, and the tap → select → recolor loop are written once here, and
  * only the surface in the middle swaps.
  *
- * Parsing the GeoJSON, projecting its ~171k points, and triangulating the globe
- * all happen off the main thread, so the first frame is never blocked behind
- * them.
+ * Loading the countries, projecting their ~171k points, and loading the globe's
+ * meshes all happen off the main thread, so the first frame is never blocked
+ * behind them.
  */
 @Composable
 fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier) {
@@ -200,7 +200,7 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier) {
     }
 }
 
-/** The 3D globe, or a spinner while its geometry is being triangulated. */
+/** The 3D globe, or a spinner while its geometry loads. */
 @Composable
 private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
     val background = MaterialTheme.colorScheme.background

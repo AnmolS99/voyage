@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
  *
  * The work itself belongs to [GlobeGeometryCache], which outlives composition —
  * so navigating away from Home and back returns the same meshes instead of
- * re-triangulating them. This only decides whether the caller has to wait: if
+ * loading them again. This only decides whether the caller has to wait: if
  * the cache is already warm (the usual case, since it is prewarmed at app
  * start) the geometry is returned on the first composition and no spinner is
  * ever shown.

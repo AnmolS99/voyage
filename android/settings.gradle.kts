@@ -29,3 +29,7 @@ dependencyResolutionManagement {
 rootProject.name = "voyage"
 
 include(":app")
+
+// Writes the world caches :app packages as assets — see tools/world-cache.
+include(":world-cache")
+project(":world-cache").projectDir = file("tools/world-cache")

@@ -19,8 +19,19 @@ object SharedFiles {
 
     fun open(path: String): InputStream = File(repoRoot, path).inputStream()
 
-    /** A cache backed by the shared data files, matching the app's asset wiring. */
-    fun countryDataCache(): CountryDataCache = CountryDataCache { name -> open("shared/data/$name") }
+    /** `world.geojson`, parsed — what the build writes into the app's `countries.bin`. */
+    fun parseCountries(): List<GeoJsonCountry> = GeoJsonParser.parse(open("shared/data/world.geojson"))
+
+    /**
+     * A cache backed by the shared data files, matching the app's asset wiring —
+     * except for the countries, which the app reads from the `countries.bin` the
+     * build generates. Tests parse `world.geojson` instead; `CountriesFileTest`
+     * holds the two to the same result.
+     */
+    fun countryDataCache(): CountryDataCache = CountryDataCache(
+        openAsset = { name -> open("shared/data/$name") },
+        loadCountries = { parseCountries() },
+    )
 
     fun openFixture(): InputStream = open("shared/fixtures/expected_countries.json")
 }

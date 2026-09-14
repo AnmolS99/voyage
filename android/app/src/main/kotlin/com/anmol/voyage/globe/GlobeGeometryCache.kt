@@ -1,5 +1,6 @@
 package com.anmol.voyage.globe
 
+import android.content.Context
 import android.os.SystemClock
 import android.util.Log
 import com.anmol.voyage.data.CountryDataCache
@@ -23,19 +24,19 @@ class GlobeGeometry(
 )
 
 /**
- * The triangulated world, built once per process — the globe's counterpart to
+ * The globe's geometry, assembled once per process — the globe's counterpart to
  * [CountryDataCache], and the reason returning to the Home tab is instant.
  *
- * Triangulating 181 countries costs ~300 ms on a Pixel 9 emulator. It used to
- * be held by the composable that drew it, so leaving Home — to another tab, or
- * just to the flat map — threw it away and paid that again on the way back.
- * Nothing about the result depends on the UI: it is a pure function of
- * `world.geojson`, which never changes at runtime. So it lives here, like the
- * parsed countries do, and outlives any composition.
+ * It used to be held by the composable that drew it, so leaving Home — to
+ * another tab, or just to the flat map — threw it away and paid for it again on
+ * the way back. Nothing about the result depends on the UI: it is a pure
+ * function of `world.geojson`, which never changes at runtime. So it lives
+ * here, like the parsed countries do, and outlives any composition.
  *
- * iOS gets the same effect a different way, by shipping a prebuilt `globe.scn`;
- * the Android equivalent (a binary geometry cache produced at build time) is
- * Phase 7.8 and would cut the *first* build too, not just repeats.
+ * The expensive part, [WorldMeshes], is not built on the device either: once
+ * [install] has run it is read from the `world_meshes.bin` the build generated,
+ * the way iOS ships a prebuilt `globe.scn`. Without [install] — in JVM unit
+ * tests — it is triangulated, which is the same code the build ran.
  */
 object GlobeGeometryCache {
 
@@ -44,12 +45,21 @@ object GlobeGeometryCache {
 
     private val lock = Any()
 
+    @Volatile
+    private var loadMeshes: (List<GeoJsonCountry>) -> WorldMeshes = WorldMeshes::triangulate
+
+    /** Loads the meshes from the build's prebuilt asset rather than triangulating them. */
+    fun install(context: Context) {
+        val assets = context.applicationContext.assets
+        loadMeshes = { _ -> assets.open(WorldMeshesFile.NAME).use(WorldMeshesFile::read) }
+    }
+
     /**
-     * The globe's geometry, triangulating it on first call.
+     * The globe's geometry, loading it on first call.
      *
-     * Callers must be off the main thread the first time: the work is hundreds
-     * of milliseconds. Later calls return the cached value immediately, which
-     * is what makes coming back to the globe free.
+     * Callers must be off the main thread the first time: reading the meshes is
+     * still a sizeable read. Later calls return the cached value immediately,
+     * which is what makes coming back to the globe free.
      */
     fun get(countries: List<GeoJsonCountry>): GlobeGeometry {
         cached?.let { return it }
@@ -63,10 +73,10 @@ object GlobeGeometryCache {
     val isReady: Boolean get() = cached != null
 
     /**
-     * Starts triangulation off the main thread at app start, so the globe is
-     * usually ready before the first frame that wants it — the same trick
-     * [CountryDataCache.prewarm] plays for parsing, and it queues behind that
-     * one on the countries lazy.
+     * Starts loading off the main thread at app start, so the globe is usually
+     * ready before the first frame that wants it — the same trick
+     * [CountryDataCache.prewarm] plays for the countries, and it queues behind
+     * that one on the countries lazy.
      */
     fun prewarm() {
         thread(name = "globe-geometry-prewarm", isDaemon = true) {
@@ -77,9 +87,9 @@ object GlobeGeometryCache {
 
     private fun build(countries: List<GeoJsonCountry>): GlobeGeometry {
         val started = SystemClock.elapsedRealtime()
-        // Point-feature microstates produce no fill mesh and no border — they
-        // are dots instead, built just below.
-        val polygonCountries = countries.filter { !it.isPointCountry }
+        val meshes = loadMeshes(countries)
+        // Point-feature microstates have no fill and no border: they are dots,
+        // built here because 25 of them take no time worth caching.
         val dots = countries.mapNotNull { country ->
             val at = country.pointCoordinate ?: return@mapNotNull null
             MicrostateDot(
@@ -88,25 +98,19 @@ object GlobeGeometryCache {
                 fill = MarkerMeshes.disc(at.lat, at.lon, DOT_FILL_RADIUS),
             )
         }
-        val meshes = polygonCountries.mapNotNull { country ->
-            PolygonTriangulator.createCountryGeometry(country.polygons, country.holes)
-                ?.let { NamedCountryMesh(country.name, it) }
-        }
-        val outlines = PolygonTriangulator.createSectoredOutlineGeometries(
-            polygonCountries.flatMap { it.polygons },
+        val geometry = GlobeGeometry(
+            ocean = UvSphere.build(),
+            countries = meshes.countries,
+            outlineSectors = meshes.outlineSectors,
+            microstateDots = dots,
         )
         Log.i(
             TAG,
-            "triangulated ${meshes.size} countries and ${outlines.size} outline sectors " +
-                "(${outlines.sumOf { it.vertexCount }} outline vertices) " +
+            "built ${meshes.countries.size} countries and ${meshes.outlineSectors.size} outline sectors " +
+                "(${meshes.outlineSectors.sumOf { it.vertexCount }} outline vertices) " +
                 "in ${SystemClock.elapsedRealtime() - started} ms",
         )
-        return GlobeGeometry(
-            ocean = UvSphere.build(),
-            countries = meshes,
-            outlineSectors = outlines,
-            microstateDots = dots,
-        )
+        return geometry
     }
 
     /**
