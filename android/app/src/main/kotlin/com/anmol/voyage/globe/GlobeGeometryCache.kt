@@ -84,7 +84,7 @@ object GlobeGeometryCache {
             val at = country.pointCoordinate ?: return@mapNotNull null
             MicrostateDot(
                 name = country.name,
-                ring = MarkerMeshes.disc(at.lat, at.lon, DOT_RING_RADIUS),
+                ring = MarkerMeshes.ring(at.lat, at.lon, DOT_RING_RADIUS),
                 fill = MarkerMeshes.disc(at.lat, at.lon, DOT_FILL_RADIUS),
             )
         }

@@ -17,7 +17,7 @@ voyage/
 │               # GlobeCacheGenerator/, fastlane/, Gemfile, Secrets.xcconfig
 ├── android/    # Android app: Kotlin/Compose Gradle project (app/, gradle/, tools/)
 ├── shared/
-│   ├── data/       # world.geojson, country_highlights.json — consumed by BOTH apps
+│   ├── data/       # world.geojson, country_highlights.json, textures/ — consumed by BOTH apps
 │   ├── fixtures/   # expected_countries.json — parser contract for BOTH apps
 │   └── supabase/   # schemas/, migrations/, seed.sql
 ├── scripts/    # update_geometry.sh, merge_geometry.py, generate_country_fixture.py
@@ -75,7 +75,12 @@ The Android globe renders with **Filament** (`ui/globe/`), not SceneKit. Two
 constraints there are easy to break: its materials are **unlit** and its view
 has **post-processing disabled**, which together are what put exact palette
 colors on screen — enabling either one shifts every country color, and
-`GlobeCountryFill.kt` documents the coupling.
+`GlobeCountryFill.kt` documents the coupling. The Earth texture obeys the same
+rule: it is uploaded as `RGBA8`, not sRGB, and the ocean material sets
+`flipUV(false)` because `UvSphere`'s UVs are already top-left like the image.
+Over a texture, plain land is `MapShading.None` in `CountryStyles` — iOS's
+`hasTexture ? .clear : land` — so the globe drops those countries from the scene
+and the map leaves them unpainted. Android has no atmosphere shell; iOS does.
 
 Border outlines work as they do on iOS — zero-width strips widened at render
 time so they keep a constant on-screen width — but the pieces sit elsewhere:
@@ -229,7 +234,7 @@ hemisphere. The selected country's outline is a separate overlay node
 (`selected_outline`, managed by `GlobeView.Coordinator.updateSelectedOutline`) drawn
 thicker, status-colored, and raised above the sector outlines.
 
-The globe has layers: ocean sphere (base) → country polygons → border outlines → atmosphere glow
+The globe has layers: ocean sphere (base, Earth-textured) → country polygons → border outlines → atmosphere glow (iOS only)
 
 ## Globe and Map Consistency
 
@@ -308,6 +313,7 @@ All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`A
 - `shared/data/world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
 - `shared/data/country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
 - `shared/fixtures/expected_countries.json` - Parser contract asserted by both platforms. See [Shared Country Fixture](#shared-country-fixture).
+- `shared/data/textures/` - The three equirectangular Earth textures, one per `GlobeStyle` (`earth_texture.jpg` realistic, `natural_earth_texture.jpg`, `stylized_earth_texture.jpg`). iOS bundles them from here, not from its asset catalog; Android decodes them at most 4096 px wide.
 - `ios/voyage/globe.scn` - Pre-built 3D globe cache, iOS-only (regenerate with GlobeCacheGenerator)
 
 ### Shared Country Fixture

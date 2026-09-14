@@ -104,11 +104,12 @@ enum GlobeStyle: String, CaseIterable {
     case natural
     case realistic
 
+    /// Bundled from `shared/data/textures/`, the same files Android reads.
     var textureName: String {
         switch self {
-        case .stylized: return "StylizedEarthTexture"
-        case .natural: return "NaturalEarthTexture"
-        case .realistic: return "EarthTexture"
+        case .stylized: return "stylized_earth_texture.jpg"
+        case .natural: return "natural_earth_texture.jpg"
+        case .realistic: return "earth_texture.jpg"
         }
     }
 

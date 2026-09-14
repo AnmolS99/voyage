@@ -1,5 +1,6 @@
 package com.anmol.voyage.ui.home
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -32,8 +34,10 @@ import com.anmol.voyage.R
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountryDetail
 import com.anmol.voyage.data.CountryHitTester
+import com.anmol.voyage.data.EarthTextureCache
 import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.data.LatLon
+import com.anmol.voyage.state.GlobeStyle
 import com.anmol.voyage.state.ViewMode
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.CountryDetailSheet
@@ -48,6 +52,7 @@ import com.anmol.voyage.ui.globe.GlobeSurface
 import com.anmol.voyage.ui.globe.rememberGlobeGeometry
 import com.anmol.voyage.ui.map.CountryPaths
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFill
+import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFillOrNull
 import com.anmol.voyage.ui.map.CountryStyles
 import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.anmol.voyage.ui.map.MapProjection
@@ -62,6 +67,26 @@ private class HomeData(
     val countries: List<GeoJsonCountry>,
     val hitTester: CountryHitTester,
 )
+
+/** A decoded Earth texture: [image] is null only if [style]'s could not be decoded. */
+private class EarthTexture(val style: GlobeStyle, val image: Bitmap?)
+
+/**
+ * The Earth texture for [style], or null while it is still being decoded.
+ *
+ * Like the globe's geometry, a texture already in the process-wide cache comes
+ * back on the first composition, so returning to Home never flashes a spinner.
+ */
+@Composable
+private fun rememberEarthTexture(style: GlobeStyle): EarthTexture? {
+    val cache = remember { EarthTextureCache.shared }
+    val texture by produceState(cache.cached(style)?.let { EarthTexture(style, it) }, style, cache) {
+        if (value?.style == style) return@produceState
+        value = withContext(Dispatchers.IO) { EarthTexture(style, cache.get(style)) }
+    }
+    // A style change keeps the old value until the new one lands; never show it.
+    return texture?.takeIf { it.style == style }
+}
 
 /**
  * The Home tab: the world — as a 3D globe or a flat map — the current
@@ -180,6 +205,7 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier) {
 private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
     val background = MaterialTheme.colorScheme.background
     val geometry: GlobeGeometry? = rememberGlobeGeometry(data?.countries)
+    val texture = rememberEarthTexture(state.globeStyle)
     val hitTester = data?.hitTester
 
     // The selected country's border is its own mesh, built off the main thread:
@@ -196,10 +222,11 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
         }
     }
 
-    if (geometry == null || hitTester == null) {
+    if (geometry == null || hitTester == null || texture == null) {
         HomeLoading()
         return
     }
+    val hasTexture = texture.image != null
 
     // Microstates have no shape to fill, so the globe marks them the way the map
     // does — a dot in their status colors. Only the colors are resolved here;
@@ -210,10 +237,11 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
             isVisited = state.isVisited(dot.name),
             isWishlist = state.isInWishlist(dot.name),
             isSelected = selectedName == dot.name,
+            hasTexture = hasTexture,
         )
         GlobeDotStyle(
             name = dot.name,
-            fill = style.fill.toGlobeFill(),
+            fill = style.fill.toGlobeFillOrNull(),
             border = style.border.toGlobeFill(),
             borderWidthPx = with(density) { style.borderWidth.toPx() },
         )
@@ -229,8 +257,10 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
                 isVisited = state.isVisited(name),
                 isWishlist = state.isInWishlist(name),
                 isSelected = state.selectedCountry == name,
+                hasTexture = hasTexture,
             )
         },
+        earthTexture = texture.image,
         oceanColor = VoyagePalette.ocean,
         backgroundColor = background,
         hitTester = hitTester,
@@ -269,17 +299,21 @@ private fun BoxScope.MapBody(data: HomeData?, state: VoyageState, width: Dp, hei
         value = withContext(Dispatchers.Default) { buildCountryPaths(countries, projection) }
     }
 
-    if (data == null || paths.isEmpty()) {
+    val texture = rememberEarthTexture(state.mapStyle)
+
+    if (data == null || paths.isEmpty() || texture == null) {
         HomeLoading()
         return
     }
 
+    val image = remember(texture.image) { texture.image?.asImageBitmap() }
     WorldMap(
         countries = data.countries,
         paths = paths,
         hitTester = data.hitTester,
         state = state,
         projection = projection,
+        texture = image,
     )
 }
 

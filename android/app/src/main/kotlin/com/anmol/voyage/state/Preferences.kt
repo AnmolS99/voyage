@@ -25,20 +25,22 @@ enum class ViewMode {
  * Earth texture style, shared by the globe and the flat map — the iOS
  * `GlobeStyle`, including its name, since iOS uses the one enum for both.
  *
- * The textures themselves arrive in Phase 7.2; the preference is stored now so
- * the two platforms agree on the vocabulary. Serialized names match the iOS raw
- * values so a future sync feature reads the same documents.
+ * Serialized names match the iOS raw values so a future sync feature reads the
+ * same documents.
+ *
+ * @property textureAsset the style's image under `shared/data/` — the same file
+ *   iOS bundles as `GlobeStyle.textureName`.
  */
 @Serializable
-enum class GlobeStyle {
+enum class GlobeStyle(val textureAsset: String) {
     @SerialName("stylized")
-    Stylized,
+    Stylized("textures/stylized_earth_texture.jpg"),
 
     @SerialName("natural")
-    Natural,
+    Natural("textures/natural_earth_texture.jpg"),
 
     @SerialName("realistic")
-    Realistic,
+    Realistic("textures/earth_texture.jpg"),
 }
 
 /**

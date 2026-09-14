@@ -46,8 +46,15 @@ object UvSphere {
                 positions[p++] = (radius * sinPhi * cos(theta)).toFloat()
                 positions[p++] = (radius * cosPhi).toFloat()
                 positions[p++] = (radius * sinPhi * sin(theta)).toFloat()
-                uvs[t++] = (segment.toFloat() / segments)
-                uvs[t++] = (ring.toFloat() / rings)
+                // Equirectangular texture coordinates, so the Earth image lands
+                // under the countries: u = (lon + 180) / 360 and v = (90 - lat) / 180,
+                // (0, 0) being the image's top-left. `latLonToSphere` puts
+                // longitude at -theta, so u runs from 0.5 down to -0.5 around the
+                // sphere; the sampler repeats, and the seam is the sphere's own
+                // duplicated column, so nothing interpolates across it. iOS lines
+                // SCNSphere's UVs up the same way, with a quarter-turn shift.
+                uvs[t++] = 0.5f - segment.toFloat() / segments
+                uvs[t++] = ring.toFloat() / rings
             }
         }
 
@@ -58,11 +65,16 @@ object UvSphere {
                 val current = ring * (segments + 1) + segment
                 val next = current + segments + 1
 
+                // `next` is a ring further south and `current + 1` a segment
+                // further east, so this order is counter-clockwise from outside.
+                // The opposite order culled the near hemisphere and showed the
+                // inside of the far one — invisible while the ocean was flat blue,
+                // and a mirrored, antipodal world once it had a texture.
                 if (ring != 0) {
-                    indices.add(current); indices.add(next); indices.add(current + 1)
+                    indices.add(current); indices.add(current + 1); indices.add(next)
                 }
                 if (ring != rings - 1) {
-                    indices.add(current + 1); indices.add(next); indices.add(next + 1)
+                    indices.add(current + 1); indices.add(next + 1); indices.add(next)
                 }
             }
         }

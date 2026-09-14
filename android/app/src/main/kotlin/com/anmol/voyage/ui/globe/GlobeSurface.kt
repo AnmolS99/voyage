@@ -1,5 +1,6 @@
 package com.anmol.voyage.ui.globe
 
+import android.graphics.Bitmap
 import android.view.Choreographer
 import android.view.Surface
 import android.view.TextureView
@@ -45,7 +46,8 @@ import kotlin.math.exp
  */
 internal class GlobeDotStyle(
     val name: String,
-    val fill: GlobeFill,
+    /** Null over an Earth texture for an unmarked dot, which is then only its ring. */
+    val fill: GlobeFill?,
     val border: GlobeFill,
     val borderWidthPx: Float,
 )
@@ -59,6 +61,9 @@ internal class GlobeDotStyle(
  * which is what Filament's own Android samples do: it keeps every Engine call
  * on one thread and paces frames to the display's vsync for free.
  *
+ * @param colorFor a country's fill, or null to leave it undrawn over the texture.
+ * @param earthTexture the image the ocean sphere is painted with. Null paints it
+ *   flat [oceanColor] instead, and then every fill should be painted.
  * @param dotStyles how each microstate's dot is currently painted. The dots
  *   themselves are meshes in the scene, uploaded with the rest of the geometry.
  * @param capital the selected country's capital, marked with a star.
@@ -76,7 +81,8 @@ internal fun GlobeSurface(
     countries: List<NamedCountryMesh>,
     outlineSectors: List<OutlineMesh>,
     microstateDots: List<MicrostateDot>,
-    colorFor: (String) -> GlobeFill,
+    colorFor: (String) -> GlobeFill?,
+    earthTexture: Bitmap?,
     oceanColor: androidx.compose.ui.graphics.Color,
     backgroundColor: androidx.compose.ui.graphics.Color,
     hitTester: CountryHitTester,
@@ -105,13 +111,20 @@ internal fun GlobeSurface(
         onDispose { }
     }
 
+    // A texture upload, so only when the image changes rather than on every
+    // recolor. After the geometry, whose ocean it is bound to.
+    DisposableEffect(host, earthTexture, oceanColor) {
+        host.setEarthTexture(earthTexture, oceanColor)
+        onDispose { }
+    }
+
     // Resolved during composition on purpose: reading visited/wishlist/selection
     // here is what subscribes this composable to them, so a tap or a toggle
     // recomposes and repaints. Applying them is deferred to a SideEffect,
     // because on first composition the material instances do not exist until the
     // DisposableEffect above has uploaded the geometry.
     val fills = countries.map { colorFor(it.name) }
-    SideEffect { host.applyColors(countries, fills, oceanColor, dotStyles, sizes) }
+    SideEffect { host.applyColors(countries, fills, dotStyles, sizes) }
 
     // The star is a mesh, so it is rebuilt when the capital moves — not on every
     // recomposition. Its size is a uniform and rides the per-frame size pass.
@@ -422,15 +435,17 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         )
     }
 
+    fun setEarthTexture(image: Bitmap?, fallback: androidx.compose.ui.graphics.Color) {
+        if (!destroyed) renderer.setEarthTexture(image, fallback)
+    }
+
     fun applyColors(
         countries: List<NamedCountryMesh>,
-        fills: List<GlobeFill>,
-        oceanColor: androidx.compose.ui.graphics.Color,
+        fills: List<GlobeFill?>,
         dotStyles: List<GlobeDotStyle>,
         sizes: MarkerSizes,
     ) {
         if (destroyed) return
-        renderer.setOceanColor(oceanColor)
         for ((index, country) in countries.withIndex()) {
             renderer.setCountryColor(country.name, fills[index])
         }

@@ -13,13 +13,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntSize
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
+import kotlin.math.roundToInt
 
 /**
  * The flat world map: an equirectangular Compose `Canvas` port of iOS `MapView`.
@@ -31,6 +34,8 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  *
  * @param paths countries pre-projected for the current view size; empty while they
  *   are still being built, which draws the ocean alone.
+ * @param texture the Earth image under the countries. Null draws a flat ocean and
+ *   land-green countries instead — iOS's fallback when its image is missing.
  */
 @Composable
 fun WorldMap(
@@ -39,6 +44,7 @@ fun WorldMap(
     hitTester: CountryHitTester,
     state: VoyageState,
     projection: MapProjection,
+    texture: ImageBitmap?,
     modifier: Modifier = Modifier,
     darkTheme: Boolean = isSystemInDarkTheme(),
 ) {
@@ -48,6 +54,7 @@ fun WorldMap(
     var offset by remember(projection) { mutableStateOf(Offset.Zero) }
 
     val oceanColor = if (darkTheme) VoyagePalette.oceanDark else VoyagePalette.oceanMap
+    val hasTexture = texture != null
     val sizes = rememberMarkerSizes()
     val starPath = rememberCapitalStarPath()
 
@@ -97,8 +104,17 @@ fun WorldMap(
             translate(-size.width / 2f, -size.height / 2f)
             translate(0f, projection.verticalOffset)
         }) {
+            // Spans exactly the map rectangle the paths were built in, so the
+            // image lines up with the borders — the rect iOS draws it into.
+            if (texture != null) {
+                drawImage(
+                    image = texture,
+                    dstSize = IntSize(projection.mapWidth.roundToInt(), projection.mapHeight.roundToInt()),
+                )
+            }
+
             for (country in paths) {
-                val style = state.styleFor(country.name)
+                val style = state.styleFor(country.name, hasTexture)
                 drawPath(country.fill, style.fill.brush(country.bounds))
                 // The matrix magnifies strokes, so divide out the scale to keep
                 // borders a constant width on screen.
@@ -123,7 +139,7 @@ fun WorldMap(
                 offsetX = offset.x,
                 offsetY = offset.y,
             )
-            drawMicrostateDot(Offset(x, y), state.styleFor(country.name), sizes)
+            drawMicrostateDot(Offset(x, y), state.styleFor(country.name, hasTexture), sizes)
         }
 
         // The capital star marks the selected country only, as on the globe.
@@ -143,9 +159,10 @@ fun WorldMap(
 }
 
 /** The style for one country given the current visited/wishlist/selection state. */
-private fun VoyageState.styleFor(name: String): CountryStyle = CountryStyles.of(
+private fun VoyageState.styleFor(name: String, hasTexture: Boolean): CountryStyle = CountryStyles.of(
     isVisited = isVisited(name),
     isWishlist = isInWishlist(name),
     isSelected = selectedCountry == name,
+    hasTexture = hasTexture,
 )
 

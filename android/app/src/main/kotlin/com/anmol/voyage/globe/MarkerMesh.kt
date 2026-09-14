@@ -32,8 +32,9 @@ class MarkerMesh(
 }
 
 /**
- * One microstate's dot: a ring in the border color with a fill on top, the same
- * two layers the flat map draws as a filled circle with a stroke.
+ * One microstate's dot: a ring in the border color around a fill, the same two
+ * layers the flat map draws as a filled circle with a stroke. Over an Earth
+ * texture an unmarked dot's fill is not drawn at all, leaving the ring.
  *
  * They are separate meshes at slightly different sphere radii rather than one
  * mesh drawn twice, because at the same radius the two would z-fight.
@@ -96,11 +97,16 @@ object MarkerMeshes {
     }
 
     /**
+     * Added to the gradient parameter of a ring's outer edge, so the outline
+     * material can tell its two edges apart. Outlines and fans only ever carry
+     * 0…1 there.
+     */
+    const val RING_OUTER_TAG = 2f
+
+    /**
      * A filled disc centered on [lat]/[lon], as a triangle fan.
      *
-     * [radiusRatio] scales the rim relative to the material's size uniform, which
-     * is how the dot's black ring is drawn slightly wider than its fill from the
-     * same nominal radius.
+     * [radiusRatio] scales the rim relative to the material's size uniform.
      */
     fun disc(lat: Double, lon: Double, sphereRadius: Float, radiusRatio: Float = 1f): MarkerMesh {
         val corners = FloatArray(DISC_SEGMENTS * 2)
@@ -110,6 +116,53 @@ object MarkerMeshes {
             corners[i * 2 + 1] = (sin(angle) * radiusRatio).toFloat()
         }
         return fan(lat, lon, sphereRadius, corners, extent = radiusRatio)
+    }
+
+    /**
+     * An annulus centered on [lat]/[lon]: a microstate dot's border.
+     *
+     * A ring rather than a disc under the fill, because the fill is not always
+     * drawn — over an Earth texture an unmarked dot is only its border, as on
+     * iOS, whose globe swaps in an `SCNTube`. The two edges move independently:
+     * the material pushes the inner edge out by its `thickness` uniform and the
+     * outer edge, tagged with [RING_OUTER_TAG], by `thickness + band`. So the
+     * dot's radius and its border width, which scale differently with zoom, stay
+     * two uniforms rather than a rebuild.
+     */
+    fun ring(lat: Double, lon: Double, sphereRadius: Float): MarkerMesh {
+        val (east, north) = tangentFrame(lat, lon)
+        val center = PolygonTriangulator.latLonToSphere(lat, lon, sphereRadius)
+
+        // Two vertices per corner: inner edge at even indices, outer at odd.
+        val offsets = FloatArray(DISC_SEGMENTS * 2 * 4)
+        for (i in 0 until DISC_SEGMENTS) {
+            val angle = 2.0 * PI * i / DISC_SEGMENTS
+            val u = cos(angle).toFloat()
+            val v = sin(angle).toFloat()
+            val gradient = gradientAt(u, v, extent = 1f)
+            setOffset(offsets, i * 2, east, north, u, v, gradient)
+            setOffset(offsets, i * 2 + 1, east, north, u, v, gradient + RING_OUTER_TAG)
+        }
+
+        val indices = IntArray(DISC_SEGMENTS * 6)
+        for (i in 0 until DISC_SEGMENTS) {
+            val inner = i * 2
+            val nextInner = (i + 1) % DISC_SEGMENTS * 2
+            val slot = i * 6
+            indices[slot] = inner
+            indices[slot + 1] = inner + 1
+            indices[slot + 2] = nextInner
+            indices[slot + 3] = nextInner
+            indices[slot + 4] = inner + 1
+            indices[slot + 5] = nextInner + 1
+        }
+
+        return MarkerMesh(
+            positions = positionsAt(center, DISC_SEGMENTS * 2),
+            offsets = offsets,
+            indices = indices,
+            center = center,
+        )
     }
 
     /**
@@ -151,28 +204,14 @@ object MarkerMeshes {
         val center = PolygonTriangulator.latLonToSphere(lat, lon, sphereRadius)
         val cornerCount = corners.size / 2
 
-        // Every vertex sits at the marker's center; the material moves it out.
-        val positions = FloatArray((cornerCount + 1) * 3)
         val offsets = FloatArray((cornerCount + 1) * 4)
-        for (v in 0..cornerCount) {
-            positions[v * 3] = center.x
-            positions[v * 3 + 1] = center.y
-            positions[v * 3 + 2] = center.z
-        }
         // Vertex 0 is the fan's hub, with no offset; its gradient is the midpoint.
         offsets[3] = 0.5f
 
         for (i in 0 until cornerCount) {
             val u = corners[i * 2]
             val v = corners[i * 2 + 1]
-            val slot = (i + 1) * 4
-            offsets[slot] = east.x * u + north.x * v
-            offsets[slot + 1] = east.y * u + north.y * v
-            offsets[slot + 2] = east.z * u + north.z * v
-            // Bottom-left of the marker's own box to top-right, the direction
-            // `CountryStyles` documents for the flat map's gradient.
-            offsets[slot + 3] = (((u / extent + 1f) / 2f + (v / extent + 1f) / 2f) / 2f)
-                .coerceIn(0f, 1f)
+            setOffset(offsets, i + 1, east, north, u, v, gradientAt(u, v, extent))
         }
 
         val indices = IntArray(cornerCount * 3)
@@ -183,10 +222,45 @@ object MarkerMeshes {
         }
 
         return MarkerMesh(
-            positions = positions,
+            positions = positionsAt(center, cornerCount + 1),
             offsets = offsets,
             indices = indices,
             center = center,
         )
     }
+
+    /** [count] vertices, every one at [center] until the material moves it out. */
+    private fun positionsAt(center: Vec3, count: Int): FloatArray {
+        val positions = FloatArray(count * 3)
+        for (v in 0 until count) {
+            positions[v * 3] = center.x
+            positions[v * 3 + 1] = center.y
+            positions[v * 3 + 2] = center.z
+        }
+        return positions
+    }
+
+    /** Writes [vertex]'s offset toward tangent-plane point ([u], [v]), and its gradient. */
+    private fun setOffset(
+        offsets: FloatArray,
+        vertex: Int,
+        east: Vec3,
+        north: Vec3,
+        u: Float,
+        v: Float,
+        gradient: Float,
+    ) {
+        val slot = vertex * 4
+        offsets[slot] = east.x * u + north.x * v
+        offsets[slot + 1] = east.y * u + north.y * v
+        offsets[slot + 2] = east.z * u + north.z * v
+        offsets[slot + 3] = gradient
+    }
+
+    /**
+     * Bottom-left of the marker's own box to top-right, the direction
+     * `CountryStyles` documents for the flat map's gradient.
+     */
+    private fun gradientAt(u: Float, v: Float, extent: Float): Float =
+        (((u / extent + 1f) / 2f + (v / extent + 1f) / 2f) / 2f).coerceIn(0f, 1f)
 }

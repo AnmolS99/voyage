@@ -1,5 +1,6 @@
 package com.anmol.voyage.ui.globe
 
+import com.anmol.voyage.globe.MarkerMeshes.RING_OUTER_TAG
 import com.google.android.filament.Engine
 import com.google.android.filament.Material
 import com.google.android.filament.filamat.MaterialBuilder
@@ -55,10 +56,20 @@ internal class GlobeMaterials private constructor(
             }
         """.trimIndent()
 
+        /**
+         * The ocean sphere, painted with the Earth texture.
+         *
+         * The sphere's UVs are already geographic (see `UvSphere`), so this is a
+         * plain lookup. The texture is uploaded as `RGBA8`, not `SRGB8_A8`: like
+         * the palette colors (see `toFilamentColor`), its sRGB values must reach
+         * the framebuffer untouched, which holds only while post-processing is
+         * off. A flat ocean is a 1 × 1 texture of the palette color, so there is
+         * one ocean material rather than two.
+         */
         private val OCEAN_SHADER = """
             void material(inout MaterialInputs material) {
                 prepareMaterial(material);
-                material.baseColor = materialParams.baseColor;
+                material.baseColor = texture(materialParams_earth, getUV0());
             }
         """.trimIndent()
 
@@ -77,12 +88,18 @@ internal class GlobeMaterials private constructor(
          * `worldPosition` is camera-shifted for precision, which is fine here:
          * this adds a displacement, and a displacement is unaffected by where
          * the origin sits.
+         *
+         * A microstate's ring is the one mesh with two edges that move apart:
+         * its outer vertices carry [RING_OUTER_TAG] on top of their gradient
+         * parameter and go a further `band` out (see `MarkerMeshes.ring`). No
+         * other mesh carries the tag, so for them `band` is never read.
          */
         private val OUTLINE_VERTEX_SHADER = """
             void materialVertex(inout MaterialVertexInputs material) {
                 vec4 custom = getCustom0();
-                material.worldPosition.xyz += custom.xyz * materialParams.thickness;
-                material.gradientT = vec4(custom.w, 0.0, 0.0, 0.0);
+                float outer = step(${RING_OUTER_TAG / 2f + 0.5f}, custom.w);
+                material.worldPosition.xyz += custom.xyz * (materialParams.thickness + outer * materialParams.band);
+                material.gradientT = vec4(custom.w - outer * $RING_OUTER_TAG, 0.0, 0.0, 0.0);
             }
         """.trimIndent()
 
@@ -159,7 +176,17 @@ internal class GlobeMaterials private constructor(
                     .platform(MaterialBuilder.Platform.MOBILE)
                     .targetApi(MaterialBuilder.TargetApi.OPENGL)
                     .shading(MaterialBuilder.Shading.UNLIT)
-                    .uniformParameter(MaterialBuilder.UniformType.FLOAT4, "baseColor")
+                    .require(MaterialBuilder.VertexAttribute.UV0)
+                    // Filament flips V by default, for glTF-style UVs. The sphere's
+                    // are already top-left like the image's rows, so flipping them
+                    // painted the world upside down.
+                    .flipUV(false)
+                    .samplerParameter(
+                        MaterialBuilder.SamplerType.SAMPLER_2D,
+                        MaterialBuilder.SamplerFormat.FLOAT,
+                        MaterialBuilder.ParameterPrecision.DEFAULT,
+                        "earth",
+                    )
                     .material(OCEAN_SHADER)
                     .build()
 
@@ -175,6 +202,7 @@ internal class GlobeMaterials private constructor(
                     .uniformParameter(MaterialBuilder.UniformType.FLOAT4, "colorB")
                     .uniformParameter(MaterialBuilder.UniformType.FLOAT, "gradient")
                     .uniformParameter(MaterialBuilder.UniformType.FLOAT, "thickness")
+                    .uniformParameter(MaterialBuilder.UniformType.FLOAT, "band")
                     // The strip's winding flips halfway around each ring, so
                     // either face can end up toward the camera. The ocean sphere
                     // hides the far hemisphere anyway (see GlobeRenderer).
