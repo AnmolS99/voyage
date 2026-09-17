@@ -474,7 +474,12 @@ struct GlobeView: UIViewRepresentable {
 
             case .changed:
                 let deltaY = location.y - doubleTapDragStartY
-                // Drag down = zoom in (negative distance), drag up = zoom out
+                // Drag up = zoom in, drag down = zoom out: deltaY is positive
+                // downwards, and distance grows with it. This is Apple's
+                // direction — Maps, Find My and Weather all zoom this way — and
+                // it is deliberately the opposite of Android's, where Google
+                // Maps sets the convention and `GlobeCamera.zoomDraggedBy`
+                // follows it. The sign here is not drift to be fixed.
                 let zoomSpeed: Float = 0.01
                 var newDistance = doubleTapDragStartDistance + Float(deltaY) * zoomSpeed
 

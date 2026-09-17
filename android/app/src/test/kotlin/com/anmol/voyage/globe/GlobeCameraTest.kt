@@ -110,6 +110,63 @@ class GlobeCameraTest {
     }
 
     @Test
+    fun `a zoom drag pulls the globe closer when the finger goes down`() {
+        val camera = GlobeCamera()
+        val start = camera.distance
+
+        // Compose measures y downwards, so positive travel is a downward drag —
+        // and down zooms in, as it does in Google Maps on Android. iOS drags the
+        // other way; this is the one place the two deliberately disagree.
+        assertTrue(
+            "dragging down should zoom in, got ${camera.zoomDraggedBy(start, 100f).distance}",
+            camera.zoomDraggedBy(start, 100f).distance < start,
+        )
+        assertTrue(
+            "dragging up should zoom out, got ${camera.zoomDraggedBy(start, -100f).distance}",
+            camera.zoomDraggedBy(start, -100f).distance > start,
+        )
+    }
+
+    @Test
+    fun `a zoom drag covers iOS's distance per dp`() {
+        val camera = GlobeCamera()
+        val start = camera.distance
+        assertEquals(
+            start - 100f * GlobeCamera.ZOOM_DRAG_DISTANCE_PER_DP,
+            camera.zoomDraggedBy(start, 100f).distance,
+            1e-6f,
+        )
+        // iOS `handleDoubleTapDrag`'s zoomSpeed, which a dp and a point share.
+        assertEquals(0.01f, GlobeCamera.ZOOM_DRAG_DISTANCE_PER_DP, 0f)
+    }
+
+    @Test
+    fun `a zoom drag measures from where the finger went down`() {
+        // Absolute rather than incremental, so the gesture is reversible:
+        // dragging back to the starting point restores the starting zoom, which
+        // a run of incremental steps through the clamps would not.
+        val camera = GlobeCamera()
+        val start = camera.distance
+        val out = camera.zoomDraggedBy(start, 10_000f)
+        assertEquals(GlobeCamera.MIN_DISTANCE, out.distance, 1e-6f)
+        assertEquals(start, out.zoomDraggedBy(start, 0f).distance, 1e-6f)
+    }
+
+    @Test
+    fun `a zoom drag clamps like every other zoom, and turns nothing`() {
+        val camera = GlobeCamera(latitude = 33.0, longitude = -70.0)
+        val start = camera.distance
+        assertEquals(GlobeCamera.MIN_DISTANCE, camera.zoomDraggedBy(start, 10_000f).distance, 1e-6f)
+        assertEquals(GlobeCamera.MAX_DISTANCE, camera.zoomDraggedBy(start, -10_000f).distance, 1e-6f)
+
+        // A zoom drag is vertical finger travel, but it moves the camera in and
+        // out — never around. The globe keeps pointing where it did.
+        val zoomed = camera.zoomDraggedBy(start, 200f)
+        assertEquals(camera.latitude, zoomed.latitude, 1e-9)
+        assertEquals(camera.longitude, zoomed.longitude, 1e-9)
+    }
+
+    @Test
     fun `a pinch cannot shrink the globe into a speck`() {
         // Shared with iOS, which adopted this from here: its pinch stopped at
         // 8.0 and now stops at 6.0.

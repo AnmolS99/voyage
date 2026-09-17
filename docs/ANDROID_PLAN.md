@@ -136,6 +136,19 @@ Each is asserted by tests, on both platforms where it applies:
   since deleted — were unreachable, so 10.0 described nothing. The two gesture
   handlers are now the only zoom paths and both read the constant, so changing
   it is a two-platform change.
+- **The one-finger zoom drags the platform's way, not iOS's** (`GlobeCameraTest`,
+  `GlobeGestureTest`). Tap, then press and drag vertically: the gesture is a port
+  of iOS's `handleDoubleTapDrag`, down to measuring from the distance the drag
+  started at and its 0.01 distance per dp. The direction is not, because the two
+  platforms genuinely disagree: Google Maps on Android zooms in when you drag
+  **down**, and Apple's Maps, Find My and Weather zoom in when you drag **up**.
+  Each globe follows the phone it is running on, so the opposite signs in
+  `GlobeCamera.zoomDraggedBy` and `handleDoubleTapDrag` are the point rather than
+  drift to be fixed — this is the one place the two deliberately differ, and
+  making them agree would break one of them against its own platform. The zoom
+  drag consumes its events, which is what makes the rotate detector, the tap
+  detector and the flick tracker stand down for it; without that a vertical zoom
+  also tilts the globe and leaves it spinning.
 - **Selecting a country flies the camera to it in 0.8 s** (`GlobeFlightTest`,
   `GlobeGestureTest`). `GlobeFlight` ports `GlobeView.Coordinator.flyTo`: the
   duration, Core Animation's `easeInEaseOut` curve, the shortest way round in
