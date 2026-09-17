@@ -48,18 +48,19 @@ import kotlin.math.abs
  * painted with the Earth texture, and a country with nothing to show leaves the
  * scene so the texture shows through it.
  */
-internal class GlobeRenderer(backgroundColor: FloatArray) {
+internal class GlobeRenderer(initialBackgroundColor: FloatArray) {
 
-    private val engine: Engine = Engine.create()
+    /** What the skybox is currently painted with; see [setBackgroundColor]. */
+    private var backgroundColor: FloatArray = initialBackgroundColor.copyOf()
+
+    private val engine: Engine = Engine.create().also { enginesCreated++ }
     private val renderer: Renderer = engine.createRenderer()
     private val scene: Scene = engine.createScene()
     private val view: View = engine.createView()
     private val cameraEntity: Int = EntityManager.get().create()
     private val camera: Camera = engine.createCamera(cameraEntity)
     private val materials: GlobeMaterials = GlobeMaterials.build(engine)
-    private val skybox: Skybox = Skybox.Builder()
-        .color(backgroundColor[0], backgroundColor[1], backgroundColor[2], 1.0f)
-        .build(engine)
+    private var skybox: Skybox = buildSkybox(backgroundColor)
 
     private var swapChain: SwapChain? = null
     private var viewportWidth = 0
@@ -166,6 +167,27 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
         // post-processing back on and that function has to convert to linear.
         view.isPostProcessingEnabled = false
     }
+
+    /**
+     * Repaints the background behind the globe — a theme change, which this
+     * engine now outlives.
+     *
+     * A [Skybox]'s color is fixed at build time, so the old one is replaced
+     * rather than rewritten. Built, swapped in, and only then destroyed, the way
+     * the Earth texture is: nothing may still be reading the one being freed.
+     */
+    fun setBackgroundColor(color: FloatArray) {
+        if (color.contentEquals(backgroundColor)) return
+        backgroundColor = color.copyOf()
+        val replacement = buildSkybox(backgroundColor)
+        scene.skybox = replacement
+        engine.destroySkybox(skybox)
+        skybox = replacement
+    }
+
+    private fun buildSkybox(color: FloatArray): Skybox = Skybox.Builder()
+        .color(color[0], color[1], color[2], 1.0f)
+        .build(engine)
 
     fun onNativeWindowChanged(surface: Surface) {
         swapChain?.let { engine.destroySwapChain(it) }
@@ -705,6 +727,20 @@ internal class GlobeRenderer(backgroundColor: FloatArray) {
          * furthest zoom a 6dp star is well under 0.05 world units.
          */
         private const val MARKER_BOX_HALF_EXTENT = 0.08f
+
+        /**
+         * How many Filament engines this process has built.
+         *
+         * An engine is the globe's expensive possession — it carries the
+         * compiled materials, 181 uploaded meshes and a 4096 x 2048 Earth
+         * texture — and the Android plan's 7.11 says there is one per Activity.
+         * That is not something a reader of [GlobeSurfaceHost] can check, so
+         * `GlobeEngineLifetimeTest` counts them across tab and view-mode
+         * switches instead.
+         */
+        @Volatile
+        var enginesCreated: Int = 0
+            private set
 
         init {
             Filament.init()

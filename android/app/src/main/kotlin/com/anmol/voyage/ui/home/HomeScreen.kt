@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -49,7 +50,9 @@ import com.anmol.voyage.globe.GlobeGeometry
 import com.anmol.voyage.globe.OutlineMesh
 import com.anmol.voyage.globe.SelectedOutlineCache
 import com.anmol.voyage.ui.globe.GlobeSurface
+import com.anmol.voyage.ui.globe.GlobeSurfaceHost
 import com.anmol.voyage.ui.globe.rememberGlobeGeometry
+import com.anmol.voyage.ui.globe.rememberGlobeSurfaceHost
 import com.anmol.voyage.ui.map.CountryPaths
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFill
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFillOrNull
@@ -100,9 +103,19 @@ private fun rememberEarthTexture(style: GlobeStyle): EarthTexture? {
  * Loading the countries, projecting their ~171k points, and loading the globe's
  * meshes all happen off the main thread, so the first frame is never blocked
  * behind them.
+ *
+ * This screen is composed once for the whole Activity and hidden rather than
+ * removed when another tab is chosen — see [visible] and `VoyageApp`. That is
+ * what gives the globe one Filament engine per Activity (the Android plan's
+ * 7.11): the engine is remembered here, above the globe/map switch, and its
+ * `TextureView` is never detached by navigation.
+ *
+ * @param visible whether this is the tab on screen. A hidden Home draws
+ *   nothing, answers no touches and renders no frames; all it keeps is the
+ *   globe's surface and everything uploaded to it.
  */
 @Composable
-fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier) {
+fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boolean = true) {
     val cache = remember { CountryDataCache.shared }
     val data by produceState<HomeData?>(initialValue = null, cache) {
         value = withContext(Dispatchers.Default) {
@@ -132,53 +145,72 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier) {
         if (selectedCountry == null) showingDetails = false
     }
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    // The globe's engine, owned here rather than by the surface that draws with
+    // it: this composition outlives both the flat map and every other tab, so
+    // the engine survives a view-mode toggle and a tab switch alike.
+    val globeHost = rememberGlobeSurfaceHost(MaterialTheme.colorScheme.background)
+
+    BoxWithConstraints(
+        // Hidden, not removed — an invisible globe is one whose surface is still
+        // attached and whose 181 meshes are still on the GPU. The subtree below
+        // stays composed and laid out for exactly that reason; what it must not
+        // do is paint over the tab drawn underneath it.
+        modifier = modifier.fillMaxSize().graphicsLayer { alpha = if (visible) 1f else 0f },
+    ) {
         val loaded = data
         val isGlobe = state.viewMode == ViewMode.Globe
 
+        // Everything except the globe leaves composition while hidden: none of
+        // it owns a surface worth keeping, and a pointer node left behind here
+        // would catch taps meant for the screen underneath.
         if (isGlobe) {
-            GlobeBody(data = loaded, state = state)
-        } else {
+            GlobeBody(data = loaded, state = state, host = globeHost, visible = visible)
+        } else if (visible) {
             MapBody(data = loaded, state = state, width = maxWidth, height = maxHeight)
         }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilledTonalIconButton(onClick = { state.toggleViewMode() }, enabled = loaded != null) {
-                Icon(
-                    imageVector = if (isGlobe) Icons.Rounded.Map else Icons.Rounded.Public,
-                    contentDescription = stringResource(
-                        if (isGlobe) R.string.home_show_map else R.string.home_show_globe,
-                    ),
-                )
-            }
-            FilledTonalIconButton(onClick = { showingSearch = true }, enabled = loaded != null) {
-                Icon(
-                    imageVector = Icons.Rounded.Search,
-                    contentDescription = stringResource(R.string.map_search_countries),
-                )
-            }
-        }
-
-        selectedCountry?.let { name ->
-            CountrySelectionCard(
-                name = name,
-                detail = detail,
-                state = state,
-                onOpenDetails = { showingDetails = true },
+        if (visible) {
+            Column(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.TopEnd)
                     .padding(16.dp),
-            )
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilledTonalIconButton(
+                    onClick = { state.toggleViewMode() },
+                    enabled = loaded != null,
+                ) {
+                    Icon(
+                        imageVector = if (isGlobe) Icons.Rounded.Map else Icons.Rounded.Public,
+                        contentDescription = stringResource(
+                            if (isGlobe) R.string.home_show_map else R.string.home_show_globe,
+                        ),
+                    )
+                }
+                FilledTonalIconButton(onClick = { showingSearch = true }, enabled = loaded != null) {
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = stringResource(R.string.map_search_countries),
+                    )
+                }
+            }
+
+            selectedCountry?.let { name ->
+                CountrySelectionCard(
+                    name = name,
+                    detail = detail,
+                    state = state,
+                    onOpenDetails = { showingDetails = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                )
+            }
         }
     }
 
     val countries = data?.countries
-    if (showingSearch && countries != null) {
+    if (visible && showingSearch && countries != null) {
         CountrySearchSheet(
             countries = countries,
             state = state,
@@ -191,7 +223,7 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier) {
     }
 
     val shown = detail
-    if (showingDetails && shown != null) {
+    if (visible && showingDetails && shown != null) {
         CountryDetailSheet(
             detail = shown,
             state = state,
@@ -202,7 +234,12 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier) {
 
 /** The 3D globe, or a spinner while its geometry loads. */
 @Composable
-private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
+private fun BoxScope.GlobeBody(
+    data: HomeData?,
+    state: VoyageState,
+    host: GlobeSurfaceHost,
+    visible: Boolean,
+) {
     val background = MaterialTheme.colorScheme.background
     val geometry: GlobeGeometry? = rememberGlobeGeometry(data?.countries)
     val texture = rememberEarthTexture(state.globeStyle)
@@ -223,7 +260,7 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
     }
 
     if (geometry == null || hitTester == null || texture == null) {
-        HomeLoading()
+        if (visible) HomeLoading()
         return
     }
     val hasTexture = texture.image != null
@@ -268,6 +305,8 @@ private fun BoxScope.GlobeBody(data: HomeData?, state: VoyageState) {
             if (name == null) state.clearSelection() else state.selectCountry(name, hitTester.center(name))
         },
         modifier = Modifier.fillMaxSize(),
+        host = host,
+        visible = visible,
         focus = state.selectedCountryCenter,
         autoRotating = state.isAutoRotating,
         onInteraction = state::stopAutoRotation,

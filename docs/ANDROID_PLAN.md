@@ -30,16 +30,16 @@ port.
 | 4 — 2D map | ✅ 2026-08-07. Projection, hit-testing, gestures, microstate dots |
 | 5 — State & persistence | ✅ Built, tests green 2026-08-08; device checks run on the A55 2026-08-30 — state survives a process kill, and Auto Backup restores it on reinstall |
 | 6 — Country details | ✅ Built, tests green 2026-08-09; loop driven end to end on the A55 2026-08-30 |
-| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29); Earth textures on globe and map 2026-09-14; countries and globe meshes generated at build time 2026-09-14 (7.8). 7.1–7.10 done; 7.11 open |
+| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29); Earth textures on globe and map 2026-09-14; countries and globe meshes generated at build time 2026-09-14 (7.8); one engine per Activity 2026-09-17 (7.11), measured on the A55. All sub-steps 7.1–7.11 done; the definition of done's side-by-side check against iOS is the half still outstanding |
 | 8 — Achievements | ✅ 2026-08-30. The ten medals, their progress rings, the expandable item lists, and a spinnable coin |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | 🟡 Settings tab exists with the texture pickers (2026-09-14); the rest not started |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
-Suite as of 2026-09-14: 255 JVM unit tests across 29 classes, green; instrumented
-tests run locally, not in CI (23, green on the Pixel 9 API 36 emulator
-2026-09-14; the 18 gesture tests of 2026-08-30 were also green on a Galaxy A55 /
+Suite as of 2026-09-17: 259 JVM unit tests across 29 classes, green; instrumented
+tests run locally, not in CI (31, green on the Pixel 9 API 36 emulator
+2026-09-17; the 18 gesture tests of 2026-08-30 were also green on a Galaxy A55 /
 Android 16).
 
 ## Decision log
@@ -162,6 +162,18 @@ Each is asserted by tests, on both platforms where it applies:
   visited; the eight wonders must each name an attraction that
   `country_highlights.json` still lists, or they could never be ticked off.
   Both platforms assert these against the same shared data.
+- **One Filament engine per Activity** (`GlobeEngineLifetimeTest`,
+  `GlobeGestureTest`). The engine carries the compiled materials, 181 uploaded
+  meshes and the Earth texture, so nothing that happens inside the app may
+  rebuild it: not a tab switch, because `HomeScreen` is composed outside the
+  `NavHost` and hidden rather than removed, and not the globe/map toggle,
+  because the host is remembered above it. Two consequences are asserted with
+  it. Home is layered **under** the `NavHost`, since a hidden full-screen
+  `AndroidView` is still a pointer node and Compose stops at the first sibling
+  it hits, handler or not — over the top, an invisible globe eats every tap
+  meant for the tab below. And a globe nobody is looking at stops rendering,
+  which the engine's own lifetime used to take care of. iOS needs none of this:
+  a SwiftUI `TabView` keeps every tab's view alive and `SCNView` pauses itself.
 - **The idle spin runs until you touch the globe, and only deselecting brings it
   back** (`VoyageStateTest`, `GlobeGestureTest`). `VoyageState.isAutoRotating`
   starts true and is never persisted, matching `GlobeState.isAutoRotating`: a
@@ -210,17 +222,48 @@ cost, below.
 
 ### Phase 7 — 3D globe, remaining sub-steps
 
-- **7.11 One Filament engine per Activity.** Today `GlobeSurfaceHost` dies with
-  the composable, so every trip to another tab rebuilds the engine and re-uploads
-  181 meshes — and, since 7.2, the 4096 × 2048 Earth texture, whose cost has not
-  been measured. Measured on the emulator before the texture: ~35–45 ms of a ~200 ms switch, the rest
-  being Compose navigation and surface creation — **a detached view loses its
-  surface either way**, so a genuinely instant switch also needs the globe's view
-  hoisted above the `NavHost` and hidden rather than removed. Two traps: a
-  `ViewModel` is the obvious home and the wrong one (holding a `View` or
-  `Context` there leaks the Activity across configuration changes — scope it to
-  the composition above the `NavHost`), and `Engine.destroy()` must still run
-  exactly once, on the thread that owns it.
+None. **7.11 One Filament engine per Activity** closed 2026-09-17:
+`GlobeSurfaceHost` used to die with the composable, so every trip to another tab
+rebuilt the engine and re-uploaded 181 meshes and the 4096 × 2048 Earth texture.
+Both halves the note called for were needed, because a detached view loses its
+surface however carefully the engine is kept: the host is now remembered by
+`HomeScreen`, above the globe/map toggle, and `HomeScreen` itself is composed by
+`VoyageApp` outside the `NavHost` and hidden rather than removed. Home's entry
+stays in the graph, empty, so the back stack and the bar are unchanged; the
+`NavHost`'s own fade is off, matching iOS's instant `TabView` switch. Both traps
+held: the host is scoped to a composition rather than a `ViewModel` — it owns a
+`TextureView`, which a `ViewModel` would outlive — and `Engine.destroy()` still
+runs exactly once, from the `DisposableEffect` that created it, on the main
+thread that owns it.
+
+Two things fell out of making the globe permanently resident. It stops rendering
+when it is not being looked at — hidden behind another tab, or in an app that
+has gone to the background — which it never did before, when leaving Home threw
+the loop away with the engine. And it is layered **under** the `NavHost`, not
+over it: a hidden full-screen `AndroidView` is still a pointer node, and Compose
+stops hit-testing siblings at the first one it hits whether or not that one
+handles the event, so an invisible globe on top silently ate every tap meant for
+the tab below. `GlobeEngineLifetimeTest` was written over that failure and
+covers both the engine count and the swallowed touch.
+
+Measured over five Home → Settings → Home round trips, three runs each, in
+release builds — on the emulator (Pixel 9 API 36) the way the estimate above
+was, and then on the A55 (SM-A556B, Android 16, 120 Hz panel), 2026-09-17:
+
+| | emulator before | emulator after | A55 before | A55 after |
+| --- | --- | --- | --- | --- |
+| 95th percentile frame | 42–65 ms | 17–19 ms | 14–17 ms | 10 ms |
+| 99th percentile frame | 150 ms | 19–22 ms | 48–53 ms | 18–19 ms |
+| janky frames (16 ms) | 19–27% | 0–3.4% | 6.2–7.6% | 2.9–3.2% |
+
+The long frame is the whole of the rebuild — engine, 181 meshes and the texture
+— and it is gone on both. **The percentile is the statistic that shows it**, not
+a jank rate: on the A55 the deadline-based `Janky frames` figure barely moves
+(4.3% → 4.1%), because ~1,000 frames of ordinary globe rendering at 120 Hz
+dominate it and a handful of stalls per run cannot shift a percentage. Frame
+counts are not comparable across the two builds either — the tab crossfade is
+gone and a hidden globe stops rendering, so the new build simply draws fewer
+frames for the same twelve seconds.
 
 **Definition of done:** globe and map pass a side-by-side consistency check
 against each other *and* against iOS (colors, selection, borders, stars); smooth

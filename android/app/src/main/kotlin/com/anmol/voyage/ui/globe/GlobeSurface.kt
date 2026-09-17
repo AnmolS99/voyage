@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
@@ -22,6 +23,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
 import com.anmol.voyage.globe.GlobeCamera
@@ -76,6 +80,12 @@ internal class GlobeDotStyle(
  * @param onInteraction a drag or a zoom started, which ends the idle spin. A tap
  *   does not report here: on iOS a tap that misses every country leaves the
  *   globe turning, and one that hits stops it by selecting a country.
+ * @param visible whether this globe is the thing the user is looking at. A
+ *   hidden globe keeps its engine, its geometry and its surface — that is the
+ *   whole point of hiding it rather than removing it — but stops rendering
+ *   frames and stops taking touches.
+ * @param host the engine and its scene. Created here by default; `HomeScreen`
+ *   passes its own, so the engine outlives the globe/map toggle as well.
  */
 @Composable
 internal fun GlobeSurface(
@@ -98,14 +108,22 @@ internal fun GlobeSurface(
     autoRotating: Boolean = false,
     onInteraction: () -> Unit = {},
     onCameraChange: (GlobeCamera) -> Unit = {},
+    visible: Boolean = true,
+    host: GlobeSurfaceHost = rememberGlobeSurfaceHost(backgroundColor),
 ) {
-    val host = remember(backgroundColor) { GlobeSurfaceHost(backgroundColor.toFilamentColor()) }
-
-    DisposableEffect(host) {
-        onDispose { host.destroy() }
-    }
-
     val sizes = rememberMarkerSizes()
+
+    // The background is a uniform, not a rebuild: this engine outlives a theme
+    // change now, so the skybox has to be repainted in place.
+    SideEffect { host.setBackgroundColor(backgroundColor.toFilamentColor()) }
+
+    // Nobody looking, nobody paying: a globe behind another tab, or in an app
+    // that has gone to the background, stops posting frames. Everything the
+    // frames draw stays uploaded, so showing it again costs the next vsync.
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    SideEffect {
+        host.rendering = visible && lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    }
 
     // Geometry is uploaded once per mesh set; recoloring below never touches it.
     DisposableEffect(host, ocean, countries, outlineSectors, microstateDots) {
@@ -160,63 +178,113 @@ internal fun GlobeSurface(
     }
 
     AndroidView(
-        modifier = modifier
-            .pointerInput(host) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    host.drag(pan / density, zoom)
-                }
-            }
-            .pointerInput(host) {
-                // Sits alongside the transform detector rather than inside it,
-                // because what inertia needs is the two things that detector does
-                // not report: when the gesture starts (to kill a spin still in
-                // flight, as a tap does on iOS) and how fast the finger was
-                // travelling when it left the screen.
-                trackFlicks(host)
-            }
-            .pointerInput(host) {
-                // Wheel and trackpad zoom. A touchscreen has pinch, but a mouse
-                // is a first-class pointer on Chromebooks, DeX, tablets with a
-                // mouse attached — and on the emulator, where pinch otherwise
-                // needs a modifier key most people never find.
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        if (event.type != PointerEventType.Scroll) continue
-                        val scroll = event.changes.sumOf { it.scrollDelta.y.toDouble() }.toFloat()
-                        if (scroll == 0f) continue
-                        host.zoom(zoomForScroll(scroll))
-                        event.changes.forEach { it.consume() }
-                    }
-                }
-            }
-            .pointerInput(host, hitTester, sizes) {
-                detectTapGestures { offset ->
-                    onCountryTapped(host.countryAt(offset.x, offset.y, hitTester, sizes))
-                }
-            }
-            .pointerInput(host) {
-                // Last in the chain on purpose, which makes it the innermost
-                // handler: Compose delivers the main pass inwards-out, so this
-                // sees every event before the detectors above it and its
-                // consumption is what keeps a zoom drag from also turning the
-                // globe. See `detectZoomDrags`.
-                detectZoomDrags(host)
-            },
+        modifier = if (visible) {
+            modifier.globeGestures(host, hitTester, sizes, onCountryTapped)
+        } else {
+            // Hidden, so no gesture handlers at all — not merely ignored ones.
+            // A pointer node here would be hit before the screen drawn beneath
+            // this one and would swallow taps meant for it.
+            modifier
+        },
         factory = { context ->
             TextureView(context).also { view -> host.attach(view) }
         },
+        onRelease = { host.detachView() },
     )
 }
+
+/**
+ * The globe's engine, created once and destroyed once, on the thread that owns
+ * it — the main thread, where composition and the render loop both run.
+ *
+ * Held by a composable rather than a `ViewModel` on purpose: the host owns a
+ * `TextureView` and its surface, and a `ViewModel` outlives the Activity those
+ * belong to. What it needs instead is a composition that outlives the *screen* —
+ * on Home that is `HomeScreen` itself, which since 7.11 is composed outside the
+ * `NavHost` and hidden rather than removed when another tab is chosen.
+ *
+ * Built with the screen rather than with the globe, so it is ready before the
+ * geometry is and a session that starts on the flat map pays for it too. That is
+ * the cheap half of the engine — `Engine.create()` and three materials whose
+ * shaders were compiled once for the process — while the expensive half, the
+ * meshes and the Earth texture, is uploaded only when something asks to draw.
+ */
+@Composable
+internal fun rememberGlobeSurfaceHost(backgroundColor: androidx.compose.ui.graphics.Color): GlobeSurfaceHost {
+    val host = remember { GlobeSurfaceHost(backgroundColor.toFilamentColor()) }
+    DisposableEffect(host) {
+        onDispose { host.destroy() }
+    }
+    return host
+}
+
+/**
+ * Every gesture the globe answers, in the order they have to be layered.
+ *
+ * Written as one chain so the globe can be handed the whole set or none of it:
+ * a hidden globe takes no touches, and that has to mean no pointer nodes rather
+ * than nodes that decline, because Compose stops at the first sibling it hits.
+ */
+private fun Modifier.globeGestures(
+    host: GlobeSurfaceHost,
+    hitTester: CountryHitTester,
+    sizes: MarkerSizes,
+    onCountryTapped: (String?) -> Unit,
+): Modifier = this
+    .pointerInput(host) {
+        detectTransformGestures { _, pan, zoom, _ ->
+            host.drag(pan / density, zoom)
+        }
+    }
+    .pointerInput(host) {
+        // Sits alongside the transform detector rather than inside it,
+        // because what inertia needs is the two things that detector does
+        // not report: when the gesture starts (to kill a spin still in
+        // flight, as a tap does on iOS) and how fast the finger was
+        // travelling when it left the screen.
+        trackFlicks(host)
+    }
+    .pointerInput(host) {
+        // Wheel and trackpad zoom. A touchscreen has pinch, but a mouse
+        // is a first-class pointer on Chromebooks, DeX, tablets with a
+        // mouse attached — and on the emulator, where pinch otherwise
+        // needs a modifier key most people never find.
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent()
+                if (event.type != PointerEventType.Scroll) continue
+                val scroll = event.changes.sumOf { it.scrollDelta.y.toDouble() }.toFloat()
+                if (scroll == 0f) continue
+                host.zoom(zoomForScroll(scroll))
+                event.changes.forEach { it.consume() }
+            }
+        }
+    }
+    .pointerInput(host, hitTester, sizes) {
+        detectTapGestures { offset ->
+            onCountryTapped(host.countryAt(offset.x, offset.y, hitTester, sizes))
+        }
+    }
+    .pointerInput(host) {
+        // Last in the chain on purpose, which makes it the innermost
+        // handler: Compose delivers the main pass inwards-out, so this
+        // sees every event before the detectors above it and its
+        // consumption is what keeps a zoom drag from also turning the
+        // globe. See `detectZoomDrags`.
+        detectZoomDrags(host)
+    }
 
 /**
  * Binds a [GlobeRenderer] to a [TextureView] and a Choreographer loop.
  *
  * Kept out of the composable so the engine's lifetime is tied to one object
  * that `DisposableEffect` can destroy, rather than to several remembered values
- * that would have to be torn down in the right order.
+ * that would have to be torn down in the right order. It is deliberately
+ * longer-lived than the surface it draws to: see [rememberGlobeSurfaceHost] for
+ * where it is owned, [attach] for what a new `TextureView` costs, and
+ * [setGeometry] for what it does not.
  */
-private class GlobeSurfaceHost(backgroundColor: FloatArray) {
+internal class GlobeSurfaceHost(backgroundColor: FloatArray) {
 
     private val renderer = GlobeRenderer(backgroundColor)
     private val uiHelper = UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK)
@@ -259,6 +327,43 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
 
     /** Whether to keep turning the globe when nothing else is moving it. */
     var autoRotating: Boolean = false
+
+    /**
+     * Whether frames are being drawn.
+     *
+     * Turning it off leaves the engine, its geometry and its surface exactly
+     * where they are and only stops asking the [Choreographer] for frames —
+     * which is what lets the globe be left behind another tab for free and come
+     * back on the next vsync. The frame clock resets with it, so the first frame
+     * after a pause does not hand [advance] a step measured from before it.
+     */
+    var rendering: Boolean = false
+        set(value) {
+            if (field == value || destroyed) return
+            field = value
+            if (value) {
+                lastFrameNanos = 0L
+                choreographer.postFrameCallback(frameCallback)
+            } else {
+                choreographer.removeFrameCallback(frameCallback)
+            }
+        }
+
+    /** The view currently bound to the engine's swap chain, or null. */
+    private var attachedView: TextureView? = null
+
+    /**
+     * The geometry the GPU is already holding, compared by identity.
+     *
+     * The meshes come from the process-wide `GlobeGeometryCache`, so the same
+     * four objects arriving again means the upload can be skipped — which is
+     * what keeps a trip to the flat map and back from re-uploading 181 meshes
+     * onto an engine that never went anywhere.
+     */
+    private var uploadedOcean: SphereMesh? = null
+    private var uploadedCountries: List<NamedCountryMesh>? = null
+    private var uploadedOutlines: List<OutlineMesh>? = null
+    private var uploadedDots: List<MicrostateDot>? = null
 
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
@@ -399,7 +504,18 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         return hitTester.findCountry(latLon.lat, latLon.lon, pointHitRadius = Math.toDegrees(dotRadius.toDouble()))
     }
 
+    /**
+     * Binds the engine to [view]'s surface, releasing any previous one.
+     *
+     * Since 7.11 this runs once per Activity for the globe on Home: its view is
+     * composed outside the `NavHost` and hidden rather than removed, so a tab
+     * switch never detaches it. Switching to the flat map and back still builds
+     * a new view — but only a swap chain is rebuilt with it, not the engine.
+     */
     fun attach(view: TextureView) {
+        if (destroyed) return
+        detachView()
+        attachedView = view
         uiHelper.renderCallback = object : UiHelper.RendererCallback {
             override fun onNativeWindowChanged(surface: Surface) {
                 if (!destroyed) renderer.onNativeWindowChanged(surface)
@@ -425,7 +541,18 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         // background shows through instead.
         uiHelper.isOpaque = false
         uiHelper.attachTo(view)
-        choreographer.postFrameCallback(frameCallback)
+    }
+
+    /** Gives up the surface. The engine and everything uploaded to it stay. */
+    fun detachView() {
+        if (attachedView == null) return
+        attachedView = null
+        uiHelper.detach()
+    }
+
+    /** Repaints the background behind the globe, for a theme change. */
+    fun setBackgroundColor(color: FloatArray) {
+        if (!destroyed) renderer.setBackgroundColor(color)
     }
 
     fun setGeometry(
@@ -434,7 +561,17 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         outlines: List<OutlineMesh>,
         microstateDots: List<MicrostateDot>,
     ) {
-        if (!destroyed) renderer.setGeometry(ocean, countries, outlines, microstateDots)
+        if (destroyed) return
+        val alreadyUploaded = ocean === uploadedOcean &&
+            countries === uploadedCountries &&
+            outlines === uploadedOutlines &&
+            microstateDots === uploadedDots
+        if (alreadyUploaded) return
+        uploadedOcean = ocean
+        uploadedCountries = countries
+        uploadedOutlines = outlines
+        uploadedDots = microstateDots
+        renderer.setGeometry(ocean, countries, outlines, microstateDots)
     }
 
     fun setSelectedOutline(outline: OutlineMesh?, color: GlobeFill?) {
@@ -489,11 +626,12 @@ private class GlobeSurfaceHost(backgroundColor: FloatArray) {
         }
     }
 
+    /** Runs exactly once, on the main thread — the one that created the engine. */
     fun destroy() {
         if (destroyed) return
+        rendering = false
         destroyed = true
-        choreographer.removeFrameCallback(frameCallback)
-        uiHelper.detach()
+        detachView()
         renderer.destroy()
     }
 }

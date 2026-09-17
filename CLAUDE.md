@@ -46,6 +46,12 @@ two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,
 `ui/map/CapitalMarker.kt`, `ui/map/MapProjection.kt`, and
 `globe/GlobeCamera.kt` rather than in the renderer, and
 `ui/home/HomeScreen.kt` holds the chrome both Android renderers share.
+`HomeScreen` also owns the globe's **Filament engine — one per Activity** — and
+`VoyageApp` composes it outside the `NavHost` and *under* it, hidden rather than
+removed on a tab switch: a detached `TextureView` loses its surface, and a
+hidden full-screen one left on top swallows the taps meant for the tab below.
+Moving Home back inside the `NavHost` undoes all of it; ANDROID_DEVELOPMENT.md
+has the three rules that come with the arrangement.
 The globe's **spin physics are shared with iOS, not reinvented**:
 `globe/GlobeInertia.kt` ports `ios/voyage/GlobeInertia.swift` (same damping, in
 degrees per second rather than radians), and `GlobeCamera.degreesPerDp` ports

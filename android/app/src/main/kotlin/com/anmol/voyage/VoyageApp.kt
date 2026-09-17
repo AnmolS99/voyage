@@ -1,5 +1,8 @@
 package com.anmol.voyage
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -12,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -33,12 +37,27 @@ import com.anmol.voyage.ui.settings.SettingsScreen
  * [VoyageState] is owned by the activity and passed in from there — it decides
  * the theme, which wraps this shell — and handed to every tab, so they share one
  * source of truth, the role `GlobeState` plays on iOS.
+ *
+ * Home is the one destination the [NavHost] does not draw. It is composed here,
+ * outside the host and *under* it, and hidden rather than removed when another
+ * tab is chosen — because its globe owns a Filament engine and a `TextureView`
+ * surface, and a detached view loses the surface however carefully the engine
+ * is kept (the Android plan's 7.11). Its entry stays in the graph, empty, so the
+ * back stack and the bar's selection still work exactly as they read here.
+ *
+ * Under the host, not over it, and that order is load-bearing. A hidden Home is
+ * still a full-screen `AndroidView`, and Compose stops hit-testing siblings at
+ * the first one it hits whether or not that one handles the event — so an
+ * invisible globe on top would quietly eat every tap the tab below it should
+ * have received. Beneath, it only ever sees touches that tab did not want, and
+ * while hidden it has no handlers to answer them with.
  */
 @Composable
 fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: VoyageDestination.start.route
+    val onHome = currentRoute == VoyageDestination.Home.route
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -57,6 +76,7 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
                 VoyageDestination.entries.forEach { destination ->
                     val label = stringResource(destination.labelRes)
                     NavigationBarItem(
+                        modifier = Modifier.testTag(destinationTag(destination)),
                         colors = itemColors,
                         selected = currentRoute == destination.route,
                         onClick = {
@@ -79,28 +99,47 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
             }
         },
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = VoyageDestination.start.route,
-            modifier = Modifier.padding(innerPadding),
-        ) {
-            VoyageDestination.entries.forEach { destination ->
-                composable(destination.route) {
-                    val subtitleRes = destination.subtitleRes
-                    when {
-                        destination == VoyageDestination.Home -> HomeScreen(state = state)
-                        destination == VoyageDestination.Achievements ->
-                            AchievementsScreen(state = state)
-                        destination == VoyageDestination.Settings -> SettingsScreen(state = state)
-                        // Destinations a later phase still owns.
-                        subtitleRes != null -> PlaceholderScreen(
-                            title = stringResource(destination.titleRes),
-                            subtitle = stringResource(subtitleRes),
-                            icon = destination.icon,
-                        )
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            HomeScreen(state = state, visible = onHome)
+
+            NavHost(
+                navController = navController,
+                startDestination = VoyageDestination.start.route,
+                // No fade between tabs, as on iOS, where a `TabView` switches
+                // instantly. It is also what the layering needs: Home is hidden
+                // the moment another tab is chosen, and a screen fading in over
+                // the gap it leaves would show the bare scaffold for the length
+                // of the animation.
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+            ) {
+                VoyageDestination.entries.forEach { destination ->
+                    composable(destination.route) {
+                        val subtitleRes = destination.subtitleRes
+                        when {
+                            // Drawn under this host instead; see the doc above.
+                            // Empty, and empty of pointer handlers, so a tap
+                            // reaches the globe behind it.
+                            destination == VoyageDestination.Home -> Unit
+                            destination == VoyageDestination.Achievements ->
+                                AchievementsScreen(state = state)
+                            destination == VoyageDestination.Settings -> SettingsScreen(state = state)
+                            // Destinations a later phase still owns.
+                            subtitleRes != null -> PlaceholderScreen(
+                                title = stringResource(destination.titleRes),
+                                subtitle = stringResource(subtitleRes),
+                                icon = destination.icon,
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * Test tag for [destination]'s bottom-bar item. Labels are not enough: a tab's
+ * own screen can show the same word its bar item does.
+ */
+internal fun destinationTag(destination: VoyageDestination) = "nav:${destination.route}"

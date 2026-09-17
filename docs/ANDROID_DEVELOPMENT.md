@@ -132,7 +132,7 @@ android/
 │       │   ├── kotlin/com/anmol/voyage/
 │       │   │   ├── VoyageApplication.kt     # installs + prewarms the country data
 │       │   │   ├── MainActivity.kt          # splash + edge-to-edge + Compose entry
-│       │   │   ├── VoyageApp.kt             # NavigationBar shell + NavHost
+│       │   │   ├── VoyageApp.kt             # NavigationBar shell + NavHost, with Home layered under it
 │       │   │   ├── data/                    # models, GeoJSON parser, cache, hit testing
 │       │   │   ├── globe/                   # 3D globe geometry + camera: earcut, triangulation, outlines, orbit/tap math
 │       │   │   ├── navigation/              # top-level destinations
@@ -348,6 +348,34 @@ separate window layer and shows black until its first buffer lands — visible o
 every tab switch, because Compose navigation builds a new one each time. Timing
 logs will not show this: Filament's first frame is fast, and the black belongs
 to the window, not the renderer.
+
+**There is one Filament engine per Activity, and keeping it that way constrains
+the navigation.** The engine holds the compiled materials, 181 uploaded meshes
+and the Earth texture, so it has to survive both ways out of the globe: the
+globe/map toggle, which is why `rememberGlobeSurfaceHost` is called by
+`HomeScreen` rather than by the surface that draws with it, and a tab switch,
+which is why `VoyageApp` composes `HomeScreen` outside the `NavHost` and hides
+it instead of removing it. Home's entry stays in the graph, empty, so the back
+stack and the bar behave as they read. Three rules come with that arrangement:
+
+- **Home is layered under the `NavHost`, never over it.** A hidden full-screen
+  `AndroidView` is still a pointer node, and Compose stops hit-testing siblings
+  at the first one it hits whether or not that one handles the event — so an
+  invisible globe on top swallows every tap meant for the tab below. Under it,
+  the globe only sees what the tab above ignored, and while hidden it installs
+  no gesture handlers at all.
+- **Hidden means hidden, not gone.** `HomeScreen` drops to `alpha = 0` and keeps
+  its subtree composed and laid out, because a detached `TextureView` loses its
+  surface — and there is little point keeping the engine if the surface leaves
+  with the tab. Everything that does *not* own a surface — the chrome, the
+  sheets, the flat map — leaves composition while hidden.
+- **A globe nobody is looking at stops rendering.** `GlobeSurface` gates the
+  Choreographer loop on being visible and on the lifecycle being at least
+  `STARTED`. Before the engine was resident this took care of itself, because
+  leaving Home destroyed the loop along with it.
+
+`GlobeEngineLifetimeTest` pins all of this: the engine count across tab and
+view-mode switches, and a tap on the screen beneath a hidden Home.
 
 **Anything derived from `shared/data` belongs in a process-wide cache, not in a
 composable.** `CountryDataCache` holds the countries and `GlobeGeometryCache` the
