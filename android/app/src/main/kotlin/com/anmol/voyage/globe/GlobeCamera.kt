@@ -62,6 +62,24 @@ data class GlobeCamera(
     fun zoomedBy(scale: Float): GlobeCamera = at(latitude, longitude, distance / scale)
 
     /**
+     * Applies a one-finger zoom drag: [dragDp] of vertical finger travel since a
+     * drag that began at [startDistance].
+     *
+     * Measured from where the drag started rather than stepped frame by frame,
+     * as iOS's `handleDoubleTapDrag` measures from `doubleTapDragStartDistance`.
+     * That is what makes the gesture reversible: dragging back to where the
+     * finger went down puts the zoom back exactly where it was, which a sequence
+     * of incremental steps through the distance clamps would not.
+     *
+     * Dragging **down** zooms in. This is the one part of the gesture that is
+     * deliberately not a port — iOS moves the camera the other way, and down-to-
+     * zoom-in is what Google Maps does on Android, so it is the direction a
+     * finger arrives here already expecting.
+     */
+    fun zoomDraggedBy(startDistance: Float, dragDp: Float): GlobeCamera =
+        at(latitude, longitude, startDistance - dragDp * ZOOM_DRAG_DISTANCE_PER_DP)
+
+    /**
      * Degrees of rotation per dp of finger travel — iOS's pan curve, ported.
      *
      * Speed grows with the square of camera distance so the globe stays quick to
@@ -262,6 +280,17 @@ data class GlobeCamera(
          * seconds, which is this.
          */
         const val AUTO_ROTATION_DEGREES_PER_SECOND = 360.0 / 60.0
+
+        /**
+         * How much camera distance one dp of vertical travel covers in a
+         * one-finger zoom drag. iOS `handleDoubleTapDrag`'s `zoomSpeed`.
+         *
+         * Per *dp* for the reason [degreesPerDp] gives: a dp and an iOS point
+         * are the same physical size, so the same finger travel covers the same
+         * zoom range on both platforms. Only the sign differs — see
+         * [zoomDraggedBy].
+         */
+        const val ZOOM_DRAG_DISTANCE_PER_DP = 0.01f
 
         /** Radians of rotation per point of finger travel at [DEFAULT_DISTANCE]. */
         private const val BASE_PAN_SPEED = 0.005f

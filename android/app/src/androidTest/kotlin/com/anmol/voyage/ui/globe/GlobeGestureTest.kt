@@ -13,9 +13,12 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.ScrollWheel
 import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.down
+import androidx.compose.ui.test.moveBy
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pinch
 import androidx.compose.ui.test.swipe
+import androidx.compose.ui.test.up
 import androidx.compose.ui.geometry.Offset
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlin.math.abs
@@ -203,6 +206,97 @@ class GlobeGestureTest {
         }
         composeTestRule.waitForIdle()
         assertTrue("scrolling down should zoom out", latest.distance > zoomedIn)
+    }
+
+    /**
+     * Tap, then press and drag [dy] pixels vertically without letting go — the
+     * one-finger zoom. Broken into steps rather than one jump so it arrives as
+     * the stream of moves a finger produces.
+     */
+    private fun zoomDrag(dy: Float) {
+        composeTestRule.onNodeWithTag(GLOBE).performTouchInput {
+            click(center)
+            down(center)
+            repeat(10) { moveBy(Offset(0f, dy / 10f)) }
+            up()
+        }
+        composeTestRule.waitForIdle()
+    }
+
+    @Test
+    fun doubleTapDraggingDownZoomsIn() {
+        showGlobe()
+        val before = latest.distance
+
+        zoomDrag(dy = 300f)
+
+        // Down zooms in on Android, where iOS's same gesture zooms out. The
+        // direction is the platform's; see GlobeCamera.zoomDraggedBy.
+        assertTrue(
+            "dragging down should zoom in, was $before now ${latest.distance}",
+            latest.distance < before,
+        )
+    }
+
+    @Test
+    fun doubleTapDraggingUpZoomsOut() {
+        showGlobe()
+        zoomDrag(dy = 300f)
+        val zoomedIn = latest.distance
+
+        zoomDrag(dy = -300f)
+
+        assertTrue(
+            "dragging up should zoom out, was $zoomedIn now ${latest.distance}",
+            latest.distance > zoomedIn,
+        )
+    }
+
+    @Test
+    fun aZoomDragDoesNotTurnTheGlobe() {
+        showGlobe()
+        val before = latest
+
+        zoomDrag(dy = 300f)
+
+        // The same vertical travel handed to the rotate detector would have
+        // tilted the camera a long way; consuming it is what keeps the gesture
+        // to one axis.
+        assertEquals("a zoom drag should not tilt the globe", before.latitude, latest.latitude, 1e-6)
+        assertEquals("a zoom drag should not spin the globe", before.longitude, latest.longitude, 1e-6)
+    }
+
+    @Test
+    fun aZoomDragLeavesNothingSpinning() {
+        showGlobe()
+
+        zoomDrag(dy = 400f)
+        val atLift = latest
+
+        // A flick measured off that drag would coast for seconds after it.
+        Thread.sleep(1_000)
+        composeTestRule.waitForIdle()
+        assertEquals("the globe should be still", atLift.latitude, latest.latitude, 1e-6)
+        assertEquals("the zoom should have stopped", atLift.distance, latest.distance, 1e-6f)
+    }
+
+    @Test
+    fun aPlainDragStillRotatesAfterATap() {
+        showGlobe()
+        // A tap arms the zoom gesture; a drag that starts later than the
+        // double-tap window must still be an ordinary rotation.
+        composeTestRule.onNodeWithTag(GLOBE).performTouchInput { click(center) }
+        Thread.sleep(600)
+
+        composeTestRule.onNodeWithTag(GLOBE).performTouchInput {
+            swipe(start = center, end = center + Offset(300f, 0f), durationMillis = 200)
+        }
+        composeTestRule.waitForIdle()
+
+        assertTrue(
+            "dragging right should still decrease longitude, got ${latest.longitude}",
+            latest.longitude < 0.0,
+        )
     }
 
     @Test
