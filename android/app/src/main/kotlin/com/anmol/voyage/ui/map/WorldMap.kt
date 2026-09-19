@@ -20,7 +20,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntSize
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.GeoJsonCountry
-import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
 import kotlin.math.roundToInt
 
@@ -32,6 +31,8 @@ import kotlin.math.roundToInt
  * composable — [CountryStyles] for colors, [CapitalMarker] for the star,
  * [MapProjection] for the geometry — leaving drawing and gestures here.
  *
+ * @param scene what to paint and where taps go — Home's travels. Challenges are
+ *   played on the globe only, as on iOS, so a game's scene never reaches here.
  * @param paths countries pre-projected for the current view size; empty while they
  *   are still being built, which draws the ocean alone.
  * @param texture the Earth image under the countries. Null draws a flat ocean and
@@ -42,7 +43,7 @@ fun WorldMap(
     countries: List<GeoJsonCountry>,
     paths: List<CountryPaths>,
     hitTester: CountryHitTester,
-    state: VoyageState,
+    scene: WorldScene,
     projection: MapProjection,
     texture: ImageBitmap?,
     modifier: Modifier = Modifier,
@@ -90,7 +91,7 @@ fun WorldMap(
                         offsetY = offset.y,
                     )
                     val name = hitTester.findCountry(lat = point.lat, lon = point.lon)
-                    if (name != null) state.selectCountry(name, hitTester.center(name))
+                    if (name != null) scene.onCountryTapped(name)
                 }
             },
     ) {
@@ -114,7 +115,7 @@ fun WorldMap(
             }
 
             for (country in paths) {
-                val style = state.styleFor(country.name, hasTexture)
+                val style = scene.styleFor(country.name, hasTexture)
                 drawPath(country.fill, style.fill.brush(country.bounds))
                 // The matrix magnifies strokes, so divide out the scale to keep
                 // borders a constant width on screen.
@@ -139,11 +140,11 @@ fun WorldMap(
                 offsetX = offset.x,
                 offsetY = offset.y,
             )
-            drawMicrostateDot(Offset(x, y), state.styleFor(country.name, hasTexture), sizes)
+            drawMicrostateDot(Offset(x, y), scene.styleFor(country.name, hasTexture), sizes)
         }
 
         // The capital star marks the selected country only, as on the globe.
-        val selected = state.selectedCountry
+        val selected = scene.selectedCountry?.takeIf { scene.showsCapital }
         val capital = selected?.let { name -> countries.firstOrNull { it.name == name }?.capital }
         if (capital != null) {
             val (x, y) = projection.transform(
@@ -157,12 +158,4 @@ fun WorldMap(
         }
     }
 }
-
-/** The style for one country given the current visited/wishlist/selection state. */
-private fun VoyageState.styleFor(name: String, hasTexture: Boolean): CountryStyle = CountryStyles.of(
-    isVisited = isVisited(name),
-    isWishlist = isInWishlist(name),
-    isSelected = selectedCountry == name,
-    hasTexture = hasTexture,
-)
 

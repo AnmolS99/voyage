@@ -20,14 +20,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.anmol.voyage.navigation.ChallengeRoutes
 import com.anmol.voyage.navigation.VoyageDestination
+import com.anmol.voyage.navigation.owning
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.achievements.AchievementsScreen
+import com.anmol.voyage.ui.challenges.ChallengeGameScreen
+import com.anmol.voyage.ui.challenges.ChallengeSession
+import com.anmol.voyage.ui.challenges.ChallengesScreen
+import com.anmol.voyage.ui.challenges.RegionSelectScreen
 import com.anmol.voyage.ui.home.HomeScreen
 import com.anmol.voyage.ui.screens.PlaceholderScreen
 import com.anmol.voyage.ui.settings.SettingsScreen
@@ -60,12 +68,20 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: VoyageDestination.start.route
+    val currentTab = VoyageDestination.owning(currentRoute) ?: VoyageDestination.start
     val onHome = currentRoute == VoyageDestination.Home.route
+
+    // A challenge being played takes over the whole screen, as iOS's
+    // `fullScreenCover` does: no bottom bar, and Home's globe — the one engine
+    // there is — shows the game's world under the game's controls.
+    val session = backStackEntry
+        ?.takeIf { it.destination.route == ChallengeRoutes.PLAY }
+        ?.let { challengeSession(it, state) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
+            if (session == null) NavigationBar {
                 // Spelled out rather than left to the defaults, which colour the
                 // selected label with the scheme's `secondary` — Voyage's success
                 // green, not a chrome accent.
@@ -81,9 +97,13 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
                     NavigationBarItem(
                         modifier = Modifier.testTag(destinationTag(destination)),
                         colors = itemColors,
-                        selected = currentRoute == destination.route,
+                        selected = currentTab == destination,
                         onClick = {
-                            if (currentRoute != destination.route) {
+                            if (currentTab == destination) {
+                                // Re-selecting a tab returns it to its root, as a
+                                // tab bar does on iOS.
+                                navController.popBackStack(destination.route, inclusive = false)
+                            } else {
                                 navController.navigate(destination.route) {
                                     // Tab switching keeps a single-entry back stack:
                                     // back from any tab returns to Home, then exits.
@@ -107,20 +127,26 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
             // safe area: the sky (or the map) fills the screen's top edge, and
             // Home keeps only its own controls clear of the bar. Every other tab
             // stays inside the scaffold's padding.
+            // A game is full-screen and keeps its own controls clear of the bars.
             val layoutDirection = LocalLayoutDirection.current
             HomeScreen(
                 state = state,
-                visible = onHome,
-                modifier = Modifier.padding(
-                    start = innerPadding.calculateStartPadding(layoutDirection),
-                    end = innerPadding.calculateEndPadding(layoutDirection),
-                    bottom = innerPadding.calculateBottomPadding(),
-                ),
+                visible = onHome || session != null,
+                challengeScene = session?.scene,
+                modifier = if (session != null) {
+                    Modifier
+                } else {
+                    Modifier.padding(
+                        start = innerPadding.calculateStartPadding(layoutDirection),
+                        end = innerPadding.calculateEndPadding(layoutDirection),
+                        bottom = innerPadding.calculateBottomPadding(),
+                    )
+                },
             )
 
             NavHost(
                 navController = navController,
-                modifier = Modifier.padding(innerPadding),
+                modifier = if (session != null) Modifier else Modifier.padding(innerPadding),
                 startDestination = VoyageDestination.start.route,
                 // No fade between tabs, as on iOS, where a `TabView` switches
                 // instantly. It is also what the layering needs: Home is hidden
@@ -141,6 +167,10 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
                             destination == VoyageDestination.Achievements ->
                                 AchievementsScreen(state = state)
                             destination == VoyageDestination.Settings -> SettingsScreen(state = state)
+                            destination == VoyageDestination.Challenges -> ChallengesScreen(
+                                state = state,
+                                onSelectMode = { navController.navigate(ChallengeRoutes.regionSelect(it)) },
+                            )
                             // Destinations a later phase still owns.
                             subtitleRes != null -> PlaceholderScreen(
                                 title = stringResource(destination.titleRes),
@@ -150,9 +180,39 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
                         }
                     }
                 }
+                composable(ChallengeRoutes.REGION_SELECT) { entry ->
+                    val mode = ChallengeRoutes.modeOf(entry) ?: return@composable
+                    RegionSelectScreen(
+                        mode = mode,
+                        state = state,
+                        onPlay = { region -> navController.navigate(ChallengeRoutes.play(mode, region)) },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                // Transparent but for its controls, like Home's own entry: the
+                // globe the game is played on is drawn beneath this host.
+                composable(ChallengeRoutes.PLAY) { entry ->
+                    val playing = challengeSession(entry, state) ?: return@composable
+                    ChallengeGameScreen(session = playing, onExit = { navController.popBackStack() })
+                }
             }
         }
     }
+}
+
+/**
+ * The game being played on [entry], created on first use and kept for as long
+ * as the entry is on the back stack — across a rotation too. The app shell and
+ * the game's own screen both ask for it, and get the same one.
+ */
+@Composable
+private fun challengeSession(entry: NavBackStackEntry, state: VoyageState): ChallengeSession? {
+    val mode = ChallengeRoutes.modeOf(entry) ?: return null
+    val region = ChallengeRoutes.regionOf(entry) ?: return null
+    return viewModel(
+        viewModelStoreOwner = entry,
+        factory = ChallengeSession.factory(mode, region, state),
+    )
 }
 
 /**

@@ -36,6 +36,7 @@ import com.anmol.voyage.globe.MicrostateDot
 import com.anmol.voyage.globe.NamedCountryMesh
 import com.anmol.voyage.globe.OutlineMesh
 import com.anmol.voyage.globe.SphereMesh
+import com.anmol.voyage.ui.map.CameraFocus
 import com.anmol.voyage.ui.map.CapitalMarker
 import com.anmol.voyage.ui.map.MarkerSizes
 import com.anmol.voyage.ui.map.rememberMarkerSizes
@@ -73,8 +74,9 @@ internal class GlobeDotStyle(
  * @param dotStyles how each microstate's dot is currently painted. The dots
  *   themselves are meshes in the scene, uploaded with the rest of the geometry.
  * @param capital the selected country's capital, marked with a star.
- * @param focus a place to fly the camera to, once, when it changes. The selected
- *   country's center, so picking a country brings it into view.
+ * @param focus a place to fly the camera to, once, when it changes. On Home the
+ *   selected country's center, so picking a country brings it into view; in a
+ *   challenge, the region being played or the country being asked about.
  * @param autoRotating whether the globe turns on its own — true until something
  *   is selected or the globe is dragged.
  * @param onInteraction a drag or a zoom started, which ends the idle spin. A tap
@@ -103,7 +105,7 @@ internal fun GlobeSurface(
     capital: LatLon? = null,
     selectedOutline: OutlineMesh? = null,
     selectedOutlineColor: GlobeFill? = null,
-    focus: LatLon? = null,
+    focus: CameraFocus? = null,
     autoRotating: Boolean = false,
     onInteraction: () -> Unit = {},
     onCameraChange: (GlobeCamera) -> Unit = {},
@@ -159,7 +161,7 @@ internal fun GlobeSurface(
     // re-selecting it after a deselect flies again — the guard iOS spends
     // `hasAnimatedToCountry` and `lastAnimatedCountry` on, for free.
     DisposableEffect(host, focus) {
-        if (focus != null) host.flyTo(focus)
+        if (focus != null) host.flyTo(focus.target, focus.distance)
         onDispose { }
     }
 
@@ -403,15 +405,21 @@ internal class GlobeSurfaceHost {
     }
 
     /**
-     * Starts a flight to [target], from wherever the globe is now.
+     * Starts a flight to [target], from wherever the globe is now, settling at
+     * [distance] — or at the current zoom, for null.
      *
      * Any momentum is dropped rather than added to the flight: the camera has
      * one writer per frame, and a flick still coasting would otherwise be
      * fighting the flight for the same 0.8 seconds.
      */
-    fun flyTo(target: LatLon) {
+    fun flyTo(target: LatLon, distance: Float? = GlobeFlight.SELECTION_DISTANCE) {
         inertia.reset()
-        flight = GlobeFlight(camera, latitude = target.lat, longitude = target.lon)
+        flight = GlobeFlight(
+            camera,
+            latitude = target.lat,
+            longitude = target.lon,
+            distance = distance ?: camera.distance,
+        )
     }
 
     /**

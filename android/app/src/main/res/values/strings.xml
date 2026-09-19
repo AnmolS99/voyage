@@ -72,7 +72,57 @@
     <string name="style_natural">Natural</string>
     <string name="style_realistic">Realistic</string>
 
+    <!-- Challenges (wording mirrors iOS ChallengesView and the game views) -->
+    <string name="challenge_mode_click_country">Click the Country</string>
+    <string name="challenge_mode_click_country_subtitle">Find every country on the globe</string>
+    <string name="challenge_mode_name_capital">Name the Capital</string>
+    <string name="challenge_mode_name_capital_subtitle">Type the capital of every country</string>
+    <string name="challenge_mode_name_flag">Name the Flag</string>
+    <string name="challenge_mode_name_flag_subtitle">Name the country from its flag</string>
+    <string name="challenge_region_world">World</string>
+    <string name="challenge_trophy_bronze">Bronze</string>
+    <string name="challenge_trophy_silver">Silver</string>
+    <string name="challenge_trophy_gold">Gold</string>
+    <string name="challenge_not_played">Not played yet</string>
+    <plurals name="challenge_played_times">
+        <item quantity="one">Played %1$d time</item>
+        <item quantity="other">Played %1$d times</item>
+    </plurals>
+    <plurals name="challenge_region_countries">
+        <item quantity="one">%1$d country</item>
+        <item quantity="other">%1$d countries</item>
+    </plurals>
+    <string name="challenge_region_best">Best %1$d%% · %2$s · %3$s</string>
+    <string name="challenge_back">Back</string>
+    <string name="challenge_trophy_count">%1$d %2$s trophies</string>
+    <string name="challenge_progress">%1$d/%2$d</string>
+    <string name="challenge_which_country">Which country?</string>
+    <string name="challenge_guess_placeholder">Type your guess…</string>
+    <string name="challenge_clear_guess">Clear guess</string>
+    <string name="challenge_tap_to_confirm">Tap again to confirm your guess</string>
+    <string name="challenge_feedback_correct">Correct — %1$s</string>
+    <string name="challenge_feedback_country_here">%1$s %2$s is here</string>
+    <string name="challenge_feedback_capital">The capital of %1$s is %2$s</string>
+    <string name="challenge_feedback_flag">This flag is %1$s %2$s</string>
+    <string name="challenge_quit">End game</string>
+    <string name="challenge_restart">Restart</string>
+    <string name="challenge_quit_title">End this sweep?</string>
+    <string name="challenge_quit_message">Progress won’t be saved.</string>
+    <string name="challenge_quit_confirm">End Game</string>
+    <string name="challenge_restart_title">Restart this sweep?</string>
+    <string name="challenge_restart_message">Current progress will be lost.</string>
+    <string name="challenge_keep_playing">Keep Playing</string>
+    <string name="challenge_sweep_complete">Sweep Complete!</string>
+    <string name="challenge_trophy_earned">%1$s Trophy earned!</string>
+    <string name="challenge_new_best">🏆 New Best!</string>
+    <string name="challenge_score">%1$d / %2$d</string>
+    <string name="challenge_score_detail">%1$d%% · %2$s</string>
+    <string name="challenge_missed_with_capital">%1$s — %2$s</string>
+    <string name="challenge_play_again">Play Again</string>
+    <string name="challenge_done">Done</string>
+    <string name="challenge_elapsed">Time %1$s</string>
+    <string name="challenge_correct_count">Correct answers: %1$d</string>
+
     <!-- Placeholder copy, removed as each phase lands its real screen -->
     <string name="placeholder_daily">The daily geography challenge calendar lands here.</string>
-    <string name="placeholder_challenges">Longer-form challenges land here.</string>
 </resources>

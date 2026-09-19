@@ -60,8 +60,21 @@ object CountryStyles {
     private val BORDER_WIDTH = 0.5.dp
     private val SELECTED_BORDER_WIDTH = 1.5.dp
 
-    fun of(isVisited: Boolean, isWishlist: Boolean, isSelected: Boolean, hasTexture: Boolean): CountryStyle {
+    /**
+     * @param highlight a challenge game's temporary color for the country —
+     *   green when found, red when revealed. It is a status like the others and
+     *   outranks them, as iOS's `countryHighlightColors` does; games play on a
+     *   scene with nothing visited, so in practice it stands alone.
+     */
+    fun of(
+        isVisited: Boolean,
+        isWishlist: Boolean,
+        isSelected: Boolean,
+        hasTexture: Boolean,
+        highlight: Color? = null,
+    ): CountryStyle {
         val status = when {
+            highlight != null -> MapShading.Solid(highlight)
             isVisited && isWishlist -> MapShading.VisitedWishlist
             isVisited -> VISITED
             isWishlist -> WISHLIST

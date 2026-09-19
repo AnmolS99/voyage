@@ -49,7 +49,6 @@ import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.CountryDetailSheet
 import com.anmol.voyage.ui.country.CountrySearchSheet
 import com.anmol.voyage.ui.country.CountrySelectionCard
-import com.anmol.voyage.ui.globe.GlobeCountryFills
 import com.anmol.voyage.ui.globe.GlobeDotStyle
 import com.anmol.voyage.globe.GlobeGeometry
 import com.anmol.voyage.globe.OutlineMesh
@@ -61,7 +60,7 @@ import com.anmol.voyage.ui.globe.rememberGlobeSurfaceHost
 import com.anmol.voyage.ui.map.CountryPaths
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFill
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFillOrNull
-import com.anmol.voyage.ui.map.CountryStyles
+import com.anmol.voyage.ui.map.WorldScene
 import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.anmol.voyage.ui.map.MapProjection
 import com.anmol.voyage.ui.map.WorldMap
@@ -118,9 +117,19 @@ private fun rememberEarthTexture(style: GlobeStyle): EarthTexture? {
  * @param visible whether this is the tab on screen. A hidden Home draws
  *   nothing, answers no touches and renders no frames; all it keeps is the
  *   globe's surface and everything uploaded to it.
+ * @param challengeScene a challenge game's world, shown in place of the user's
+ *   own while the game is played. Home's chrome steps aside for the game's, and
+ *   the globe — the same one, on the same engine — paints the game instead:
+ *   iOS's full-screen game over its own in-memory `GlobeState`, without a second
+ *   Filament engine.
  */
 @Composable
-fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boolean = true) {
+fun HomeScreen(
+    state: VoyageState,
+    modifier: Modifier = Modifier,
+    visible: Boolean = true,
+    challengeScene: WorldScene? = null,
+) {
     val cache = remember { CountryDataCache.shared }
     val data by produceState<HomeData?>(initialValue = null, cache) {
         value = withContext(Dispatchers.Default) {
@@ -163,7 +172,12 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
         modifier = modifier.fillMaxSize().graphicsLayer { alpha = if (visible) 1f else 0f },
     ) {
         val loaded = data
-        val isGlobe = state.viewMode == ViewMode.Globe
+        val scene = challengeScene
+            ?: loaded?.let { remember(state, it.hitTester) { HomeWorldScene(state, it.hitTester) } }
+        val showsChrome = visible && challengeScene == null
+        // A challenge is always played on the globe, as on iOS, whatever view
+        // Home was left in.
+        val isGlobe = challengeScene != null || state.viewMode == ViewMode.Globe
         val systemInDarkTheme = isSystemInDarkTheme()
         val isDark = state.themeMode.isDark(systemInDarkTheme)
 
@@ -174,12 +188,12 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
         // it owns a surface worth keeping, and a pointer node left behind here
         // would catch taps meant for the screen underneath.
         if (isGlobe) {
-            GlobeBody(data = loaded, state = state, host = globeHost, visible = visible)
+            GlobeBody(data = loaded, scene = scene, state = state, host = globeHost, visible = visible)
         } else if (visible) {
-            MapBody(data = loaded, state = state, width = maxWidth, height = maxHeight)
+            MapBody(data = loaded, scene = scene, state = state, width = maxWidth, height = maxHeight)
         }
 
-        if (visible) {
+        if (showsChrome) {
             Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -231,7 +245,7 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
     }
 
     val countries = data?.countries
-    if (visible && showingSearch && countries != null) {
+    if (visible && challengeScene == null && showingSearch && countries != null) {
         CountrySearchSheet(
             countries = countries,
             state = state,
@@ -244,7 +258,7 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
     }
 
     val shown = detail
-    if (visible && showingDetails && shown != null) {
+    if (visible && challengeScene == null && showingDetails && shown != null) {
         CountryDetailSheet(
             detail = shown,
             state = state,
@@ -257,6 +271,7 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
 @Composable
 private fun BoxScope.GlobeBody(
     data: HomeData?,
+    scene: WorldScene?,
     state: VoyageState,
     host: GlobeSurfaceHost,
     visible: Boolean,
@@ -268,7 +283,7 @@ private fun BoxScope.GlobeBody(
     // The selected country's border is its own mesh, built off the main thread:
     // outlining Russia is tens of thousands of points and would drop a frame on
     // the tap that selected it.
-    val selectedName = state.selectedCountry
+    val selectedName = scene?.selectedCountry
     val selectedOutline by produceState<OutlineMesh?>(null, selectedName, data) {
         val name = selectedName
         val countries = data?.countries
@@ -279,7 +294,7 @@ private fun BoxScope.GlobeBody(
         }
     }
 
-    if (geometry == null || hitTester == null || texture == null) {
+    if (geometry == null || hitTester == null || texture == null || scene == null) {
         if (visible) HomeLoading()
         return
     }
@@ -290,12 +305,7 @@ private fun BoxScope.GlobeBody(
     // the dots themselves are meshes built once with the rest of the geometry.
     val density = LocalDensity.current
     val dotStyles = geometry.microstateDots.map { dot ->
-        val style = CountryStyles.of(
-            isVisited = state.isVisited(dot.name),
-            isWishlist = state.isInWishlist(dot.name),
-            isSelected = selectedName == dot.name,
-            hasTexture = hasTexture,
-        )
+        val style = scene.styleFor(dot.name, hasTexture)
         GlobeDotStyle(
             name = dot.name,
             fill = style.fill.toGlobeFillOrNull(),
@@ -309,44 +319,32 @@ private fun BoxScope.GlobeBody(
         countries = geometry.countries,
         outlineSectors = geometry.outlineSectors,
         microstateDots = geometry.microstateDots,
-        colorFor = { name ->
-            GlobeCountryFills.of(
-                isVisited = state.isVisited(name),
-                isWishlist = state.isInWishlist(name),
-                isSelected = state.selectedCountry == name,
-                hasTexture = hasTexture,
-            )
-        },
+        colorFor = { name -> scene.styleFor(name, hasTexture).fill.toGlobeFillOrNull() },
         earthTexture = texture.image,
         oceanColor = VoyagePalette.ocean,
         hitTester = hitTester,
-        onCountryTapped = { name ->
-            if (name == null) state.clearSelection() else state.selectCountry(name, hitTester.center(name))
-        },
+        onCountryTapped = scene::onCountryTapped,
         modifier = Modifier.fillMaxSize(),
         host = host,
         visible = visible,
-        focus = state.selectedCountryCenter,
-        autoRotating = state.isAutoRotating,
-        onInteraction = state::stopAutoRotation,
+        focus = scene.cameraFocus,
+        autoRotating = scene.isAutoRotating,
+        onInteraction = scene::onInteraction,
         dotStyles = dotStyles,
         capital = selectedName
+            ?.takeIf { scene.showsCapital }
             ?.let { name -> data.countries.firstOrNull { it.name == name } }
             ?.capital
             ?.let { LatLon(lat = it.lat, lon = it.lon) },
         selectedOutline = selectedOutline,
-        selectedOutlineColor = selectedName?.let {
-            GlobeCountryFills.selectedBorderOf(
-                isVisited = state.isVisited(it),
-                isWishlist = state.isInWishlist(it),
-            )
-        },
+        // A texture only ever changes fills, so it does not come into the border.
+        selectedOutlineColor = selectedName?.let { scene.styleFor(it, hasTexture = true).border.toGlobeFill() },
     )
 }
 
 /** The flat map, or a spinner while its paths are being projected. */
 @Composable
-private fun BoxScope.MapBody(data: HomeData?, state: VoyageState, width: Dp, height: Dp) {
+private fun BoxScope.MapBody(data: HomeData?, scene: WorldScene?, state: VoyageState, width: Dp, height: Dp) {
     val density = LocalDensity.current
     val projection = remember(width, height, density) {
         with(density) { MapProjection(width.toPx(), height.toPx()) }
@@ -359,7 +357,7 @@ private fun BoxScope.MapBody(data: HomeData?, state: VoyageState, width: Dp, hei
 
     val texture = rememberEarthTexture(state.mapStyle)
 
-    if (data == null || paths.isEmpty() || texture == null) {
+    if (data == null || scene == null || paths.isEmpty() || texture == null) {
         HomeLoading()
         return
     }
@@ -369,7 +367,7 @@ private fun BoxScope.MapBody(data: HomeData?, state: VoyageState, width: Dp, hei
         countries = data.countries,
         paths = paths,
         hitTester = data.hitTester,
-        state = state,
+        scene = scene,
         projection = projection,
         texture = image,
     )

@@ -29,6 +29,7 @@ import com.anmol.voyage.globe.GlobeCamera
 import com.anmol.voyage.globe.NamedCountryMesh
 import com.anmol.voyage.globe.PolygonTriangulator
 import com.anmol.voyage.globe.UvSphere
+import com.anmol.voyage.ui.map.CameraFocus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -91,7 +92,7 @@ class GlobeGestureTest {
                 oceanColor = Color.Blue,
                 hitTester = hitTester,
                 onCountryTapped = {},
-                focus = focus,
+                focus = focus?.let { CameraFocus(it) },
                 autoRotating = spinning,
                 onInteraction = { spinning = false },
                 onCameraChange = { cameras += it },

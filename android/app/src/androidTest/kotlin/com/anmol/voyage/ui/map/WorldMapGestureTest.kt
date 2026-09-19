@@ -16,6 +16,7 @@ import androidx.compose.ui.test.swipe
 import androidx.test.platform.app.InstrumentationRegistry
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.home.HomeWorldScene
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Rule
@@ -62,7 +63,7 @@ class WorldMapGestureTest {
                     countries = countries,
                     paths = paths,
                     hitTester = hitTester,
-                    state = state,
+                    scene = HomeWorldScene(state, hitTester),
                     projection = mapProjection,
                     texture = null,
                     modifier = Modifier.testTag(MAP),

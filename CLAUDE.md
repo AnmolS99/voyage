@@ -118,6 +118,17 @@ decay curve (`GlobeInertia.decayed`), exactly as iOS's coin borrows
 `GlobeInertia` — so retuning that curve moves the globe *and* the medal, on both
 platforms.
 
+The Challenges tab ports `ios/voyage/Challenges/` the same way: the rules — modes,
+regions, trophies, the sweep engine, best-result comparison — live in
+`challenges/` and are pinned by `RegionSweepGameTest` and `ChallengeStatsTest`
+against iOS's `ClickCountryGameTests`, `NameCapitalGameTests` and
+`NameFlagGameTests`, so a rule change is a two-platform change. A game is played
+on **Home's globe, not one of its own** — a second globe would be a second Filament
+engine. Both renderers read a `WorldScene` (`ui/map/WorldScene.kt`) instead of
+`VoyageState`, and a game hands Home its own `ChallengeWorldScene`, the Android
+`GlobeState(inMemory: true)`. The game's green and red are a status in
+`CountryStyles`, so they obey the same selection rules as visited and wishlist.
+
 ## Git Conventions
 
 Use conventional commits and conventional branch naming.
