@@ -91,6 +91,10 @@ rule: it is uploaded as `RGBA8`, not sRGB, and the ocean material sets
 Over a texture, plain land is `MapShading.None` in `CountryStyles` — iOS's
 `hasTexture ? .clear : land` — so the globe drops those countries from the scene
 and the map leaves them unpainted.
+The globe has **no skybox**: it clears to transparent on a transparent swap
+chain, and `ui/home/GlobeBackdrop.kt` — a port of iOS's `GlobeBackdrop`, the
+starry sky in dark mode — is drawn in Compose behind it. Home runs under the
+status bar, as iOS's globe ignores the safe area; only its controls are inset.
 
 Border outlines work as they do on iOS — zero-width strips widened at render
 time so they keep a constant on-screen width — but the pieces sit elsewhere:

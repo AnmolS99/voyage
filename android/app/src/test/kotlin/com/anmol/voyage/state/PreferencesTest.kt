@@ -22,6 +22,19 @@ class PreferencesTest {
     }
 
     @Test
+    fun `toggling flips what is on screen to an explicit choice`() {
+        for (system in listOf(true, false)) {
+            for (mode in ThemeMode.entries) {
+                val toggled = mode.toggled(systemInDarkTheme = system)
+                assertTrue(toggled != ThemeMode.System)
+                assertEquals(!mode.isDark(system), toggled.isDark(system))
+            }
+        }
+        assertEquals(ThemeMode.Light, ThemeMode.System.toggled(systemInDarkTheme = true))
+        assertEquals(ThemeMode.Dark, ThemeMode.System.toggled(systemInDarkTheme = false))
+    }
+
+    @Test
     fun `every globe style names its own JPEG in shared data`() {
         // iOS bundles the same files, so a rename there without one here would
         // otherwise surface only as a flat-colored globe on Android.

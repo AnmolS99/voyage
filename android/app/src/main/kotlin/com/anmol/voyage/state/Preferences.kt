@@ -67,4 +67,13 @@ enum class ThemeMode {
         Light -> false
         Dark -> true
     }
+
+    /**
+     * The mode the Home screen's sun/moon button switches to: the opposite of
+     * what is on screen, as an explicit choice. Like iOS's `toggleDarkMode()`,
+     * it flips what the user sees — so from [System] it lands on [Light] or
+     * [Dark], and "follow the system" is only chosen again from Settings.
+     */
+    fun toggled(systemInDarkTheme: Boolean): ThemeMode =
+        if (isDark(systemInDarkTheme)) Light else Dark
 }

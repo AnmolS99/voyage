@@ -1,20 +1,25 @@
 package com.anmol.voyage.ui.home
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -148,7 +153,7 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
     // The globe's engine, owned here rather than by the surface that draws with
     // it: this composition outlives both the flat map and every other tab, so
     // the engine survives a view-mode toggle and a tab switch alike.
-    val globeHost = rememberGlobeSurfaceHost(MaterialTheme.colorScheme.background)
+    val globeHost = rememberGlobeSurfaceHost()
 
     BoxWithConstraints(
         // Hidden, not removed — an invisible globe is one whose surface is still
@@ -159,6 +164,11 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
     ) {
         val loaded = data
         val isGlobe = state.viewMode == ViewMode.Globe
+        val systemInDarkTheme = isSystemInDarkTheme()
+        val isDark = state.themeMode.isDark(systemInDarkTheme)
+
+        // Behind the globe only, as on iOS; the map paints its own ocean.
+        if (isGlobe && visible) GlobeBackdrop(isDark = isDark)
 
         // Everything except the globe leaves composition while hidden: none of
         // it owns a surface worth keeping, and a pointer node left behind here
@@ -173,6 +183,8 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
             Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    // Home draws under the status bar; its buttons must not.
+                    .windowInsetsPadding(WindowInsets.statusBars)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -184,6 +196,15 @@ fun HomeScreen(state: VoyageState, modifier: Modifier = Modifier, visible: Boole
                         imageVector = if (isGlobe) Icons.Rounded.Map else Icons.Rounded.Public,
                         contentDescription = stringResource(
                             if (isGlobe) R.string.home_show_map else R.string.home_show_globe,
+                        ),
+                    )
+                }
+                // iOS's sun/moon button: shows where a tap goes, not where you are.
+                FilledTonalIconButton(onClick = { state.toggleDarkMode(systemInDarkTheme) }) {
+                    Icon(
+                        imageVector = if (isDark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                        contentDescription = stringResource(
+                            if (isDark) R.string.home_light_mode else R.string.home_dark_mode,
                         ),
                     )
                 }
@@ -240,7 +261,6 @@ private fun BoxScope.GlobeBody(
     host: GlobeSurfaceHost,
     visible: Boolean,
 ) {
-    val background = MaterialTheme.colorScheme.background
     val geometry: GlobeGeometry? = rememberGlobeGeometry(data?.countries)
     val texture = rememberEarthTexture(state.globeStyle)
     val hitTester = data?.hitTester
@@ -299,7 +319,6 @@ private fun BoxScope.GlobeBody(
         },
         earthTexture = texture.image,
         oceanColor = VoyagePalette.ocean,
-        backgroundColor = background,
         hitTester = hitTester,
         onCountryTapped = { name ->
             if (name == null) state.clearSelection() else state.selectCountry(name, hitTester.center(name))
