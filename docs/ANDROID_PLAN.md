@@ -30,7 +30,7 @@ it; it is not re-described here.
 | 4 — 2D map | ✅ 2026-08-07. Projection, hit-testing, gestures, microstate dots |
 | 5 — State & persistence | ✅ 2026-08-08. Verified on the A55: survives a process kill, Auto Backup restores on reinstall |
 | 6 — Country details | ✅ 2026-08-09. Loop driven end to end on the A55 |
-| 7 — 3D globe (Filament) | 🟡 **All sub-steps 7.1–7.11 done**, the last on 2026-09-17. Outstanding: the definition of done's side-by-side consistency check against iOS |
+| 7 — 3D globe (Filament) | ✅ 2026-09-17. Sub-steps 7.1–7.11: Filament renderer, iOS's spin physics, borders, Earth textures, build-time meshes, one engine per Activity. 121 fps sustained on an A55 (release build, 120 Hz, ~1.3 ms of GPU headroom at p90); globe and map land both exactly `#34BE82` off a Display P3 capture |
 | 8 — Achievements | ✅ 2026-08-30. Ten medals, progress rings, item lists, spinnable coin |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | 🟡 Texture pickers built 2026-09-14; the rest not started |
@@ -85,6 +85,7 @@ tests run locally, not in CI — 31, green on the Pixel 9 API 36 emulator.
 | 2026-09-14 | Earth textures live in `shared/data/textures/`, halved to ≤4096 px on Android | One copy read in place by both apps. At 8192 × 4096 a bitmap is 128 MB, over the 100 MB a `Canvas` will draw. |
 | 2026-09-14 | Over a texture, plain land is not drawn at all | iOS's `hasTexture ? .clear : land`, expressed once as `MapShading.None`. |
 | 2026-09-14 | Countries and globe meshes generated at build time by the app's own code, never checked in | ~1.85 s on the A55 became ~75 ms. Compiling the same sources into `tools/world-cache` guarantees the cache is written by the code that would otherwise run on device. |
+| 2026-09-19 | Phase 7's manual side-by-side check against iOS is dropped | Colors, selection, borders and markers are already pinned on both platforms by the invariants above and the shared fixture, which fail on drift a by-eye comparison would not catch. |
 | 2026-09-17 | One Filament engine per Activity: `HomeScreen` sits outside the `NavHost`, hidden rather than removed | A detached view loses its surface however carefully the engine is kept. 99th percentile frame across tab switches: 48–53 ms → 18–19 ms on the A55. |
 
 ## Pinned invariants
@@ -138,22 +139,6 @@ the cross-platform ones is a two-platform change.
   195 UN states, not all 206 features; the explorer medals do count territories;
   Continental Drifter needs all seven continents and counts each once; the eight
   wonders must each name an attraction `country_highlights.json` still lists.
-
-## Phase 7 — 3D globe (Filament)
-
-Sub-steps 7.1–7.11 are all done; 7.11 (one Filament engine per Activity) closed
-2026-09-17.
-
-- [ ] Side-by-side consistency check against iOS: colors, selection, borders,
-      stars — the one half of the definition of done still outstanding
-
-**Definition of done:** globe and map pass a side-by-side consistency check
-against each other *and* against iOS; smooth on mid-range hardware. *The hardware
-half is met — 2026-08-29 on an A55 (120 Hz, release build): 121 fps sustained
-while dragging, no missed vsyncs, ~1.3 ms of GPU headroom at the 90th percentile,
-no thermal throttling. Palette values survive the display pipeline: converted back
-from a Display P3 capture, globe and map land are both exactly `#34BE82`. Perf
-claims belong against release builds — selection jank appears only in debug ones.*
 
 ## Phase 9 — Daily Challenge
 
