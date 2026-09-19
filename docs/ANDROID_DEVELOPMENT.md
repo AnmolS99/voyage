@@ -133,11 +133,13 @@ android/
 │       │   │   ├── VoyageApplication.kt     # installs + prewarms the country data
 │       │   │   ├── MainActivity.kt          # splash + edge-to-edge + Compose entry
 │       │   │   ├── VoyageApp.kt             # NavigationBar shell + NavHost, with Home layered under it
+│       │   │   ├── challenges/              # challenge games: modes, regions, the sweep engine, stats
 │       │   │   ├── data/                    # models, GeoJSON parser, cache, hit testing
 │       │   │   ├── globe/                   # 3D globe geometry + camera: earcut, triangulation, outlines, orbit/tap math
 │       │   │   ├── navigation/              # top-level destinations
 │       │   │   ├── state/                   # VoyageState + its persisted document
 │       │   │   └── ui/
+│       │   │       ├── challenges/          # Challenges tab, region picker, game HUD + session
 │       │   │       ├── country/             # selection card, details sheet, search sheet
 │       │   │       ├── globe/               # Filament renderer, materials, surface + gestures
 │       │   │       ├── home/                # HomeScreen: chrome shared by globe and map
@@ -175,6 +177,11 @@ android/
   share — search, selection card, sheets — so only the surface differs.
   `ui/map/WorldMap.kt` is a port of `ios/voyage/MapView.swift` — change one,
   change the other.
+
+  Neither renderer reads `VoyageState` for what to paint. Both read a
+  `WorldScene` (`ui/map/WorldScene.kt`) — Home's is `HomeWorldScene`, over the
+  user's travels — and ask it for each country's `CountryStyle`, which is how a
+  challenge game can recolor the same globe without touching saved data.
 
   There is no exception left: `ui/globe/GlobeCountryFill.kt` used to state its
   own rules while the globe had no borders to move a status onto, and since the
@@ -376,6 +383,15 @@ stack and the bar behave as they read. Three rules come with that arrangement:
 
 `GlobeEngineLifetimeTest` pins all of this: the engine count across tab and
 view-mode switches, and a tap on the screen beneath a hidden Home.
+
+**A challenge game is played on that same globe.** iOS gives each game its own
+`GlobeView`; here that would be a second engine. Instead the game's route
+(`ChallengeRoutes.PLAY`) is transparent but for its controls, like Home's own
+entry, and while it is on the back stack `VoyageApp` shows Home — bar hidden —
+with the game's `ChallengeWorldScene` in place of the user's. The session is a
+`ViewModel` on that back-stack entry, so a rotation keeps the sweep. Home's
+chrome and sheets step aside while a scene is handed in; nothing else about the
+arrangement above changes.
 
 **Anything derived from `shared/data` belongs in a process-wide cache, not in a
 composable.** `CountryDataCache` holds the countries and `GlobeGeometryCache` the

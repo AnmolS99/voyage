@@ -32,12 +32,13 @@ it; it is not re-described here.
 | 6 — Country details | ✅ 2026-08-09. Loop driven end to end on the A55 |
 | 7 — 3D globe (Filament) | ✅ 2026-09-17. Sub-steps 7.1–7.11: Filament renderer, iOS's spin physics, borders, Earth textures, build-time meshes, one engine per Activity. 121 fps sustained on an A55 (release build, 120 Hz, ~1.3 ms of GPU headroom at p90); globe and map land both exactly `#34BE82` off a Display P3 capture |
 | 8 — Achievements | ✅ 2026-08-30. Ten medals, progress rings, item lists, spinnable coin |
+| Challenges tab (unplanned) | ✅ 2026-09-19. Click the Country, Name the Capital, Name the Flag over seven regions, with trophies and best times; played on Home's globe |
 | 9 — Daily Challenge | Not started |
 | 10 — Settings & polish | 🟡 Texture pickers built 2026-09-14; the rest not started |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
-Suite as of 2026-09-17: 259 JVM unit tests across 29 classes, green. Instrumented
+Suite as of 2026-09-19: 288 JVM unit tests across 31 classes, green. Instrumented
 tests run locally, not in CI — 31, green on the Pixel 9 API 36 emulator.
 
 ## Decision log
@@ -77,6 +78,9 @@ tests run locally, not in CI — 31, green on the Pixel 9 API 36 emulator.
 | 2026-08-29 | The idle spin is stepped in the render loop, not animated | One clock and one camera, so spin and momentum can never both be writing. |
 | 2026-08-29 | Spin physics ported verbatim, measured in **dp** not pixels | A dp and an iOS point are the same physical size, so the same travel turns the globe the same amount. |
 | 2026-08-30 | The medal overlay blurs where the platform can, thickens its scrim where it cannot | Blur is not a given even above API 31 — the A55 has none — so it asks, listens, and falls back: 0.4 over a blur, 0.72 without. |
+| 2026-09-19 | A challenge is played on Home's globe, not a globe of its own | iOS embeds a `GlobeView` over an in-memory `GlobeState` per game; here a second view is a second Filament engine. The game hands Home a `WorldScene` and the one engine paints it. |
+| 2026-09-19 | Challenges are played on the globe only | As on iOS: a game shows the globe whatever view Home was left in, and Home returns to that view afterwards. |
+| 2026-09-19 | Challenge results ride in the one saved document | iOS keeps them under their own UserDefaults key. Here they are backed up with everything else, keyed `mode\|region` as iOS keys them. |
 | 2026-08-30 | The achievement medal is drawn, not rendered by a 3D engine | Drawn *in projection* it is iOS's `SCNCylinder` seen side-on, without the offscreen renderer and snapshot cache iOS spends on it. |
 | 2026-08-30 | The medal overlay is a `Dialog` | It gets the whole window, a scrim and back-gesture dismissal. Drops iOS's flight from the medal's frame — a shared-element transition, several times the code. |
 | 2026-08-30 | The catalog is data; titles and unit labels are string resources | Testable on the JVM, and every user-visible string stays translatable. |
@@ -134,6 +138,13 @@ the cross-platform ones is a two-platform change.
   stops at the first sibling it hits, handler or not; and a globe nobody is
   looking at stops rendering, which the engine's own lifetime used to cover. iOS
   needs none of this — `TabView` keeps every tab alive and `SCNView` self-pauses.
+- **Challenge sweeps play by iOS's rules** (`RegionSweepGameTest`,
+  `ChallengeStatsTest` ↔ `ClickCountryGameTests`, `NameCapitalGameTests`,
+  `NameFlagGameTests`). One guess per country, two taps to confirm a click, a
+  typed answer compared ignoring case and surrounding whitespace, only finished
+  sweeps recorded, a best is more correct *then* faster, and a trophy is earned by
+  a region's first flawless sweep. Pools are the 195 UN states, as progress
+  counts them.
 - **Ten medals, counting the same things as iOS's** (`AchievementTest`,
   `AchievementCompletionTests`). Globetrotter and Capital Collector run over the
   195 UN states, not all 206 features; the explorer medals do count territories;

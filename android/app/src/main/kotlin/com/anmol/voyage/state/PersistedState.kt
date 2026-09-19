@@ -1,5 +1,6 @@
 package com.anmol.voyage.state
 
+import com.anmol.voyage.challenges.ChallengeGameStats
 import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -36,6 +37,12 @@ data class PersistedState(
     val globeStyle: GlobeStyle = GlobeStyle.Realistic,
     val mapStyle: GlobeStyle = GlobeStyle.Realistic,
     val themeMode: ThemeMode = ThemeMode.System,
+    /**
+     * Challenge statistics, keyed `mode|region` as iOS `ChallengeStatsStore`
+     * keys them. iOS keeps these in a separate UserDefaults key; here they ride
+     * in the one document, so they are backed up with everything else.
+     */
+    val challengeStats: Map<String, ChallengeGameStats> = emptyMap(),
 ) {
 
     /**

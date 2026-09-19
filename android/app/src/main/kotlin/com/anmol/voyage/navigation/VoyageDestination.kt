@@ -44,7 +44,6 @@ enum class VoyageDestination(
         labelRes = R.string.destination_challenges,
         titleRes = R.string.destination_challenges,
         icon = Icons.Rounded.SportsEsports,
-        subtitleRes = R.string.placeholder_challenges,
     ),
     Achievements(
         route = "achievements",

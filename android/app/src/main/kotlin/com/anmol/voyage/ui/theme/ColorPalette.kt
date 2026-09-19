@@ -156,6 +156,21 @@ object VoyagePalette {
     /** Missed country fill and wrong-guess/reveal banners */
     val challengeWrong = Color(0xFFD94033)
 
+    /**
+     * Confetti for a new best. iOS draws it in SwiftUI's system colors (`.red`,
+     * `.orange`, … `.cyan`), which are these in light mode.
+     */
+    val confetti = listOf(
+        Color(0xFFFF3B30),
+        Color(0xFFFF9500),
+        Color(0xFFFFCC00),
+        Color(0xFF34C759),
+        Color(0xFF007AFF),
+        Color(0xFFAF52DE),
+        Color(0xFFFF2D55),
+        Color(0xFF32ADE6),
+    )
+
     // endregion
 
     // region Medal colors (achievement medals)

@@ -90,4 +90,33 @@ class CountryStyleTest {
     fun `a selected country with no status keeps a black border`() {
         assertEquals(black, style(selected = true).border)
     }
+
+    @Test
+    fun `a challenge highlight is a status, and outranks the others`() {
+        val green = VoyagePalette.challengeCorrect
+        val highlighted = CountryStyles.of(
+            isVisited = true,
+            isWishlist = true,
+            isSelected = false,
+            hasTexture = true,
+            highlight = green,
+        )
+        assertEquals(MapShading.Solid(green), highlighted.fill)
+        assertEquals(black, highlighted.border)
+    }
+
+    @Test
+    fun `a selected highlighted country moves its highlight to the border`() {
+        // A revealed miss: outlined in red over the texture, as iOS draws it.
+        val red = VoyagePalette.challengeWrong
+        val revealed = CountryStyles.of(
+            isVisited = false,
+            isWishlist = false,
+            isSelected = true,
+            hasTexture = true,
+            highlight = red,
+        )
+        assertEquals(MapShading.None, revealed.fill)
+        assertEquals(MapShading.Solid(red), revealed.border)
+    }
 }

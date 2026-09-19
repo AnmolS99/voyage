@@ -9,6 +9,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.anmol.voyage.challenges.ChallengeGameMode
+import com.anmol.voyage.challenges.ChallengeRegion
+import com.anmol.voyage.challenges.ChallengeStatsBook
+import com.anmol.voyage.challenges.ChallengeStatsRecorder
 import com.anmol.voyage.data.LatLon
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +43,7 @@ import kotlinx.coroutines.launch
 class VoyageState(
     private val store: StateStore = InMemoryStateStore(),
     coroutineScope: CoroutineScope? = null,
-) : ViewModel() {
+) : ViewModel(), ChallengeStatsRecorder {
 
     /** [viewModelScope] in the app; JVM tests pass an unconfined scope instead. */
     private val scope: CoroutineScope = coroutineScope ?: viewModelScope
@@ -97,6 +101,8 @@ class VoyageState(
     val mapStyle: GlobeStyle get() = persisted.mapStyle
 
     val themeMode: ThemeMode get() = persisted.themeMode
+
+    override val challengeStats: ChallengeStatsBook get() = ChallengeStatsBook(persisted.challengeStats)
 
     init {
         scope.launch {
@@ -214,9 +220,24 @@ class VoyageState(
     /** Flips light/dark from whatever is on screen — see [ThemeMode.toggled]. */
     fun toggleDarkMode(systemInDarkTheme: Boolean) = setThemeMode(themeMode.toggled(systemInDarkTheme))
 
+    // ---- Challenges ----
+
+    override fun recordChallengeGame(
+        mode: ChallengeGameMode,
+        region: ChallengeRegion,
+        correct: Int,
+        total: Int,
+        timeSeconds: Double,
+    ): Boolean {
+        val recorded = challengeStats.recording(mode, region, correct, total, timeSeconds)
+        mutate { it.copy(challengeStats = recorded.book.byKey) }
+        return recorded.isNewBest
+    }
+
     /**
-     * Clears everything the user has marked, leaving their appearance
-     * preferences alone — the same split iOS `resetAllData()` makes.
+     * Clears everything the user has marked and every challenge result, leaving
+     * their appearance preferences alone — what iOS's Settings reset does with
+     * `resetAllData()` and `ChallengeStatsStore.resetAll()`.
      */
     fun resetAllData() {
         clearSelection()
@@ -226,6 +247,7 @@ class VoyageState(
                 wishlistCountries = emptySet(),
                 checkedCities = emptyMap(),
                 checkedAttractions = emptyMap(),
+                challengeStats = emptyMap(),
             )
         }
     }
