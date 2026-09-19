@@ -1,10 +1,10 @@
 # Voyage — Android Port Plan
 
-Phases run in order; a phase is done when its *Definition of done* is met.
-Completed phases are recorded in **Status** and not re-described here — the code
-and [ANDROID_DEVELOPMENT.md](ANDROID_DEVELOPMENT.md) are where they live. What
-follows the status table is what is still open, plus the decisions behind the
-port.
+Phases run in order; a phase is done when its *Definition of done* is met. This
+file holds **what is still open, the decisions behind the port, and the
+invariants tests hold us to** — nothing else. Completed work lives in the code,
+in [ANDROID_DEVELOPMENT.md](ANDROID_DEVELOPMENT.md), and in the PR that landed
+it; it is not re-described here.
 
 ## Guiding principles
 
@@ -23,214 +23,122 @@ port.
 
 | Phase | Status |
 | --- | --- |
-| 0 — Environment & tooling | ✅ 2026-08-06. CLI-only toolchain; the Android Studio first-run check was dropped 2026-08-29 |
+| 0 — Environment & tooling | ✅ 2026-08-06. CLI-only toolchain |
 | 1 — Repo restructure | ✅ 2026-08-06. `ios/` + `android/` + `shared/`, history preserved |
-| 2 — Scaffold + Play account | ✅ Scaffold 2026-08-06; account verified 2026-08-11; Play Console app entry created 2026-08-29, so `com.anmol.voyage` is now permanent on both stores |
-| 3 — Data layer | ✅ 2026-08-07. Parser + both platforms asserting `shared/fixtures/expected_countries.json`. Re-measured on a Galaxy A55 2026-08-30: the parse costs far more there than on the emulator — see [Open work](#open-work). Since 2026-09-14 the device no longer parses at all (7.8) |
+| 2 — Scaffold + Play account | ✅ 2026-08-29. `com.anmol.voyage` now permanent on both stores |
+| 3 — Data layer | ✅ 2026-08-07. Both platforms assert `shared/fixtures/expected_countries.json`. Since 7.8 the device does not parse at all |
 | 4 — 2D map | ✅ 2026-08-07. Projection, hit-testing, gestures, microstate dots |
-| 5 — State & persistence | ✅ Built, tests green 2026-08-08; device checks run on the A55 2026-08-30 — state survives a process kill, and Auto Backup restores it on reinstall |
-| 6 — Country details | ✅ Built, tests green 2026-08-09; loop driven end to end on the A55 2026-08-30 |
-| 7 — 3D globe (Filament) | 🟡 Renders, is interactive, spins with iOS's physics, matches the map, and holds 120 fps on a Galaxy A55 (2026-08-29); Earth textures on globe and map 2026-09-14; countries and globe meshes generated at build time 2026-09-14 (7.8). 7.1–7.10 done; 7.11 open |
-| 8 — Achievements | ✅ 2026-08-30. The ten medals, their progress rings, the expandable item lists, and a spinnable coin |
+| 5 — State & persistence | ✅ 2026-08-08. Verified on the A55: survives a process kill, Auto Backup restores on reinstall |
+| 6 — Country details | ✅ 2026-08-09. Loop driven end to end on the A55 |
+| 7 — 3D globe (Filament) | ✅ 2026-09-17. Sub-steps 7.1–7.11: Filament renderer, iOS's spin physics, borders, Earth textures, build-time meshes, one engine per Activity. 121 fps sustained on an A55 (release build, 120 Hz, ~1.3 ms of GPU headroom at p90); globe and map land both exactly `#34BE82` off a Display P3 capture |
+| 8 — Achievements | ✅ 2026-08-30. Ten medals, progress rings, item lists, spinnable coin |
 | 9 — Daily Challenge | Not started |
-| 10 — Settings & polish | 🟡 Settings tab exists with the texture pickers (2026-09-14); the rest not started |
+| 10 — Settings & polish | 🟡 Texture pickers built 2026-09-14; the rest not started |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
-Suite as of 2026-09-14: 255 JVM unit tests across 29 classes, green; instrumented
-tests run locally, not in CI (23, green on the Pixel 9 API 36 emulator
-2026-09-14; the 18 gesture tests of 2026-08-30 were also green on a Galaxy A55 /
-Android 16).
+Suite as of 2026-09-17: 259 JVM unit tests across 29 classes, green. Instrumented
+tests run locally, not in CI — 31, green on the Pixel 9 API 36 emulator.
 
 ## Decision log
 
 | Date | Decision | Why |
 | --- | --- | --- |
-| 2026-08-06 | Fully native Kotlin + Compose, no KMP | Zero risk to the shipped iOS app; logic ported by hand and guarded by shared fixtures. |
+| 2026-08-06 | Fully native Kotlin + Compose, no KMP | Zero risk to the shipped iOS app; shared fixtures guard the hand-ported logic. |
 | 2026-08-06 | Monorepo: `ios/` + `android/` + `shared/` | One source of truth for geo data, Supabase schema and docs. |
-| 2026-08-06 | Globe rendered with **Filament** | Google's production engine; the closest Android analogue to SceneKit. |
-| 2026-08-06 | Persistence: DataStore + Auto Backup, local only | No account system for v1; cross-platform sync is explicitly deferred. |
-| 2026-08-06 | minSdk 26, targetSdk latest stable | Filament and Compose are comfortable at 26; dynamic color (31+) degrades gracefully. |
-| 2026-08-06 | applicationId `com.anmol.voyage` | Matches the iOS bundle id. Permanent since the Play entry was created. |
-| 2026-08-06 | AGP built-in Kotlin, not the `kotlin-android` plugin | AGP 9 defaults to it and the old plugin is incompatible with the new DSL. |
+| 2026-08-06 | Globe rendered with **Filament** | The closest Android analogue to SceneKit. |
+| 2026-08-06 | DataStore + Auto Backup, local only | No accounts in v1; cross-platform sync is explicitly deferred. |
+| 2026-08-06 | minSdk 26, targetSdk latest stable | Filament and Compose are comfortable at 26; dynamic color degrades gracefully. |
+| 2026-08-06 | applicationId `com.anmol.voyage` | Matches the iOS bundle id. Permanent since the Play entry exists. |
+| 2026-08-06 | AGP built-in Kotlin, not `kotlin-android` | The old plugin breaks on AGP 9's DSL. |
 | 2026-08-06 | Five bottom-bar destinations, not four | iOS gained a Challenges tab after this plan was written. |
-| 2026-08-07 | GeoJSON via kotlinx.serialization streaming, not a hand-written reader | ~25 ms on a warm JVM for 3.2 MB; a hand-rolled tokenizer is faster in theory and a permanent maintenance cost in practice. |
-| 2026-08-07 | The shared fixture is generated by a third implementation (Python) | Three independent implementations agreeing makes it a drift guard; an export of one platform's output would only restate that platform. |
-| 2026-08-07 | Map appearance rules live outside the renderer | Lets the Filament globe *reuse* them instead of restating them, and makes them unit-testable without a renderer. |
-| 2026-08-07 | Gestures covered by instrumented tests, not Robolectric | A pinch cannot be injected from a JVM test; pure logic stays on the JVM where CI runs. |
-| 2026-08-08 | App state is Compose state, not `StateFlow` | Every reader is a composable; a flow would only be collected back into Compose state at each call site. |
-| 2026-08-08 | One versioned JSON document in a typed DataStore | Every write is a complete, self-consistent snapshot that can carry a schema version — what the deferred sync will need. |
-| 2026-08-08 | Appearance is `ThemeMode` (system/light/dark), not iOS's boolean | "Follow the system" is the Android default users expect. |
-| 2026-08-08 | View mode is persisted, unlike iOS | Android can kill the process at any moment; returning to a different view than the one left behind reads as a bug. |
-| 2026-08-09 | Selection is an inline card; the bottom sheet is the *details* view | A modal sheet would scrim the map and hide the one thing selection changes there. |
+| 2026-08-07 | GeoJSON via kotlinx.serialization streaming | A hand-rolled tokenizer is faster in theory and a permanent maintenance cost in practice. |
+| 2026-08-07 | The shared fixture is generated by a third implementation (Python) | Three implementations agreeing is a drift guard; exporting one platform's output only restates it. |
+| 2026-08-07 | Map appearance rules live outside the renderer | The globe reuses them instead of restating them, and they unit-test without a renderer. |
+| 2026-08-07 | Gestures covered by instrumented tests, not Robolectric | A pinch cannot be injected from a JVM test. |
+| 2026-08-08 | App state is Compose state, not `StateFlow` | Every reader is a composable. |
+| 2026-08-08 | One versioned JSON document in a typed DataStore | Every write is a self-consistent snapshot that can carry a schema version — what the deferred sync will need. |
+| 2026-08-08 | `ThemeMode` (system/light/dark), not iOS's boolean | "Follow the system" is the Android default users expect. |
+| 2026-08-08 | View mode is persisted, unlike iOS | The process can die at any moment; coming back to a different view reads as a bug. |
+| 2026-08-09 | Selection is an inline card; the sheet is the *details* view | A modal sheet would scrim the map and hide what selection changes. |
 | 2026-08-09 | Search is a sheet behind an icon, not a docked `SearchBar` | A docked bar permanently owns the top of the screen, and the map *is* the screen. |
-| 2026-08-09 | Search folds accents and ranks prefix matches first | iOS's `contains` filter buries `India` under `Indonesia` and leaves `Türkiye` unreachable from an English keyboard. Result ordering is not one of the cross-platform invariants. |
-| 2026-08-11 | The globe draws into a `TextureView`, not a `SurfaceView` | A SurfaceView shows **black** until its first buffer composites, and Compose navigation builds a new one on every return to Home — the tab transition read as a long black flash. No measured cost. |
-| 2026-08-11 | Globe geometry and compiled material bytes cached for the life of the process | Both are pure functions of files that never change at runtime; rebuilding them per navigation cost ~500 ms and a spinner on every return. |
-| 2026-08-11 | Materials compiled on device with `filamat`, not `matc` at build time | `matc` is a platform-specific native binary that would land in the build and on CI runners; compiling two materials at startup costs a few ms. |
-| 2026-08-11 | Globe materials are **unlit**, and post-processing is disabled | Both settings shift palette colors — a lighting equation and tone mapping. Coupled: no post-processing also disables the linear→sRGB encode. |
-| 2026-08-11 | The far hemisphere is hidden by the opaque ocean sphere, not by backface culling | The ocean (r=1.0) already occludes fills (r=1.003) through the depth buffer, so winding never has to be reasoned about. |
-| 2026-08-11 | The globe camera is owned by the render loop, not Compose state | A drag changes it once per frame; as state that would recompose and re-resolve 181 country colors per frame, for a value only the renderer reads. |
-| 2026-08-11 | Globe geometry emits plain float/int buffers, not Filament objects | Keeps triangulation unit-testable on the JVM, where CI actually runs. |
-| 2026-08-26 | Capital stars and microstate dots are meshes in the scene, not a Compose overlay | An overlay draws from its own copy of the camera and visibly trailed the globe by a frame while dragging. Markers are sized in `dp` on both renderers, so globe and map agree — iOS's do not. |
-| 2026-08-29 | Android toolchain is CLI-only; the Phase 0 Studio first-run check is dropped | Every build, test, install and measurement goes through the Gradle wrapper and `adb`, and CI runs the same commands. |
-| 2026-08-29 | A camera flight interpolates the camera's *position*, not its angle and distance separately | It is what Core Animation was doing for iOS's `SCNTransaction`, so the flight follows the same chord. Lerping the two apart looks nearly identical — a couple of degrees and a tenth of a unit off at the midpoint — but there is no reason to differ. `GlobeCamera.at` clamps the one case where that chord passes *inside* the globe (crossing the equator at close zoom), which iOS does not. |
-| 2026-08-29 | A touch cancels a camera flight | iOS leaves the animation running under the finger, where the drag and the animation write the same transform and the globe stutters between them. One writer per frame is the whole point of the render-loop design. |
-| 2026-08-29 | The idle spin is stepped in the render loop, not run as an animation | It shares one clock and one camera with momentum, so the two can never both be writing the globe's position; iOS's `SCNAction` is a second writer, and its gesture handlers spend three lines resynchronising from the presentation node because of it. |
-| 2026-08-30 | The medal overlay blurs what is behind it where the platform can, and thickens its scrim where it cannot | iOS floats the coin on `.ultraThinMaterial` with no card under it. Android can blur behind a window from API 31, but it is not a given even above it — the A55 has no SurfaceFlinger background-blur support at all, and the system drops blurs for battery saver at runtime. So the overlay asks, *listens* for the answer changing, and falls back to a heavier scrim: 0.4 over a blur, 0.72 without one. Verified both ways — blurred on the Pixel 9 emulator, scrimmed on the A55. |
-| 2026-08-30 | The achievement medal is drawn, not rendered by a 3D engine | An emoji on a metal disc is a 2D drawing; iOS reaches for SceneKit and then spends most of `MedalOverlayView.swift` on what that costs — an offscreen renderer, a snapshot cache, and a flat stand-in to show until the snapshot lands. `MedalCoin` draws the coin *in projection* instead: the face narrows with the cosine of the turn while the rim band it uncovers widens with the sine, which is iOS's `SCNCylinder(radius: 1.1, height: 0.12)` seen side-on, thickness and all. The turn is passed as a function so it is re-read while drawing, never recomposed — the reason the globe keeps its camera out of Compose state. |
-| 2026-08-30 | The medal overlay is a `Dialog`, not an overlay inside the screen | It gets the whole window (the bottom bar included, as iOS's covers the tab bar), a scrim, and dismissal by the system back gesture — the exit an Android user always reaches for. What it drops is iOS's flight from the small medal's frame: that is a shared-element transition here, several times the code of the thing it decorates. |
-| 2026-08-30 | The catalog is data; titles and unit labels are string resources | `AchievementCatalog` builds from the marked sets alone, so what counts toward what is testable on the JVM and cannot drift from iOS unnoticed. iOS carries `itemLabel` as free text on the achievement; here it is an enum the UI resolves, because every other user-visible string in the app is translatable. |
-| 2026-09-14 | Globe microstate dots are fixed-size on the sphere, not on screen | The 2026-08-26 dp sizing held a dot at 5 dp while the land around it grew, so zooming in to find a microstate made its dot *harder* to hit, and it no longer matched the 0.8° a tap reaches. Now the dot is that 0.8° of arc at every zoom — iOS's `SCNCylinder(radius: 0.014)` — with 5 dp kept as a floor when zoomed out, where the tap radius widens to match. The star stays dp-sized, and the map's dots stay 5 dp as on iOS's map. |
-| 2026-09-14 | No atmosphere glow, on either platform | Dropped from 7.2 and removed from iOS, where no one could say why it had been added. It was a 1.08-radius sphere at 0.15 alpha and 0.3 transparency — about 5% opaque — whose only lasting effects were a blended full-screen draw and a tap-skew bug the analytic ray intersection had to work around. The 1.1 closest zoom it once justified stays. |
-| 2026-09-14 | Earth textures live in `shared/data/textures/`; Android decodes them at most 4096 px wide | One copy, read in place by both apps like `world.geojson` — iOS now bundles them from there rather than from its asset catalog. Two of the three are 8192 × 4096, which is 128 MB as a bitmap and over the 100 MB a `Canvas` will draw, so Android halves them: 32 MB, ~130 ms to decode on the A55. |
-| 2026-09-14 | Over a texture, plain land is not drawn at all | iOS's `hasTexture ? .clear : land`, expressed once as `MapShading.None` in `CountryStyles`. The globe takes an unpainted country out of the scene rather than blending it, and a microstate's border became a real ring (iOS swaps in an `SCNTube`), since the disc it was would show solid black under a missing fill. |
-| 2026-09-14 | Countries and globe meshes are generated at build time by the app's own code: compiled a second time into `tools/world-cache`, not moved into a module, and never checked in | Parsing and triangulating cost ~1.85 s on the A55 before the globe could show; loading the result costs ~75 ms. Compiling the same source files into the generator — rather than extracting them into a JVM module — keeps them where they are, `internal` and all, while guaranteeing the cache is written by the code that would otherwise run on the device; `CountriesFileTest` and `WorldMeshesFileTest` hold it to that bit for bit. Borders are stored as centerlines and widened on load, which saves 1.6 MB compressed for a few ms of copying. Net APK cost is ~8.6 MB, `world.geojson` no longer shipping; iOS pays 17.5 MB for `globe.scn`. |
-| 2026-08-29 | Globe spin physics ported from iOS verbatim, and measured in **dp** rather than pixels | iOS's pan constants are radians per *point*, and a point and a dp are the same physical size, so the same finger travel turns the globe the same amount on both platforms at any screen density. The projection-derived speed it replaced was self-consistent and about 2.4x slower than iOS at the default zoom. |
+| 2026-08-09 | Search folds accents and ranks prefix matches first | iOS's `contains` buries `India` under `Indonesia`. Ordering is not a cross-platform invariant. |
+| 2026-08-11 | The globe draws into a `TextureView`, not a `SurfaceView` | A SurfaceView shows black until its first buffer composites. No measured cost. |
+| 2026-08-11 | Geometry and compiled material bytes cached per process | Pure functions of files that never change at runtime; rebuilding cost ~500 ms per navigation. |
+| 2026-08-11 | Materials compiled on device with `filamat`, not `matc` | `matc` is a native binary that would land in the build and on CI runners. |
+| 2026-08-11 | Globe materials are **unlit**, post-processing disabled | Both shift palette colors. Coupled: no post-processing also disables the linear→sRGB encode. |
+| 2026-08-11 | The far hemisphere is hidden by the opaque ocean, not backface culling | The depth buffer already does it, so winding never has to be reasoned about. |
+| 2026-08-11 | The globe camera is owned by the render loop, not Compose state | A drag changes it once per frame; as state it would re-resolve 181 country colors each time. |
+| 2026-08-11 | Globe geometry emits plain float/int buffers | Keeps triangulation unit-testable on the JVM, where CI runs. |
+| 2026-08-26 | Markers are meshes in the scene, not a Compose overlay | An overlay draws from its own copy of the camera and trailed the globe by a frame while dragging. |
+| 2026-08-29 | Android toolchain is CLI-only | Every build, test and measurement goes through the wrapper and `adb`, and CI runs the same commands. |
+| 2026-08-29 | A flight interpolates the camera's *position*, not angle and distance | It follows the same chord Core Animation did. `GlobeCamera.at` clamps the chord that would pass inside the globe; iOS does not. |
+| 2026-08-29 | A touch cancels a camera flight | iOS leaves it running under the finger and stutters between two writers. |
+| 2026-08-29 | The idle spin is stepped in the render loop, not animated | One clock and one camera, so spin and momentum can never both be writing. |
+| 2026-08-29 | Spin physics ported verbatim, measured in **dp** not pixels | A dp and an iOS point are the same physical size, so the same travel turns the globe the same amount. |
+| 2026-08-30 | The medal overlay blurs where the platform can, thickens its scrim where it cannot | Blur is not a given even above API 31 — the A55 has none — so it asks, listens, and falls back: 0.4 over a blur, 0.72 without. |
+| 2026-08-30 | The achievement medal is drawn, not rendered by a 3D engine | Drawn *in projection* it is iOS's `SCNCylinder` seen side-on, without the offscreen renderer and snapshot cache iOS spends on it. |
+| 2026-08-30 | The medal overlay is a `Dialog` | It gets the whole window, a scrim and back-gesture dismissal. Drops iOS's flight from the medal's frame — a shared-element transition, several times the code. |
+| 2026-08-30 | The catalog is data; titles and unit labels are string resources | Testable on the JVM, and every user-visible string stays translatable. |
+| 2026-09-14 | Globe microstate dots are sized on the sphere, not on screen | dp sizing made a dot *harder* to hit the further you zoomed in. 5 dp stays as a floor; map dots stay 5 dp as on iOS. |
+| 2026-09-14 | No atmosphere glow, on either platform | ~5% opaque, and all it left behind was a full-screen blended draw and a tap-skew bug. |
+| 2026-09-14 | Earth textures live in `shared/data/textures/`, halved to ≤4096 px on Android | One copy read in place by both apps. At 8192 × 4096 a bitmap is 128 MB, over the 100 MB a `Canvas` will draw. |
+| 2026-09-14 | Over a texture, plain land is not drawn at all | iOS's `hasTexture ? .clear : land`, expressed once as `MapShading.None`. |
+| 2026-09-14 | Countries and globe meshes generated at build time by the app's own code, never checked in | ~1.85 s on the A55 became ~75 ms. Compiling the same sources into `tools/world-cache` guarantees the cache is written by the code that would otherwise run on device. |
+| 2026-09-19 | Phase 7's manual side-by-side check against iOS is dropped | Colors, selection, borders and markers are already pinned on both platforms by the invariants above and the shared fixture, which fail on drift a by-eye comparison would not catch. |
+| 2026-09-17 | One Filament engine per Activity: `HomeScreen` sits outside the `NavHost`, hidden rather than removed | A detached view loses its surface however carefully the engine is kept. 99th percentile frame across tab switches: 48–53 ms → 18–19 ms on the A55. |
 
 ## Pinned invariants
 
-Each is asserted by tests, on both platforms where it applies:
+Each is asserted by tests, on both platforms where it applies. Changing any of
+the cross-platform ones is a two-platform change.
 
 - **The outline sector grid is 12 lon × 4 lat** (`GlobeGeometryWorldTest`,
-  `OutlineSectorCullingTests`). The latitude split is load-bearing: iOS's
-  original longitude-only wedges run pole to pole, so they never fall behind the
-  horizon and cull nothing. Measured over `world.geojson`, 200 viewpoints at the
-  default camera distance:
-
-  | sectors | border vertices culled |
-  | --- | --- |
-  | 12 × 1 (the original iOS bucketing) | 0.0% |
-  | 12 × 4 | 39.3% (worst viewpoint 16.1%) |
-  | 16 × 8 | 46.9%, for 102 draw calls instead of 45 |
-
-  iOS was re-measured against real `SCNNode.boundingSphere` values and landed
-  within 0.3pp, so it buckets 12 × 4 too. Changing the grid is a two-platform
-  change.
+  `OutlineSectorCullingTests`). The latitude split is load-bearing: longitude-only
+  wedges run pole to pole and cull 0%, where 12 × 4 culls 39.3% and 16 × 8 buys
+  7.6pp more for 102 draw calls instead of 45. iOS re-measured within 0.3pp and
+  buckets the same.
 - **The ocean sphere faces outward, and its UVs are geographic** (`UvSphereTest`).
-  Its triangles were wound clockwise from 7.1 until 7.2, so Filament culled the
-  near hemisphere and drew the inside of the far one. A flat blue ocean looks
-  identical either way; a textured one showed the antipodes, mirrored. The ocean
-  material also sets `flipUV(false)`: Filament flips V by default, which put the
-  image upside down.
+  A flat blue ocean looks identical wound either way; a textured one showed the
+  antipodes, mirrored. The ocean material also sets `flipUV(false)`.
 - **Every country is drawn by exactly one path** (`GlobeGeometryWorldTest`).
-  `isPointCountry` and `pointCoordinate != null` are not each other's negation:
-  a *polygon* feature flagged `renderAs: "point"` would fall through both
-  filters and be invisible on both renderers with nothing failing.
-- **The globe spins with iOS's physics** (`GlobeInertiaTest`,
-  `GlobeCameraTest`). A flick decays to 5% of its speed per second and coasts
-  about `v / ln(20)` degrees before stopping — roughly 3 s; pan speed is 0.005
-  rad per dp at the default distance, growing with the square of camera distance
-  and capped at finger tracking below it; and an untouched globe turns once a
-  minute. The constants live in `GlobeInertia.kt`,
-  `GlobeCamera.degreesPerDp` and `GlobeCamera.AUTO_ROTATION_DEGREES_PER_SECOND`,
-  mirroring `GlobeInertia.swift`, `GlobeView.Coordinator.panRotationSpeed` and
-  the `rotateBy(y: 2π)` action; changing any of them is a two-platform change.
+  `isPointCountry` and `pointCoordinate != null` are not each other's negation: a
+  *polygon* flagged `renderAs: "point"` would fall through both filters and be
+  invisible on both renderers with nothing failing.
+- **The globe spins with iOS's physics** (`GlobeInertiaTest`, `GlobeCameraTest`).
+  A flick decays to 5% of its speed per second, pan is 0.005 rad per dp at the
+  default distance growing with the square of it, and an untouched globe turns
+  once a minute — `GlobeInertia.kt`, `GlobeCamera.degreesPerDp` and
+  `AUTO_ROTATION_DEGREES_PER_SECOND` against their iOS counterparts.
 - **The camera stops at distance 6.0** (`GlobeCameraTest`, `GlobeGestureTest`,
-  `voyageTests.testZoomRangeMatchesAndroid`) — the globe still spanning
-  about 40% of the screen's height, and nothing worth seeing further out. This
-  one started on Android and iOS adopted it, replacing a pinch that stopped at
-  8.0. iOS's `GlobeState.maxCameraDistance` said 10.0, but both gesture handlers
-  undercut it with their own `min(8.0, ...)` literal and the only things that
-  read the constant — a `zoomIn`/`zoomOut`/`updateZoom` cluster with no callers,
-  since deleted — were unreachable, so 10.0 described nothing. The two gesture
-  handlers are now the only zoom paths and both read the constant, so changing
-  it is a two-platform change.
+  `voyageTests.testZoomRangeMatchesAndroid`). This one started on Android and iOS
+  adopted it; both of iOS's gesture handlers now read the constant rather than
+  undercutting it with their own literal.
 - **The one-finger zoom drags the platform's way, not iOS's** (`GlobeCameraTest`,
-  `GlobeGestureTest`). Tap, then press and drag vertically: the gesture is a port
-  of iOS's `handleDoubleTapDrag`, down to measuring from the distance the drag
-  started at and its 0.01 distance per dp. The direction is not, because the two
-  platforms genuinely disagree: Google Maps on Android zooms in when you drag
-  **down**, and Apple's Maps, Find My and Weather zoom in when you drag **up**.
-  Each globe follows the phone it is running on, so the opposite signs in
-  `GlobeCamera.zoomDraggedBy` and `handleDoubleTapDrag` are the point rather than
-  drift to be fixed — this is the one place the two deliberately differ, and
-  making them agree would break one of them against its own platform. The zoom
-  drag consumes its events, which is what makes the rotate detector, the tap
-  detector and the flick tracker stand down for it; without that a vertical zoom
-  also tilts the globe and leaves it spinning.
+  `GlobeGestureTest`). The gesture is a port of `handleDoubleTapDrag`; the
+  direction deliberately is not, because Google Maps zooms in dragging **down**
+  and Apple's apps dragging **up**. This is the one place the two platforms are
+  meant to differ. The drag consumes its events, which is what makes the rotate,
+  tap and flick handlers stand down for it.
 - **Selecting a country flies the camera to it in 0.8 s** (`GlobeFlightTest`,
-  `GlobeGestureTest`). `GlobeFlight` ports `GlobeView.Coordinator.flyTo`: the
-  duration, Core Animation's `easeInEaseOut` curve, the shortest way round in
-  longitude, and the 2.8 distance it settles at. A flight outranks momentum and
-  the idle spin, and any touch cancels it.
+  `GlobeGestureTest`). `GlobeFlight` ports `flyTo`: duration, `easeInEaseOut`,
+  the shortest way round in longitude, the 2.8 it settles at. A flight outranks
+  momentum and the idle spin; any touch cancels it.
+- **The idle spin runs until you touch the globe, and only deselecting brings it
+  back** (`VoyageStateTest`, `GlobeGestureTest`). `isAutoRotating` starts true and
+  is never persisted, matching iOS.
+- **One Filament engine per Activity** (`GlobeEngineLifetimeTest`,
+  `GlobeGestureTest`). Neither a tab switch nor the globe/map toggle may rebuild
+  it. Two consequences ride along: Home is layered **under** the `NavHost`,
+  because a hidden full-screen `AndroidView` is still a pointer node and Compose
+  stops at the first sibling it hits, handler or not; and a globe nobody is
+  looking at stops rendering, which the engine's own lifetime used to cover. iOS
+  needs none of this — `TabView` keeps every tab alive and `SCNView` self-pauses.
 - **Ten medals, counting the same things as iOS's** (`AchievementTest`,
   `AchievementCompletionTests`). Globetrotter and Capital Collector run over the
-  195 UN states rather than all 206 features; the explorer medals do count
-  territories; Continental Drifter needs all seven continents, Antarctica
-  included, and counts a continent once however many of its countries are
-  visited; the eight wonders must each name an attraction that
-  `country_highlights.json` still lists, or they could never be ticked off.
-  Both platforms assert these against the same shared data.
-- **The idle spin runs until you touch the globe, and only deselecting brings it
-  back** (`VoyageStateTest`, `GlobeGestureTest`). `VoyageState.isAutoRotating`
-  starts true and is never persisted, matching `GlobeState.isAutoRotating`: a
-  drag, a zoom or a selection ends it, and `clearSelection` is the only thing
-  that starts it again.
-
-## Open work
-
-### Carried over from completed phases
-
-All four device checks were run on a Galaxy A55 (SM-A556B, Android 16) on
-2026-08-30. Three passed as written and are closed; the fourth turned up a real
-cost, below.
-
-- **Phase 5 and 6 pass on hardware.** State survives `am kill` and relaunch;
-  `bmgr backupnow` succeeds and — the part that was never verified — a full
-  `adb uninstall` followed by a fresh install has Auto Backup put the document
-  back before first launch, marks, wishlist, checklists and view mode included.
-  The Phase 6 loop (search → select → Details → tick a city → back out → reopen)
-  keeps the tick and paints the country in its visited color.
-- **The GeoJSON parse costs ~1.5 s on mid-range hardware, not ~0.2 s.** Seven
-  cold launches measured 1420–1553 ms on the A55, against the ~205–225 ms warm
-  emulator figure the DoD was signed off on and iOS's ~240 ms. The emulator was
-  flattering because it runs on the host's CPU. The parse is off the main
-  thread and overlaps startup, but Home shows a spinner for the whole of it:
-  activity `TotalTime` is ~1.1 s and the map does not draw until ~1.5 s.
-
-  **The baseline profile is not the fix.** Forcing AOT compilation
-  (`cmd package compile -m speed -f`) — what a baseline profile approximates —
-  halved activity launch, 1051–1125 ms → 617–628 ms, and left the parse *slower*
-  at 1721–1778 ms across four runs, well outside the ±40 ms spread of the JIT
-  runs. The likely cause is contention rather than compilation: the main thread
-  finishes its startup work faster and competes with the prewarm thread for the
-  A55's cores. So Phase 11's baseline profile is still worth having for startup,
-  but the parse needs the thing that removes the work instead of speeding it
-  up — a prebuilt binary cache, which is what 7.8 already proposes for geometry.
-  Whatever lands should cover country data too, and be measured on the A55
-  rather than the emulator.
-
-  **Closed 2026-09-14 by 7.8**, which covers both. Measured on the A55 in a
-  release build, before and after, over six and seven cold launches: the
-  countries went from ~600 ms parsed to ~14 ms loaded, and the globe's geometry —
-  which queued behind them — from ~1,240 ms triangulated to ~60 ms. Activity
-  launch did not move (~590 ms), as expected of work that was already off the
-  main thread. See "World caches" in ANDROID_DEVELOPMENT.md.
-
-### Phase 7 — 3D globe, remaining sub-steps
-
-- **7.11 One Filament engine per Activity.** Today `GlobeSurfaceHost` dies with
-  the composable, so every trip to another tab rebuilds the engine and re-uploads
-  181 meshes — and, since 7.2, the 4096 × 2048 Earth texture, whose cost has not
-  been measured. Measured on the emulator before the texture: ~35–45 ms of a ~200 ms switch, the rest
-  being Compose navigation and surface creation — **a detached view loses its
-  surface either way**, so a genuinely instant switch also needs the globe's view
-  hoisted above the `NavHost` and hidden rather than removed. Two traps: a
-  `ViewModel` is the obvious home and the wrong one (holding a `View` or
-  `Context` there leaks the Activity across configuration changes — scope it to
-  the composition above the `NavHost`), and `Engine.destroy()` must still run
-  exactly once, on the thread that owns it.
-
-**Definition of done:** globe and map pass a side-by-side consistency check
-against each other *and* against iOS (colors, selection, borders, stars); smooth
-on mid-range hardware. *The hardware half is met — 2026-08-29 on a Galaxy A55
-(120 Hz panel, release build): 121 fps sustained while dragging, no missed
-vsyncs, ~1.3 ms of GPU headroom at the 90th percentile, no thermal throttling.
-Selection jank appears only in debug builds, so perf claims here belong against
-release builds. Palette values survive the real display pipeline: converted back
-from the Display P3 capture, globe and map land are both exactly `#34BE82`.*
-
+  195 UN states, not all 206 features; the explorer medals do count territories;
+  Continental Drifter needs all seven continents and counts each once; the eight
+  wonders must each name an attraction `country_highlights.json` still lists.
 
 ## Phase 9 — Daily Challenge
 
@@ -250,10 +158,9 @@ accepted answers on both platforms; mid-game state survives leaving the app.
 
 ## Phase 10 — Settings & native polish
 
-- [~] Settings screen — the Appearance section is built (2026-09-14): globe and
-      map texture styles, as dropdown menus so more textures can be added
-      without the screen changing shape. Still open: `themeMode` (iOS puts
-      its dark-mode toggle on Home, not in Settings), reset all data, version
+- [~] Settings screen — Appearance is built (globe and map texture styles, as
+      dropdowns so more textures need no layout change). Still open: `themeMode`
+      (iOS puts its toggle on Home), reset all data, version
 - [ ] Haptics on selection and achievement unlock
 - [ ] Material motion for transitions, themed (monochrome) icon, correct
       behavior across font scales and window sizes (foldables get the globe and
@@ -280,7 +187,7 @@ be built in parallel with them and testers recruited early.
       dispatched like the TestFlight workflow
 - [ ] Baseline profile (`androidx.baselineprofile`) covering startup — worth
       ~450 ms of activity launch on the A55, but measured *not* to help the
-      GeoJSON parse; see [Open work](#open-work)
+      GeoJSON parse, which 7.8 removed instead
 - [ ] Versioning: `versionName` mirrors iOS MARKETING_VERSION (user-controlled —
       never bump unasked); `versionCode` auto-increments in CI
 - [ ] Store listing: description, screenshots (phone + tablet), feature graphic,
@@ -293,9 +200,9 @@ be built in parallel with them and testers recruited early.
 **Definition of done:** production release live on Google Play, built and
 published entirely through CI.
 
-*Already checked ahead of this phase (2026-08-29, A55): the release build with R8
-and resource shrinking on renders correctly — nothing in the geometry pipeline,
-Filament materials or kotlinx.serialization is stripped.*
+*Checked ahead of this phase (2026-08-29, A55): the release build with R8 and
+resource shrinking renders correctly — nothing in the geometry pipeline, Filament
+materials or kotlinx.serialization is stripped.*
 
 ## Phase 12 — Ongoing routines (post-launch)
 

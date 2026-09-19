@@ -55,6 +55,9 @@ class GlobeGestureTest {
 
     private val latest: GlobeCamera get() = cameras.lastOrNull() ?: GlobeCamera()
 
+    /** Whether the globe is the screen being looked at; see `GlobeSurface`. */
+    private var visible by mutableStateOf(true)
+
     private fun showGlobe(autoRotating: Boolean = false, focus: LatLon? = null) {
         val assets = InstrumentationRegistry.getInstrumentation().targetContext.assets
         val cache = CountryDataCache(openAsset = { name -> assets.open(name) })
@@ -93,6 +96,7 @@ class GlobeGestureTest {
                 autoRotating = spinning,
                 onInteraction = { spinning = false },
                 onCameraChange = { cameras += it },
+                visible = visible,
                 modifier = Modifier.fillMaxSize().testTag(GLOBE),
             )
         }
@@ -406,6 +410,27 @@ class GlobeGestureTest {
             travelled / seconds,
             0.5,
         )
+    }
+
+    @Test
+    fun aHiddenGlobeStopsRenderingAndPicksItBackUp() {
+        showGlobe(autoRotating = true)
+        composeTestRule.waitUntil(timeoutMillis = 3_000) { latest.longitude < -1.0 }
+
+        visible = false
+        composeTestRule.waitForIdle()
+        // Anything already in flight when the frames stopped.
+        Thread.sleep(200)
+        val parked = latest.longitude
+
+        // Half a minute of idle spin would be 3 degrees; a paused globe moves
+        // by none of it, because nothing is asking the Choreographer for frames.
+        Thread.sleep(1_000)
+        assertEquals("a hidden globe should not be rendering", parked, latest.longitude, 1e-6)
+
+        // Showing it again starts the loop back up, from where it was parked.
+        visible = true
+        composeTestRule.waitUntil(timeoutMillis = 3_000) { latest.longitude < parked - 1.0 }
     }
 
     @Test
