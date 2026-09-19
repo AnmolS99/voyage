@@ -95,6 +95,8 @@ tests run locally, not in CI — 34, green on the Pixel 9 API 36 emulator.
 | 2026-09-19 | Tab switches stay instant; only Challenges → region picker animates (shared axis X) | Home's layering needs instant tab switches (see 7.11), and a game starting over the globe would show it through a fade. |
 | 2026-09-19 | Bottom-bar labels stop growing at 1.2× font scale | Five tabs share a phone's width; at 2× "Challenges" broke mid-word. Everything else follows the user's scale. |
 | 2026-09-19 | Status chips label black or white by contrast, not always white as on iOS | White on the visited green is 2.7:1; black is 7.9:1. `ContrastTest` holds both chips to AA's 4.5. |
+| 2026-09-19 | A medal unlock vibrates its own composition, not `HapticFeedbackType.Confirm` | One UI plays `CONFIRM` as a ~130 ms tap indistinguishable from the selection tick before it; on the A55 the unlock went unnoticed. |
+| 2026-09-19 | Unlocking a medal celebrates it, on both platforms | Built on Android and ported to iOS together. Which medals are new is `newlyCompleted` on both, pinned by `UnlockCelebrationTest` and `AchievementCompletionTests`. iOS shows it in its own `UIWindow`: most medals are completed from the country-list sheet, which covers anything in the `TabView`. |
 | 2026-09-19 | No tip jar on Android yet | iOS's is StoreKit. Play Billing is its own integration, and it belongs with the store listing in Phase 11. |
 | 2026-09-17 | One Filament engine per Activity: `HomeScreen` sits outside the `NavHost`, hidden rather than removed | A detached view loses its surface however carefully the engine is kept. 99th percentile frame across tab switches: 48–53 ms → 18–19 ms on the A55. |
 
@@ -179,8 +181,9 @@ accepted answers on both platforms; mid-game state survives leaving the app.
       styles, reset all data behind a confirmation dialog, version
       (`SettingsScreenTest`)
 - [x] Haptics on selection (`HomeScreen.SelectionHaptics`) and achievement
-      unlock (`AchievementUnlockHaptics`, `UnlockHapticsTest`), from anywhere a
-      medal can be completed
+      unlock, from anywhere a medal can be completed. The unlock also opens the
+      medal with confetti (`AchievementUnlockCelebration`,
+      `UnlockCelebrationTest`), and iOS gained the same alongside it
 - [x] Material motion: shared axis X into a region picker, the selection card
       rising in and sinking away. Themed (monochrome) icon was already in the
       adaptive icon. Checked at 2× font scale and in a 2208 × 1840 window

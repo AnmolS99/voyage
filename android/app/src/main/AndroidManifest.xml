@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- The achievement-unlock pattern is a vibration composition, not a
+         View haptic constant; see UnlockCelebration.kt. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:name=".VoyageApplication"
         android:allowBackup="true"

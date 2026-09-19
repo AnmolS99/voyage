@@ -43,6 +43,7 @@ struct ContentView: View {
                 .tag(4)
         }
         .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .overlay { AchievementUnlockCelebration(globeState: globeState) }
         .overlay(alignment: .bottom) {
             if showDailyToast {
                 Button {

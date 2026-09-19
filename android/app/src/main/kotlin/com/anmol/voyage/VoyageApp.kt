@@ -49,7 +49,7 @@ import com.anmol.voyage.navigation.owning
 import com.anmol.voyage.navigation.regionsToChallengesEnter
 import com.anmol.voyage.navigation.regionsToChallengesExit
 import com.anmol.voyage.state.VoyageState
-import com.anmol.voyage.ui.achievements.AchievementUnlockHaptics
+import com.anmol.voyage.ui.achievements.AchievementUnlockCelebration
 import com.anmol.voyage.ui.achievements.AchievementsScreen
 import com.anmol.voyage.ui.challenges.ChallengeGameScreen
 import com.anmol.voyage.ui.challenges.ChallengeSession
@@ -97,7 +97,7 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
         ?.let { challengeSession(it, state) }
     val showsNavigation = session == null
 
-    AchievementUnlockHaptics(state)
+    AchievementUnlockCelebration(state)
 
     val onSelectTab: (VoyageDestination) -> Unit = { destination ->
         if (currentTab == destination) {

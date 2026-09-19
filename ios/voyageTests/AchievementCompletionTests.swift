@@ -398,4 +398,45 @@ final class AchievementCompletionTests: XCTestCase {
         XCTAssertTrue(mismatches.isEmpty,
             "GeoJSON countries should match ContinentData: \(mismatches)")
     }
+
+    // MARK: - Unlock Celebration
+
+    func testCatalogBuildsTheTenAchievementsInOrder() {
+        let names = AchievementCatalog.achievements(visited: [], checkedCities: [:], checkedAttractions: [:])
+            .map(\.name)
+        XCTAssertEqual(names.count, 10)
+        XCTAssertEqual(Array(names.prefix(4)), ["Globetrotter", "Capital Collector", "Wonders of the World", "Continental Drifter"])
+    }
+
+    func testCatalogCompletesAContinentOnceEveryCountryIsVisited() {
+        let achievements = AchievementCatalog.achievements(
+            visited: Continent.southAmerica.countries,
+            checkedCities: [:],
+            checkedAttractions: [:]
+        )
+        let explorer = achievements.first { $0.name == "Explorer of South America" }
+        XCTAssertEqual(explorer?.isCompleted, true)
+    }
+
+    func testFirstReadingIsABaseline() {
+        XCTAssertEqual(AchievementCatalog.newlyCompleted(before: nil, after: ["Globetrotter"]), [])
+    }
+
+    func testNewlyCompletedAchievementIsCelebrated() {
+        XCTAssertEqual(
+            AchievementCatalog.newlyCompleted(before: ["Wonders of the World"], after: ["Wonders of the World", "Explorer of Europe"]),
+            ["Explorer of Europe"]
+        )
+    }
+
+    func testLosingAchievementsCelebratesNothing() {
+        XCTAssertEqual(AchievementCatalog.newlyCompleted(before: ["Globetrotter"], after: []), [])
+    }
+
+    func testSeveralAtOnceAreCelebratedInListOrder() {
+        XCTAssertEqual(
+            AchievementCatalog.newlyCompleted(before: [], after: ["Continental Drifter", "Explorer of Oceania"]),
+            ["Continental Drifter", "Explorer of Oceania"]
+        )
+    }
 }

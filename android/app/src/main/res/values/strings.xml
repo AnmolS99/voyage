@@ -68,6 +68,8 @@
     <string name="achievement_show_medal">Show the %1$s medal</string>
     <string name="medal_drag_to_spin">Drag to spin</string>
     <string name="medal_close">Close</string>
+    <string name="achievement_unlocked_title">Medal unlocked!</string>
+    <string name="achievement_unlocked_done">Awesome!</string>
 
     <!-- Settings (wording mirrors iOS SettingsView) -->
     <string name="settings_appearance">Appearance</string>
