@@ -34,12 +34,12 @@ it; it is not re-described here.
 | 8 — Achievements | ✅ 2026-08-30. Ten medals, progress rings, item lists, spinnable coin |
 | Challenges tab (unplanned) | ✅ 2026-09-19. Click the Country, Name the Capital, Name the Flag over seven regions, with trophies and best times; played on Home's globe |
 | 9 — Daily Challenge | Not started |
-| 10 — Settings & polish | 🟡 Texture pickers built 2026-09-14; the rest not started |
+| 10 — Settings & polish | 🟡 2026-09-19: Settings, haptics, motion, rail + readable width, font scale, TalkBack. Open: the orange buttons' contrast, and a tip jar |
 | 11 — Release & launch | Not started |
 | 12 — Ongoing routines | Not started |
 
-Suite as of 2026-09-19: 288 JVM unit tests across 31 classes, green. Instrumented
-tests run locally, not in CI — 31, green on the Pixel 9 API 36 emulator.
+Suite as of 2026-09-19: 297 JVM unit tests across 33 classes, green. Instrumented
+tests run locally, not in CI — 34, green on the Pixel 9 API 36 emulator.
 
 ## Decision log
 
@@ -90,6 +90,12 @@ tests run locally, not in CI — 31, green on the Pixel 9 API 36 emulator.
 | 2026-09-14 | Over a texture, plain land is not drawn at all | iOS's `hasTexture ? .clear : land`, expressed once as `MapShading.None`. |
 | 2026-09-14 | Countries and globe meshes generated at build time by the app's own code, never checked in | ~1.85 s on the A55 became ~75 ms. Compiling the same sources into `tools/world-cache` guarantees the cache is written by the code that would otherwise run on device. |
 | 2026-09-19 | Phase 7's manual side-by-side check against iOS is dropped | Colors, selection, borders and markers are already pinned on both platforms by the invariants above and the shared fixture, which fail on drift a by-eye comparison would not catch. |
+| 2026-09-19 | Theme is chosen in Settings, as System / Light / Dark; Home keeps iOS's sun/moon toggle | Only an explicit choice can hand the decision back to the system — the toggle flips what is on screen, as iOS's does. |
+| 2026-09-19 | A navigation rail from 600 dp wide, the bottom bar below it | Material's medium width class: tablets, unfolded foldables and phones on their side keep the globe's full height. List tabs cap at 640 dp, centered; the globe and map never do. |
+| 2026-09-19 | Tab switches stay instant; only Challenges → region picker animates (shared axis X) | Home's layering needs instant tab switches (see 7.11), and a game starting over the globe would show it through a fade. |
+| 2026-09-19 | Bottom-bar labels stop growing at 1.2× font scale | Five tabs share a phone's width; at 2× "Challenges" broke mid-word. Everything else follows the user's scale. |
+| 2026-09-19 | Status chips label black or white by contrast, not always white as on iOS | White on the visited green is 2.7:1; black is 7.9:1. `ContrastTest` holds both chips to AA's 4.5. |
+| 2026-09-19 | No tip jar on Android yet | iOS's is StoreKit. Play Billing is its own integration, and it belongs with the store listing in Phase 11. |
 | 2026-09-17 | One Filament engine per Activity: `HomeScreen` sits outside the `NavHost`, hidden rather than removed | A detached view loses its surface however carefully the engine is kept. 99th percentile frame across tab switches: 48–53 ms → 18–19 ms on the A55. |
 
 ## Pinned invariants
@@ -169,14 +175,22 @@ accepted answers on both platforms; mid-game state survives leaving the app.
 
 ## Phase 10 — Settings & native polish
 
-- [~] Settings screen — Appearance is built (globe and map texture styles, as
-      dropdowns so more textures need no layout change). Still open: `themeMode`
-      (iOS puts its toggle on Home), reset all data, version
-- [ ] Haptics on selection and achievement unlock
-- [ ] Material motion for transitions, themed (monochrome) icon, correct
-      behavior across font scales and window sizes (foldables get the globe and
-      map full-bleed)
-- [ ] Accessibility: TalkBack labels for countries and controls, contrast
+- [x] Settings screen — theme (System / Light / Dark), globe and map texture
+      styles, reset all data behind a confirmation dialog, version
+      (`SettingsScreenTest`)
+- [x] Haptics on selection (`HomeScreen.SelectionHaptics`) and achievement
+      unlock (`AchievementUnlockHaptics`, `UnlockHapticsTest`), from anywhere a
+      medal can be completed
+- [x] Material motion: shared axis X into a region picker, the selection card
+      rising in and sinking away. Themed (monochrome) icon was already in the
+      adaptive icon. Checked at 2× font scale and in a 2208 × 1840 window
+      (navigation rail, list tabs at a readable width, globe full-bleed)
+- [~] Accessibility: the globe and map describe themselves and offer Search as
+      an action, the selection card announces the country, section headings are
+      headings, status chips pass AA. **Open:** white on the brand orange
+      (`primary`, every filled button) is 2.7:1 — below AA, and changing it is a
+      brand decision for both platforms
+- [ ] Tip jar via Play Billing (deferred to Phase 11, see the decision log)
 
 **Definition of done:** indistinguishable from a first-party Material app in
 navigation, motion, and system integration.

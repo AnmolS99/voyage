@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.anmol.voyage.R
@@ -44,6 +45,7 @@ import com.anmol.voyage.challenges.formatGameTime
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.readableWidth
 import com.anmol.voyage.ui.theme.voyageCardColors
 import com.anmol.voyage.ui.theme.voyageCardElevation
 import kotlinx.coroutines.Dispatchers
@@ -61,7 +63,7 @@ fun ChallengesScreen(
 ) {
     val stats = state.challengeStats
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().readableWidth(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -198,7 +200,11 @@ fun RegionSelectScreen(
                     contentDescription = stringResource(R.string.challenge_back),
                 )
             }
-            Text(stringResource(mode.titleRes), style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = stringResource(mode.titleRes),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() },
+            )
         }
 
         val counts = countryCounts
@@ -209,6 +215,7 @@ fun RegionSelectScreen(
             return@Column
         }
         LazyColumn(
+            modifier = Modifier.readableWidth(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
