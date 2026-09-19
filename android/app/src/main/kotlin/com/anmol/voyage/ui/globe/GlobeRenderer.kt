@@ -20,8 +20,8 @@ import com.google.android.filament.MaterialInstance
 import com.google.android.filament.RenderableManager
 import com.google.android.filament.Renderer
 import com.google.android.filament.Scene
-import com.google.android.filament.Skybox
 import com.google.android.filament.SwapChain
+import com.google.android.filament.SwapChainFlags
 import com.google.android.filament.Texture
 import com.google.android.filament.TextureSampler
 import com.google.android.filament.VertexBuffer
@@ -48,10 +48,7 @@ import kotlin.math.abs
  * painted with the Earth texture, and a country with nothing to show leaves the
  * scene so the texture shows through it.
  */
-internal class GlobeRenderer(initialBackgroundColor: FloatArray) {
-
-    /** What the skybox is currently painted with; see [setBackgroundColor]. */
-    private var backgroundColor: FloatArray = initialBackgroundColor.copyOf()
+internal class GlobeRenderer {
 
     private val engine: Engine = Engine.create().also { enginesCreated++ }
     private val renderer: Renderer = engine.createRenderer()
@@ -60,7 +57,6 @@ internal class GlobeRenderer(initialBackgroundColor: FloatArray) {
     private val cameraEntity: Int = EntityManager.get().create()
     private val camera: Camera = engine.createCamera(cameraEntity)
     private val materials: GlobeMaterials = GlobeMaterials.build(engine)
-    private var skybox: Skybox = buildSkybox(backgroundColor)
 
     private var swapChain: SwapChain? = null
     private var viewportWidth = 0
@@ -156,7 +152,15 @@ internal class GlobeRenderer(initialBackgroundColor: FloatArray) {
     init {
         view.scene = scene
         view.camera = camera
-        scene.skybox = skybox
+        // No skybox: every frame clears to transparent, so whatever Compose
+        // draws behind the TextureView — the theme background, or the starry
+        // sky in dark mode — shows around the globe, as the SwiftUI backdrop
+        // does behind a clear SCNView on iOS. Needs the transparent swap chain
+        // created in [onNativeWindowChanged].
+        renderer.clearOptions = renderer.clearOptions.apply {
+            clearColor = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+            clear = true
+        }
         // The globe is flat-shaded palette colors on a solid background; none of
         // the post-processing chain (bloom, TAA, tone mapping) does anything for
         // that except cost fill rate and shift the colors away from the palette.
@@ -168,30 +172,9 @@ internal class GlobeRenderer(initialBackgroundColor: FloatArray) {
         view.isPostProcessingEnabled = false
     }
 
-    /**
-     * Repaints the background behind the globe — a theme change, which this
-     * engine now outlives.
-     *
-     * A [Skybox]'s color is fixed at build time, so the old one is replaced
-     * rather than rewritten. Built, swapped in, and only then destroyed, the way
-     * the Earth texture is: nothing may still be reading the one being freed.
-     */
-    fun setBackgroundColor(color: FloatArray) {
-        if (color.contentEquals(backgroundColor)) return
-        backgroundColor = color.copyOf()
-        val replacement = buildSkybox(backgroundColor)
-        scene.skybox = replacement
-        engine.destroySkybox(skybox)
-        skybox = replacement
-    }
-
-    private fun buildSkybox(color: FloatArray): Skybox = Skybox.Builder()
-        .color(color[0], color[1], color[2], 1.0f)
-        .build(engine)
-
     fun onNativeWindowChanged(surface: Surface) {
         swapChain?.let { engine.destroySwapChain(it) }
-        swapChain = engine.createSwapChain(surface)
+        swapChain = engine.createSwapChain(surface, SwapChainFlags.CONFIG_TRANSPARENT)
     }
 
     fun onDetachedFromSurface() {
@@ -552,8 +535,6 @@ internal class GlobeRenderer(initialBackgroundColor: FloatArray) {
         releaseGeometry()
         earthTexture?.let { engine.destroyTexture(it) }
         swapChain?.let { engine.destroySwapChain(it) }
-        scene.skybox = null
-        engine.destroySkybox(skybox)
         materials.destroy(engine)
         engine.destroyView(view)
         engine.destroyScene(scene)

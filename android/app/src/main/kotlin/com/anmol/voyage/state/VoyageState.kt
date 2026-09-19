@@ -211,6 +211,9 @@ class VoyageState(
 
     fun setThemeMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }
 
+    /** Flips light/dark from whatever is on screen — see [ThemeMode.toggled]. */
+    fun toggleDarkMode(systemInDarkTheme: Boolean) = setThemeMode(themeMode.toggled(systemInDarkTheme))
+
     /**
      * Clears everything the user has marked, leaving their appearance
      * preferences alone — the same split iOS `resetAllData()` makes.

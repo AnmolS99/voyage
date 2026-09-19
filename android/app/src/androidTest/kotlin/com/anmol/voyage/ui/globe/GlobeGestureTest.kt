@@ -89,7 +89,6 @@ class GlobeGestureTest {
                 },
                 earthTexture = null,
                 oceanColor = Color.Blue,
-                backgroundColor = Color.Black,
                 hitTester = hitTester,
                 onCountryTapped = {},
                 focus = focus,

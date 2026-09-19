@@ -96,7 +96,6 @@ internal fun GlobeSurface(
     colorFor: (String) -> GlobeFill?,
     earthTexture: Bitmap?,
     oceanColor: androidx.compose.ui.graphics.Color,
-    backgroundColor: androidx.compose.ui.graphics.Color,
     hitTester: CountryHitTester,
     onCountryTapped: (String?) -> Unit,
     modifier: Modifier = Modifier,
@@ -109,13 +108,9 @@ internal fun GlobeSurface(
     onInteraction: () -> Unit = {},
     onCameraChange: (GlobeCamera) -> Unit = {},
     visible: Boolean = true,
-    host: GlobeSurfaceHost = rememberGlobeSurfaceHost(backgroundColor),
+    host: GlobeSurfaceHost = rememberGlobeSurfaceHost(),
 ) {
     val sizes = rememberMarkerSizes()
-
-    // The background is a uniform, not a rebuild: this engine outlives a theme
-    // change now, so the skybox has to be repainted in place.
-    SideEffect { host.setBackgroundColor(backgroundColor.toFilamentColor()) }
 
     // Nobody looking, nobody paying: a globe behind another tab, or in an app
     // that has gone to the background, stops posting frames. Everything the
@@ -210,8 +205,8 @@ internal fun GlobeSurface(
  * meshes and the Earth texture, is uploaded only when something asks to draw.
  */
 @Composable
-internal fun rememberGlobeSurfaceHost(backgroundColor: androidx.compose.ui.graphics.Color): GlobeSurfaceHost {
-    val host = remember { GlobeSurfaceHost(backgroundColor.toFilamentColor()) }
+internal fun rememberGlobeSurfaceHost(): GlobeSurfaceHost {
+    val host = remember { GlobeSurfaceHost() }
     DisposableEffect(host) {
         onDispose { host.destroy() }
     }
@@ -284,9 +279,9 @@ private fun Modifier.globeGestures(
  * where it is owned, [attach] for what a new `TextureView` costs, and
  * [setGeometry] for what it does not.
  */
-internal class GlobeSurfaceHost(backgroundColor: FloatArray) {
+internal class GlobeSurfaceHost {
 
-    private val renderer = GlobeRenderer(backgroundColor)
+    private val renderer = GlobeRenderer()
     private val uiHelper = UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK)
     private val choreographer: Choreographer = Choreographer.getInstance()
     private var destroyed = false
@@ -548,11 +543,6 @@ internal class GlobeSurfaceHost(backgroundColor: FloatArray) {
         if (attachedView == null) return
         attachedView = null
         uiHelper.detach()
-    }
-
-    /** Repaints the background behind the globe, for a theme change. */
-    fun setBackgroundColor(color: FloatArray) {
-        if (!destroyed) renderer.setBackgroundColor(color)
     }
 
     fun setGeometry(
