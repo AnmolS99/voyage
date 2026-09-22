@@ -43,8 +43,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,6 +54,7 @@ import com.anmol.voyage.data.AchievementCatalog
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.readableWidth
 import com.anmol.voyage.ui.theme.voyageCardColors
 import com.anmol.voyage.ui.theme.voyageCardElevation
 import kotlinx.coroutines.Dispatchers
@@ -103,7 +104,7 @@ fun AchievementsScreen(state: VoyageState, modifier: Modifier = Modifier) {
     var medalId by rememberSaveable { mutableStateOf<String?>(null) }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().readableWidth(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {

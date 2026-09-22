@@ -76,6 +76,8 @@ android {
 
     buildFeatures {
         compose = true
+        // Settings shows the version, as iOS's does.
+        buildConfig = true
     }
 
     sourceSets {

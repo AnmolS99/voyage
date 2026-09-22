@@ -47,6 +47,8 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -55,6 +57,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.anmol.voyage.R
 import com.anmol.voyage.data.Achievement
+import com.anmol.voyage.ui.challenges.Confetti
+import com.anmol.voyage.ui.theme.VoyagePalette
 import java.util.function.Consumer
 
 /**
@@ -68,12 +72,17 @@ import java.util.function.Consumer
  * the small medal's frame to the middle of the screen: that is a shared-element
  * transition here, several times the code of the thing it decorates, so the coin
  * springs up in place instead.
+ *
+ * @param celebrating whether the medal has just been earned. The same overlay
+ *   then announces it — a heading over the coin and the challenges' confetti
+ *   bursting behind it — which is what `AchievementUnlockCelebration` opens.
  */
 @Composable
 fun MedalOverlay(
     achievement: Achievement,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    celebrating: Boolean = false,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -114,6 +123,17 @@ fun MedalOverlay(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    if (celebrating) {
+                        Text(
+                            text = stringResource(R.string.achievement_unlocked_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = VoyagePalette.medalGoldCenter,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .padding(bottom = 12.dp)
+                                .semantics { heading() },
+                        )
+                    }
                     SpinningMedal(
                         medal = achievement.medal,
                         isEarned = achievement.isCompleted,
@@ -156,10 +176,13 @@ fun MedalOverlay(
                     }
 
                     TextButton(onClick = onDismiss, modifier = Modifier.padding(top = 8.dp)) {
-                        Text(stringResource(R.string.medal_close))
+                        Text(stringResource(if (celebrating) R.string.achievement_unlocked_done else R.string.medal_close))
                     }
                 }
             }
+            // Last, so it falls in front of the medal; it draws only, so taps
+            // still reach the coin and the scrim beneath it.
+            if (celebrating) Confetti()
         }
     }
 }

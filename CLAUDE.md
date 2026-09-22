@@ -116,7 +116,9 @@ rather than rendered by a 3D engine — as a cylinder in projection, so it keeps
 the thickness of iOS's `SCNCylinder` as it turns — and it spins on the globe's
 decay curve (`GlobeInertia.decayed`), exactly as iOS's coin borrows
 `GlobeInertia` — so retuning that curve moves the globe *and* the medal, on both
-platforms.
+platforms. Completing a medal, from any tab, opens it with confetti and a haptic
+on both (`AchievementUnlockCelebration` on each); which medals count as newly
+completed is `newlyCompleted` on both, pinned by tests on each.
 
 The Challenges tab ports `ios/voyage/Challenges/` the same way: the rules — modes,
 regions, trophies, the sweep engine, best-result comparison — live in

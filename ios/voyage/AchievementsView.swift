@@ -7,76 +7,11 @@ struct AchievementsView: View {
     @State private var medalSourceFrames: [String: CGRect] = [:]
 
     private var achievements: [Achievement] {
-        var list: [Achievement] = []
-
-        // World traveler achievement (first)
-        let allCountries = CountryDataCache.shared.countryNames
-        let unCountries = allCountries.subtracting(GlobeState.nonUNTerritories)
-        let visitedUN = Array(globeState.visitedUNCountries).sorted()
-        let remainingUN = Array(unCountries.subtracting(globeState.visitedUNCountries)).sorted()
-
-        list.append(Achievement(
-            name: "Globetrotter",
-            medal: "🌍",
-            visitedCountries: visitedUN,
-            remainingCountries: remainingUN
-        ))
-
-        // Capital Collector achievement
-        let countriesWithCapitals = CountryDataCache.shared.countries.filter { country in
-            guard country.capital != nil else { return false }
-            return unCountries.contains(country.name)
-        }
-        let visitedCapitals = countriesWithCapitals.filter { country in
-            globeState.checkedCitiesForCountry(country.name).contains(country.capital!.name)
-        }.map { $0.capital!.name }.sorted()
-        let remainingCapitals = countriesWithCapitals.filter { country in
-            !globeState.checkedCitiesForCountry(country.name).contains(country.capital!.name)
-        }.map { $0.capital!.name }.sorted()
-
-        list.append(Achievement(
-            name: "Capital Collector",
-            medal: "🏛️",
-            visitedCountries: visitedCapitals,
-            remainingCountries: remainingCapitals,
-            itemLabel: "capitals"
-        ))
-
-        // Wonders of the World achievement (New 7 + honorary Pyramids of Giza)
-        list.append(Achievement(
-            name: "Wonders of the World",
-            medal: "⭐️",
-            visitedCountries: WondersOfTheWorld.visited(from: globeState.checkedAttractions),
-            remainingCountries: WondersOfTheWorld.remaining(from: globeState.checkedAttractions),
-            itemLabel: "wonders"
-        ))
-
-        // Continental Drifter achievement — one item per continent, earned by
-        // setting foot on all seven (Antarctica included)
-        list.append(Achievement(
-            name: "Continental Drifter",
-            medal: "🌐",
-            visitedCountries: ContinentData.visitedContinentNames(from: globeState.visitedCountries),
-            remainingCountries: ContinentData.remainingContinentNames(from: globeState.visitedCountries),
-            itemLabel: "continents"
-        ))
-
-        // Continent achievements
-        for continent in Continent.allCases where continent != .antarctica {
-            let countries = continent.countries
-            let visited = ContinentData.visitedCountries(in: continent, from: globeState.visitedCountries)
-            let visitedSorted = Array(visited).sorted()
-            let remainingSorted = Array(countries.subtracting(visited)).sorted()
-
-            list.append(Achievement(
-                name: "Explorer of \(continent.rawValue)",
-                medal: continent.medal,
-                visitedCountries: visitedSorted,
-                remainingCountries: remainingSorted
-            ))
-        }
-
-        return list
+        AchievementCatalog.achievements(
+            visited: globeState.visitedCountries,
+            checkedCities: globeState.checkedCities,
+            checkedAttractions: globeState.checkedAttractions
+        )
     }
 
     private var completedCount: Int {
@@ -324,5 +259,96 @@ struct CountryListSection: View {
                 .lineLimit(4)
                 .padding(.horizontal, 16)
         }
+    }
+}
+
+/// Celebrates an achievement the moment something the user marks completes it —
+/// wherever they marked it, since the country that finishes a continent is
+/// usually ticked on Home, not on this tab. The medal opens in
+/// `MedalOverlayView` with confetti and a success haptic, one at a time when a
+/// single tick completes several. The Android `AchievementUnlockCelebration`
+/// does the same.
+///
+/// The first reading after launch only sets the baseline, so medals already
+/// held are never celebrated. The overlay is shown in a window of its own
+/// (`CelebrationWindow`), not in this view: most medals are completed from the
+/// country list, a sheet, and a sheet covers anything drawn in the `TabView`.
+struct AchievementUnlockCelebration: View {
+    @ObservedObject var globeState: GlobeState
+    @State private var completed: [String]?
+    @State private var waiting: [String] = []
+    @State private var window = CelebrationWindow()
+
+    private var achievements: [Achievement] {
+        AchievementCatalog.achievements(
+            visited: globeState.visitedCountries,
+            checkedCities: globeState.checkedCities,
+            checkedAttractions: globeState.checkedAttractions
+        )
+    }
+
+    var body: some View {
+        Color.clear
+            .allowsHitTesting(false)
+            .onAppear { update() }
+            .onChange(of: globeState.visitedCountries) { update() }
+            .onChange(of: globeState.checkedCities) { update() }
+            .onChange(of: globeState.checkedAttractions) { update() }
+            .onChange(of: waiting.first) { present() }
+    }
+
+    private func update() {
+        let now = achievements.filter(\.isCompleted).map(\.id)
+        let unlocked = AchievementCatalog.newlyCompleted(before: completed, after: now)
+        // A medal lost again before its turn — the country unticked at once — is
+        // no longer worth celebrating.
+        waiting = waiting.filter { now.contains($0) } + unlocked
+        completed = now
+    }
+
+    /// Shows the medal at the head of the line, or nothing once it is empty. A
+    /// fresh window per medal, so the next in line springs up and bursts anew.
+    private func present() {
+        window.hide()
+        guard let id = waiting.first,
+              let achievement = achievements.first(where: { $0.id == id }) else { return }
+        window.show(
+            MedalOverlayView(
+                achievement: achievement,
+                isDarkMode: globeState.isDarkMode,
+                sourceFrame: nil,
+                celebrating: true,
+                onDismissed: { if !waiting.isEmpty { waiting.removeFirst() } }
+            ),
+            isDarkMode: globeState.isDarkMode
+        )
+    }
+}
+
+/// A transparent window above the app's own — sheets included — for the
+/// unlock celebration, the way the Android celebration is a `Dialog` window.
+@MainActor
+final class CelebrationWindow {
+    private var window: UIWindow?
+
+    func show(_ content: some View, isDarkMode: Bool) {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first else { return }
+
+        let host = UIHostingController(rootView: content)
+        host.view.backgroundColor = .clear
+
+        let window = UIWindow(windowScene: scene)
+        window.windowLevel = .alert
+        // The app's own dark-mode choice, which this window would not inherit.
+        window.overrideUserInterfaceStyle = isDarkMode ? .dark : .light
+        window.rootViewController = host
+        window.isHidden = false
+        self.window = window
+    }
+
+    func hide() {
+        window?.isHidden = true
+        window = nil
     }
 }

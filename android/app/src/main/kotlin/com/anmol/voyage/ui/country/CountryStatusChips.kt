@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import com.anmol.voyage.R
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.readableContentColor
 
 /**
  * The visited and wishlist toggles, shared by the selection card and the details
@@ -26,7 +27,8 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * Selected chips take their color from [VoyagePalette] rather than the Material
  * scheme: green for visited and purple for wishlist are the same status colors
  * the map paints countries with, and they are what iOS shows on its capsule
- * buttons.
+ * buttons. Their labels are black or white by contrast, not always white as
+ * on iOS, so they stay legible — see [readableContentColor].
  */
 @Composable
 internal fun VisitedChip(state: VoyageState, country: String, modifier: Modifier = Modifier) {
@@ -76,8 +78,8 @@ private fun StatusChip(
         },
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = selectedColor,
-            selectedLabelColor = Color.White,
-            selectedLeadingIconColor = Color.White,
+            selectedLabelColor = readableContentColor(selectedColor),
+            selectedLeadingIconColor = readableContentColor(selectedColor),
         ),
         modifier = modifier,
     )

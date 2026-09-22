@@ -8,12 +8,18 @@ import Metal
 /// animates its own frame to the center while the background blurs in, so the
 /// small medal visibly enlarges rather than being swapped for another view.
 /// It is spinnable around the Y axis only (matching the globe's horizontal drag).
+///
+/// With `celebrating` set it announces a medal just earned instead — a heading
+/// over the coin and confetti in front of it — which is what
+/// `AchievementUnlockCelebration` shows. There is no small medal to grow out
+/// of then, so the coin springs up in place.
 struct MedalOverlayView: View {
     let achievement: Achievement
     let isDarkMode: Bool
     /// Global frame of the tapped small medal, where the coin starts and
-    /// returns on dismissal.
-    let sourceFrame: CGRect
+    /// returns on dismissal. Nil springs the coin up in place.
+    let sourceFrame: CGRect?
+    var celebrating: Bool = false
     /// Called once the collapse-back animation has finished.
     let onDismissed: () -> Void
 
@@ -24,7 +30,7 @@ struct MedalOverlayView: View {
     var body: some View {
         GeometryReader { geo in
             let overlayOrigin = geo.frame(in: .global).origin
-            let medalFrame = isExpanded && targetFrame != .zero ? targetFrame : sourceFrame
+            let medalFrame = sourceFrame.map { isExpanded && targetFrame != .zero ? targetFrame : $0 } ?? targetFrame
 
             ZStack {
                 Rectangle()
@@ -34,6 +40,14 @@ struct MedalOverlayView: View {
                     .onTapGesture { dismiss() }
 
                 VStack(spacing: 8) {
+                    if celebrating {
+                        Text("Medal unlocked!")
+                            .font(.system(size: 26, weight: .heavy, design: .rounded))
+                            .foregroundColor(isDarkMode ? AppColors.trophyGoldLight : AppColors.trophyGoldDark)
+                            .accessibilityAddTraits(.isHeader)
+                            .opacity(isExpanded ? 1 : 0)
+                    }
+
                     // Invisible placeholder marking where the expanded coin belongs
                     Color.clear
                         .frame(width: 320, height: 320)
@@ -58,7 +72,7 @@ struct MedalOverlayView: View {
                             .padding(.top, 4)
 
                         Button(action: dismiss) {
-                            Text("Close")
+                            Text(celebrating ? "Awesome!" : "Close")
                                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                                 .foregroundColor(isDarkMode ? .white : AppColors.closeButtonText)
                                 .padding(.horizontal, 28)
@@ -80,9 +94,18 @@ struct MedalOverlayView: View {
                         x: medalFrame.midX - overlayOrigin.x,
                         y: medalFrame.midY - overlayOrigin.y
                     )
+                    // Springing up in place, when there is no small medal to
+                    // grow out of.
+                    .scaleEffect(sourceFrame == nil && !isExpanded ? 0.01 : 1)
+
+                if celebrating && isExpanded {
+                    ConfettiView()
+                }
             }
         }
         .task {
+            // The unlock's haptic, as the games answer a correct guess.
+            if celebrating { UINotificationFeedbackGenerator().notificationOccurred(.success) }
             withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
                 isExpanded = true
             }

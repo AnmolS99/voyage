@@ -6,16 +6,22 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
+import com.anmol.voyage.R
 import com.anmol.voyage.state.GlobeStyle
+import com.anmol.voyage.state.ThemeMode
 import com.anmol.voyage.state.VoyageState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
 /**
- * The texture pickers, driven through their menus.
+ * The Settings tab driven as a user would: the theme's segments, the texture
+ * pickers through their menus, and the reset behind its dialog.
  *
  * The two menus list the same styles, so every item is found by a tag scoped to
  * its picker — the thing most likely to go wrong here is picking from the map's
@@ -89,6 +95,53 @@ class SettingsScreenTest {
         }
         composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, GlobeStyle.Realistic)).assertIsSelected()
         composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, GlobeStyle.Natural)).assertIsNotSelected()
+    }
+
+    @Test
+    fun choosingAThemeSetsItAndMarksItSelected() {
+        showSettings()
+
+        composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.System)).assertIsSelected()
+        composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.Dark)).performClick()
+
+        assertEquals(ThemeMode.Dark, state.themeMode)
+        composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.Dark)).assertIsSelected()
+        composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.System)).assertIsNotSelected()
+    }
+
+    @Test
+    fun resettingAfterConfirmingClearsWhatWasMarked() {
+        showSettings()
+        composeTestRule.runOnIdle {
+            state.addVisit("France")
+            state.addToWishlist("Japan")
+            state.setGlobeStyle(GlobeStyle.Natural)
+        }
+
+        composeTestRule.onNodeWithTag(RESET_TAG).performScrollTo().performClick()
+        composeTestRule.onNodeWithTag(RESET_CONFIRM_TAG).performClick()
+        composeTestRule.waitForIdle()
+
+        assertTrue(state.visitedCountries.isEmpty())
+        assertTrue(state.wishlistCountries.isEmpty())
+        // Preferences are not data, as on iOS.
+        assertEquals(GlobeStyle.Natural, state.globeStyle)
+        composeTestRule.onNodeWithTag(RESET_CONFIRM_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun cancellingTheResetKeepsEverything() {
+        showSettings()
+        composeTestRule.runOnIdle { state.addVisit("France") }
+
+        composeTestRule.onNodeWithTag(RESET_TAG).performScrollTo().performClick()
+        composeTestRule.onNodeWithText(
+            InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.settings_cancel),
+        ).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(setOf("France"), state.visitedCountries)
+        composeTestRule.onNodeWithTag(RESET_CONFIRM_TAG).assertDoesNotExist()
     }
 
     @Test

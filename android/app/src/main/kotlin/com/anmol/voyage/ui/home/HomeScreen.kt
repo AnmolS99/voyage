@@ -1,8 +1,14 @@
 package com.anmol.voyage.ui.home
 
 import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,8 +38,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anmol.voyage.R
@@ -43,29 +56,30 @@ import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.EarthTextureCache
 import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.data.LatLon
+import com.anmol.voyage.globe.GlobeGeometry
+import com.anmol.voyage.globe.OutlineMesh
+import com.anmol.voyage.globe.SelectedOutlineCache
 import com.anmol.voyage.state.GlobeStyle
 import com.anmol.voyage.state.ViewMode
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.CountryDetailSheet
 import com.anmol.voyage.ui.country.CountrySearchSheet
 import com.anmol.voyage.ui.country.CountrySelectionCard
+import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFill
+import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFillOrNull
 import com.anmol.voyage.ui.globe.GlobeDotStyle
-import com.anmol.voyage.globe.GlobeGeometry
-import com.anmol.voyage.globe.OutlineMesh
-import com.anmol.voyage.globe.SelectedOutlineCache
 import com.anmol.voyage.ui.globe.GlobeSurface
 import com.anmol.voyage.ui.globe.GlobeSurfaceHost
 import com.anmol.voyage.ui.globe.rememberGlobeGeometry
 import com.anmol.voyage.ui.globe.rememberGlobeSurfaceHost
 import com.anmol.voyage.ui.map.CountryPaths
-import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFill
-import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFillOrNull
-import com.anmol.voyage.ui.map.WorldScene
-import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.anmol.voyage.ui.map.MapProjection
 import com.anmol.voyage.ui.map.WorldMap
+import com.anmol.voyage.ui.map.WorldScene
 import com.anmol.voyage.ui.map.buildCountryPaths
+import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.readableWidth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -159,6 +173,8 @@ fun HomeScreen(
         if (selectedCountry == null) showingDetails = false
     }
 
+    SelectionHaptics(selectedCountry)
+
     // The globe's engine, owned here rather than by the surface that draws with
     // it: this composition outlives both the flat map and every other tab, so
     // the engine survives a view-mode toggle and a tab switch alike.
@@ -187,10 +203,28 @@ fun HomeScreen(
         // Everything except the globe leaves composition while hidden: none of
         // it owns a surface worth keeping, and a pointer node left behind here
         // would catch taps meant for the screen underneath.
-        if (isGlobe) {
-            GlobeBody(data = loaded, scene = scene, state = state, host = globeHost, visible = visible)
-        } else if (visible) {
-            MapBody(data = loaded, scene = scene, state = state, width = maxWidth, height = maxHeight)
+        val worldWidth = maxWidth
+        val worldHeight = maxHeight
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (showsChrome) {
+                        Modifier.worldSemantics(
+                            description = worldDescription(isGlobe, visited = state.visitedCountries.size),
+                            searchLabel = stringResource(R.string.map_search_countries),
+                            onSearch = { showingSearch = true },
+                        )
+                    } else {
+                        Modifier
+                    },
+                ),
+        ) {
+            if (isGlobe) {
+                GlobeBody(data = loaded, scene = scene, state = state, host = globeHost, visible = visible)
+            } else if (visible) {
+                MapBody(data = loaded, scene = scene, state = state, width = worldWidth, height = worldHeight)
+            }
         }
 
         if (showsChrome) {
@@ -230,16 +264,28 @@ fun HomeScreen(
                 }
             }
 
-            selectedCountry?.let { name ->
-                CountrySelectionCard(
-                    name = name,
-                    detail = detail,
-                    state = state,
-                    onOpenDetails = { showingDetails = true },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp),
-                )
+            // The card rises in with a selection and sinks away with it, so it
+            // keeps showing the last country for as long as it is leaving.
+            val shownName = rememberLastNonNull(selectedCountry)
+            AnimatedVisibility(
+                visible = selectedCountry != null,
+                enter = slideInVertically { it / 2 } + fadeIn(),
+                exit = slideOutVertically { it / 2 } + fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+                    .readableWidth(),
+            ) {
+                shownName?.let { name ->
+                    CountrySelectionCard(
+                        name = name,
+                        // A leaving card keeps its detail only while it still
+                        // matches; the next one's never flashes in the old card.
+                        detail = detail?.takeIf { it.name == name },
+                        state = state,
+                        onOpenDetails = { showingDetails = true },
+                    )
+                }
             }
         }
     }
@@ -378,3 +424,58 @@ private fun BoxScope.MapBody(data: HomeData?, scene: WorldScene?, state: VoyageS
 private fun BoxScope.HomeLoading() {
     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 }
+
+/**
+ * [value], or while it is null the last value it was not — what an exit
+ * animation keeps drawing. Held outside snapshot state: it only ever changes
+ * alongside [value], so it never needs to trigger a recomposition of its own.
+ */
+@Composable
+private fun <T : Any> rememberLastNonNull(value: T?): T? {
+    val last = remember { arrayOfNulls<Any>(1) }
+    if (value != null) last[0] = value
+    @Suppress("UNCHECKED_CAST")
+    return last[0] as T?
+}
+
+/**
+ * A tick each time a country is selected, the Android voice of iOS's
+ * `UISelectionFeedbackGenerator` — the same one a challenge's first tap on a
+ * country uses. Remembered across a rotation, so coming back to a selection
+ * that was already made is silent.
+ */
+@Composable
+private fun SelectionHaptics(selectedCountry: String?) {
+    val haptics = LocalHapticFeedback.current
+    var ticked by rememberSaveable { mutableStateOf(selectedCountry) }
+    LaunchedEffect(selectedCountry) {
+        if (selectedCountry != null && selectedCountry != ticked) {
+            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        }
+        ticked = selectedCountry
+    }
+}
+
+/**
+ * What TalkBack says for the globe or the map: which one it is and how much of
+ * the world is marked visited.
+ */
+@Composable
+private fun worldDescription(isGlobe: Boolean, visited: Int): String {
+    val view = stringResource(if (isGlobe) R.string.home_globe_description else R.string.home_map_description)
+    return "$view. ${pluralStringResource(R.plurals.home_visited_count, visited, visited)}"
+}
+
+/**
+ * The world's accessibility node: [description], with Search offered as an
+ * action.
+ *
+ * A country cannot be found by touch without sight — they are painted, not laid
+ * out — so search is the accessible way to select one, and the selection card
+ * that answers it announces itself.
+ */
+private fun Modifier.worldSemantics(description: String, searchLabel: String, onSearch: () -> Unit): Modifier =
+    semantics {
+        contentDescription = description
+        customActions = listOf(CustomAccessibilityAction(searchLabel) { onSearch(); true })
+    }

@@ -17,6 +17,12 @@
     <string name="home_show_globe">Show globe</string>
     <string name="home_dark_mode">Switch to dark mode</string>
     <string name="home_light_mode">Switch to light mode</string>
+    <string name="home_globe_description">Globe</string>
+    <string name="home_map_description">World map</string>
+    <plurals name="home_visited_count">
+        <item quantity="one">%1$d country visited</item>
+        <item quantity="other">%1$d countries visited</item>
+    </plurals>
 
     <!-- Country selection card and details sheet -->
     <string name="country_capital">Capital: %1$s</string>
@@ -62,6 +68,8 @@
     <string name="achievement_show_medal">Show the %1$s medal</string>
     <string name="medal_drag_to_spin">Drag to spin</string>
     <string name="medal_close">Close</string>
+    <string name="achievement_unlocked_title">Medal unlocked!</string>
+    <string name="achievement_unlocked_done">Awesome!</string>
 
     <!-- Settings (wording mirrors iOS SettingsView) -->
     <string name="settings_appearance">Appearance</string>
@@ -71,6 +79,19 @@
     <string name="style_stylized">Stylized</string>
     <string name="style_natural">Natural</string>
     <string name="style_realistic">Realistic</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_reset">Reset all data</string>
+    <string name="settings_reset_footer">This will clear all visited countries, wishlist and challenge statistics.</string>
+    <string name="settings_reset_title">Reset all data?</string>
+    <string name="settings_reset_message">This will clear all visited countries, wishlist and challenge statistics. It cannot be undone.</string>
+    <string name="settings_reset_confirm">Reset</string>
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_copyright">© 2026 Anmol Singh. All rights reserved.</string>
 
     <!-- Challenges (wording mirrors iOS ChallengesView and the game views) -->
     <string name="challenge_mode_click_country">Click the Country</string>
