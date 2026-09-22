@@ -35,7 +35,7 @@ android {
         applicationId = "com.anmol.voyage"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
+        versionCode = 2
         // Aligned with the iOS MARKETING_VERSION at release time (Phase 11);
         // pre-parity scaffold builds stay on 0.x.
         versionName = "0.1.0"

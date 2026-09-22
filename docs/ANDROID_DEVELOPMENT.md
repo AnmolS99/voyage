@@ -109,12 +109,12 @@ Without `keystore.properties` the same command still succeeds and produces an
 they just cannot produce something Play will accept. Check before uploading:
 
 ```bash
-unzip -l app/build/outputs/bundle/release/app-release.aab | grep -E "META-INF/[A-Z0-9]+\.RSA"
+unzip -l app/build/outputs/bundle/release/app-release.aab | grep -E "META-INF/[A-Z0-9_-]+\.RSA"
 ```
 
 Two things that bite:
 
-- **`versionCode` must increase with every upload.** It is `1` in
+- **`versionCode` must increase with every upload.** It is `2` in
   `app/build.gradle.kts` today; Play rejects a second upload at the same code.
 - **Release builds are minified** (`isMinifyEnabled`, with an empty
   `proguard-rules.pro` — the libraries ship their own R8 rules). Debug builds
