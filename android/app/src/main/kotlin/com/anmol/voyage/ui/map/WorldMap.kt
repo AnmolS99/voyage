@@ -51,8 +51,13 @@ fun WorldMap(
 ) {
     // Keyed on the projection: a view-size change (rotation, foldable, split
     // screen) invalidates a pan built against the old bounds, so zoom resets with it.
+    // The map opens filling the view, centred on the selection as far as it can be.
     var scale by remember(projection) { mutableFloatStateOf(MapProjection.MIN_SCALE) }
-    var offset by remember(projection) { mutableStateOf(Offset.Zero) }
+    var offset by remember(projection) {
+        val focus = scene.selectedCountry?.let { hitTester.center(it) }
+        val (x, y) = focus?.let(projection::offsetCentring) ?: Pair(0f, 0f)
+        mutableStateOf(Offset(x, y))
+    }
 
     val oceanColor = if (darkTheme) VoyagePalette.oceanDark else VoyagePalette.oceanMap
     val hasTexture = texture != null

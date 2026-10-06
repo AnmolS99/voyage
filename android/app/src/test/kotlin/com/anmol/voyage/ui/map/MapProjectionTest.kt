@@ -1,5 +1,6 @@
 package com.anmol.voyage.ui.map
 
+import com.anmol.voyage.data.LatLon
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -121,6 +122,22 @@ class MapProjectionTest {
         assertClamped(projection, 3500f, 1000f, offsetX = 5000f, offsetY = 1200f, scale = 2f)
         assertClamped(projection, -3500f, -1000f, offsetX = -5000f, offsetY = -1200f, scale = 2f)
         assertClamped(projection, 120f, 500f, offsetX = 120f, offsetY = 500f, scale = 2f)
+    }
+
+    @Test
+    fun `the map opens centred on a country as far as its edges allow`() {
+        // Portrait: India (lon 78) sits 867px right of the centre, within the
+        // 1500px overhang, and latitude has no slack to use.
+        val (x, y) = projection.offsetCentring(LatLon(lat = 22.0, lon = 78.0))
+        assertEquals(-866.667f, x, tolerance)
+        assertEquals(0f, y, tolerance)
+        // Fiji (lon 178) would need more than the 1500px overhang: the clamp holds
+        // the map's right edge on the view's.
+        assertEquals(-1500f, projection.offsetCentring(LatLon(lat = -17.0, lon = 178.0)).first, tolerance)
+        // Landscape: no sideways slack, and Norway's latitude is capped at 100px.
+        val (lx, ly) = landscape.offsetCentring(LatLon(lat = 61.0, lon = 9.0))
+        assertEquals(0f, lx, tolerance)
+        assertEquals(100f, ly, tolerance)
     }
 
     /** Compares components with a tolerance; a clamp to zero can produce `-0.0f`. */

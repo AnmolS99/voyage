@@ -80,6 +80,14 @@ class MapProjection(val viewWidth: Float, val viewHeight: Float) {
         return Pair(offsetX.coerceIn(-maxX, maxX), offsetY.coerceIn(-maxY, maxY))
     }
 
+    /**
+     * The pan, at minimum zoom, that brings [point] as close to the view centre as
+     * [clampOffset] allows — how the map opens on the selected country. In portrait
+     * that centres it horizontally; the clamp stops at the map's edges.
+     */
+    fun offsetCentring(point: LatLon): Pair<Float, Float> =
+        clampOffset(viewWidth / 2f - viewX(point.lon), viewHeight / 2f - viewY(point.lat), MIN_SCALE)
+
     companion object {
         /** Zoom limits, as on iOS. */
         const val MIN_SCALE = 1f

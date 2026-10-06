@@ -289,22 +289,31 @@ struct MapView: View {
             }
             // A pan built against the old bounds is meaningless after a rotation, so
             // zoom resets with the view size — as on Android.
-            .onChange(of: geometry.size) { resetZoom() }
+            .onChange(of: geometry.size) { _, size in resetZoom(viewSize: size) }
+            // Coming from the globe, the map always opens filling the screen.
+            .onChange(of: globeState.viewMode) { _, mode in
+                if mode == .map { resetZoom(viewSize: geometry.size) }
+            }
         }
         .onAppear {
             countries = CountryDataCache.shared.countries
         }
-        // Coming from the globe, the map always opens filling the screen.
-        .onChange(of: globeState.viewMode) { _, mode in
-            if mode == .map { resetZoom() }
-        }
     }
 
-    private func resetZoom() {
+    /// Back to minimum zoom, centred on the selected country as far as the clamp
+    /// allows (in portrait: horizontally). Mirrors Android's `offsetCentring`.
+    private func resetZoom(viewSize: CGSize) {
+        var centring = CGSize.zero
+        if let name = globeState.selectedCountry,
+           let center = CountryHitTester.shared.center(of: name) {
+            let point = MapFit(viewSize: viewSize).point(lat: center.lat, lon: center.lon)
+            centring = CGSize(width: viewSize.width / 2 - point.x,
+                              height: viewSize.height / 2 - point.y)
+        }
         scale = 1
         lastScale = 1
-        offset = .zero
-        lastOffset = .zero
+        offset = clampOffset(centring, scale: 1, viewSize: viewSize)
+        lastOffset = offset
     }
 
     private func handleTap(at location: CGPoint, in size: CGSize) {
