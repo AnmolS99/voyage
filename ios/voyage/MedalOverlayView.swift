@@ -39,54 +39,26 @@ struct MedalOverlayView: View {
                     .opacity(isExpanded ? 1 : 0)
                     .onTapGesture { dismiss() }
 
-                VStack(spacing: 8) {
-                    if celebrating {
-                        Text("Medal unlocked!")
-                            .font(.system(size: 26, weight: .heavy, design: .rounded))
-                            .foregroundColor(isDarkMode ? AppColors.trophyGoldLight : AppColors.trophyGoldDark)
-                            .accessibilityAddTraits(.isHeader)
-                            .opacity(isExpanded ? 1 : 0)
+                if geo.size.width > geo.size.height {
+                    // Landscape: there is no height under the coin for the
+                    // text, so it moves beside the coin, which stays centered
+                    // between two equal side columns.
+                    let side = max(0, (geo.size.width - 320) / 2 - 32)
+                    HStack(spacing: 32) {
+                        Color.clear.frame(width: side, height: 1)
+                        coinPlaceholder
+                        details(alignment: .leading)
+                            .frame(width: side, alignment: .leading)
                     }
-
-                    // Invisible placeholder marking where the expanded coin belongs
-                    Color.clear
-                        .frame(width: 320, height: 320)
-                        .onGeometryChange(for: CGRect.self) { proxy in
-                            proxy.frame(in: .global)
-                        } action: { frame in
-                            targetFrame = frame
-                        }
-
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
                     VStack(spacing: 8) {
-                        Text(achievement.name)
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
-                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-
-                        Text("\(achievement.current)/\(achievement.total) \(achievement.itemLabel)")
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
-
-                        Label("Drag to spin", systemImage: "hand.draw")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
-                            .padding(.top, 4)
-
-                        Button(action: dismiss) {
-                            Text(celebrating ? "Awesome!" : "Close")
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                .foregroundColor(isDarkMode ? .white : AppColors.closeButtonText)
-                                .padding(.horizontal, 28)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Capsule()
-                                        .fill(isDarkMode ? AppColors.closeButtonDark : AppColors.closeButtonLight)
-                                )
-                        }
-                        .padding(.top, 12)
+                        if celebrating { unlockedHeading }
+                        coinPlaceholder
+                        details(alignment: .center)
                     }
-                    .opacity(isExpanded ? 1 : 0)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 MedalSceneView(achievement: achievement, isSettling: !isExpanded)
                     .frame(width: medalFrame.width, height: medalFrame.height)
@@ -110,6 +82,64 @@ struct MedalOverlayView: View {
                 isExpanded = true
             }
         }
+    }
+
+    private var unlockedHeading: some View {
+        Text("Medal unlocked!")
+            .font(.system(size: 26, weight: .heavy, design: .rounded))
+            .foregroundColor(isDarkMode ? AppColors.trophyGoldLight : AppColors.trophyGoldDark)
+            .accessibilityAddTraits(.isHeader)
+            .opacity(isExpanded ? 1 : 0)
+    }
+
+    /// Invisible placeholder marking where the expanded coin belongs.
+    private var coinPlaceholder: some View {
+        Color.clear
+            .frame(width: 320, height: 320)
+            .onGeometryChange(for: CGRect.self) { proxy in
+                proxy.frame(in: .global)
+            } action: { frame in
+                targetFrame = frame
+            }
+    }
+
+    /// Name, progress, spin hint and close button: under the coin in
+    /// portrait, beside it (leading-aligned, under the unlock heading) in
+    /// landscape.
+    private func details(alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment, spacing: 8) {
+            if celebrating && alignment == .leading {
+                unlockedHeading
+            }
+
+            Text(achievement.name)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+
+            Text("\(achievement.current)/\(achievement.total) \(achievement.itemLabel)")
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+
+            Label("Drag to spin", systemImage: "hand.draw")
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                .padding(.top, 4)
+
+            Button(action: dismiss) {
+                Text(celebrating ? "Awesome!" : "Close")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundColor(isDarkMode ? .white : AppColors.closeButtonText)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 10)
+                    .background(
+                        Capsule()
+                            .fill(isDarkMode ? AppColors.closeButtonDark : AppColors.closeButtonLight)
+                    )
+            }
+            .padding(.top, 12)
+        }
+        .multilineTextAlignment(alignment == .leading ? .leading : .center)
+        .opacity(isExpanded ? 1 : 0)
     }
 
     private func dismiss() {
