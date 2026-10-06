@@ -163,7 +163,7 @@ struct MedalCardView: View {
 
 /// Flat 2D stand-in for the coin, mirroring the 3D cap artwork: same radial
 /// gradient, embossed ring, and (desaturated when locked) emoji, sized to
-/// match the coin's footprint in the snapshot (~60% of the slot) so the
+/// match the coin's footprint in the snapshot (~76% of the slot) so the
 /// crossfade to the real coin barely registers.
 private struct FlatCoinFaceView: View {
     let medal: String
@@ -172,7 +172,7 @@ private struct FlatCoinFaceView: View {
     var body: some View {
         GeometryReader { geo in
             let side = min(geo.size.width, geo.size.height)
-            let coin = side * 0.6
+            let coin = side * 0.76
 
             ZStack {
                 Circle()
@@ -364,7 +364,7 @@ struct MedalSceneView: UIViewRepresentable {
         let cameraNode = SCNNode()
         cameraNode.name = "camera"
         cameraNode.camera = SCNCamera()
-        cameraNode.position = SCNVector3(0, 0, 3.2)
+        cameraNode.position = SCNVector3(0, 0, 2.5)
         scene.rootNode.addChildNode(cameraNode)
 
         let ambient = SCNNode()
