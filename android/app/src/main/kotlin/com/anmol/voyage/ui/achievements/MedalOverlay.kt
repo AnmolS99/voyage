@@ -322,7 +322,7 @@ private suspend fun PointerInputScope.trackSpin(spin: MedalSpin) {
     }
 }
 
-private val COIN_SIZE = 220.dp
+private val COIN_SIZE = 280.dp
 
 /** Nanoseconds in a second, as a float. */
 private const val NANOS_PER_SECOND = 1_000_000_000f
