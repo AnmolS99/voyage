@@ -196,9 +196,13 @@ struct HomeView: View {
                     // Landscape is short on height, so the card lays out in one row
                     if verticalSizeClass == .compact {
                         HStack(spacing: 10) {
+                            // A long name wraps to two lines; the buttons never do
                             countryLabel(country)
-                            Spacer()
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.8)
+                            Spacer(minLength: 0)
                             actionButtons(country)
+                                .fixedSize()
                             closeButton
                         }
                     } else {
