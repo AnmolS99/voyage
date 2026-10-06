@@ -51,8 +51,13 @@ fun WorldMap(
 ) {
     // Keyed on the projection: a view-size change (rotation, foldable, split
     // screen) invalidates a pan built against the old bounds, so zoom resets with it.
+    // The map opens filling the view, centred on the selection as far as it can be.
     var scale by remember(projection) { mutableFloatStateOf(MapProjection.MIN_SCALE) }
-    var offset by remember(projection) { mutableStateOf(Offset.Zero) }
+    var offset by remember(projection) {
+        val focus = scene.selectedCountry?.let { hitTester.center(it) }
+        val (x, y) = focus?.let(projection::offsetCentring) ?: Pair(0f, 0f)
+        mutableStateOf(Offset(x, y))
+    }
 
     val oceanColor = if (darkTheme) VoyagePalette.oceanDark else VoyagePalette.oceanMap
     val hasTexture = texture != null
@@ -103,7 +108,7 @@ fun WorldMap(
             translate(size.width / 2f + offset.x, size.height / 2f + offset.y)
             scale(scale, scale, pivot = Offset.Zero)
             translate(-size.width / 2f, -size.height / 2f)
-            translate(0f, projection.verticalOffset)
+            translate(projection.horizontalOffset, projection.verticalOffset)
         }) {
             // Spans exactly the map rectangle the paths were built in, so the
             // image lines up with the borders — the rect iOS draws it into.
@@ -134,7 +139,7 @@ fun WorldMap(
             if (!country.isPointCountry) continue
             val coord = country.pointCoordinate ?: continue
             val (x, y) = projection.transform(
-                x = projection.mapX(coord.lon),
+                x = projection.viewX(coord.lon),
                 y = projection.viewY(coord.lat),
                 scale = scale,
                 offsetX = offset.x,
@@ -148,7 +153,7 @@ fun WorldMap(
         val capital = selected?.let { name -> countries.firstOrNull { it.name == name }?.capital }
         if (capital != null) {
             val (x, y) = projection.transform(
-                x = projection.mapX(capital.lon),
+                x = projection.viewX(capital.lon),
                 y = projection.viewY(capital.lat),
                 scale = scale,
                 offsetX = offset.x,

@@ -45,6 +45,7 @@ struct HomeView: View {
     @ObservedObject var globeState: GlobeState
     @State private var showingCountryList = false
     @State private var showingExplore = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         ZStack {
@@ -76,14 +77,6 @@ struct HomeView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
-        .onChange(of: globeState.viewMode) { _, newMode in
-            if newMode == .map {
-                OrientationManager.shared.lockToLandscape()
-            } else {
-                OrientationManager.shared.unlock()
-                OrientationManager.shared.setNeedsOrientationUpdate()
-            }
-        }
         .sheet(isPresented: $showingCountryList) {
             CountryListView(globeState: globeState)
         }
@@ -200,11 +193,16 @@ struct HomeView: View {
             // Selected country display with Add Visit button
             if let country = globeState.selectedCountry {
                 Group {
-                    if globeState.viewMode == .map {
+                    // Landscape is short on height, so the card lays out in one row
+                    if verticalSizeClass == .compact {
                         HStack(spacing: 10) {
+                            // A long name wraps to two lines; the buttons never do
                             countryLabel(country)
-                            Spacer()
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.8)
+                            Spacer(minLength: 0)
                             actionButtons(country)
+                                .fixedSize()
                             closeButton
                         }
                     } else {

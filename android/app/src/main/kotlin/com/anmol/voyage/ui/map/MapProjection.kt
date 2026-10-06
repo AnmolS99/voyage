@@ -11,8 +11,8 @@ import com.anmol.voyage.data.LatLon
  *  - **map space** — origin at the map's own top-left, width [mapWidth], height
  *    [mapHeight] (always half the width, the 2:1 equirectangular ratio). Country
  *    paths are built once in this space.
- *  - **view space** — map space shifted down by [verticalOffset] so the map is
- *    letterboxed vertically inside the view, then panned and zoomed.
+ *  - **view space** — map space shifted by [horizontalOffset] and [verticalOffset]
+ *    so the map is centred in the view, then panned and zoomed.
  *  - **lon/lat** — what the data and the hit tester speak.
  *
  * Both the renderer and the tap handler go through this one type so they can
@@ -20,11 +20,17 @@ import com.anmol.voyage.data.LatLon
  */
 class MapProjection(val viewWidth: Float, val viewHeight: Float) {
 
-    /** The map spans the full view width; its height follows from the 2:1 ratio. */
-    val mapWidth: Float = viewWidth
-    val mapHeight: Float = viewWidth / 2f
+    /**
+     * At scale 1 the map *fills* the view, keeping its 2:1 ratio: it spans the full
+     * height in portrait (overhanging left and right) and the full width in
+     * landscape (overhanging top and bottom). Since zoom never goes below 1, no
+     * empty space ever shows beside or above the map — the same rule as iOS.
+     */
+    val mapHeight: Float = maxOf(viewHeight, viewWidth / 2f)
+    val mapWidth: Float = mapHeight * 2f
 
-    /** Letterboxing that centers the map vertically in the view. */
+    /** Centres the map in the view; zero or negative, as the map overhangs. */
+    val horizontalOffset: Float = (viewWidth - mapWidth) / 2f
     val verticalOffset: Float = (viewHeight - mapHeight) / 2f
 
     fun mapX(lon: Double): Float = ((lon + 180.0) / 360.0).toFloat() * mapWidth
@@ -32,6 +38,8 @@ class MapProjection(val viewWidth: Float, val viewHeight: Float) {
     fun mapY(lat: Double): Float = ((90.0 - lat) / 180.0).toFloat() * mapHeight
 
     /** Map-space point moved into view space (before pan/zoom). */
+    fun viewX(lon: Double): Float = mapX(lon) + horizontalOffset
+
     fun viewY(lat: Double): Float = mapY(lat) + verticalOffset
 
     /**
@@ -48,7 +56,7 @@ class MapProjection(val viewWidth: Float, val viewHeight: Float) {
         )
     }
 
-    /** The lon/lat under a touch, undoing pan/zoom and the letterboxing. */
+    /** The lon/lat under a touch, undoing pan/zoom and the centring. */
     fun lonLatAt(touchX: Float, touchY: Float, scale: Float, offsetX: Float, offsetY: Float): LatLon {
         val centerX = viewWidth / 2f + offsetX
         val centerY = viewHeight / 2f + offsetY
@@ -56,19 +64,29 @@ class MapProjection(val viewWidth: Float, val viewHeight: Float) {
         val mapPointY = (touchY - centerY) / scale + viewHeight / 2f
         return LatLon(
             lat = 90.0 - (mapPointY - verticalOffset).toDouble() / mapHeight * 180.0,
-            lon = mapPointX.toDouble() / mapWidth * 360.0 - 180.0,
+            lon = (mapPointX - horizontalOffset).toDouble() / mapWidth * 360.0 - 180.0,
         )
     }
 
     /**
      * Keeps the map from being dragged away from the view: pan is limited to
-     * however far the scaled map overhangs each edge, so at scale 1 it is pinned.
+     * however far the scaled map overhangs each edge — which the fill above
+     * guarantees is never negative (the `maxOf` only absorbs float rounding), so
+     * no edge of the map can come into view.
      */
     fun clampOffset(offsetX: Float, offsetY: Float, scale: Float): Pair<Float, Float> {
         val maxX = maxOf(0f, (mapWidth * scale - viewWidth) / 2f)
         val maxY = maxOf(0f, (mapHeight * scale - viewHeight) / 2f)
         return Pair(offsetX.coerceIn(-maxX, maxX), offsetY.coerceIn(-maxY, maxY))
     }
+
+    /**
+     * The pan, at minimum zoom, that brings [point] as close to the view centre as
+     * [clampOffset] allows — how the map opens on the selected country. In portrait
+     * that centres it horizontally; the clamp stops at the map's edges.
+     */
+    fun offsetCentring(point: LatLon): Pair<Float, Float> =
+        clampOffset(viewWidth / 2f - viewX(point.lon), viewHeight / 2f - viewY(point.lat), MIN_SCALE)
 
     companion object {
         /** Zoom limits, as on iOS. */
