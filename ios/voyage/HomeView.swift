@@ -207,7 +207,13 @@ struct HomeView: View {
                         }
                     } else {
                         VStack(spacing: 12) {
+                            // Inset by the close button on both sides so a long
+                            // name stays centred and wraps instead of running under it
                             countryLabel(country)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
+                                .minimumScaleFactor(0.8)
+                                .padding(.horizontal, 44)
                                 .frame(maxWidth: .infinity)
                                 .overlay(alignment: .trailing) {
                                     closeButton
