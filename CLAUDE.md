@@ -271,6 +271,10 @@ The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain 
 - Color priority logic (visited/wishlist status takes precedence over selection)
 - Border/outline colors and styles
 - Capital star markers
+- Map framing: at minimum zoom the 2:1 map *fills* the view (full height in
+  portrait, full width in landscape) and pan is clamped so no map edge ever comes
+  into view; zoom resets on rotation and on entering map mode. Both orientations
+  are supported for globe and map (`MapView.MapFit` / Android `MapProjection`)
 
 When modifying colors or selection logic, always update both files together.
 

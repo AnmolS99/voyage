@@ -70,12 +70,35 @@ struct MapView: View {
         }
     }
 
+    /// Where the 2:1 equirectangular map sits in the view at scale 1: it *fills* the
+    /// view, spanning the full height in portrait (overhanging left and right) and the
+    /// full width in landscape (overhanging top and bottom). Zoom never goes below 1,
+    /// so no empty space ever shows beside or above the map. Mirrors Android's
+    /// `MapProjection`.
+    private struct MapFit {
+        let mapWidth: CGFloat
+        let mapHeight: CGFloat
+        /// Centres the map in the view; zero or negative, as the map overhangs.
+        let horizontalOffset: CGFloat
+        let verticalOffset: CGFloat
+
+        init(viewSize: CGSize) {
+            mapHeight = max(viewSize.height, viewSize.width / 2)
+            mapWidth = mapHeight * 2
+            horizontalOffset = (viewSize.width - mapWidth) / 2
+            verticalOffset = (viewSize.height - mapHeight) / 2
+        }
+
+        /// Lon/lat to view space at scale 1 (before pan/zoom).
+        func point(lat: Double, lon: Double) -> CGPoint {
+            CGPoint(x: (lon + 180) / 360 * mapWidth + horizontalOffset,
+                    y: (90 - lat) / 180 * mapHeight + verticalOffset)
+        }
+    }
+
     var body: some View {
         GeometryReader { geometry in
-            // Use 2:1 aspect ratio for equirectangular projection
-            let mapWidth = geometry.size.width
-            let mapHeight = mapWidth / 2
-            let verticalOffset = (geometry.size.height - mapHeight) / 2
+            let fit = MapFit(viewSize: geometry.size)
 
             Canvas { context, size in
                 // Draw ocean background (fallback under texture)
@@ -94,8 +117,9 @@ struct MapView: View {
                 // Draw map texture background
                 var hasTexture = false
                 if let textureImage = UIImage(named: globeState.mapStyle.textureName) {
-                    let topLeft = CGPoint(x: 0, y: verticalOffset).applying(transform)
-                    let bottomRight = CGPoint(x: mapWidth, y: verticalOffset + mapHeight).applying(transform)
+                    let topLeft = CGPoint(x: fit.horizontalOffset, y: fit.verticalOffset).applying(transform)
+                    let bottomRight = CGPoint(x: fit.horizontalOffset + fit.mapWidth,
+                                              y: fit.verticalOffset + fit.mapHeight).applying(transform)
                     let textureRect = CGRect(
                         x: topLeft.x, y: topLeft.y,
                         width: bottomRight.x - topLeft.x,
@@ -108,13 +132,13 @@ struct MapView: View {
 
                 // Draw polygon countries from the path cache through a canvas-level
                 // transform (pan/zoom), so paths are built once instead of per frame.
-                pathCache.rebuildIfNeeded(countries: countries, mapWidth: mapWidth)
+                pathCache.rebuildIfNeeded(countries: countries, mapWidth: fit.mapWidth)
 
                 var mapContext = context
                 mapContext.translateBy(x: size.width / 2 + offset.width, y: size.height / 2 + offset.height)
                 mapContext.scaleBy(x: scale, y: scale)
                 mapContext.translateBy(x: -size.width / 2, y: -size.height / 2)
-                mapContext.translateBy(x: 0, y: verticalOffset)
+                mapContext.translateBy(x: fit.horizontalOffset, y: fit.verticalOffset)
 
                 for entry in pathCache.entries {
                     let isVisited = globeState.visitedCountries.contains(entry.name)
@@ -170,9 +194,7 @@ struct MapView: View {
                     let borderShading: GraphicsContext.Shading
 
                     guard let coord = country.pointCoordinate else { continue }
-                    let x = (coord.lon + 180) / 360 * mapWidth
-                    let y = (90 - coord.lat) / 180 * mapHeight + verticalOffset
-                    let center = CGPoint(x: x, y: y).applying(transform)
+                    let center = fit.point(lat: coord.lat, lon: coord.lon).applying(transform)
                     let dotRadius: CGFloat = 5
                     let dotRect = CGRect(x: center.x - dotRadius, y: center.y - dotRadius,
                                          width: dotRadius * 2, height: dotRadius * 2)
@@ -205,9 +227,7 @@ struct MapView: View {
                 if let selectedCountry = globeState.selectedCountry,
                    let country = countries.first(where: { $0.name == selectedCountry }),
                    let capital = country.capital {
-                    let x = (capital.lon + 180) / 360 * mapWidth
-                    let y = (90 - capital.lat) / 180 * mapHeight + verticalOffset
-                    let center = CGPoint(x: x, y: y).applying(transform)
+                    let center = fit.point(lat: capital.lat, lon: capital.lon).applying(transform)
 
                     // Five-pointed star, matching the globe's capital marker
                     let starRadius: CGFloat = 6
@@ -267,17 +287,28 @@ struct MapView: View {
             .onTapGesture(coordinateSpace: .local) { location in
                 handleTap(at: location, in: geometry.size)
             }
+            // A pan built against the old bounds is meaningless after a rotation, so
+            // zoom resets with the view size — as on Android.
+            .onChange(of: geometry.size) { resetZoom() }
         }
         .onAppear {
             countries = CountryDataCache.shared.countries
         }
+        // Coming from the globe, the map always opens filling the screen.
+        .onChange(of: globeState.viewMode) { _, mode in
+            if mode == .map { resetZoom() }
+        }
+    }
+
+    private func resetZoom() {
+        scale = 1
+        lastScale = 1
+        offset = .zero
+        lastOffset = .zero
     }
 
     private func handleTap(at location: CGPoint, in size: CGSize) {
-        // Use same aspect ratio as rendering
-        let mapWidth = size.width
-        let mapHeight = mapWidth / 2
-        let verticalOffset = (size.height - mapHeight) / 2
+        let fit = MapFit(viewSize: size)
 
         // Reverse the transformation to get map coordinates
         let centerX = size.width / 2 + offset.width
@@ -286,9 +317,9 @@ struct MapView: View {
         let mapX = (location.x - centerX) / scale + size.width / 2
         let mapY = (location.y - centerY) / scale + size.height / 2
 
-        // Convert to lat/lon with proper aspect ratio
-        let lon = mapX / mapWidth * 360 - 180
-        let lat = 90 - (mapY - verticalOffset) / mapHeight * 180
+        // Undo the centring to get lat/lon
+        let lon = (mapX - fit.horizontalOffset) / fit.mapWidth * 360 - 180
+        let lat = 90 - (mapY - fit.verticalOffset) / fit.mapHeight * 180
 
         // Find country at this location
         if let countryName = findCountryAt(lat: lat, lon: lon) {
@@ -305,16 +336,16 @@ struct MapView: View {
         CountryHitTester.shared.center(of: name)
     }
 
-    // Clamp offset to prevent dragging outside map bounds
+    // Clamp offset so no edge of the map can be dragged into view
     private func clampOffset(_ offset: CGSize, scale: CGFloat, viewSize: CGSize) -> CGSize {
-        let mapWidth = viewSize.width
-        let mapHeight = mapWidth / 2
+        let fit = MapFit(viewSize: viewSize)
 
         // Calculate how much the scaled map extends beyond the view
-        let scaledMapWidth = mapWidth * scale
-        let scaledMapHeight = mapHeight * scale
+        let scaledMapWidth = fit.mapWidth * scale
+        let scaledMapHeight = fit.mapHeight * scale
 
         // Maximum offset is half the difference between scaled map and view
+        // (never negative thanks to the fill; max() only absorbs float rounding)
         let maxOffsetX = max(0, (scaledMapWidth - viewSize.width) / 2)
         let maxOffsetY = max(0, (scaledMapHeight - viewSize.height) / 2)
 
