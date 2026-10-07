@@ -86,7 +86,7 @@ struct CountryExploreView: View {
                 }
             }
         }
-        .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .preferredColorScheme(globeState.themeMode.colorScheme)
     }
 }
 

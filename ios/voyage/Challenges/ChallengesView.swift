@@ -58,7 +58,7 @@ struct ChallengesView: View {
                 }
             }
         }
-        .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .preferredColorScheme(globeState.themeMode.colorScheme)
     }
 
     /// Trophy cabinet: bronze, silver and gold trophies earned by flawless

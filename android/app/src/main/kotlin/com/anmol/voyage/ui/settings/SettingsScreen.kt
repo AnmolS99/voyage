@@ -66,9 +66,9 @@ import com.anmol.voyage.ui.theme.voyageCardElevation
  * The Settings tab — iOS's `SettingsView`, less its tip jar: Appearance, Data and
  * the version.
  *
- * Appearance adds what iOS keeps on Home: the theme. Home's sun/moon button
- * flips light and dark as iOS's does, but only an explicit choice here can hand
- * the decision back to the system — see [ThemeMode.toggled].
+ * Appearance starts with the theme, as on iOS. Home's sun/moon button flips
+ * light and dark on both, but only an explicit choice here can hand the
+ * decision back to the system — see [ThemeMode.toggled].
  *
  * The texture pickers are exposed dropdown menus, Material's counterpart to
  * iOS's menu picker, so the list can grow as textures are added without the

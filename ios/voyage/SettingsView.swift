@@ -27,6 +27,28 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Image(systemName: "circle.lefthalf.filled")
+                                .foregroundColor(AppColors.buttonColor)
+
+                            Text("Theme")
+                        }
+
+                        Picker("Theme", selection: Binding(
+                            get: { globeState.themeMode },
+                            set: { globeState.setThemeMode($0) }
+                        )) {
+                            ForEach(ThemeMode.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+                    .padding(.vertical, 4)
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+
                     HStack {
                         Image(systemName: "globe.americas")
                             .foregroundColor(AppColors.buttonColor)
@@ -63,7 +85,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Appearance")
                 } footer: {
-                    Text("Choose texture styles for the globe and map views.")
+                    Text("Choose the app's theme and the texture styles for the globe and map views.")
                 }
 
                 Section {
