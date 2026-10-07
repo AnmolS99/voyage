@@ -5,6 +5,24 @@ import simd
 
 final class voyageTests: XCTestCase {
 
+    // ThemeMode mirrors Android's ThemeMode: same cases, same toggle rule
+    func testThemeModeResolvesAgainstSystem() {
+        XCTAssertTrue(ThemeMode.system.isDark(systemIsDark: true))
+        XCTAssertFalse(ThemeMode.system.isDark(systemIsDark: false))
+        XCTAssertFalse(ThemeMode.light.isDark(systemIsDark: true))
+        XCTAssertTrue(ThemeMode.dark.isDark(systemIsDark: false))
+        XCTAssertNil(ThemeMode.system.colorScheme)
+        XCTAssertEqual(ThemeMode.allCases.map(\.rawValue), ["system", "light", "dark"])
+    }
+
+    // The sun/moon button flips what is on screen and never lands on .system
+    func testThemeModeToggleIsExplicitOppositeOfScreen() {
+        XCTAssertEqual(ThemeMode.system.toggled(systemIsDark: true), .light)
+        XCTAssertEqual(ThemeMode.system.toggled(systemIsDark: false), .dark)
+        XCTAssertEqual(ThemeMode.light.toggled(systemIsDark: false), .dark)
+        XCTAssertEqual(ThemeMode.dark.toggled(systemIsDark: true), .light)
+    }
+
     // Test that globe.scn contains all countries from source data (map and globe consistency)
     func testGlobeAndMapCountryConsistency() {
         // Get expected countries from source data (used by map)
