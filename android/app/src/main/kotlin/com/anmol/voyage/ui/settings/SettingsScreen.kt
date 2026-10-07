@@ -135,7 +135,7 @@ fun SettingsScreen(state: VoyageState, modifier: Modifier = Modifier) {
             ) {
                 Text(stringResource(R.string.settings_version), style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = BuildConfig.VERSION_NAME,
+                    text = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
