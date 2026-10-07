@@ -6,8 +6,13 @@ struct SettingsView: View {
     @State private var showingResetConfirmation = false
     @StateObject private var tipJarManager = TipJarManager()
 
+    /// "1.10.2 (123)": the marketing version and the build number, which CI sets
+    /// to the TestFlight run number, so testers can say exactly which build they have.
     private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "1.0"
+        guard let build = info?["CFBundleVersion"] as? String else { return version }
+        return "\(version) (\(build))"
     }
 
     private var thankYouMessage: String {
@@ -89,24 +94,6 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Button(role: .destructive) {
-                        showingResetConfirmation = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash")
-                                .foregroundColor(.red)
-                            Text("Reset All Data")
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
-                } header: {
-                    Text("Data")
-                } footer: {
-                    Text("This will clear all visited countries, wishlist and challenge statistics.")
-                }
-
-                Section {
                     if tipJarManager.isLoading {
                         HStack {
                             ProgressView()
@@ -142,6 +129,24 @@ struct SettingsView: View {
                     } else {
                         Text("Thanks for using voyage! If you enjoy the app, consider leaving a tip to support development.")
                     }
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        showingResetConfirmation = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                            Text("Reset All Data")
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+                } header: {
+                    Text("Data")
+                } footer: {
+                    Text("This will clear all visited countries, wishlist and challenge statistics.")
                 }
 
                 Section {
