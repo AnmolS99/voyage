@@ -506,17 +506,18 @@ struct GlobeView: UIViewRepresentable {
             stopInertia()
 
             let location = gesture.location(in: sceneView)
-            guard let (lat, lon) = Self.surfaceLatLon(at: location, in: sceneView, globeNode: globeNode) else { return }
+            let countryName = Self.surfaceLatLon(at: location, in: sceneView, globeNode: globeNode)
+                .flatMap { findCountryAt(lat: $0.lat, lon: $0.lon) }
 
-            // Find which country contains this point
-            if let countryName = findCountryAt(lat: lat, lon: lon) {
-                if let onCountryTapped = onCountryTapped {
-                    onCountryTapped(countryName)
-                } else {
-                    let center = getCountryCenter(name: countryName)
-                    self.globeState.selectCountry(countryName, center: center)
-                    self.updateHighlights()
-                }
+            if let onCountryTapped = onCountryTapped {
+                if let countryName { onCountryTapped(countryName) }
+            } else if let countryName {
+                let center = getCountryCenter(name: countryName)
+                self.globeState.selectCountry(countryName, center: center)
+                self.updateHighlights()
+            } else if globeState.selectedCountry != nil {
+                // Ocean or space: dismiss the country card, as MapView does
+                self.globeState.deselectCountry()
             }
         }
 

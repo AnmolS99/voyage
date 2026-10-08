@@ -65,7 +65,8 @@ struct ContentView: View {
                             .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
                     )
                 }
-                .padding(.bottom, 60)
+                // Clears Home's countries dock above the tab bar
+                .padding(.bottom, 136)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
@@ -169,8 +170,9 @@ class GlobeState: ObservableObject {
     @Published var mapStyle: GlobeStyle = .realistic
     let totalUNCountries = 195
 
-    // Flag codes loaded from GeoJSON
+    // Flag codes and capital names loaded from GeoJSON
     private var countryFlagCodes: [String: String] = [:]
+    private var countryCapitals: [String: String] = [:]
 
     // Territories that are not UN member or observer states (excluded from progress count)
     static let nonUNTerritories: Set<String> = [
@@ -227,7 +229,7 @@ class GlobeState: ObservableObject {
 
     init(inMemory: Bool = false) {
         isPersistent = !inMemory
-        loadFlagCodes()
+        loadCountryInfo()
 
         guard isPersistent else { return }
         loadData()
@@ -242,11 +244,14 @@ class GlobeState: ObservableObject {
         iCloudStore.synchronize()
     }
 
-    private func loadFlagCodes() {
+    private func loadCountryInfo() {
         let countries = CountryDataCache.shared.countries
         for country in countries {
             if let flagCode = country.flagCode {
                 countryFlagCodes[country.name] = flagCode
+            }
+            if let capital = country.capital {
+                countryCapitals[country.name] = capital.name
             }
         }
     }
@@ -452,6 +457,15 @@ class GlobeState: ObservableObject {
             return flagEmoji(from: code)
         }
         return "🌍" // Generic globe emoji as fallback
+    }
+
+    func capitalForCountry(_ name: String) -> String? {
+        countryCapitals[name]
+    }
+
+    /// Whether the country counts toward the UN-country progress total.
+    func countsTowardProgress(_ name: String) -> Bool {
+        !Self.nonUNTerritories.contains(name)
     }
 
     private func mergeDictionaries(_ local: [String: [String]], _ cloud: [String: [String]]) -> [String: Set<String>] {
