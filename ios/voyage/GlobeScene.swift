@@ -67,8 +67,10 @@ class GlobeScene {
         lightNode.light?.type = .directional
         lightNode.light?.color = UIColor(white: 1.0, alpha: 1.0)
         lightNode.light?.intensity = 800
-        // World (5, 5, 5) relative to the camera's starting pose at (0, 0, 4).
-        lightNode.position = SCNVector3(5, 5, 1)
+        // From the upper right but only ~35° off the line of sight (world (1, 1, 2) in the
+        // camera's starting pose at (0, 0, 4)): further off — it was ~55° at world (5, 5, 5) —
+        // the globe's lower-left quarter faces away from the light and goes dark.
+        lightNode.position = SCNVector3(1, 1, -2)
         cameraNode.addChildNode(lightNode)
         lightNode.look(at: SCNVector3(0, 0, 0))
 
@@ -78,7 +80,7 @@ class GlobeScene {
         ambientLightNode.light = SCNLight()
         ambientLightNode.light?.type = .ambient
         ambientLightNode.light?.color = UIColor(white: 0.4, alpha: 1.0)
-        ambientLightNode.light?.intensity = 400
+        ambientLightNode.light?.intensity = 600
         scene.rootNode.addChildNode(ambientLightNode)
 
         return scene
