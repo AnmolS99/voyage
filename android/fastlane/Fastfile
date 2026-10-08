@@ -1,0 +1,39 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build a signed release bundle and upload it to the Play internal testing track"
+  lane :internal do
+    # Play rejects a versionCode it has seen on any track, so take the next one
+    # after the highest it holds — including bundles uploaded by hand.
+    version_code = %w[internal alpha beta production].flat_map do |track|
+      google_play_track_version_codes(track: track)
+    rescue StandardError => e
+      UI.important("No version codes read from #{track}: #{e.message}")
+      []
+    end.max.to_i + 1
+    UI.message("Building versionCode #{version_code}")
+
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      properties: { "voyage.versionCode" => version_code }
+    )
+
+    # Without keystore.properties the build still succeeds, unsigned (see
+    # docs/ANDROID_DEVELOPMENT.md); fail here rather than at Play's end.
+    aab = lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]
+    signed = sh("unzip", "-l", aab, log: false).match?(%r{META-INF/[A-Z0-9_-]+\.RSA})
+    UI.user_error!("#{aab} is unsigned — is keystore.properties missing?") unless signed
+
+    upload_to_play_store(
+      track: "internal",
+      aab: aab,
+      release_status: "completed",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end

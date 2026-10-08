@@ -210,8 +210,8 @@ be built in parallel with them and testers recruited early.
       signing key; document recovery)
 - [ ] Enroll in Play App Signing
 - [ ] Play Console service-account JSON → GitHub secret
-- [ ] Fastlane `supply` lane, for symmetry with iOS
-- [ ] `.github/workflows/android-release.yml`: signed AAB → internal testing,
+- [x] Fastlane `supply` lane, for symmetry with iOS
+- [x] `.github/workflows/play-internal.yml`: signed AAB → internal testing,
       dispatched like the TestFlight workflow
 - [ ] Baseline profile (`androidx.baselineprofile`) covering startup — worth
       ~450 ms of activity launch on the A55, but measured *not* to help the
