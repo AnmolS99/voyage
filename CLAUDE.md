@@ -30,7 +30,10 @@ them there, never duplicate them per platform.
 
 **Android:** build/run/test instructions live in
 [docs/ANDROID_DEVELOPMENT.md](docs/ANDROID_DEVELOPMENT.md); all Android commands
-run from `android/`. The Android color palette
+run from `android/`. Android has no PR CI: builds for testers come only from the
+manually dispatched `.github/workflows/play-internal.yml`, which runs the unit
+tests and lint, then signs and uploads to Play internal testing — never upload
+locally. The Android color palette
 (`android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt`) mirrors
 `ios/voyage/ColorPalette.swift` — see [Color Palette](#color-palette) — so a
 color change must land on both platforms in the same PR. Both apps parse the
@@ -357,11 +360,12 @@ capitals, per-ring point counts (170,955 coordinates total) and bounding boxes.
 it, so neither hand-written parser can drift from the other or from the data.
 
 It is derived from `world.geojson` by `scripts/generate_country_fixture.py`,
-which `update_geometry.sh` runs automatically; Android CI fails if it is stale:
+which `update_geometry.sh` runs automatically; the Play internal testing
+workflow fails if it is stale:
 
 ```bash
 python3 scripts/generate_country_fixture.py          # rewrite after a data change
-python3 scripts/generate_country_fixture.py --check  # what CI runs
+python3 scripts/generate_country_fixture.py --check  # what the Play internal testing workflow runs
 ```
 
 Review the fixture's diff after regenerating it — an unexpected change there is
