@@ -46,9 +46,9 @@ enum class GlobeStyle(val textureAsset: String) {
 /**
  * Appearance preference.
  *
- * iOS stores a plain `isDarkMode` boolean because it has no "follow the system"
- * option; Android users expect one and it is the default, so this is a
- * three-state enum. [Light] and [Dark] map onto the iOS boolean exactly.
+ * A three-state enum with "follow the system" as the default. iOS's `ThemeMode`
+ * has the same cases, raw values and toggle rule; its older `isDarkMode`
+ * boolean migrates to [Light] or [Dark].
  */
 @Serializable
 enum class ThemeMode {

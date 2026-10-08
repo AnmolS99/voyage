@@ -57,8 +57,8 @@ adb shell am start -n com.anmol.voyage/.MainActivity
 # Android lint
 ./gradlew lintDebug
 
-# What CI runs
-./gradlew assembleDebug testDebugUnitTest lintDebug
+# What the Play internal testing workflow gates the upload on
+./gradlew testDebugUnitTest lintDebug
 ```
 
 Start the emulator headlessly if it isn't already running:
@@ -95,27 +95,31 @@ The certificate fields it prompts for are not validated or shown to anyone; only
 the two-letter country code has to be well formed. **Back the keystore up** —
 it is not in the repo and not in any backup that only covers the repo.
 
-Then:
+Bundles for testers are built and uploaded by CI, never locally — see
+[Play internal testing builds](#play-internal-testing-builds). A local signed
+bundle is still useful for installing a release build on a device:
 
 ```bash
 ./gradlew bundleRelease
 ```
 
-The bundle lands at `app/build/outputs/bundle/release/app-release.aab`, ready to
-upload under Test og publiser → Tester → Intern testing.
+The bundle lands at `app/build/outputs/bundle/release/app-release.aab`.
 
 Without `keystore.properties` the same command still succeeds and produces an
-**unsigned** bundle — a fresh clone and CI build the same way they always did,
-they just cannot produce something Play will accept. Check before uploading:
+**unsigned** bundle — a fresh clone builds the same way it always did, it just
+cannot produce something Play will accept. The release workflow fails on an
+unsigned bundle with the same check:
 
 ```bash
-unzip -l app/build/outputs/bundle/release/app-release.aab | grep -E "META-INF/[A-Z0-9]+\.RSA"
+unzip -l app/build/outputs/bundle/release/app-release.aab | grep -E "META-INF/[A-Z0-9_-]+\.RSA"
 ```
 
 Two things that bite:
 
-- **`versionCode` must increase with every upload.** It is `1` in
-  `app/build.gradle.kts` today; Play rejects a second upload at the same code.
+- **`versionCode` must increase with every upload.** The release workflow
+  takes care of it (it asks Play for the highest code on any track and passes
+  the next one as `-Pvoyage.versionCode`); the `2` in `app/build.gradle.kts` is
+  only what local builds get.
 - **Release builds are minified** (`isMinifyEnabled`, with an empty
   `proguard-rules.pro` — the libraries ship their own R8 rules). Debug builds
   exercise none of that, so install a release build on a real device and open
@@ -201,7 +205,8 @@ android/
   python3 android/tools/generate_launcher_icons.py
   ```
 
-- **Versioning**: `versionCode` will be auto-incremented by CI (Phase 11);
+- **Versioning**: `versionCode` is chosen by the release workflow (highest on
+  Play + 1) — never bump it by hand;
   `versionName` mirrors the iOS `MARKETING_VERSION` at release time and is
   user-controlled — never bump it unasked.
 - **Secrets** (Phase 9): Supabase credentials go in a gitignored
@@ -288,7 +293,7 @@ It is derived from `world.geojson` by a third implementation of the same rules:
 
 ```bash
 python3 scripts/generate_country_fixture.py          # rewrite it
-python3 scripts/generate_country_fixture.py --check  # what CI runs
+python3 scripts/generate_country_fixture.py --check  # what the release workflow runs
 ```
 
 `scripts/update_geometry.sh` regenerates it automatically; review its diff, then
@@ -342,7 +347,7 @@ them need the grid-fill fallback, and the globe's orbit camera — whose
 `latLonAt` inverse has to agree with the position the renderer places the camera
 at, or taps land on the wrong country.
 They read `shared/data` straight off disk, so they need no device, and they are
-what CI runs. Gestures are the exception and live in `app/src/androidTest/`
+what the release workflow runs. Gestures are the exception and live in `app/src/androidTest/`
 (`WorldMapGestureTest`, `GlobeGestureTest`), because a pinch or a scroll wheel
 cannot be injected from a JVM test — run them with
 `./gradlew connectedDebugAndroidTest` against a booted emulator.
@@ -418,11 +423,40 @@ Two things worth knowing about that run: it removes the app from the device when
 it finishes (reinstall with `./gradlew installDebug`), and it is not part of CI,
 which has no emulator — so run it locally after touching the map or the globe.
 
-## CI
+## Play internal testing builds
 
-[`.github/workflows/android-ci.yml`](../.github/workflows/android-ci.yml) runs
-`assembleDebug testDebugUnitTest lintDebug` on every PR that touches `android/`
-or `shared/`, checks the country fixture is current, and uploads the debug APK.
-Assembling runs the world-cache generator, so a GeoJSON the parser or
-triangulator cannot handle fails CI there too. Releases are built by CI only (Phase 11)
-— never sign and upload locally, same rule as the iOS TestFlight workflow.
+There is no Android CI on pull requests or pushes. The only Android workflow is
+[`.github/workflows/play-internal.yml`](../.github/workflows/play-internal.yml)
+("Play Internal Testing Build"), dispatched by hand like the iOS TestFlight
+workflow, with the branch chosen by the dispatch ref:
+
+```bash
+gh workflow run play-internal.yml --ref <branch>
+gh run watch
+```
+
+It checks the country fixture is current, runs `testDebugUnitTest lintDebug` —
+nothing is uploaded unless they pass — then runs `fastlane internal`
+(`android/fastlane/Fastfile`), which:
+
+- reads the highest `versionCode` on the internal, alpha, beta and production
+  tracks and builds with the next one;
+- builds a signed release bundle (`bundleRelease`) and fails if it is unsigned;
+- uploads it to the **internal** track as a completed release — metadata,
+  screenshots and changelogs are left as they are in Play Console.
+
+The bundle is also kept as the run's `voyage-release-aab` artifact. Assembling
+runs the world-cache generator, so a GeoJSON the parser or triangulator cannot
+handle fails the workflow there too. Releases are built by CI only — never
+sign and upload locally, same rule as the iOS TestFlight workflow.
+
+It needs four repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_UPLOAD_KEYSTORE_BASE64` | `base64 -i ~/voyage-android-upload.keystore` |
+| `ANDROID_UPLOAD_STORE_PASSWORD` | `storePassword` from `keystore.properties` |
+| `ANDROID_UPLOAD_KEY_PASSWORD` | `keyPassword` from `keystore.properties` |
+| `PLAY_SERVICE_ACCOUNT_JSON` | JSON key of a Google Cloud service account invited in Play Console (Users and permissions) with release rights for the app |
+
+The key alias is fixed at `voyage-android-upload`.

@@ -381,8 +381,8 @@ private val RING_SIZE = 56.dp
 
 private val RING_STROKE = 4.dp
 
-/** iOS draws the card's coin at 60% of its 56pt slot. */
-private val COIN_SIZE = 34.dp
+/** iOS draws the card's coin at 76% of its 56pt slot. */
+private val COIN_SIZE = 43.dp
 
 private const val COMPLETED_BORDER_ALPHA = 0.5f
 

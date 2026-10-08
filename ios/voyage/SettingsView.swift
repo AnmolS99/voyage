@@ -6,8 +6,13 @@ struct SettingsView: View {
     @State private var showingResetConfirmation = false
     @StateObject private var tipJarManager = TipJarManager()
 
+    /// "1.10.2 (123)": the marketing version and the build number, which CI sets
+    /// to the TestFlight run number, so testers can say exactly which build they have.
     private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "1.0"
+        guard let build = info?["CFBundleVersion"] as? String else { return version }
+        return "\(version) (\(build))"
     }
 
     private var thankYouMessage: String {
@@ -27,6 +32,28 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Image(systemName: "circle.lefthalf.filled")
+                                .foregroundColor(AppColors.buttonColor)
+
+                            Text("Theme")
+                        }
+
+                        Picker("Theme", selection: Binding(
+                            get: { globeState.themeMode },
+                            set: { globeState.setThemeMode($0) }
+                        )) {
+                            ForEach(ThemeMode.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+                    .padding(.vertical, 4)
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+
                     HStack {
                         Image(systemName: "globe.americas")
                             .foregroundColor(AppColors.buttonColor)
@@ -63,25 +90,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Appearance")
                 } footer: {
-                    Text("Choose texture styles for the globe and map views.")
-                }
-
-                Section {
-                    Button(role: .destructive) {
-                        showingResetConfirmation = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash")
-                                .foregroundColor(.red)
-                            Text("Reset All Data")
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
-                } header: {
-                    Text("Data")
-                } footer: {
-                    Text("This will clear all visited countries, wishlist and challenge statistics.")
+                    Text("Choose the app's theme and the texture styles for the globe and map views.")
                 }
 
                 Section {
@@ -120,6 +129,24 @@ struct SettingsView: View {
                     } else {
                         Text("Thanks for using voyage! If you enjoy the app, consider leaving a tip to support development.")
                     }
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        showingResetConfirmation = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                            Text("Reset All Data")
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+                } header: {
+                    Text("Data")
+                } footer: {
+                    Text("This will clear all visited countries, wishlist and challenge statistics.")
                 }
 
                 Section {

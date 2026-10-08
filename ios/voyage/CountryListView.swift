@@ -35,7 +35,7 @@ struct CountryListView: View {
                 }
             }
         }
-        .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .preferredColorScheme(globeState.themeMode.colorScheme)
     }
 
     private func navigateToCountry(_ country: GeoJSONCountry) {

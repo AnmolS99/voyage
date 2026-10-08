@@ -30,7 +30,10 @@ them there, never duplicate them per platform.
 
 **Android:** build/run/test instructions live in
 [docs/ANDROID_DEVELOPMENT.md](docs/ANDROID_DEVELOPMENT.md); all Android commands
-run from `android/`. The Android color palette
+run from `android/`. Android has no PR CI: builds for testers come only from the
+manually dispatched `.github/workflows/play-internal.yml`, which runs the unit
+tests and lint, then signs and uploads to Play internal testing — never upload
+locally. The Android color palette
 (`android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt`) mirrors
 `ios/voyage/ColorPalette.swift` — see [Color Palette](#color-palette) — so a
 color change must land on both platforms in the same PR. Both apps parse the
@@ -200,7 +203,7 @@ cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig
 - **GeoJSON** for country boundary data
 - **Supabase** for daily challenge backend
 
-The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and dark mode. `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
+The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: system/light/dark, as on Android). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
 
 ### Data persistence
 
@@ -271,6 +274,11 @@ The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain 
 - Color priority logic (visited/wishlist status takes precedence over selection)
 - Border/outline colors and styles
 - Capital star markers
+- Map framing: at minimum zoom the 2:1 map *fills* the view (full height in
+  portrait, full width in landscape) and pan is clamped so no map edge ever comes
+  into view; zoom resets on rotation and on entering map mode, centred on the
+  selected country as far as that clamp allows. Both orientations
+  are supported for globe and map (`MapView.MapFit` / Android `MapProjection`)
 
 When modifying colors or selection logic, always update both files together.
 
@@ -352,11 +360,12 @@ capitals, per-ring point counts (170,955 coordinates total) and bounding boxes.
 it, so neither hand-written parser can drift from the other or from the data.
 
 It is derived from `world.geojson` by `scripts/generate_country_fixture.py`,
-which `update_geometry.sh` runs automatically; Android CI fails if it is stale:
+which `update_geometry.sh` runs automatically; the Play internal testing
+workflow fails if it is stale:
 
 ```bash
 python3 scripts/generate_country_fixture.py          # rewrite after a data change
-python3 scripts/generate_country_fixture.py --check  # what CI runs
+python3 scripts/generate_country_fixture.py --check  # what the Play internal testing workflow runs
 ```
 
 Review the fixture's diff after regenerating it — an unexpected change there is

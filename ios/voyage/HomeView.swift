@@ -79,14 +79,6 @@ struct HomeView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
-        .onChange(of: globeState.viewMode) { _, newMode in
-            if newMode == .map {
-                OrientationManager.shared.lockToLandscape()
-            } else {
-                OrientationManager.shared.unlock()
-                OrientationManager.shared.setNeedsOrientationUpdate()
-            }
-        }
         .sheet(isPresented: $showingCountryList) {
             CountryListView(globeState: globeState)
         }

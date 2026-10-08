@@ -58,16 +58,21 @@ class GlobeScene {
         cameraNode.position = SCNVector3(0, 0, 4)
         scene.rootNode.addChildNode(cameraNode)
 
-        // Main light (sun-like)
+        // Main light (sun-like). A child of the camera, so it keeps shining from the
+        // viewer's upper right as the camera orbits in latitude — fixed in world space,
+        // it lit only the northern hemisphere and left the south pole in shadow.
         let lightNode = SCNNode()
         lightNode.name = "light"
         lightNode.light = SCNLight()
         lightNode.light?.type = .directional
         lightNode.light?.color = UIColor(white: 1.0, alpha: 1.0)
         lightNode.light?.intensity = 800
-        lightNode.position = SCNVector3(5, 5, 5)
+        // From the upper right but only ~35° off the line of sight (world (1, 1, 2) in the
+        // camera's starting pose at (0, 0, 4)): further off — it was ~55° at world (5, 5, 5) —
+        // the globe's lower-left quarter faces away from the light and goes dark.
+        lightNode.position = SCNVector3(1, 1, -2)
+        cameraNode.addChildNode(lightNode)
         lightNode.look(at: SCNVector3(0, 0, 0))
-        scene.rootNode.addChildNode(lightNode)
 
         // Ambient light for fill
         let ambientLightNode = SCNNode()
@@ -75,7 +80,7 @@ class GlobeScene {
         ambientLightNode.light = SCNLight()
         ambientLightNode.light?.type = .ambient
         ambientLightNode.light?.color = UIColor(white: 0.4, alpha: 1.0)
-        ambientLightNode.light?.intensity = 400
+        ambientLightNode.light?.intensity = 600
         scene.rootNode.addChildNode(ambientLightNode)
 
         return scene

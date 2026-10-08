@@ -14,9 +14,12 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -118,71 +121,133 @@ fun MedalOverlay(
             // there is none here, and the scrim is dark whatever the theme, so
             // the text is light in both.
             CompositionLocalProvider(LocalContentColor provides ON_SCRIM) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (celebrating) {
-                        Text(
-                            text = stringResource(R.string.achievement_unlocked_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = VoyagePalette.medalGoldCenter,
-                            textAlign = TextAlign.Center,
+                BoxWithConstraints(contentAlignment = Alignment.Center) {
+                    if (maxWidth > maxHeight) {
+                        // Landscape: there is no height under the coin for the
+                        // text, so it moves beside the coin, which stays in the
+                        // middle of the screen — as on iOS.
+                        Row(
                             modifier = Modifier
-                                .padding(bottom = 12.dp)
-                                .semantics { heading() },
-                        )
-                    }
-                    SpinningMedal(
-                        medal = achievement.medal,
-                        isEarned = achievement.isCompleted,
-                        size = COIN_SIZE,
-                    )
-
-                    Text(
-                        text = achievement.kind.title(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.achievement_progress,
-                            achievement.current,
-                            achievement.total,
-                            achievement.unit.label(),
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = ON_SCRIM_MUTED,
-                    )
-
-                    Row(
-                        modifier = Modifier.padding(top = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.TouchApp,
-                            contentDescription = null,
-                            tint = ON_SCRIM_MUTED,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = stringResource(R.string.medal_drag_to_spin),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = ON_SCRIM_MUTED,
-                        )
-                    }
-
-                    TextButton(onClick = onDismiss, modifier = Modifier.padding(top = 8.dp)) {
-                        Text(stringResource(if (celebrating) R.string.achievement_unlocked_done else R.string.medal_close))
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Spacer(Modifier.weight(1f))
+                            SpinningMedal(
+                                medal = achievement.medal,
+                                isEarned = achievement.isCompleted,
+                                size = COIN_SIZE,
+                            )
+                            MedalDetails(
+                                achievement = achievement,
+                                celebrating = celebrating,
+                                onDismiss = onDismiss,
+                                beside = true,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 32.dp),
+                            )
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            if (celebrating) UnlockedHeading(TextAlign.Center)
+                            SpinningMedal(
+                                medal = achievement.medal,
+                                isEarned = achievement.isCompleted,
+                                size = COIN_SIZE,
+                            )
+                            MedalDetails(
+                                achievement = achievement,
+                                celebrating = celebrating,
+                                onDismiss = onDismiss,
+                                beside = false,
+                                modifier = Modifier.padding(top = 20.dp),
+                            )
+                        }
                     }
                 }
             }
             // Last, so it falls in front of the medal; it draws only, so taps
             // still reach the coin and the scrim beneath it.
             if (celebrating) Confetti()
+        }
+    }
+}
+
+/** "Medal unlocked!", over the coin in portrait and over the text in landscape. */
+@Composable
+private fun UnlockedHeading(textAlign: TextAlign) {
+    Text(
+        text = stringResource(R.string.achievement_unlocked_title),
+        style = MaterialTheme.typography.titleLarge,
+        color = VoyagePalette.medalGoldCenter,
+        textAlign = textAlign,
+        modifier = Modifier
+            .padding(bottom = 12.dp)
+            .semantics { heading() },
+    )
+}
+
+/**
+ * The medal's name, progress, spin hint and close button: under the coin in
+ * portrait, or [beside] it — left-aligned, with the unlock heading on top — in
+ * landscape.
+ */
+@Composable
+private fun MedalDetails(
+    achievement: Achievement,
+    celebrating: Boolean,
+    onDismiss: () -> Unit,
+    beside: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val textAlign = if (beside) TextAlign.Start else TextAlign.Center
+    Column(
+        modifier = modifier,
+        horizontalAlignment = if (beside) Alignment.Start else Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (beside && celebrating) UnlockedHeading(textAlign)
+        Text(
+            text = achievement.kind.title(),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = textAlign,
+        )
+        Text(
+            text = stringResource(
+                R.string.achievement_progress,
+                achievement.current,
+                achievement.total,
+                achievement.unit.label(),
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = ON_SCRIM_MUTED,
+            textAlign = textAlign,
+        )
+
+        Row(
+            modifier = Modifier.padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.TouchApp,
+                contentDescription = null,
+                tint = ON_SCRIM_MUTED,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = stringResource(R.string.medal_drag_to_spin),
+                style = MaterialTheme.typography.labelLarge,
+                color = ON_SCRIM_MUTED,
+            )
+        }
+
+        TextButton(onClick = onDismiss, modifier = Modifier.padding(top = 8.dp)) {
+            Text(stringResource(if (celebrating) R.string.achievement_unlocked_done else R.string.medal_close))
         }
     }
 }
@@ -322,7 +387,7 @@ private suspend fun PointerInputScope.trackSpin(spin: MedalSpin) {
     }
 }
 
-private val COIN_SIZE = 220.dp
+private val COIN_SIZE = 280.dp
 
 /** Nanoseconds in a second, as a float. */
 private const val NANOS_PER_SECOND = 1_000_000_000f

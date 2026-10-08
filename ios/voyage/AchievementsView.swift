@@ -69,7 +69,7 @@ struct AchievementsView: View {
                 .zIndex(1)
             }
         }
-        .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .preferredColorScheme(globeState.themeMode.colorScheme)
     }
 
     private var summaryCard: some View {

@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showDailyBadge = false
     @State private var showDailyToast = false
+    @Environment(\.colorScheme) private var colorScheme
 
     private static let badgeDateKey = "dailyBadgeNextDate"
 
@@ -42,7 +43,10 @@ struct ContentView: View {
                 }
                 .tag(4)
         }
-        .preferredColorScheme(globeState.isDarkMode ? .dark : .light)
+        .preferredColorScheme(globeState.themeMode.colorScheme)
+        .onChange(of: colorScheme, initial: true) { _, scheme in
+            globeState.systemAppearanceChanged(isDark: scheme == .dark)
+        }
         .overlay { AchievementUnlockCelebration(globeState: globeState) }
         .overlay(alignment: .bottom) {
             if showDailyToast {
@@ -124,6 +128,49 @@ enum GlobeStyle: String, CaseIterable {
     }
 }
 
+/// Appearance preference, matching Android's `ThemeMode`.
+///
+/// `.system` follows the device's appearance and is the default; `.light` and
+/// `.dark` are what the old `isDarkMode` boolean stored, and are what Home's
+/// sun/moon button picks — "follow the system" is only chosen again from Settings.
+enum ThemeMode: String, CaseIterable {
+    case system
+    case light
+    case dark
+
+    var displayName: String {
+        switch self {
+        case .system: return "System"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+
+    /// Whether to use the dark scheme, given what the system is currently set to.
+    func isDark(systemIsDark: Bool) -> Bool {
+        switch self {
+        case .system: return systemIsDark
+        case .light: return false
+        case .dark: return true
+        }
+    }
+
+    /// The mode Home's sun/moon button switches to: the opposite of what is on
+    /// screen, as an explicit choice.
+    func toggled(systemIsDark: Bool) -> ThemeMode {
+        isDark(systemIsDark: systemIsDark) ? .light : .dark
+    }
+
+    /// For `.preferredColorScheme`: nil leaves the window on the system's appearance.
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+}
+
 class GlobeState: ObservableObject {
     /// A one-shot camera flight request, consumed by the globe coordinator.
     /// A nil distance keeps the camera at its current zoom while centering.
@@ -162,7 +209,13 @@ class GlobeState: ObservableObject {
     /// ways to zoom: they used to undercut it with their own `min(8.0, ...)`,
     /// which left the constant describing nothing.
     static let maxCameraDistance: Float = 6.0
+    /// The appearance actually on screen — `themeMode` resolved against the
+    /// system's. Persistent instances derive it; in-memory ones (challenge games)
+    /// copy it from the main state.
     @Published var isDarkMode: Bool = false
+    @Published private(set) var themeMode: ThemeMode = .system
+    /// Last known system appearance; only meaningful while `themeMode` is `.system`.
+    private var systemIsDark = GlobeState.currentSystemIsDark()
     @Published var isAutoRotating: Bool = true
     @Published var targetCountryCenter: (lat: Double, lon: Double)?
     @Published var viewMode: ViewMode = .globe
@@ -223,6 +276,8 @@ class GlobeState: ObservableObject {
     private let wishlistCountriesKey = "wishlistCountries"
     private let globeStyleKey = "globeStyle"
     private let mapStyleKey = "mapStyle"
+    private let themeModeKey = "themeMode"
+    /// Pre-`themeMode` boolean, read once to migrate an explicit light/dark choice.
     private let isDarkModeKey = "isDarkMode"
     private let checkedCitiesKey = "checkedCities"
     private let checkedAttractionsKey = "checkedAttractions"
@@ -291,10 +346,15 @@ class GlobeState: ObservableObject {
             mapStyle = style
         }
 
-        // Load dark mode
-        if userDefaults.object(forKey: isDarkModeKey) != nil || iCloudStore.object(forKey: isDarkModeKey) != nil {
-            isDarkMode = iCloudStore.bool(forKey: isDarkModeKey) || userDefaults.bool(forKey: isDarkModeKey)
+        // Load theme (prefer iCloud, fall back to local); a saved legacy
+        // boolean predates the system option and was always an explicit choice
+        if let raw = iCloudStore.string(forKey: themeModeKey) ?? userDefaults.string(forKey: themeModeKey),
+           let mode = ThemeMode(rawValue: raw) {
+            themeMode = mode
+        } else if userDefaults.object(forKey: isDarkModeKey) != nil || iCloudStore.object(forKey: isDarkModeKey) != nil {
+            themeMode = iCloudStore.bool(forKey: isDarkModeKey) || userDefaults.bool(forKey: isDarkModeKey) ? .dark : .light
         }
+        resolveDarkMode()
 
         // Sync merged (and name-migrated) data back to both stores
         if visitedCountries != localCountries || visitedCountries != cloudCountries ||
@@ -320,8 +380,8 @@ class GlobeState: ObservableObject {
         userDefaults.set(mapStyle.rawValue, forKey: mapStyleKey)
         iCloudStore.set(mapStyle.rawValue, forKey: mapStyleKey)
 
-        userDefaults.set(isDarkMode, forKey: isDarkModeKey)
-        iCloudStore.set(isDarkMode, forKey: isDarkModeKey)
+        userDefaults.set(themeMode.rawValue, forKey: themeModeKey)
+        iCloudStore.set(themeMode.rawValue, forKey: themeModeKey)
 
         let citiesDict = checkedCities.mapValues { Array($0) }
         userDefaults.set(citiesDict, forKey: checkedCitiesKey)
@@ -344,9 +404,42 @@ class GlobeState: ObservableObject {
         saveData()
     }
 
-    func toggleDarkMode() {
-        isDarkMode.toggle()
+    func setThemeMode(_ mode: ThemeMode) {
+        themeMode = mode
+        if mode == .system {
+            // While a mode was forced, the views' color scheme reported the
+            // forced one, so re-read the device's own appearance.
+            systemIsDark = Self.currentSystemIsDark()
+        }
+        resolveDarkMode()
         saveData()
+    }
+
+    /// Flips what is on screen as an explicit choice (Home's sun/moon button).
+    func toggleDarkMode() {
+        setThemeMode(themeMode.toggled(systemIsDark: systemIsDark))
+    }
+
+    /// Reports the system appearance, as seen by a view whose color scheme is not
+    /// forced. Ignored unless following the system: otherwise that scheme is the
+    /// forced one, not the system's.
+    func systemAppearanceChanged(isDark: Bool) {
+        guard themeMode == .system else { return }
+        systemIsDark = isDark
+        resolveDarkMode()
+    }
+
+    private func resolveDarkMode() {
+        let dark = themeMode.isDark(systemIsDark: systemIsDark)
+        if isDarkMode != dark { isDarkMode = dark }
+    }
+
+    /// The device's appearance, unaffected by any window's override.
+    private static func currentSystemIsDark() -> Bool {
+        let screen = UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.screen }
+            .first
+        return (screen?.traitCollection ?? UITraitCollection.current).userInterfaceStyle == .dark
     }
 
     @objc private func iCloudDidChange(_ notification: Notification) {

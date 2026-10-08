@@ -1,0 +1,4 @@
+# The Play Console service account's JSON key is passed in by the workflow
+# (PLAY_SERVICE_ACCOUNT_JSON secret) and never written to disk.
+json_key_data_raw(ENV["PLAY_SERVICE_ACCOUNT_JSON"])
+package_name("com.anmol.voyage")

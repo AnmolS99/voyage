@@ -1,5 +1,6 @@
 package com.anmol.voyage.ui.challenges
 
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -68,6 +69,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -108,6 +110,7 @@ fun ChallengeGameScreen(session: ChallengeSession, onExit: () -> Unit, modifier:
     val finished = game.phase == RegionSweepGame.Phase.Finished
     var confirmingQuit by rememberSaveable { mutableStateOf(false) }
     var confirmingRestart by rememberSaveable { mutableStateOf(false) }
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // The clock only runs while the game is on screen, as iOS pauses it when
     // the scene leaves the foreground.
@@ -145,8 +148,24 @@ fun ChallengeGameScreen(session: ChallengeSession, onExit: () -> Unit, modifier:
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SweepTopBar(game = game, onQuit = { confirmingQuit = true })
-            SweepPromptCard(session = session)
+            // Landscape leaves too little height to stack the prompt under the
+            // top bar — it would sit mid-screen, over the globe — so it moves
+            // up between the quit button and the HUD, where the width is.
+            if (landscape) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    SweepTopBar(game = game, onQuit = { confirmingQuit = true })
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = LANDSCAPE_PROMPT_INSET),
+                    ) {
+                        SweepPromptCard(session = session)
+                    }
+                }
+            } else {
+                SweepTopBar(game = game, onQuit = { confirmingQuit = true })
+                SweepPromptCard(session = session)
+            }
 
             // Feedback, and the controls the thumb reaches for, at the bottom —
             // over the keyboard when it is up.
@@ -595,5 +614,12 @@ private fun ConfirmDialog(title: Int, message: Int, confirm: Int, onConfirm: () 
 }
 
 private const val CLOCK_TICK_MILLIS = 500L
+
+/**
+ * How much width the landscape prompt leaves on each side for the quit button
+ * and the HUD pill, so a long country name wraps instead of running under them.
+ */
+private val LANDSCAPE_PROMPT_INSET = 176.dp
+
 private const val MAX_SUGGESTIONS = 5
 private val SUGGESTIONS_MAX_HEIGHT = 200.dp
