@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -67,6 +68,11 @@ fun WorldMap(
     Canvas(
         modifier = modifier
             .fillMaxSize()
+            // The map is scaled to *fill* the view, so in landscape — and when
+            // zoomed — it is wider than the view, and a Canvas does not clip:
+            // unclipped it painted over the navigation rail and under the
+            // system bar beside it.
+            .clipToBounds()
             .pointerInput(projection) {
                 detectTransformGestures { centroid, pan, zoom, _ ->
                     val newScale = (scale * zoom)
