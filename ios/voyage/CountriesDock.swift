@@ -21,6 +21,10 @@ struct CountriesDock: View {
     /// The last selected country, kept so the card's content is still there
     /// to fold away while the card closes.
     @State private var lastCountry: String?
+    /// A country un-visited from this card. Its +1 preview stays hidden until
+    /// another country is picked: right after un-visiting, the preview would
+    /// fill exactly the gap the shrinking bar left and look like leftover fill.
+    @State private var justUnvisited: String?
     private var isOpen: Bool { country != nil }
     private var isLandscape: Bool { verticalSizeClass == .compact }
     private var metrics: Metrics { isLandscape ? .landscape : .portrait }
@@ -75,6 +79,7 @@ struct CountriesDock: View {
         .animation(morphAnimation, value: country)
         .onChange(of: country) { _, new in
             if let new { lastCountry = new }
+            justUnvisited = nil
         }
         .sensoryFeedback(.selection, trigger: country) { _, new in new != nil }
         .sensoryFeedback(.success, trigger: visitedCount) { old, new in new > old }
@@ -145,6 +150,7 @@ struct CountriesDock: View {
     private var showsGhost: Bool {
         guard let country else { return false }
         return !globeState.isVisited(country) && globeState.countsTowardProgress(country)
+            && country != justUnvisited
     }
 
     private func addButton(_ m: Metrics) -> some View {
@@ -266,7 +272,12 @@ struct CountriesDock: View {
                 metrics: m
             ) {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    if isVisited { globeState.removeVisit(country) } else { globeState.addVisit(country) }
+                    if isVisited {
+                        justUnvisited = country
+                        globeState.removeVisit(country)
+                    } else {
+                        globeState.addVisit(country)
+                    }
                 }
             }
 
@@ -284,6 +295,10 @@ struct CountriesDock: View {
 
             CardActionButton(title: "Explore", symbol: "binoculars", metrics: m, action: onExplore)
         }
+        // In the landscape row the buttons keep their natural width ("Visited"
+        // and "Wished" are wider than "Visit" and "Wish"); the name and
+        // capital beside them give up the space instead.
+        .fixedSize(horizontal: !m.buttonsFillWidth, vertical: false)
     }
 
     /// Fill for the card's secondary buttons and close button.
