@@ -69,7 +69,10 @@ struct CountriesDock: View {
         .gesture(swipeDownToClose, isEnabled: isOpen)
         .padding(.horizontal, 21)
         .padding(.bottom, m.bottomGap)
-        .animation(morphAnimation, value: isOpen)
+        // Keyed on the country, not just open/closed: switching between
+        // countries whose header takes one line vs two (Chad → Central
+        // African Republic) resizes the card with the same spring.
+        .animation(morphAnimation, value: country)
         .onChange(of: country) { _, new in
             if let new { lastCountry = new }
         }
@@ -176,8 +179,9 @@ struct CountriesDock: View {
         }
     }
 
-    /// Flag, name and capital; crossfades in place when another country is
-    /// picked while the card is open.
+    /// Flag, name and capital. When another country is picked while the card
+    /// is open, the old header fades out before the new one fades in, so the
+    /// two never overlap.
     private func countryHeader(_ country: String) -> some View {
         ZStack(alignment: .leading) {
             HStack(spacing: 9) {
@@ -195,11 +199,26 @@ struct CountriesDock: View {
                 }
             }
             .id(country)
-            .transition(.opacity)
+            .transition(headerSwapTransition)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.easeInOut(duration: 0.2), value: country)
         .accessibilityElement(children: .combine)
+    }
+
+    /// Out first, then in: the insertion waits for the removal to finish.
+    private var headerSwapTransition: AnyTransition {
+        let fadeOut = 0.1
+        if reduceMotion {
+            return .asymmetric(
+                insertion: .opacity.animation(.easeOut(duration: 0.15).delay(fadeOut)),
+                removal: .opacity.animation(.easeIn(duration: fadeOut))
+            )
+        }
+        return .asymmetric(
+            insertion: .opacity.combined(with: .offset(y: -4))
+                .animation(.easeOut(duration: 0.2).delay(fadeOut)),
+            removal: .opacity.animation(.easeIn(duration: fadeOut))
+        )
     }
 
     private func countryName(_ country: String) -> some View {
