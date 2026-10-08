@@ -334,6 +334,9 @@ struct MapView: View {
         if let countryName = findCountryAt(lat: lat, lon: lon) {
             let center = getCountryCenter(name: countryName)
             globeState.selectCountry(countryName, center: center)
+        } else if globeState.selectedCountry != nil {
+            // Ocean: dismiss the country card, as GlobeView does
+            globeState.deselectCountry()
         }
     }
 

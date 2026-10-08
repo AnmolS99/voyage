@@ -45,7 +45,6 @@ struct HomeView: View {
     @ObservedObject var globeState: GlobeState
     @State private var showingCountryList = false
     @State private var showingExplore = false
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         ZStack {
@@ -72,8 +71,11 @@ struct HomeView: View {
 
                 Spacer()
 
-                // Bottom info panel
-                bottomPanel
+                CountriesDock(
+                    globeState: globeState,
+                    onAddCountry: { showingCountryList = true },
+                    onExplore: { showingExplore = true }
+                )
             }
         }
         .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
@@ -111,34 +113,22 @@ struct HomeView: View {
             Spacer()
 
             if #available(iOS 26, *) {
-                // Dark mode + country list — side by side circles that merge into a pill
-                GlassEffectContainer(spacing: 8) {
-                    HStack(spacing: 0) {
-                        Button(action: {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                globeState.toggleDarkMode()
-                            }
-                        }) {
-                            Image(systemName: globeState.isDarkMode ? "sun.max.fill" : "moon.fill")
-                                .font(.system(size: 17, weight: .medium))
-                                .frame(width: 44, height: 44)
+                GlassEffectContainer {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                            globeState.toggleDarkMode()
                         }
-                        .buttonStyle(.glass)
-                        .buttonBorderShape(.circle)
-    
-                        Button(action: {
-                            showingCountryList = true
-                        }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 17, weight: .medium))
-                                .frame(width: 44, height: 44)
-                        }
-                        .buttonStyle(.glass)
-                        .buttonBorderShape(.circle)
-                        }
+                    }) {
+                        Image(systemName: themeToggleSymbol)
+                            .font(.system(size: 17, weight: .medium))
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
+                    .accessibilityLabel(globeState.isDarkMode ? "Light mode" : "Dark mode")
                 }
             } else {
-                legacyRightButtons
+                legacyThemeToggle
             }
         }
         .padding(.horizontal, 24)
@@ -163,239 +153,22 @@ struct HomeView: View {
         }
     }
 
-    private var legacyRightButtons: some View {
-        HStack(spacing: 8) {
-            Button(action: {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    globeState.toggleDarkMode()
-                }
-            }) {
-                Image(systemName: globeState.isDarkMode ? "sun.max.fill" : "moon.fill")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Circle().fill(AppColors.buttonColor))
-                    .shadow(color: AppColors.buttonColor.opacity(0.4), radius: 8, y: 4)
-            }
-            Button(action: { showingCountryList = true }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Circle().fill(AppColors.buttonColor))
-                    .shadow(color: AppColors.buttonColor.opacity(0.4), radius: 8, y: 4)
-            }
-        }
-    }
-
-    private var bottomPanel: some View {
-        VStack(spacing: 12) {
-            // Selected country display with Add Visit button
-            if let country = globeState.selectedCountry {
-                Group {
-                    // Landscape is short on height, so the card lays out in one row
-                    if verticalSizeClass == .compact {
-                        HStack(spacing: 10) {
-                            // A long name wraps to two lines; the buttons never do
-                            countryLabel(country)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.8)
-                            Spacer(minLength: 0)
-                            actionButtons(country)
-                                .fixedSize()
-                            closeButton
-                        }
-                    } else {
-                        VStack(spacing: 12) {
-                            // Inset by the close button on both sides so a long
-                            // name stays centred and wraps instead of running under it
-                            countryLabel(country)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.center)
-                                .minimumScaleFactor(0.8)
-                                .padding(.horizontal, 44)
-                                .frame(maxWidth: .infinity)
-                                .overlay(alignment: .trailing) {
-                                    closeButton
-                                }
-                            actionButtons(country)
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
-                        .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
-                )
-                .transition(.scale.combined(with: .opacity))
-            }
-
-            // Progress bar (hidden when a country is selected or in map view)
-            if globeState.selectedCountry == nil && globeState.viewMode == .globe {
-            VStack(spacing: 8) {
-                HStack {
-                    Text("\(globeState.visitedUNCountries.count) of \(globeState.totalUNCountries) countries")
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: globeState.isDarkMode))
-
-                    Spacer()
-
-                    Text("\(Int(Double(globeState.visitedUNCountries.count) / Double(globeState.totalUNCountries) * 100))%")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(AppColors.buttonColor)
-                }
-
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        // Background track
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(AppColors.track(isDarkMode: globeState.isDarkMode))
-
-                        // Progress fill
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(AppColors.buttonColor)
-                            .frame(width: max(0, geometry.size.width * CGFloat(globeState.visitedUNCountries.count) / CGFloat(globeState.totalUNCountries)))
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: globeState.visitedUNCountries.count)
-                    }
-                }
-                .frame(height: 12)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(globeState.isDarkMode ? AppColors.cardDarkSecondary.opacity(0.8) : .white.opacity(0.7))
-            )
-            .transition(.opacity)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 32)
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: globeState.selectedCountry != nil)
-    }
-
-    private func countryLabel(_ country: String) -> some View {
-        HStack(spacing: 10) {
-            Text(globeState.flagForCountry(country))
-                .font(.system(size: 24))
-
-            Text(country)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
-        }
-    }
-
-    private var closeButton: some View {
+    private var legacyThemeToggle: some View {
         Button(action: {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                globeState.deselectCountry()
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                globeState.toggleDarkMode()
             }
         }) {
-            Image(systemName: "xmark")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(globeState.isDarkMode ? .white : AppColors.closeButtonText)
-                .frame(width: 36, height: 36)
-                .background(
-                    Circle()
-                        .fill(globeState.isDarkMode ? AppColors.closeButtonDark : AppColors.closeButtonLight)
-                )
+            Image(systemName: themeToggleSymbol)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.white)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(AppColors.buttonColor))
+                .shadow(color: AppColors.buttonColor.opacity(0.4), radius: 8, y: 4)
         }
     }
 
-    private func actionButtons(_ country: String) -> some View {
-        HStack(spacing: 6) {
-            // Add/Remove Visit button
-            Button(action: {
-                if globeState.isVisited(country) {
-                    globeState.removeVisit(country)
-                } else {
-                    globeState.addVisit(country)
-                }
-            }) {
-                ZStack {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 14, weight: .medium))
-                        Text("Visited")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    }
-                    .hidden()
-
-                    HStack(spacing: 4) {
-                        Image(systemName: globeState.isVisited(country) ? "checkmark.circle.fill" : "plus.circle")
-                            .font(.system(size: 14, weight: .medium))
-                        Text(globeState.isVisited(country) ? "Visited" : "Visit")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    }
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(globeState.isVisited(country) ?
-                              AppColors.buttonVisited :
-                              AppColors.buttonColor)
-                )
-                .animation(nil, value: globeState.visitedCountries)
-            }
-
-            // Add/Remove Wishlist button
-            Button(action: {
-                if globeState.isInWishlist(country) {
-                    globeState.removeFromWishlist(country)
-                } else {
-                    globeState.addToWishlist(country)
-                }
-            }) {
-                ZStack {
-                    HStack(spacing: 4) {
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 14, weight: .medium))
-                        Text("Wishlist")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    }
-                    .hidden()
-
-                    HStack(spacing: 4) {
-                        Image(systemName: globeState.isInWishlist(country) ? "heart.fill" : "heart")
-                            .font(.system(size: 14, weight: .medium))
-                        Text(globeState.isInWishlist(country) ? "Wishlist" : "Wish")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    }
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(globeState.isInWishlist(country) ?
-                              AppColors.wishlist :
-                              AppColors.buttonColor)
-                )
-                .animation(nil, value: globeState.wishlistCountries)
-            }
-
-            // Explore button
-            Button(action: {
-                showingExplore = true
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "binoculars.fill")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("Explore")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(AppColors.buttonColor)
-                )
-            }
-        }
+    private var themeToggleSymbol: String {
+        globeState.isDarkMode ? "sun.max" : "moon"
     }
 }
