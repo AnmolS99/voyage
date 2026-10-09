@@ -613,7 +613,13 @@ private fun CountryHeader(
             if (shownInfo != null) {
                 FlagText(flag = FlagEmoji.of(shownInfo), country = name, fontSize = 24.sp)
             }
-            NameAndCapital(name = name, capital = shownInfo?.capital?.name, modifier = Modifier.weight(1f))
+            // Not filled: the layout reports only the width it needs, and a
+            // filled slot would center it rather than keep it by the flag.
+            NameAndCapital(
+                name = name,
+                capital = shownInfo?.capital?.name,
+                modifier = Modifier.weight(1f, fill = false),
+            )
         }
     }
 }
