@@ -260,19 +260,23 @@ adb uninstall com.anmol.voyage
 
 ## Reaching a country
 
-Three surfaces in `ui/country/`, all reading and writing the one `VoyageState`:
+Three surfaces, all reading and writing the one `VoyageState`:
 
-- **`CountrySelectionCard`** — the inline summary over the map (flag, name,
-  capital, visited/wishlist chips, "Details"). It is a card rather than a bottom
-  sheet on purpose: a modal sheet scrims the map and hides what selecting a
-  country changes there, the thicker status-colored border and the capital star.
-  It mirrors the iOS `HomeView` bottom panel.
-- **`CountryDetailSheet`** — the Material 3 modal bottom sheet behind "Details":
+- **`ui/home/CountriesDock`** — Home's progress dock (count · bar · % · +),
+  which morphs into the selected country's card (flag, name, capital, Visit /
+  Wish / Explore, ✕). A port of iOS `CountriesDock`, down to its springs and
+  metrics. It is a card rather than a bottom sheet on purpose: a modal sheet
+  scrims the map and hides what selecting a country changes there, the thicker
+  status-colored border and the capital star. The count and percent are
+  `data/VisitProgress.kt`; Visit and Wish take the globe's status colors from
+  `StatusButtons` in `ui/map/CountryStyle.kt`, so both are unit-tested.
+- **`CountryDetailSheet`** — the Material 3 modal bottom sheet behind "Explore":
   the same header plus the two highlights checklists, ticking straight through
   to `VoyageState` so a tick is saved as it is made. Mirrors iOS
   `CountryExploreView`, capital badge included.
-- **`CountrySearchSheet`** — find a country by name, reached from the search
-  button over the map. Mirrors iOS `CountryListView`, per-row toggles included.
+- **`CountrySearchSheet`** — find a country by name, reached from the dock's +
+  (and TalkBack's Search action on the world). Mirrors iOS `CountryListView`,
+  per-row toggles included.
 
 The pieces that are not composables are unit-tested: `data/CountryDetail.kt`
 joins a country to its highlights (keyed by ISO code, so a display-name change
