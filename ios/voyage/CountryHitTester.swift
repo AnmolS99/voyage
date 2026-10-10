@@ -20,6 +20,8 @@ final class CountryHitTester {
     private let holeEntries: [PolygonEntry]
     private let pointCountries: [(name: String, lat: Double, lon: Double)]
     private let countriesByName: [String: GeoJSONCountry]
+    private var focuses: [String: CountryFocus] = [:]
+    private let focusLock = NSLock()
 
     private init() {
         var polygonEntries: [PolygonEntry] = []
@@ -111,6 +113,18 @@ final class CountryHitTester {
         return nil
     }
 
+    /// What selecting `name` frames on the globe — see `CountryFocus`. Worked out
+    /// on first use and kept, since the enclosing cap walks every boundary point
+    /// of the country a hundred times.
+    func focus(of name: String) -> CountryFocus? {
+        focusLock.lock()
+        defer { focusLock.unlock() }
+        if let cached = focuses[name] { return cached }
+        guard let country = countriesByName[name], let focus = CountryFocus(country) else { return nil }
+        focuses[name] = focus
+        return focus
+    }
+
     /// Geographic center of a country (average of boundary points, antimeridian-aware).
     func center(of name: String) -> (lat: Double, lon: Double)? {
         guard let country = countriesByName[name] else { return nil }
@@ -144,5 +158,106 @@ final class CountryHitTester {
         }
 
         return (lat: lats.reduce(0, +) / Double(lats.count), lon: avgLon)
+    }
+}
+
+/// What selecting a country frames: the smallest circle on the sphere — a cap —
+/// around its main landmass, as a center and an angular radius in degrees.
+///
+/// The globe turns the radius into a camera distance for the view it is in
+/// (`GlobeState.distanceToFit`), so Luxembourg fills the screen and Russia fits
+/// inside it instead of every country landing at one fixed zoom.
+///
+/// Android's `CountryFocus` is a port of this, down to the iteration count:
+/// `CountryFocusTests` here and Android's `CountryHitTesterTest` pin the same values.
+struct CountryFocus {
+    let lat: Double
+    let lon: Double
+    let radiusDegrees: Double
+
+    /// Rings smaller than this fraction of the country's largest ring are left
+    /// out of the frame: the US frames the contiguous states and Alaska, not
+    /// Hawaii; Portugal its mainland, not the Azores.
+    static let mainLandmassFraction = 0.1
+
+    /// Steps of the Bădoiu–Clarkson enclosing-ball iteration.
+    static let iterations = 100
+
+    init(lat: Double, lon: Double, radiusDegrees: Double) {
+        self.lat = lat
+        self.lon = lon
+        self.radiusDegrees = radiusDegrees
+    }
+
+    init?(_ country: GeoJSONCountry) {
+        if country.isPointCountry {
+            guard let coord = country.pointCoordinate else { return nil }
+            self = CountryFocus(lat: coord.lat, lon: coord.lon, radiusDegrees: 0)
+            return
+        }
+        let rings = country.polygons.map { $0.filter { $0.count >= 2 } }.filter { !$0.isEmpty }
+        guard !rings.isEmpty else { return nil }
+        let areas = rings.map { Self.approximateArea($0) }
+        let largest = areas.max()!
+        let main = zip(rings, areas).filter { $0.1 >= Self.mainLandmassFraction * largest }.map { $0.0 }
+        self = Self.enclosingCap(main)
+    }
+
+    /// Shoelace area in degrees², scaled by the cosine of the ring's mean
+    /// latitude. Only ever compared between rings of one country, so the rough
+    /// correction for converging meridians is all it needs.
+    private static func approximateArea(_ ring: [[Double]]) -> Double {
+        var twice = 0.0
+        var latSum = 0.0
+        for i in 0..<ring.count {
+            let j = (i + 1) % ring.count
+            twice += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1]
+            latSum += ring[i][1]
+        }
+        return abs(twice) / 2 * cos(latSum / Double(ring.count) * .pi / 180)
+    }
+
+    /// The smallest enclosing ball of the points as unit vectors, found with
+    /// Bădoiu–Clarkson (step toward the farthest point by 1/(k+1)) and pushed back
+    /// onto the sphere. Working in 3D makes it antimeridian-safe for free, and the
+    /// cap's center is not dragged toward detailed coastlines the way a mean of
+    /// boundary points is.
+    private static func enclosingCap(_ rings: [[[Double]]]) -> CountryFocus {
+        var points: [SIMD3<Double>] = []
+        for ring in rings {
+            for coord in ring {
+                let lat = coord[1] * .pi / 180
+                let lon = coord[0] * .pi / 180
+                points.append(SIMD3(cos(lat) * cos(lon), cos(lat) * sin(lon), sin(lat)))
+            }
+        }
+
+        var center = points.reduce(SIMD3<Double>(), +) / Double(points.count)
+        for k in 1...iterations {
+            var far = points[0]
+            var farthest = -1.0
+            for point in points {
+                let d = point - center
+                let distance = d.x * d.x + d.y * d.y + d.z * d.z
+                if distance > farthest {
+                    farthest = distance
+                    far = point
+                }
+            }
+            center += (far - center) * (1.0 / Double(k + 1))
+        }
+
+        let length = (center.x * center.x + center.y * center.y + center.z * center.z).squareRoot()
+        center /= length
+        var smallestDot = 1.0
+        for point in points {
+            smallestDot = min(smallestDot, point.x * center.x + point.y * center.y + point.z * center.z)
+        }
+
+        return CountryFocus(
+            lat: asin(max(-1, min(1, center.z))) * 180 / .pi,
+            lon: atan2(center.y, center.x) * 180 / .pi,
+            radiusDegrees: acos(max(-1, smallestDot)) * 180 / .pi
+        )
     }
 }

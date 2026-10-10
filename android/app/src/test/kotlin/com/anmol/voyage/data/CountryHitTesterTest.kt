@@ -104,4 +104,45 @@ class CountryHitTesterTest {
     fun `an unknown country has no center`() {
         assertNull(hitTester.center("Atlantis"))
     }
+
+    // What selecting a country frames. The values are iOS `CountryFocusTests`'
+    // too, so both platforms fly to the same place at the same zoom.
+
+    @Test
+    fun `a focus is the smallest cap around the country`() {
+        val russia = hitTester.focus("Russia")!!
+        assertEquals(65.677, russia.center.lat, 0.01)
+        assertEquals(90.205, russia.center.lon, 0.01)
+        assertEquals(35.859, russia.radiusDegrees, 0.01)
+
+        val france = hitTester.focus("France")!!
+        assertEquals(46.585, france.center.lat, 0.01)
+        assertEquals(1.880, france.center.lon, 0.01)
+        assertEquals(4.882, france.radiusDegrees, 0.01)
+    }
+
+    @Test
+    fun `a focus frames the main landmass, not far-flung islands`() {
+        // Hawaii and the Azores would stretch these caps to 40° and 9.6°.
+        assertEquals(33.362, hitTester.focus("United States of America")!!.radiusDegrees, 0.01)
+        assertEquals(2.658, hitTester.focus("Portugal")!!.radiusDegrees, 0.01)
+    }
+
+    @Test
+    fun `a focus across the antimeridian stays on the right side of the planet`() {
+        val fiji = hitTester.focus("Fiji")!!
+        assertEquals(178.676, fiji.center.lon, 0.01)
+        assertEquals(1.606, fiji.radiusDegrees, 0.01)
+    }
+
+    @Test
+    fun `a point country is focused on its own coordinate, with no extent`() {
+        val singapore = countries.first { it.name == "Singapore" }
+        assertEquals(CountryFocus(singapore.pointCoordinate!!, 0.0), hitTester.focus("Singapore"))
+    }
+
+    @Test
+    fun `an unknown country has no focus`() {
+        assertNull(hitTester.focus("Atlantis"))
+    }
 }

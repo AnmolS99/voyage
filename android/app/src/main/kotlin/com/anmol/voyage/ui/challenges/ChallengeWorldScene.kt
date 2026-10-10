@@ -5,8 +5,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import com.anmol.voyage.data.CountryFocus
 import com.anmol.voyage.data.LatLon
-import com.anmol.voyage.globe.GlobeFlight
 import com.anmol.voyage.ui.map.CameraFocus
 import com.anmol.voyage.ui.map.CountryStyle
 import com.anmol.voyage.ui.map.CountryStyles
@@ -51,10 +51,16 @@ class ChallengeWorldScene(private val onTap: (String) -> Unit) : WorldScene {
 
     override fun onInteraction() = Unit
 
-    /** Outlines [name], flying to [center] when given — iOS's `selectCountry(_:center:)`. */
-    fun select(name: String, center: LatLon? = null) {
+    /**
+     * Outlines [name], flying to frame [focus] when given — iOS's
+     * `selectCountry(_:center:)`, whose flight frames the country the same way.
+     */
+    fun select(name: String, focus: CountryFocus? = null) {
         selectedCountry = name
-        if (center != null) flyTo(center, GlobeFlight.SELECTION_DISTANCE)
+        if (focus != null) {
+            flights += 1
+            cameraFocus = CameraFocus.country(focus, request = flights)
+        }
     }
 
     fun deselect() {

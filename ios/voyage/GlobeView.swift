@@ -292,7 +292,16 @@ struct GlobeView: UIViewRepresentable {
             hasAnimatedToCountry = true
             lastAnimatedCountry = selectedCountry
 
-            flyTo(lat: center.lat, lon: center.lon, distance: 2.8)
+            // Framed to the country's size: Luxembourg fills the view, Russia fits in it.
+            guard let focus = CountryHitTester.shared.focus(of: selectedCountry) else {
+                flyTo(lat: center.lat, lon: center.lon, distance: 2.8)
+                return
+            }
+            let bounds = sceneView?.bounds ?? .zero
+            let aspect = bounds.height > 0 ? Double(bounds.width / bounds.height) : 1
+            let distance = GlobeState.distanceToFit(radiusDegrees: focus.radiusDegrees,
+                                                    latitude: focus.lat, aspect: aspect)
+            flyTo(lat: focus.lat, lon: focus.lon, distance: distance)
         }
 
         /// Consumes a one-shot camera flight request (e.g. a challenge game
