@@ -19,6 +19,14 @@
     <string name="home_light_mode">Switch to light mode</string>
     <string name="home_globe_description">Globe</string>
     <string name="home_map_description">World map</string>
+    <string name="home_add_country">Add country</string>
+    <string name="dock_progress">%1$d of %2$d countries visited, %3$d percent</string>
+    <string name="dock_percent">%1$d%%</string>
+    <string name="dock_visit">Visit</string>
+    <string name="dock_wish">Wish</string>
+    <string name="dock_wished">Wished</string>
+    <string name="dock_explore">Explore</string>
+    <string name="dock_close">Close</string>
     <plurals name="home_visited_count">
         <item quantity="one">%1$d country visited</item>
         <item quantity="other">%1$d countries visited</item>
@@ -30,8 +38,6 @@
     <string name="country_flag">Flag of %1$s</string>
     <string name="country_visited">Visited</string>
     <string name="country_wishlist">Wishlist</string>
-    <string name="country_details">Details</string>
-    <string name="country_clear_selection">Clear selection</string>
     <string name="country_cities">Top Cities</string>
     <string name="country_attractions">Top Attractions</string>
     <string name="country_capital_badge">Capital city</string>

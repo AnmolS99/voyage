@@ -49,6 +49,11 @@ two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,
 `ui/map/CapitalMarker.kt`, `ui/map/MapProjection.kt`, and
 `globe/GlobeCamera.kt` rather than in the renderer, and
 `ui/home/HomeScreen.kt` holds the chrome both Android renderers share.
+Home's bottom chrome, `ui/home/CountriesDock.kt`, ports
+`ios/voyage/CountriesDock.swift` — the progress dock that morphs into the
+selected country's card — with iOS's springs, metrics and button colors
+(`StatusButtons` in `ui/map/CountryStyle.kt`), so changing either is a
+two-platform change.
 `HomeScreen` also owns the globe's **Filament engine — one per Activity** — and
 `VoyageApp` composes it outside the `NavHost` and *under* it, hidden rather than
 removed on a tab switch: a detached `TextureView` loses its surface, and a

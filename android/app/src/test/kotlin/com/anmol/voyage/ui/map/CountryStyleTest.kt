@@ -119,4 +119,24 @@ class CountryStyleTest {
         assertEquals(MapShading.None, revealed.fill)
         assertEquals(MapShading.Solid(red), revealed.border)
     }
+
+    @Test
+    fun `a toggled status button takes the color the globe paints that status`() {
+        // iOS `CountriesDock`: the card matches the country's color on the globe.
+        assertEquals(style(visited = true).fill, MapShading.Solid(StatusButtons.visit(isVisited = true).container))
+        assertEquals(style(wishlist = true).fill, MapShading.Solid(StatusButtons.wish(isWished = true).container))
+    }
+
+    @Test
+    fun `untoggled status buttons are the accent, labelled white`() {
+        val idle = StatusButtonColors(VoyagePalette.buttonColor, Color.White)
+        assertEquals(idle, StatusButtons.visit(isVisited = false))
+        assertEquals(idle, StatusButtons.wish(isWished = false))
+    }
+
+    @Test
+    fun `visited yellow is labelled black, wishlist purple white`() {
+        assertEquals(Color.Black, StatusButtons.visit(isVisited = true).content)
+        assertEquals(Color.White, StatusButtons.wish(isWished = true).content)
+    }
 }

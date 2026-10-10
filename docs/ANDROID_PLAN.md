@@ -193,6 +193,10 @@ accepted answers on both platforms; mid-game state survives leaving the app.
       headings, status chips pass AA. **Open:** white on the brand orange
       (`primary`, every filled button) is 2.7:1 — below AA, and changing it is a
       brand decision for both platforms
+- [x] Countries dock (#94): Home's progress dock morphing into the country
+      card, ported from iOS #92 (`CountriesDock`, `VisitProgressTest`,
+      `CountryStyleTest`). Map toggle top-left, theme top-right; search moved
+      into the dock's +
 - [ ] Tip jar via Play Billing (deferred to Phase 11, see the decision log)
 
 **Definition of done:** indistinguishable from a first-party Material app in

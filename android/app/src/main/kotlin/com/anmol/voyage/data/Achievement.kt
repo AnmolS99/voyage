@@ -145,6 +145,9 @@ object WondersOfTheWorld {
  */
 object UnMembership {
 
+    /** UN member and observer states: iOS's `totalUNCountries`. */
+    const val MEMBER_COUNT = 195
+
     val nonMemberTerritories: Set<String> = setOf(
         "Antarctica",
         "Bermuda",

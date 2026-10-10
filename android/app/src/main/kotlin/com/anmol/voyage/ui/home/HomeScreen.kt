@@ -1,19 +1,15 @@
 package com.anmol.voyage.ui.home
 
 import android.graphics.Bitmap
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -22,7 +18,6 @@ import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Public
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -64,7 +59,6 @@ import com.anmol.voyage.state.ViewMode
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.CountryDetailSheet
 import com.anmol.voyage.ui.country.CountrySearchSheet
-import com.anmol.voyage.ui.country.CountrySelectionCard
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFill
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFillOrNull
 import com.anmol.voyage.ui.globe.GlobeDotStyle
@@ -79,7 +73,6 @@ import com.anmol.voyage.ui.map.WorldScene
 import com.anmol.voyage.ui.map.buildCountryPaths
 import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.anmol.voyage.ui.theme.VoyagePalette
-import com.anmol.voyage.ui.theme.readableWidth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -114,9 +107,10 @@ private fun rememberEarthTexture(style: GlobeStyle): EarthTexture? {
  * selection, and the two sheets that reach a country.
  *
  * Both renderers share everything except the projection, which is the point of
- * the consistency rule in CLAUDE.md: the search button, the selection card, the
- * details sheet, and the tap → select → recolor loop are written once here, and
- * only the surface in the middle swaps.
+ * the consistency rule in CLAUDE.md: the header buttons, the countries dock that
+ * becomes the selection card, the details and search sheets, and the tap →
+ * select → recolor loop are written once here, and only the surface in the
+ * middle swaps.
  *
  * Loading the countries, projecting their ~171k points, and loading the globe's
  * meshes all happen off the main thread, so the first frame is never blocked
@@ -228,13 +222,17 @@ fun HomeScreen(
         }
 
         if (showsChrome) {
-            Column(
+            // iOS's header: the map toggle in one top corner, the theme in the
+            // other. Search moved into the dock's +; TalkBack still reaches it
+            // as the world's own action.
+            Row(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
                     // Home draws under the status bar; its buttons must not.
                     .windowInsetsPadding(WindowInsets.statusBars)
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 FilledTonalIconButton(
                     onClick = { state.toggleViewMode() },
@@ -256,37 +254,17 @@ fun HomeScreen(
                         ),
                     )
                 }
-                FilledTonalIconButton(onClick = { showingSearch = true }, enabled = loaded != null) {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = stringResource(R.string.map_search_countries),
-                    )
-                }
             }
 
-            // The card rises in with a selection and sinks away with it, so it
-            // keeps showing the last country for as long as it is leaving.
-            val shownName = rememberLastNonNull(selectedCountry)
-            AnimatedVisibility(
-                visible = selectedCountry != null,
-                enter = slideInVertically { it / 2 } + fadeIn(),
-                exit = slideOutVertically { it / 2 } + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .readableWidth(),
-            ) {
-                shownName?.let { name ->
-                    CountrySelectionCard(
-                        name = name,
-                        // A leaving card keeps its detail only while it still
-                        // matches; the next one's never flashes in the old card.
-                        detail = detail?.takeIf { it.name == name },
-                        state = state,
-                        onOpenDetails = { showingDetails = true },
-                    )
-                }
-            }
+            CountriesDock(
+                state = state,
+                countryNamed = cache::countryNamed,
+                // A phone on its side: Material's compact height class.
+                compact = maxHeight < COMPACT_HEIGHT,
+                onAddCountry = { if (loaded != null) showingSearch = true },
+                onExplore = { showingDetails = true },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
 
@@ -426,17 +404,11 @@ private fun BoxScope.HomeLoading() {
 }
 
 /**
- * [value], or while it is null the last value it was not — what an exit
- * animation keeps drawing. Held outside snapshot state: it only ever changes
- * alongside [value], so it never needs to trigger a recomposition of its own.
+ * Material's compact height class: a phone held on its side, where the dock
+ * lowers and the card puts its header and buttons on one row — what iOS keys
+ * on a compact vertical size class.
  */
-@Composable
-private fun <T : Any> rememberLastNonNull(value: T?): T? {
-    val last = remember { arrayOfNulls<Any>(1) }
-    if (value != null) last[0] = value
-    @Suppress("UNCHECKED_CAST")
-    return last[0] as T?
-}
+private val COMPACT_HEIGHT = 480.dp
 
 /**
  * A tick each time a country is selected, the Android voice of iOS's
@@ -471,8 +443,8 @@ private fun worldDescription(isGlobe: Boolean, visited: Int): String {
  * action.
  *
  * A country cannot be found by touch without sight — they are painted, not laid
- * out — so search is the accessible way to select one, and the selection card
- * that answers it announces itself.
+ * out — so search is the accessible way to select one, and the card that
+ * answers it announces itself. The dock's + opens the same search.
  */
 private fun Modifier.worldSemantics(description: String, searchLabel: String, onSearch: () -> Unit): Modifier =
     semantics {

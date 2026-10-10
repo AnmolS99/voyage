@@ -25,6 +25,28 @@ sealed interface MapShading {
     data object None : MapShading
 }
 
+/** A status button's fill and the icon and label drawn on it. */
+data class StatusButtonColors(val container: Color, val content: Color)
+
+/**
+ * The selection card's Visit and Wish buttons, ported from iOS `CountriesDock`.
+ *
+ * Untoggled, both are the accent orange. Toggled, each takes the country's
+ * color on the globe, so the card matches what it marks: visited yellow and
+ * wishlist purple, the same colors [CountryStyles] paints. Yellow takes black,
+ * since white is unreadable on it; the others take white, as on iOS.
+ */
+object StatusButtons {
+
+    private val IDLE = StatusButtonColors(VoyagePalette.buttonColor, Color.White)
+
+    fun visit(isVisited: Boolean): StatusButtonColors =
+        if (isVisited) StatusButtonColors(VoyagePalette.visited, Color.Black) else IDLE
+
+    fun wish(isWished: Boolean): StatusButtonColors =
+        if (isWished) StatusButtonColors(VoyagePalette.wishlist, Color.White) else IDLE
+}
+
 /** Fill, border, and border width for one country in its current state. */
 data class CountryStyle(
     val fill: MapShading,
