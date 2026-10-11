@@ -118,7 +118,7 @@ class ChallengeSession(
             SweepGuessOutcome.Reveal -> if (target != null) {
                 showFeedback(SweepFeedback.CountryIsHere(target, flagOf(target)), CLICK_REVEAL_MILLIS)
                 scene.highlight(target, VoyagePalette.challengeWrong)
-                scene.select(target, cache.hitTester.center(target))
+                scene.select(target, cache.hitTester.focus(target))
                 afterReveal(CLICK_REVEAL_MILLIS) { scene.deselect() }
             }
             SweepGuessOutcome.Ignored -> Unit
@@ -151,7 +151,7 @@ class ChallengeSession(
                     // The flag's country was never outlined — that would be the
                     // answer — so show where it is now, then pull back out.
                     showFeedback(SweepFeedback.FlagOf(target, flagOf(target)), NAME_REVEAL_MILLIS)
-                    scene.select(target, cache.hitTester.center(target))
+                    scene.select(target, cache.hitTester.focus(target))
                     afterReveal(NAME_REVEAL_MILLIS) {
                         scene.deselect()
                         scene.flyTo(region.cameraTarget, region.cameraDistance)

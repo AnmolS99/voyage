@@ -6,6 +6,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.tan
 import org.junit.Test
 
@@ -400,5 +402,51 @@ class GlobeCameraTest {
         val farthest = GlobeCamera(latitude = 0.0, longitude = 0.0, distance = GlobeCamera.MAX_DISTANCE)
         assertTrue(closest.isBeyondHorizon(patch, 0.01f))
         assertFalse(farthest.isBeyondHorizon(patch, 0.01f))
+    }
+
+    // Selection framing. The distances are iOS `CountryFocusTests`' too: both
+    // platforms frame a selected country the same way.
+
+    /** A portrait phone, about an iPhone 17 Pro's or a Pixel's width ÷ height. */
+    private val portrait = 0.46f
+
+    @Test
+    fun `a selection pulls back far enough to fit a large country`() {
+        // Russia's cap: 35.9° of arc around 65.7°N.
+        assertEquals(4.427f, GlobeCamera.distanceToFit(35.859, 65.677, portrait), 0.002f)
+        // France: 4.9° of arc.
+        assertEquals(1.522f, GlobeCamera.distanceToFit(4.882, 46.585, portrait), 0.002f)
+    }
+
+    @Test
+    fun `the fitted country spans the margin of the narrower half-field of view`() {
+        val radius = 10.0
+        val distance = GlobeCamera.distanceToFit(radius, 0.0, portrait).toDouble()
+        val theta = Math.toRadians(radius)
+        val tanSeen = sin(theta) / (distance - cos(theta))
+        val tanHalfWidth = tan(Math.toRadians(GlobeCamera.FOV_DEGREES / 2)) * portrait
+        assertEquals(GlobeCamera.FIT_MARGIN, tanSeen / tanHalfWidth, 1e-4)
+    }
+
+    @Test
+    fun `landscape fits to the height, which is then the narrower axis`() {
+        val square = GlobeCamera.distanceToFit(20.0, 0.0, 1f)
+        assertEquals(square, GlobeCamera.distanceToFit(20.0, 0.0, 2.17f), 0f)
+        assertTrue(GlobeCamera.distanceToFit(20.0, 0.0, portrait) > square)
+    }
+
+    @Test
+    fun `fitted distances stay inside the selection range`() {
+        assertEquals(GlobeCamera.MIN_FIT_DISTANCE, GlobeCamera.distanceToFit(0.0, 41.9, portrait), 0f)
+        assertEquals(GlobeCamera.MAX_FIT_DISTANCE, GlobeCamera.distanceToFit(80.0, 0.0, portrait), 0f)
+        assertTrue(GlobeCamera.MIN_FIT_DISTANCE > GlobeCamera.MIN_DISTANCE)
+        assertTrue(GlobeCamera.MAX_FIT_DISTANCE < GlobeCamera.MAX_DISTANCE)
+    }
+
+    @Test
+    fun `a cap past the camera's tilt limit is widened by the shortfall`() {
+        val atLimit = GlobeCamera.distanceToFit(10.0, GlobeCamera.MAX_LATITUDE, portrait)
+        assertEquals(atLimit, GlobeCamera.distanceToFit(5.0, GlobeCamera.MAX_LATITUDE + 5.0, portrait), 1e-5f)
+        assertEquals(atLimit, GlobeCamera.distanceToFit(5.0, -GlobeCamera.MAX_LATITUDE - 5.0, portrait), 1e-5f)
     }
 }

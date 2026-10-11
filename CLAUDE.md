@@ -70,7 +70,7 @@ deselecting — is `VoyageState.isAutoRotating` driving
 `GlobeCamera.autoRotated`, where iOS runs an `SCNAction` off
 `GlobeState.isAutoRotating`. Selecting a country flies the camera to it via
 `globe/GlobeFlight.kt`, a port of `GlobeView.Coordinator.flyTo` down to its
-easing curve. Both platforms integrate one step per rendered frame — on Android a
+easing curve. How far back that flight settles is fitted to the country: `CountryFocus` (the smallest cap around its main landmass, in each platform's `CountryHitTester`) and `distanceToFit` (iOS `GlobeState`, Android `GlobeCamera`) size it to the view's narrower axis, so Luxembourg fills the screen and Russia fits in it — same algorithm, margin and clamps on both, pinned by `CountryFocusTests` and `CountryHitTesterTest`/`GlobeCameraTest`. Both platforms integrate one step per rendered frame — on Android a
 flight, a coasting flick and the idle spin are three cases of one `advance()`
 step, so exactly one of them writes the camera per frame — and the decay curve,
 pan speed, idle rate and flight timing are pinned by tests on each; retuning any

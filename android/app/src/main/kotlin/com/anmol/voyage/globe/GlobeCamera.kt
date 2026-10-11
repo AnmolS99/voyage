@@ -4,7 +4,9 @@ import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
 
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.tan
 
@@ -226,6 +228,39 @@ data class GlobeCamera(
             longitude = wrapLongitude(longitude),
             distance = distance.coerceIn(MIN_DISTANCE, MAX_DISTANCE),
         )
+
+        /**
+         * How far from the globe's center the camera must sit for a country to
+         * fill the view: a cap of [radiusDegrees] around [latitude], fitted to
+         * the narrower axis of a viewport [aspect] (width ÷ height) wide.
+         *
+         * A point θ from the view's center is seen at α off-axis, where
+         * tan α = sin θ / (d − cos θ); solving that for d with tan α at
+         * [FIT_MARGIN] of the narrower half-field of view gives the distance.
+         * A camera can't tilt past [MAX_LATITUDE], so a cap centered beyond it
+         * is widened by the shortfall — the camera looks at it from the side.
+         *
+         * Clamped to [MIN_FIT_DISTANCE]..[MAX_FIT_DISTANCE]: a microstate still
+         * shows its neighbors, and nothing pulls back to the zoom-out limit.
+         * The same formula and constants as iOS `GlobeState.distanceToFit`;
+         * `GlobeCameraTest` and `CountryFocusTests` pin the same distances.
+         */
+        fun distanceToFit(radiusDegrees: Double, latitude: Double, aspect: Float): Float {
+            val shortfall = (abs(latitude) - MAX_LATITUDE).coerceAtLeast(0.0)
+            val theta = Math.toRadians(radiusDegrees + shortfall)
+            val tanHalf = tan(FOV_RADIANS / 2.0) * min(1.0, aspect.toDouble()) * FIT_MARGIN
+            val distance = cos(theta) + sin(theta) / tanHalf
+            return distance.toFloat().coerceIn(MIN_FIT_DISTANCE, MAX_FIT_DISTANCE)
+        }
+
+        /** Share of the narrower half-field of view a selected country may span. */
+        const val FIT_MARGIN = 0.85
+
+        /** Closest a selection flies in: Luxembourg, Vatican City, every microstate dot. */
+        const val MIN_FIT_DISTANCE = 1.25f
+
+        /** Furthest a selection pulls back: Russia in portrait lands just inside it. */
+        const val MAX_FIT_DISTANCE = 4.8f
 
         /** Keeps the horizon test from popping meshes right at the limb. */
         const val HORIZON_MARGIN = 0.02

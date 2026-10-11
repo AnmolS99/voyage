@@ -23,7 +23,9 @@ class HomeWorldScene(
     override val showsCapital: Boolean get() = true
 
     override val cameraFocus: CameraFocus?
-        get() = state.selectedCountryCenter?.let { CameraFocus(it) }
+        get() = state.selectedCountryCenter?.let { center ->
+            state.selectedCountry?.let(hitTester::focus)?.let { CameraFocus.country(it) } ?: CameraFocus(center)
+        }
 
     override val isAutoRotating: Boolean get() = state.isAutoRotating
 
