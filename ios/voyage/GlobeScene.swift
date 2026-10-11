@@ -1,6 +1,7 @@
 import SceneKit
 import SwiftUI
 import UIKit
+import simd
 
 class GlobeScene {
 
@@ -92,7 +93,7 @@ class GlobeScene {
 
         // Create ocean sphere (base)
         let oceanSphere = SCNSphere(radius: 1.0)
-        oceanSphere.segmentCount = 64
+        oceanSphere.segmentCount = GlobeLayer.oceanSegmentCount
         let oceanMaterial = SCNMaterial()
         oceanMaterial.diffuse.contents = AppColors.oceanUI
         oceanMaterial.specular.contents = UIColor.clear
@@ -126,6 +127,8 @@ class GlobeScene {
             }
         }
 
+        settleLayersOnGlobeLayerRadii(globeNode)
+
         // Country borders live in lon x lat sector nodes (culled per frame when on
         // the globe's far side). All share ONE shader-driven material instance, so zoom
         // code updates a single uniform — the cached .scn's materials lack the modifier.
@@ -143,6 +146,38 @@ class GlobeScene {
         }
     }
 
+    /// Moves a cached globe's layers onto the `GlobeLayer` radii, whatever radii
+    /// `globe.scn` was generated with — so lowering a layer takes effect without
+    /// regenerating the cache, and is a no-op once it has been.
+    static func settleLayersOnGlobeLayerRadii(_ globeNode: SCNNode) {
+        if let ocean = globeNode.childNode(withName: "ocean", recursively: false)?.geometry as? SCNSphere {
+            ocean.segmentCount = GlobeLayer.oceanSegmentCount
+        }
+
+        func scale(_ node: SCNNode, onto radius: Float) {
+            guard let geometry = node.geometry,
+                  let built = PolygonTriangulator.builtRadius(of: geometry),
+                  built > 0 else { return }
+            let s = radius / built
+            node.scale = SCNVector3(s, s, s)
+        }
+
+        for node in globeNode.childNodes {
+            guard node.name != "ocean" else { continue }
+            if node.name?.hasPrefix("outline_sector_") == true {
+                scale(node, onto: GlobeLayer.outline)
+            } else if node.geometry is SCNCylinder || node.geometry is SCNTube {
+                // Microstate dot or its ring: positioned, not built, on its radius.
+                let p = simd_float3(Float(node.position.x), Float(node.position.y), Float(node.position.z))
+                guard simd_length(p) > 0 else { continue }
+                let settled = simd_normalize(p) * GlobeLayer.dot
+                node.position = SCNVector3(settled.x, settled.y, settled.z)
+            } else {
+                scale(node, onto: GlobeLayer.fill)
+            }
+        }
+    }
+
     static func addCountriesFromGeoJSON(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let countries = CountryDataCache.shared.countries
         let landColor = AppColors.landUI
@@ -154,7 +189,7 @@ class GlobeScene {
                 guard let pointCoord = country.pointCoordinate else { continue }
 
                 // Convert lat/lon to 3D position
-                let position = PolygonTriangulator.latLonToSphere(lat: pointCoord.lat, lon: pointCoord.lon, radius: 1.005)
+                let position = PolygonTriangulator.latLonToSphere(lat: pointCoord.lat, lon: pointCoord.lon, radius: GlobeLayer.dot)
 
                 // Create black outline circle (slightly larger, behind)
                 let outlineCircle = SCNCylinder(radius: 0.014, height: 0.0005)

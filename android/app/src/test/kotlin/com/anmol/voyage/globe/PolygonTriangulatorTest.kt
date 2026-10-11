@@ -158,7 +158,7 @@ class PolygonTriangulatorTest {
             val x = mesh.positions[v * 3]
             val y = mesh.positions[v * 3 + 1]
             val z = mesh.positions[v * 3 + 2]
-            assertEquals(1.003f, sqrt(x * x + y * y + z * z), 1e-4f)
+            assertEquals(PolygonTriangulator.FILL_RADIUS, sqrt(x * x + y * y + z * z), 1e-5f)
         }
         assertEquals(mesh.vertexCount * 2, mesh.uvs.size)
     }
@@ -216,7 +216,7 @@ class PolygonTriangulatorTest {
             val x = mesh.positions[v * 3]
             val y = mesh.positions[v * 3 + 1]
             val z = mesh.positions[v * 3 + 2]
-            assertEquals(1.005f, sqrt(x * x + y * y + z * z), 1e-4f)
+            assertEquals(PolygonTriangulator.OUTLINE_RADIUS, sqrt(x * x + y * y + z * z), 1e-5f)
         }
     }
 
@@ -283,8 +283,8 @@ class PolygonTriangulatorTest {
         )!!
 
         // iOS raises its overlay with a shader uniform; here it is baked into the
-        // radius, and the 0.001 gap is the one iOS raises by.
-        assertEquals(0.001f, radiusOf(selected, 0) - radiusOf(shared, 0), 1e-5f)
+        // radius, and the 0.0003 gap is the one iOS raises by (GlobeLayer.selectedOutlineRaise).
+        assertEquals(0.0003f, radiusOf(selected, 0) - radiusOf(shared, 0), 1e-5f)
     }
 
     private fun radiusOf(mesh: OutlineMesh, vertex: Int): Float {

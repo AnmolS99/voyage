@@ -762,5 +762,5 @@ private const val SCROLL_ZOOM_RATE = 0.2f
  * Sphere radii for the star's two layers, just above the dots so a capital on a
  * microstate is drawn over its dot rather than inside it.
  */
-private const val STAR_OUTLINE_RADIUS = 1.0064f
-private const val STAR_FILL_RADIUS = 1.0066f
+internal const val STAR_OUTLINE_RADIUS = 1.0019f
+internal const val STAR_FILL_RADIUS = 1.0021f

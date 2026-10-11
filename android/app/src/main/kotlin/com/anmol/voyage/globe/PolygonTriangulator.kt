@@ -33,8 +33,23 @@ object PolygonTriangulator {
      */
     private const val MAX_EDGE_DEGREES = 2.5
 
+    /**
+     * Radius the country fills sit at, as on iOS.
+     *
+     * Every layer above the ocean sits as close to it as the depth buffer
+     * allows, because a layer raised above the textured sphere is seen from a
+     * slightly different angle than the texture under it: at the closest zoom
+     * the camera is only `GlobeCamera.MIN_DISTANCE - 1` = 0.1 above the
+     * surface, and a layer 0.003 up slid 3% of its distance from the screen
+     * centre off the coastline it was drawn for. `GlobeLayersTest` pins that
+     * budget. The gaps that remain (0.0005 fill to border) still clear the
+     * chord sag of the 2.5° subdivision with margin, and the reversed-Z depth
+     * buffer resolves them at every zoom.
+     */
+    const val FILL_RADIUS = 1.0005f
+
     /** Radius the shared black border outlines sit at, as on iOS. */
-    const val OUTLINE_RADIUS = 1.005f
+    const val OUTLINE_RADIUS = 1.001f
 
     /**
      * Radius for the selected country's overlay outline.
@@ -43,9 +58,9 @@ object PolygonTriangulator {
      * `outlineRaise` shader uniform, because it reuses one cached geometry for
      * both. Here the selected outline is built for one country on its own, so
      * the lift is simply baked into the radius and the material needs no second
-     * uniform. The 0.001 gap is the same one iOS raises by.
+     * uniform. The 0.0003 gap is the same one iOS raises by.
      */
-    const val SELECTED_OUTLINE_RADIUS = 1.006f
+    const val SELECTED_OUTLINE_RADIUS = 1.0013f
 
     private const val PI_F = Math.PI.toFloat()
 
@@ -224,7 +239,7 @@ object PolygonTriangulator {
      * @param holes Inner ring coordinates to exclude from the fill (e.g., the
      *   Lesotho enclave in South Africa).
      */
-    fun createCountryGeometry(polygons: List<Ring>, holes: List<Ring> = emptyList(), radius: Float = 1.003f): CountryMesh? {
+    fun createCountryGeometry(polygons: List<Ring>, holes: List<Ring> = emptyList(), radius: Float = FILL_RADIUS): CountryMesh? {
         val allPositions = FloatArrayBuilder()
         val allIndices = IntArrayBuilder()
         var gridFallbacks = 0
