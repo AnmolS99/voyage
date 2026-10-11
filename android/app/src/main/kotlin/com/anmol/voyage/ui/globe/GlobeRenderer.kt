@@ -43,8 +43,10 @@ import kotlin.math.abs
  * only uploads them.
  *
  * Scene layer order follows iOS: ocean sphere (radius 1.0) → country fills
- * (1.003) → border outlines (1.005) → the selected country's overlay outline
- * (1.006) → microstate dots and the capital star (1.0058…1.0066). The ocean is
+ * (1.0005) → border outlines (1.001) → the selected country's overlay outline
+ * (1.0013) → microstate dots and the capital star (1.0015…1.0021) — kept that
+ * close to the ocean so they don't drift off its texture at close zoom (see
+ * [com.anmol.voyage.globe.PolygonTriangulator.FILL_RADIUS]). The ocean is
  * painted with the Earth texture, and a country with nothing to show leaves the
  * scene so the texture shows through it.
  */

@@ -15,6 +15,10 @@ struct GlobeView: UIViewRepresentable {
         sceneView.backgroundColor = .clear
         sceneView.allowsCameraControl = false
         sceneView.antialiasingMode = .multisampling4X
+        // SceneKit's default, stated because the globe relies on it: the layers sit a
+        // few ten-thousandths above each other (see `GlobeLayer`), which a reverse-Z
+        // depth buffer resolves at every zoom.
+        sceneView.usesReverseZ = true
         sceneView.autoenablesDefaultLighting = false
         // Per-frame far-side outline culling + drag/inertia motion (see renderer(_:updateAtTime:))
         sceneView.delegate = context.coordinator
@@ -112,7 +116,7 @@ struct GlobeView: UIViewRepresentable {
         // instead of drowning small countries in black.
         static let baseOutlineThickness: Float = 0.0015
         static let selectedOutlineFactor: Float = 5.0 / 3.0   // matches the old 0.0025 selected width
-        static let selectedOutlineRaise: Float = 0.001        // lift above neighbours' outlines
+        static let selectedOutlineRaise = GlobeLayer.selectedOutlineRaise  // lift above neighbours' outlines
         private static let referenceCameraDistance: Float = 4.0
         private static let globeRadius: Float = 1.0
         private static let basePanRotationSpeed: Float = 0.005
@@ -737,8 +741,7 @@ struct GlobeView: UIViewRepresentable {
 
             // Convert lat/lon to 3D position on sphere (radius slightly above surface)
             // Must match PolygonTriangulator.latLonToSphere coordinate system
-            // Country polygons are at 1.003, borders at 1.005, so marker at 1.007
-            let radius: Float = 1.007  // Just above borders
+            let radius = GlobeLayer.capitalStar  // Just above borders and dots
             let latRad = Float(capital.lat) * .pi / 180.0
             let lonRad = Float(-capital.lon) * .pi / 180.0  // Negative lon to match globe
 

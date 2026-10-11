@@ -114,12 +114,12 @@ object GlobeGeometryCache {
     }
 
     /**
-     * Sphere radii for the two layers of a dot, above the fills (1.003) and the
-     * borders (1.005) so a dot is never buried by the country under it. The ring
+     * Sphere radii for the two layers of a dot, above the fills (1.0005), the
+     * borders (1.001) and the selected border (1.0013) so a dot is never buried by the country under it. The ring
      * sits just below its fill so the two never z-fight.
      */
-    private const val DOT_RING_RADIUS = 1.0058f
-    private const val DOT_FILL_RADIUS = 1.0062f
+    const val DOT_RING_RADIUS = 1.0015f
+    const val DOT_FILL_RADIUS = 1.0017f
 
     private const val TAG = "GlobeGeometryCache"
 }

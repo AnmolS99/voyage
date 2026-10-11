@@ -113,6 +113,14 @@ the cross-platform ones is a two-platform change.
 - **The ocean sphere faces outward, and its UVs are geographic** (`UvSphereTest`).
   A flat blue ocean looks identical wound either way; a textured one showed the
   antipodes, mirrored. The ocean material also sets `flipUV(false)`.
+- **The globe's layers hug the textured ocean** (`GlobeLayersTest`,
+  `GlobeLayersTests`). Fills 1.0005, borders 1.001, selected border 1.0013,
+  dots and the capital star just above, on a 256-segment ocean. A layer raised
+  above the texture drifts off it by its height over the camera's — at the
+  closest zoom (0.1 above the surface) the old 1.003 / 1.005 radii on a
+  64-segment ocean put countries up to ~5% of their distance from the screen
+  centre off their coastlines. The tests cap that at 1.5%. iOS settles a stale
+  `globe.scn` onto these radii at load.
 - **Every country is drawn by exactly one path** (`GlobeGeometryWorldTest`).
   `isPointCountry` and `pointCoordinate != null` are not each other's negation: a
   *polygon* flagged `renderAs: "point"` would fall through both filters and be

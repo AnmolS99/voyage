@@ -66,7 +66,7 @@ class GlobeGeometryWorldTest {
                 val x = mesh.positions[v * 3]
                 val y = mesh.positions[v * 3 + 1]
                 val z = mesh.positions[v * 3 + 2]
-                assertEquals("${country.name} vertex off the sphere", 1.003f, sqrt(x * x + y * y + z * z), 1e-4f)
+                assertEquals("${country.name} vertex off the sphere", PolygonTriangulator.FILL_RADIUS, sqrt(x * x + y * y + z * z), 1e-5f)
             }
         }
     }

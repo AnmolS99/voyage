@@ -103,7 +103,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
 
     // Create ocean sphere (base)
     let oceanSphere = SCNSphere(radius: 1.0)
-    oceanSphere.segmentCount = 64
+    oceanSphere.segmentCount = GlobeLayer.oceanSegmentCount
     let oceanMaterial = SCNMaterial()
     oceanMaterial.diffuse.contents = NSColor(red: 0.184, green: 0.525, blue: 0.651, alpha: 1.0)
     oceanMaterial.specular.contents = NSColor.clear
@@ -120,7 +120,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
         if country.isPointCountry {
             guard let pointCoord = country.pointCoordinate else { continue }
 
-            let position = PolygonTriangulator.latLonToSphere(lat: pointCoord.lat, lon: pointCoord.lon, radius: 1.005)
+            let position = PolygonTriangulator.latLonToSphere(lat: pointCoord.lat, lon: pointCoord.lon, radius: GlobeLayer.dot)
 
             // Create black outline circle (slightly larger, behind)
             let outlineCircle = SCNCylinder(radius: 0.014, height: 0.0005)

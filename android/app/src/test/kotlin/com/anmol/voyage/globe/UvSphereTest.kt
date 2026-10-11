@@ -29,14 +29,14 @@ class UvSphereTest {
 
     @Test
     fun `the sphere stays inside the country fills`() {
-        // Country fills are built at 1.003; an ocean at or above that would
+        // Country fills are built at FILL_RADIUS; an ocean at or above that would
         // z-fight with them instead of hiding the far hemisphere behind them.
         assertTrue(UvSphere.build().positions.let { positions ->
             (0 until positions.size / 3).all { v ->
                 val x = positions[v * 3]
                 val y = positions[v * 3 + 1]
                 val z = positions[v * 3 + 2]
-                sqrt(x * x + y * y + z * z) < 1.003f
+                sqrt(x * x + y * y + z * z) < PolygonTriangulator.FILL_RADIUS
             }
         })
     }

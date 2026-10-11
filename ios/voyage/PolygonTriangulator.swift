@@ -2,6 +2,34 @@ import Foundation
 import SceneKit
 import simd
 
+/// How far each layer of the globe sits above the textured ocean sphere (radius 1.0).
+///
+/// A layer raised above the ocean is seen along a slightly different ray than the
+/// texture under it, so it slides off the coastline it was drawn for — by its height
+/// over the camera's height above the surface, times its distance from the screen
+/// centre. At `GlobeState.minCameraDistance` the camera is only 0.1 above the surface:
+/// with fills at 1.003, borders at 1.005 and a 64-segment ocean whose flat facets dipped
+/// 0.001 between vertices, countries floated up to ~5% of their distance from the
+/// centre off the Earth texture. So every layer sits as close to the ocean as depth
+/// allows (`usesReverseZ` resolves these gaps at every zoom), and the ocean is fine
+/// enough that its facets stay on the true sphere. Android uses the same radii
+/// (`PolygonTriangulator.FILL_RADIUS` and friends) and pins them in `GlobeLayersTest`.
+enum GlobeLayer {
+    /// SCNSphere segments: facets dip < 0.0002 below radius 1.
+    static let oceanSegmentCount = 256
+    /// Country fills. Clears the ocean by more than the chord sag of a fill triangle
+    /// subdivided to `maxEdgeDegrees` (~0.0003).
+    static let fill: Float = 1.0005
+    /// Black border outlines.
+    static let outline: Float = 1.001
+    /// Extra lift of the selected country's outline above its neighbours' borders.
+    static let selectedOutlineRaise: Float = 0.0003
+    /// Centre of a microstate dot (its cylinders reach ±0.0005 around it).
+    static let dot: Float = 1.0015
+    /// The selected country's capital star, above the dots.
+    static let capitalStar: Float = 1.0022
+}
+
 class PolygonTriangulator {
 
     /// Max triangle edge / border segment length in true angular degrees before subdivision.
@@ -18,6 +46,22 @@ class PolygonTriangulator {
         let z = radius * cos(latRad) * sin(lonRad)
 
         return SCNVector3(x, y, z)
+    }
+
+    /// Distance from the globe's center of a geometry's first vertex — the radius a
+    /// fill or outline layer was built at, since every vertex of one sits on it.
+    static func builtRadius(of geometry: SCNGeometry) -> Float? {
+        guard let source = geometry.sources(for: .vertex).first,
+              source.vectorCount > 0,
+              source.usesFloatComponents,
+              source.bytesPerComponent == MemoryLayout<Float>.size,
+              source.componentsPerVector >= 3 else { return nil }
+        return source.data.withUnsafeBytes { raw -> Float in
+            let x = raw.loadUnaligned(fromByteOffset: source.dataOffset, as: Float.self)
+            let y = raw.loadUnaligned(fromByteOffset: source.dataOffset + 4, as: Float.self)
+            let z = raw.loadUnaligned(fromByteOffset: source.dataOffset + 8, as: Float.self)
+            return (x * x + y * y + z * z).squareRoot()
+        }
     }
 
     /// Inverse of `latLonToSphere`: direction from the globe's center to lat/lon degrees.
@@ -135,7 +179,7 @@ class PolygonTriangulator {
     // Create country fill geometry by ear-clipping triangulation (with holes) in lon/lat space,
     // subdividing large triangles to follow sphere curvature, then projecting onto the sphere.
     // holes: inner ring coordinates to exclude from the fill (e.g., the Lesotho enclave in South Africa).
-    static func createCountryGeometry(polygons: [[[Double]]], holes: [[[Double]]] = [], radius: Float = 1.003) -> SCNGeometry? {
+    static func createCountryGeometry(polygons: [[[Double]]], holes: [[[Double]]] = [], radius: Float = GlobeLayer.fill) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
 
@@ -527,7 +571,7 @@ class PolygonTriangulator {
     // Create border outline as a continuous quad strip with shared vertices at joins.
     // Width is applied by outlineShaderModifier at render time (see above); without the
     // modifier this geometry is degenerate (zero width).
-    static func createBorderOutlineGeometry(polygons: [[[Double]]], radius: Float = 1.005) -> SCNGeometry? {
+    static func createBorderOutlineGeometry(polygons: [[[Double]]], radius: Float = GlobeLayer.outline) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allMiters: [SCNVector3] = []
         var allIndices: [Int32] = []

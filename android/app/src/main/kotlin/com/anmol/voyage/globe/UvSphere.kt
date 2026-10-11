@@ -12,7 +12,7 @@ import kotlin.math.sin
  * one from `SCNSphere`, and Filament has no primitive shapes.
  *
  * The sphere does real work beyond being blue. It is opaque and sits *inside*
- * the country fills (radius 1.0 against their 1.003), so the depth buffer uses
+ * the country fills (radius 1.0 against their 1.0005), so the depth buffer uses
  * it to hide the far hemisphere's countries — the job iOS does with single-sided
  * winding and backface culling. That is why the country material can stay
  * double-sided without the far side of the world showing through.
@@ -23,10 +23,13 @@ object UvSphere {
      * Builds a sphere of [radius] with [segments] meridians and [rings]
      * parallels, wound counter-clockwise when seen from outside.
      *
-     * Defaults are sized for a globe that fills a phone screen: at 96×48 the
-     * silhouette has no visible facets at maximum zoom, for ~4.7k vertices.
+     * Defaults are sized for the closest zoom, where the texture has to stay
+     * under the countries: each flat facet dips below the true sphere, and at
+     * 96×48 that dip (0.001) alone slid the texture ~1% of its distance from
+     * the screen centre off the coastlines. At 256×128 it is under 0.0002, for
+     * ~33k vertices. iOS's `SCNSphere` uses the same 256 segments.
      */
-    fun build(radius: Float = 1.0f, segments: Int = 96, rings: Int = 48): SphereMesh {
+    fun build(radius: Float = 1.0f, segments: Int = 256, rings: Int = 128): SphereMesh {
         require(segments >= 3) { "a sphere needs at least 3 segments" }
         require(rings >= 2) { "a sphere needs at least 2 rings" }
 

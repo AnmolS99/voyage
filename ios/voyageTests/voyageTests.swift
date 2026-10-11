@@ -325,6 +325,88 @@ final class voyageTests: XCTestCase {
     }
 }
 
+/// How far each layer of the globe sits above the textured ocean — see `GlobeLayer`.
+/// Mirrors Android's `GlobeLayersTest`.
+final class GlobeLayersTests: XCTestCase {
+
+    /// Deepest dip of an ocean facet below radius 1: the centre of a quad spanning one
+    /// segment in longitude and latitude.
+    private var oceanFloor: Float {
+        let halfStep = Float.pi / Float(GlobeLayer.oceanSegmentCount)
+        return cos(halfStep) * cos(halfStep)
+    }
+
+    /// Screen drift at the closest zoom, as a fraction of distance from the centre.
+    private func drift(_ radius: Float) -> Float {
+        (radius - oceanFloor) / (GlobeState.minCameraDistance - 1)
+    }
+
+    func testFillsAndBordersStayOnTheTextureAtTheClosestZoom() {
+        for radius in [GlobeLayer.fill, GlobeLayer.outline, GlobeLayer.outline + GlobeLayer.selectedOutlineRaise] {
+            XCTAssertLessThan(drift(radius), 0.015, "layer at \(radius)")
+        }
+        XCTAssertLessThan(drift(GlobeLayer.capitalStar), 0.025)
+    }
+
+    func testLayersStackInDrawOrder() {
+        let stack: [Float] = [
+            1,
+            GlobeLayer.fill,
+            GlobeLayer.outline,
+            GlobeLayer.outline + GlobeLayer.selectedOutlineRaise,
+            GlobeLayer.dot,
+            GlobeLayer.capitalStar,
+        ]
+        XCTAssertEqual(stack, stack.sorted())
+        XCTAssertEqual(Set(stack).count, stack.count)
+    }
+
+    func testFillTrianglesClearTheOceanDespiteTheirChordSag() {
+        // Fill triangles are subdivided until no edge is longer than 2.5°, so a
+        // triangle's centre dips at most 1 - cos(circumradius) below its corners.
+        let circumradius = 2.5 / 3.0.squareRoot() * .pi / 180
+        let sag = Float(1 - cos(circumradius))
+        XCTAssertGreaterThan(GlobeLayer.fill * (1 - sag), 1)
+    }
+
+    func testBuiltGeometryLandsOnTheLayerRadii() {
+        let square: [[[Double]]] = [[[10, 10], [12, 10], [12, 12], [10, 12], [10, 10]]]
+        let fill = PolygonTriangulator.createCountryGeometry(polygons: square)!
+        let outline = PolygonTriangulator.createBorderOutlineGeometry(polygons: square)!
+        XCTAssertEqual(PolygonTriangulator.builtRadius(of: fill)!, GlobeLayer.fill, accuracy: 1e-5)
+        XCTAssertEqual(PolygonTriangulator.builtRadius(of: outline)!, GlobeLayer.outline, accuracy: 1e-5)
+    }
+
+    /// globe.scn may predate the current radii; loading it must settle every layer
+    /// on them anyway.
+    func testCachedGlobeSettlesOnTheLayerRadii() throws {
+        guard let globe = GlobeCache.shared.loadBundledGlobe() else {
+            throw XCTSkip("globe.scn is not in the test host's bundle")
+        }
+        GlobeScene.settleLayersOnGlobeLayerRadii(globe)
+
+        XCTAssertEqual((globe.childNode(withName: "ocean", recursively: false)?.geometry as? SCNSphere)?.segmentCount,
+                       GlobeLayer.oceanSegmentCount)
+
+        var fills = 0, sectors = 0, dots = 0
+        for node in globe.childNodes where node.name != "ocean" {
+            if node.geometry is SCNCylinder || node.geometry is SCNTube {
+                let p = simd_float3(Float(node.position.x), Float(node.position.y), Float(node.position.z))
+                XCTAssertEqual(simd_length(p), GlobeLayer.dot, accuracy: 1e-5, node.name ?? "")
+                dots += 1
+            } else if let geometry = node.geometry, let built = PolygonTriangulator.builtRadius(of: geometry) {
+                let isSector = node.name?.hasPrefix("outline_sector_") == true
+                let expected = isSector ? GlobeLayer.outline : GlobeLayer.fill
+                XCTAssertEqual(built * Float(node.scale.x), expected, accuracy: 1e-5, node.name ?? "")
+                if isSector { sectors += 1 } else { fills += 1 }
+            }
+        }
+        XCTAssertGreaterThan(fills, 150)
+        XCTAssertGreaterThan(sectors, 0)
+        XCTAssertGreaterThan(dots, 0)
+    }
+}
+
 /// What selecting a country frames, and how far back the camera sits for it.
 /// The same values as Android's `CountryHitTesterTest` and `GlobeCameraTest`, so
 /// both platforms fly to the same place at the same zoom.
