@@ -150,6 +150,17 @@ class CountryHitTester(countries: List<GeoJsonCountry>) {
         return LatLon(lat = latSum / count, lon = avgLon)
     }
 
+    private val focuses = HashMap<String, CountryFocus?>()
+
+    /**
+     * What selecting [of] frames on the globe — see [CountryFocus]. Worked out
+     * on first use and kept, since the enclosing cap walks every boundary point
+     * of the country a hundred times.
+     */
+    fun focus(of: String): CountryFocus? = synchronized(focuses) {
+        focuses.getOrPut(of) { countriesByName[of]?.let { CountryFocus.of(it) } }
+    }
+
     companion object {
         /**
          * Degrees of slack around a microstate, matching iOS — and on the globe,

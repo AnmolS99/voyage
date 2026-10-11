@@ -161,7 +161,12 @@ internal fun GlobeSurface(
     // re-selecting it after a deselect flies again — the guard iOS spends
     // `hasAnimatedToCountry` and `lastAnimatedCountry` on, for free.
     DisposableEffect(host, focus) {
-        if (focus != null) host.flyTo(focus.target, focus.distance)
+        if (focus != null) {
+            val distance = focus.fitRadiusDegrees
+                ?.let { host.distanceToFit(it, focus.target.lat) }
+                ?: focus.distance
+            host.flyTo(focus.target, distance)
+        }
         onDispose { }
     }
 
@@ -402,6 +407,12 @@ internal class GlobeSurfaceHost {
             inertia.isActive -> updateCamera { inertia.step(dt, it) }
             autoRotating -> updateCamera { it.autoRotated(dt) }
         }
+    }
+
+    /** [GlobeCamera.distanceToFit] for this globe's viewport. */
+    fun distanceToFit(radiusDegrees: Double, latitude: Double): Float {
+        val aspect = if (viewportWidth > 0f && viewportHeight > 0f) viewportWidth / viewportHeight else 1f
+        return GlobeCamera.distanceToFit(radiusDegrees, latitude, aspect)
     }
 
     /**

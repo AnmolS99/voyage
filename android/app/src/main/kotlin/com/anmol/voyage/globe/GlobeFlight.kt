@@ -84,7 +84,11 @@ internal class GlobeFlight(
         /** iOS `SCNTransaction.animationDuration` in `flyTo`. */
         const val DURATION_SECONDS = 0.8f
 
-        /** Where selecting a country settles the camera. iOS passes this too. */
+        /**
+         * Where a flight settles when given a place but no zoom to frame it at.
+         * Selecting a country fits the zoom to its size instead — see
+         * `GlobeCamera.distanceToFit`.
+         */
         const val SELECTION_DISTANCE = 2.8f
 
         private fun shortWayRound(from: Double, to: Double): Double {

@@ -324,3 +324,74 @@ final class voyageTests: XCTestCase {
         return nil
     }
 }
+
+/// What selecting a country frames, and how far back the camera sits for it.
+/// The same values as Android's `CountryHitTesterTest` and `GlobeCameraTest`, so
+/// both platforms fly to the same place at the same zoom.
+final class CountryFocusTests: XCTestCase {
+
+    /// A portrait phone, about an iPhone 17 Pro's or a Pixel's width ÷ height.
+    private let portrait = 0.46
+
+    func testFocusIsTheSmallestCapAroundTheCountry() throws {
+        let russia = try XCTUnwrap(CountryHitTester.shared.focus(of: "Russia"))
+        XCTAssertEqual(russia.lat, 65.677, accuracy: 0.01)
+        XCTAssertEqual(russia.lon, 90.205, accuracy: 0.01)
+        XCTAssertEqual(russia.radiusDegrees, 35.859, accuracy: 0.01)
+
+        let france = try XCTUnwrap(CountryHitTester.shared.focus(of: "France"))
+        XCTAssertEqual(france.lat, 46.585, accuracy: 0.01)
+        XCTAssertEqual(france.lon, 1.880, accuracy: 0.01)
+        XCTAssertEqual(france.radiusDegrees, 4.882, accuracy: 0.01)
+    }
+
+    // Hawaii and the Azores would stretch these caps to 40° and 9.6°.
+    func testFocusFramesTheMainLandmass() throws {
+        let us = try XCTUnwrap(CountryHitTester.shared.focus(of: "United States of America"))
+        XCTAssertEqual(us.radiusDegrees, 33.362, accuracy: 0.01)
+        let portugal = try XCTUnwrap(CountryHitTester.shared.focus(of: "Portugal"))
+        XCTAssertEqual(portugal.radiusDegrees, 2.658, accuracy: 0.01)
+    }
+
+    func testFocusAcrossTheAntimeridianStaysInThePacific() throws {
+        let fiji = try XCTUnwrap(CountryHitTester.shared.focus(of: "Fiji"))
+        XCTAssertEqual(fiji.lon, 178.676, accuracy: 0.01)
+        XCTAssertEqual(fiji.radiusDegrees, 1.606, accuracy: 0.01)
+    }
+
+    func testPointCountryFocusIsItsCoordinate() throws {
+        let singapore = try XCTUnwrap(CountryHitTester.shared.focus(of: "Singapore"))
+        XCTAssertEqual(singapore.radiusDegrees, 0)
+        XCTAssertNil(CountryHitTester.shared.focus(of: "Atlantis"))
+    }
+
+    func testSelectionPullsBackToFitLargeCountries() {
+        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 35.859, latitude: 65.677, aspect: portrait),
+                       4.427, accuracy: 0.002)
+        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 4.882, latitude: 46.585, aspect: portrait),
+                       1.522, accuracy: 0.002)
+    }
+
+    func testLandscapeFitsToTheHeight() {
+        let square = GlobeState.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: 1)
+        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: 2.17), square)
+        XCTAssertGreaterThan(GlobeState.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: portrait), square)
+    }
+
+    func testFittedDistancesStayInTheSelectionRange() {
+        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 0, latitude: 41.9, aspect: portrait),
+                       GlobeState.minFitDistance)
+        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 80, latitude: 0, aspect: portrait),
+                       GlobeState.maxFitDistance)
+        XCTAssertGreaterThan(GlobeState.minFitDistance, GlobeState.minCameraDistance)
+        XCTAssertLessThan(GlobeState.maxFitDistance, GlobeState.maxCameraDistance)
+    }
+
+    func testCapPastTheTiltLimitIsWidenedByTheShortfall() {
+        let atLimit = GlobeState.distanceToFit(radiusDegrees: 10, latitude: 72, aspect: portrait)
+        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 5, latitude: 77, aspect: portrait), atLimit,
+                       accuracy: 1e-5)
+        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 5, latitude: -77, aspect: portrait), atLimit,
+                       accuracy: 1e-5)
+    }
+}

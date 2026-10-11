@@ -1,6 +1,7 @@
 package com.anmol.voyage.ui.map
 
 import androidx.compose.runtime.Stable
+import com.anmol.voyage.data.CountryFocus
 import com.anmol.voyage.data.LatLon
 import com.anmol.voyage.globe.GlobeFlight
 
@@ -52,9 +53,20 @@ interface WorldScene {
  * same place twice — a replayed game going back to its region — bumps
  * [request]. A null [distance] keeps the current zoom, as iOS's `CameraTarget`
  * does.
+ *
+ * A [fitRadiusDegrees] overrides [distance]: the globe works out how far back to
+ * sit for a cap that wide to fill its viewport (`GlobeCamera.distanceToFit`),
+ * which only it can, since it alone knows the viewport's shape.
  */
 data class CameraFocus(
     val target: LatLon,
     val distance: Float? = GlobeFlight.SELECTION_DISTANCE,
     val request: Int = 0,
-)
+    val fitRadiusDegrees: Double? = null,
+) {
+    companion object {
+        /** Flies to a selected country, framed to fit — iOS `centerOnSelectedCountry`. */
+        fun country(focus: CountryFocus, request: Int = 0) =
+            CameraFocus(focus.center, request = request, fitRadiusDegrees = focus.radiusDegrees)
+    }
+}
