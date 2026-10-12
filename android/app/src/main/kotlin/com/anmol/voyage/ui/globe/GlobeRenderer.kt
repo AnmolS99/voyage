@@ -38,7 +38,7 @@ import kotlin.math.abs
  *
  * Every method here must be called from one thread — the main thread, which is
  * where the [GlobeSurface] render loop runs. Filament's `Engine` is not
- * thread-safe, and the expensive part (triangulating 181 countries) happens off
+ * thread-safe, and the expensive part (triangulating 182 countries) happens off
  * this thread anyway: [setGeometry] receives meshes that are already built and
  * only uploads them.
  *
@@ -715,7 +715,7 @@ internal class GlobeRenderer {
          * How many Filament engines this process has built.
          *
          * An engine is the globe's expensive possession — it carries the
-         * compiled materials, 181 uploaded meshes and a 4096 x 2048 Earth
+         * compiled materials, 182 uploaded meshes and a 4096 x 2048 Earth
          * texture — and the Android plan's 7.11 says there is one per Activity.
          * That is not something a reader of [GlobeSurfaceHost] can check, so
          * `GlobeEngineLifetimeTest` counts them across tab and view-mode

@@ -35,7 +35,7 @@ class GlobeGeometryWorldTest {
     @Test
     fun `every polygon country triangulates without the grid fallback`() {
         val polygonCountries = countries.filter { !it.isPointCountry }
-        assertEquals(181, polygonCountries.size)
+        assertEquals(182, polygonCountries.size)
 
         for (country in polygonCountries) {
             val mesh = PolygonTriangulator.createCountryGeometry(country.polygons, country.holes)

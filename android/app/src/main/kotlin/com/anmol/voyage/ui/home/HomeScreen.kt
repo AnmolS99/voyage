@@ -176,7 +176,7 @@ fun HomeScreen(
 
     BoxWithConstraints(
         // Hidden, not removed — an invisible globe is one whose surface is still
-        // attached and whose 181 meshes are still on the GPU. The subtree below
+        // attached and whose 182 meshes are still on the GPU. The subtree below
         // stays composed and laid out for exactly that reason; what it must not
         // do is paint over the tab drawn underneath it.
         modifier = modifier.fillMaxSize().graphicsLayer { alpha = if (visible) 1f else 0f },

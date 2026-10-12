@@ -64,7 +64,7 @@ class GlobeGestureTest {
         val cache = CountryDataCache(openAsset = { name -> assets.open(name) })
         val hitTester = cache.hitTester
         // Two countries is enough: this exercises gestures, not geometry, and
-        // triangulating all 181 would make the test slow for no added coverage.
+        // triangulating all 182 would make the test slow for no added coverage.
         val meshes = cache.countries.filter { it.name == "Brazil" || it.name == "Australia" }
             .mapNotNull { country ->
                 PolygonTriangulator.createCountryGeometry(country.polygons, country.holes)
