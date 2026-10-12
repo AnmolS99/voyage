@@ -85,7 +85,7 @@ struct ChallengeSuggestionList: View {
                             if guessed {
                                 Text("Guessed")
                                     .font(.system(size: 12, design: .rounded))
-                                    .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                                    .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                             }
                         }
                         .padding(.horizontal, 16)

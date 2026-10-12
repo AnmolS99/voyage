@@ -111,19 +111,19 @@ object VoyagePalette {
     val textSecondaryLight = Color(0xFF66594C)
 
     /** Tertiary text (light mode) */
-    val textTertiaryLight = Color(0xFF807366)
+    val textTertiaryLight = Color(0xFF786B5E)
 
-    /** Muted text (light mode) */
-    val textMutedLight = Color(0xFF998C80)
+    /** Muted (light mode) — icons, chevrons and disabled states at 3:1; readable text uses textTertiary */
+    val textMutedLight = Color(0xFF918578)
 
     /** Secondary text (dark mode) */
     val textSecondaryDark = Color(0xFFB2B2BF)
 
     /** Tertiary text (dark mode) */
-    val textTertiaryDark = Color(0xFF9999A6)
+    val textTertiaryDark = Color(0xFF9E9EAB)
 
-    /** Muted text (dark mode) */
-    val textMutedDark = Color(0xFF80808C)
+    /** Muted (dark mode) — icons, chevrons and disabled states at 3:1; readable text uses textTertiary */
+    val textMutedDark = Color(0xFF858591)
 
     /** Close button text (light mode) */
     val closeButtonText = Color(0xFF4C4C4C)

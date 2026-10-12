@@ -281,7 +281,7 @@ struct ChallengePlayView: View {
                             Text(hint.distance)
                                 .font(.system(size: 12, design: .rounded))
                         }
-                        .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                     }
                 }
                 .padding(.horizontal, 16)
