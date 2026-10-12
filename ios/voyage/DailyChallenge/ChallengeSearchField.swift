@@ -77,14 +77,14 @@ struct ChallengeSuggestionList: View {
                     } label: {
                         HStack {
                             Text(suggestion)
-                                .font(.system(size: 15, design: .rounded))
+                                .font(.voyageText(15))
                                 .foregroundColor(guessed
                                     ? AppColors.textMuted(isDarkMode: isDarkMode)
                                     : AppColors.textPrimary(isDarkMode: isDarkMode))
                             Spacer()
                             if guessed {
                                 Text("Guessed")
-                                    .font(.system(size: 12, design: .rounded))
+                                    .font(.voyageText(12))
                                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                             }
                         }
@@ -276,7 +276,7 @@ struct ChallengeSearchField: View {
 
             TextField("Type your guess...", text: $searchText)
                 .textFieldStyle(.plain)
-                .font(.system(size: 16, design: .rounded))
+                .font(.voyageText(16))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.words)

@@ -6,6 +6,8 @@ struct voyageApp: App {
         // Parse country data in the background while the globe scene loads
         CountryDataCache.prewarm()
 
+        AppFonts.configureAppearance()
+
         // Pre-render 3D medal artwork so the Achievements tab opens instantly
         // (medal emojis mirror the achievements built in AchievementsView)
         MedalSceneView.prewarmArtwork(

@@ -36,12 +36,12 @@ struct CountryExploreView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     Text(countryName)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.voyageDisplay(32))
                         .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
 
                     if let capitalName = country?.capital?.name {
                         Text(capitalName)
-                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .font(.voyageText(18, weight: .medium))
                             .foregroundColor(AppColors.textSecondary(isDarkMode: globeState.isDarkMode))
                     }
 
@@ -106,7 +106,7 @@ struct ChecklistSection: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(AppColors.buttonColor)
                 Text(title)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .font(.voyageDisplay(20))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             }
 
@@ -125,7 +125,7 @@ struct ChecklistSection: View {
                                     AppColors.textMuted(isDarkMode: isDarkMode))
 
                             Text(item)
-                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                                .font(.voyageText(16, weight: .medium))
                                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                             if item == capitalName {

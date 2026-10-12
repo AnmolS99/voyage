@@ -58,7 +58,7 @@ struct ContentView: View {
                         Image(systemName: "calendar.badge.exclamationmark")
                             .font(.system(size: 14, weight: .semibold))
                         Text("New daily challenge available!")
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .font(.voyageText(14, weight: .medium))
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)

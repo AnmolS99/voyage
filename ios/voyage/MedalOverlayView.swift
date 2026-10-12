@@ -86,7 +86,7 @@ struct MedalOverlayView: View {
 
     private var unlockedHeading: some View {
         Text("Medal unlocked!")
-            .font(.system(size: 26, weight: .heavy, design: .rounded))
+            .font(.voyageDisplay(26))
             .foregroundColor(isDarkMode ? AppColors.trophyGoldLight : AppColors.trophyGoldDark)
             .accessibilityAddTraits(.isHeader)
             .opacity(isExpanded ? 1 : 0)
@@ -113,21 +113,21 @@ struct MedalOverlayView: View {
             }
 
             Text(achievement.name)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.voyageDisplay(22))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             Text("\(achievement.current)/\(achievement.total) \(achievement.itemLabel)")
-                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .font(.voyageText(15, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
 
             Label("Drag to spin", systemImage: "hand.draw")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .font(.voyageText(13, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 .padding(.top, 4)
 
             Button(action: dismiss) {
                 Text(celebrating ? "Awesome!" : "Close")
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .font(.voyageText(15, weight: .semibold))
                     .foregroundColor(isDarkMode ? .white : AppColors.closeButtonText)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 10)

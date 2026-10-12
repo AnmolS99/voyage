@@ -44,6 +44,7 @@ import com.anmol.voyage.challenges.ChallengeTrophy
 import com.anmol.voyage.challenges.formatGameTime
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
 import com.anmol.voyage.ui.theme.readableWidth
 import com.anmol.voyage.ui.theme.voyageCardColors
@@ -107,6 +108,7 @@ private fun TrophyShowcase(counts: Map<ChallengeTrophy, Int>, modifier: Modifier
                     Text(
                         text = count.toString(),
                         style = MaterialTheme.typography.titleLarge,
+                        fontFamily = LocalVoyageFonts.current.text,
                         color = if (count > 0) {
                             MaterialTheme.colorScheme.onSurface
                         } else {

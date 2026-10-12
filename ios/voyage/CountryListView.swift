@@ -84,7 +84,7 @@ struct CountryRow: View {
                 .font(.system(size: 24))
 
             Text(country.name)
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(.voyageText(16, weight: .medium))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
 
             Spacer()

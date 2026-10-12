@@ -89,8 +89,10 @@ struct SettingsView: View {
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } header: {
                     Text("Appearance")
+                        .font(.voyageText(17, weight: .semibold))
                 } footer: {
                     Text("Choose the app's theme and the texture styles for the globe and map views.")
+                        .font(.voyageText(13))
                 }
 
                 Section {
@@ -123,11 +125,14 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Support")
+                        .font(.voyageText(17, weight: .semibold))
                 } footer: {
                     if tipJarManager.useFallback {
                         Text("Tips unavailable in this environment. In the App Store version, you can leave a tip to support development.")
+                            .font(.voyageText(13))
                     } else {
                         Text("Thanks for using voyage! If you enjoy the app, consider leaving a tip to support development.")
+                            .font(.voyageText(13))
                     }
                 }
 
@@ -145,8 +150,10 @@ struct SettingsView: View {
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } header: {
                     Text("Data")
+                        .font(.voyageText(17, weight: .semibold))
                 } footer: {
                     Text("This will clear all visited countries, wishlist and challenge statistics.")
+                        .font(.voyageText(13))
                 }
 
                 Section {
@@ -159,6 +166,7 @@ struct SettingsView: View {
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } footer: {
                     Text("© 2026 Anmol Singh. All rights reserved.")
+                        .font(.voyageText(13))
                         .frame(maxWidth: .infinity)
                         .padding(.top, 16)
                 }
@@ -171,6 +179,7 @@ struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
+            .font(.voyageText(17))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .confirmationDialog(
@@ -229,7 +238,7 @@ struct TipRowView: View {
                     Text(tip.displayName)
                         .foregroundColor(.primary)
                     Text(tip.description)
-                        .font(.caption)
+                        .font(.voyageText(12))
                         .foregroundColor(.secondary)
                 }
 
@@ -240,8 +249,7 @@ struct TipRowView: View {
                         .frame(width: 60)
                 } else {
                     Text(tip.displayPrice)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                        .font(.voyageText(15, weight: .semibold))
                         .foregroundColor(.accentColor)
                         .frame(minWidth: 60)
                 }
@@ -277,15 +285,14 @@ struct FallbackTipRowView: View {
                 Text(tip.displayName)
                     .foregroundColor(.primary)
                 Text(tip.description)
-                    .font(.caption)
+                    .font(.voyageText(12))
                     .foregroundColor(.secondary)
             }
 
             Spacer()
 
             Text(tip.displayPrice)
-                .font(.subheadline)
-                .fontWeight(.semibold)
+                .font(.voyageText(15, weight: .semibold))
                 .foregroundColor(.secondary)
                 .frame(minWidth: 60)
         }

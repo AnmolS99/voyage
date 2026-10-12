@@ -39,7 +39,7 @@ struct ChallengeCalendarView: View {
                     // Error message
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
-                            .font(.system(size: 13, design: .rounded))
+                            .font(.voyageText(13))
                             .foregroundColor(.red)
                             .padding(.horizontal, 20)
                     }
@@ -83,7 +83,7 @@ struct ChallengeCalendarView: View {
             Spacer()
 
             Text(Self.monthYearFormatter.string(from: displayedMonth))
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.voyageDisplay(18))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
 
             Spacer()
@@ -107,7 +107,7 @@ struct ChallengeCalendarView: View {
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(weekdays, id: \.self) { day in
                     Text(day)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.voyageText(12, weight: .medium))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: globeState.isDarkMode))
                         .frame(height: 28)
                 }
@@ -161,7 +161,7 @@ struct ChallengeCalendarView: View {
 
                 VStack(spacing: 2) {
                     Text("\(calendar.component(.day, from: date))")
-                        .font(.system(size: 15, weight: isToday ? .bold : .medium, design: .rounded))
+                        .font(.voyageText(15, weight: isToday ? .bold : .medium))
                         .foregroundColor(dayTextColor(hasChallenge: hasChallenge, isFuture: isFuture, result: result))
 
                     // Status indicator
@@ -213,10 +213,10 @@ struct ChallengeCalendarView: View {
                 .font(.system(size: 36))
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(streak) day\(streak == 1 ? "" : "s")")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.voyageText(24, weight: .bold))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
                 Text("Current Streak")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.voyageText(12, weight: .medium))
                     .foregroundColor(AppColors.textTertiary(isDarkMode: globeState.isDarkMode))
             }
             Spacer()
@@ -259,10 +259,10 @@ struct ChallengeCalendarView: View {
     private func statItem(value: String, label: String) -> some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.voyageText(24, weight: .bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
             Text(label)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.voyageText(12, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: globeState.isDarkMode))
         }
     }

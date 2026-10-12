@@ -91,6 +91,7 @@ import com.anmol.voyage.challenges.NameCapitalGame
 import com.anmol.voyage.challenges.RegionSweepGame
 import com.anmol.voyage.challenges.SweepGuessOutcome
 import com.anmol.voyage.challenges.formatGameTime
+import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
 import com.anmol.voyage.ui.theme.voyageCardColors
 import kotlinx.coroutines.delay
@@ -545,6 +546,7 @@ private fun SweepResultOverlay(session: ChallengeSession, onPlayAgain: () -> Uni
                     Text(
                         text = stringResource(R.string.challenge_score, game.correctCount, game.totalCountries),
                         style = MaterialTheme.typography.displaySmall,
+                        fontFamily = LocalVoyageFonts.current.text,
                         fontWeight = FontWeight.Bold,
                         color = VoyagePalette.buttonColor,
                     )

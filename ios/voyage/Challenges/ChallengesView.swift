@@ -104,13 +104,13 @@ struct TrophyItem: View {
                 .shadow(color: isEarned ? trophy.glowColor.opacity(0.45) : .clear, radius: 8, y: 2)
 
             Text("\(count)")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.voyageText(20, weight: .bold))
                 .foregroundColor(isEarned ?
                                  AppColors.textPrimary(isDarkMode: isDarkMode) :
                                  AppColors.textMuted(isDarkMode: isDarkMode))
 
             Text(trophy.displayName)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.voyageText(12, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
         }
     }
@@ -134,13 +134,13 @@ struct GameModeCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(mode.title)
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .font(.voyageText(16, weight: .semibold))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 Text(mode.subtitle)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .font(.voyageText(13, weight: .medium))
                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 Text(gamesPlayed > 0 ? "Played \(gamesPlayed) time\(gamesPlayed == 1 ? "" : "s")" : "Not played yet")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.voyageText(12, weight: .medium))
                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
             }
 
@@ -219,7 +219,7 @@ struct RegionCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(region.displayName)
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .font(.voyageText(16, weight: .semibold))
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                     // The trophy at stake, always in its tier color:
@@ -231,7 +231,7 @@ struct RegionCard: View {
                 }
 
                 Text("\(region.countries.count) countries")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .font(.voyageText(13, weight: .medium))
                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
 
                 statsLine
@@ -263,11 +263,11 @@ struct RegionCard: View {
     private var statsLine: some View {
         if let percentage = stats.bestPercentage, let time = stats.bestTime {
             Text("Best \(percentage)% · \(formatGameTime(time)) · Played \(stats.gamesPlayed) time\(stats.gamesPlayed == 1 ? "" : "s")")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.voyageText(12, weight: .medium))
                 .foregroundColor(isCompleted ? AppColors.buttonVisited : AppColors.buttonColor)
         } else {
             Text("Not played yet")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.voyageText(12, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
         }
     }
