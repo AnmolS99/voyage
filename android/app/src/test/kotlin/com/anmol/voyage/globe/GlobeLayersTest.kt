@@ -1,7 +1,8 @@
 package com.anmol.voyage.globe
 
-import com.anmol.voyage.ui.globe.STAR_FILL_RADIUS
-import com.anmol.voyage.ui.globe.STAR_OUTLINE_RADIUS
+import com.anmol.voyage.ui.globe.SEAL_DISC_RADIUS
+import com.anmol.voyage.ui.globe.SEAL_RIM_RADIUS
+import com.anmol.voyage.ui.globe.SEAL_STAR_RADIUS
 import kotlin.math.sqrt
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -55,7 +56,7 @@ class GlobeLayersTest {
 
     @Test
     fun `markers stay on the texture at the closest zoom`() {
-        assertTrue(drift(STAR_FILL_RADIUS) < 0.025f)
+        assertTrue(drift(SEAL_STAR_RADIUS) < 0.025f)
     }
 
     @Test
@@ -68,8 +69,9 @@ class GlobeLayersTest {
             PolygonTriangulator.SELECTED_OUTLINE_RADIUS,
             GlobeGeometryCache.DOT_RING_RADIUS,
             GlobeGeometryCache.DOT_FILL_RADIUS,
-            STAR_OUTLINE_RADIUS,
-            STAR_FILL_RADIUS,
+            SEAL_RIM_RADIUS,
+            SEAL_DISC_RADIUS,
+            SEAL_STAR_RADIUS,
         )
         assertTrue(stack.toString(), stack.zipWithNext().all { (below, above) -> below <= above })
     }

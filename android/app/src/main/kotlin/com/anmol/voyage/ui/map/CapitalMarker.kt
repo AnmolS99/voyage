@@ -6,23 +6,28 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * The five-pointed star that marks a capital city, as on printed maps — the port
- * of iOS `CapitalMarker`.
+ * The "star seal" that marks a capital city — a terracotta disc with an ink rim
+ * and a small cream star cut out of its centre. The port of iOS `CapitalMarker`.
  *
- * The map and the globe must draw capitals identically, so the shape lives here
- * instead of being rebuilt per view — the map turns it into a `Path` it strokes,
- * the globe into a mesh it lays on the sphere. Only [starVertices] knows what a
- * star is.
+ * The map and the globe must draw capitals identically, so the proportions live
+ * here instead of being restated per view — the map paints the seal onto its
+ * canvas, the globe lays it on the sphere as three flat meshes (rim, disc, star).
+ * Both measure everything as a fraction of the seal's outer radius.
  */
 object CapitalMarker {
 
     /**
-     * Inner-to-outer radius ratio. 0.382 is the classic five-pointed star — the
-     * inner vertices land where the arms would cross if it were drawn as a
-     * pentagram.
+     * Inner-to-outer radius ratio of the star. Shallower than the classic 0.382
+     * so the star stays legible as a cut-out at a few dp across.
      */
-    private const val INNER_RADIUS_RATIO = 0.382f
+    private const val INNER_RADIUS_RATIO = 0.45f
     private const val POINT_COUNT = 5
+
+    /** The star's outer radius as a fraction of the seal's. */
+    const val STAR_TO_SEAL_RATIO = 0.6f
+
+    /** The ink rim's width as a fraction of the seal's radius — 1 dp on the map's 6 dp seal. */
+    const val RIM_TO_SEAL_RATIO = 1f / 6f
 
     /**
      * The star's ten corners, as `[x0, y0, x1, y1, …]` counter-clockwise from

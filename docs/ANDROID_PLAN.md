@@ -115,7 +115,7 @@ the cross-platform ones is a two-platform change.
   antipodes, mirrored. The ocean material also sets `flipUV(false)`.
 - **The globe's layers hug the textured ocean** (`GlobeLayersTest`,
   `GlobeLayersTests`). Fills 1.0005, borders 1.001, selected border 1.0013,
-  dots and the capital star just above, on a 256-segment ocean. A layer raised
+  dots and the capital seal just above, on a 256-segment ocean. A layer raised
   above the texture drifts off it by its height over the camera's — at the
   closest zoom (0.1 above the surface) the old 1.003 / 1.005 radii on a
   64-segment ocean put countries up to ~5% of their distance from the screen

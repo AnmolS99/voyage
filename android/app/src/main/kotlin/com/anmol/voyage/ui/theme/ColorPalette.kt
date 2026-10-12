@@ -60,11 +60,17 @@ object VoyagePalette {
     /** Dark mode ocean */
     val oceanDark = Color(0xFF1A2640)
 
-    /** Capital star marker — reuses the theme orange, as on iOS */
+    /** Capital seal marker — reuses the theme orange, as on iOS */
     val capitalMarker = buttonColor
 
-    /** Thin rim stroked around the capital star to lift it off the country fill */
-    val capitalMarkerOutline = Color(0xFF4C4C4C)
+    /**
+     * Ink rim around the capital seal, lifting it off the country fill — the
+     * warm brown of light-mode text, like the app icon's ink line.
+     */
+    val capitalMarkerOutline: Color get() = textPrimaryLight
+
+    /** Cream star cut out of the capital seal's centre */
+    val capitalMarkerInset = Color(0xFFFFF7EC)
 
     // endregion
 

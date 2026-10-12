@@ -6,8 +6,8 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * A flat marker lying on the globe's surface — a microstate's dot, or a capital's
- * star.
+ * A flat marker lying on the globe's surface — a microstate's dot, or one layer
+ * of a capital's seal.
  *
  * Built the same way [OutlineMesh] is, and drawn with the same material: every
  * vertex sits at the marker's *center* on the sphere, with the direction it
@@ -65,9 +65,9 @@ object MarkerMeshes {
      * way is north, for a marker lying flat on the surface there.
      *
      * Markers are laid on the tangent plane rather than turned to face the
-     * camera. A star is a printed-map convention, and on a globe it should read
-     * as printed on the surface; billboarding it (as iOS does) makes it float
-     * above the sphere instead.
+     * camera, so they read as printed on the surface; iOS lays its capital seal
+     * on the same frame. Billboarding makes a marker float above the sphere and,
+     * near the limb, dip into it.
      */
     private fun tangentFrame(lat: Double, lon: Double): Pair<Vec3, Vec3> {
         val normal = PolygonTriangulator.latLonToSphere(lat, lon, 1f)

@@ -174,7 +174,7 @@ android/
 - **The map and the globe must agree.** CLAUDE.md's globe/map consistency rule
   applies across platforms too, so what a country *looks like* is decided outside
   the renderers: `ui/map/CountryStyle.kt` for fills, borders and widths,
-  `ui/map/CapitalMarker.kt` for the capital star, `ui/map/MapProjection.kt` for
+  `ui/map/CapitalMarker.kt` for the capital seal, `ui/map/MapProjection.kt` for
   the geometry, and `globe/GlobeCamera.kt` for the globe's projection. The
   Filament globe reuses them rather than restating them, and they are unit-tested
   without a renderer. `ui/home/HomeScreen.kt` holds everything the two renderers
@@ -267,7 +267,7 @@ Three surfaces, all reading and writing the one `VoyageState`:
   Wish / Explore, ✕). A port of iOS `CountriesDock`, down to its springs and
   metrics. It is a card rather than a bottom sheet on purpose: a modal sheet
   scrims the map and hides what selecting a country changes there, the thicker
-  status-colored border and the capital star. The count and percent are
+  status-colored border and the capital seal. The count and percent are
   `data/VisitProgress.kt`; Visit and Wish take the globe's status colors from
   `StatusButtons` in `ui/map/CountryStyle.kt`, so both are unit-tested.
 - **`CountryDetailSheet`** — the Material 3 modal bottom sheet behind "Explore":

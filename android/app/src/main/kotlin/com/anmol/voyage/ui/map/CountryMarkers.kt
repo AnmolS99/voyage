@@ -16,14 +16,13 @@ import androidx.compose.ui.unit.dp
 import com.anmol.voyage.ui.theme.VoyagePalette
 
 /**
- * The two markers drawn on top of the world: the capital star, and the dots that
+ * The two markers drawn on top of the world: the capital seal, and the dots that
  * stand in for countries too small to have a shape.
  *
- * The capital star is sized **in screen terms, at a fixed size**, by both
- * renderers, regardless of what the world underneath is doing — and it is the
- * reason [MarkerSizes] lives here rather than in either renderer: CLAUDE.md
- * requires the globe and the map to draw capitals identically, and one shared
- * measurement is a stronger guarantee than two that happen to agree.
+ * The map draws the capital seal **at a fixed size in screen terms**, regardless
+ * of its pan and zoom, as iOS's map does. The globe sizes it on the globe
+ * instead, gently compensated for zoom (`GlobeCamera.capitalMarkerRadius`, the
+ * port of iOS's `capitalMarkerScale`), so it reads as printed on the surface.
  *
  * The microstate dot is the exception. The map draws it at [MarkerSizes.dotRadiusPx]
  * always, as iOS's map does. The globe gives it a fixed size *on the globe*, as
@@ -36,11 +35,8 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * `Canvas` with the helpers below, outside its pan/zoom matrix. The globe builds
  * them as meshes in the Filament scene (see `MarkerMeshes`), because an overlay
  * above the render surface draws from its own copy of the camera and trails the
- * globe by a frame while dragging. What the two share is the shape
- * ([CapitalMarker]), the colors ([CountryStyles]) and the sizes here.
- *
- * iOS's globe also gives its star a world size, compensated with
- * `capitalMarkerScale`'s `sqrt(zoomScale)`; Android's star stays screen-sized.
+ * globe by a frame while dragging. What the two share is the shape and its
+ * proportions ([CapitalMarker]) and the colors ([CountryStyles], `VoyagePalette`).
  */
 
 /**
@@ -50,11 +46,12 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * A dot's border width is not here: it comes from [CountryStyle.borderWidth],
  * because it thickens with selection like any other border.
  */
-class MarkerSizes(val dotRadiusPx: Float, val starRadiusPx: Float, val starOutlinePx: Float)
+class MarkerSizes(val dotRadiusPx: Float, val sealRadiusPx: Float)
 
 private val MICROSTATE_DOT_RADIUS = 5.dp
-private val CAPITAL_STAR_RADIUS = 6.dp
-private val CAPITAL_STAR_OUTLINE = 1.dp
+
+/** The seal's outer edge, rim included — iOS `MapView`'s 6 pt. */
+private val CAPITAL_SEAL_RADIUS = 6.dp
 
 @Composable
 fun rememberMarkerSizes(): MarkerSizes {
@@ -63,32 +60,41 @@ fun rememberMarkerSizes(): MarkerSizes {
         with(density) {
             MarkerSizes(
                 dotRadiusPx = MICROSTATE_DOT_RADIUS.toPx(),
-                starRadiusPx = CAPITAL_STAR_RADIUS.toPx(),
-                starOutlinePx = CAPITAL_STAR_OUTLINE.toPx(),
+                sealRadiusPx = CAPITAL_SEAL_RADIUS.toPx(),
             )
         }
     }
 }
 
 /**
- * The capital star as a path, for the map. In a +Y-is-down space, which is what
- * a `Canvas` wants; the globe asks [CapitalMarker] for +Y-up corners instead.
+ * The seal's cut-out star as a path, for the map. In a +Y-is-down space, which is
+ * what a `Canvas` wants; the globe asks [CapitalMarker] for +Y-up corners instead.
  */
 @Composable
 fun rememberCapitalStarPath(): Path {
     val sizes = rememberMarkerSizes()
-    return remember(sizes) { CapitalMarker.starPath(sizes.starRadiusPx) }
+    return remember(sizes) {
+        CapitalMarker.starPath(sizes.sealRadiusPx * CapitalMarker.STAR_TO_SEAL_RATIO)
+    }
 }
 
-/** Draws the capital star centered on [center]. */
-fun DrawScope.drawCapitalStar(center: Offset, starPath: Path, sizes: MarkerSizes) {
+/**
+ * Draws the capital seal centered on [center]: a terracotta disc whose ink rim
+ * ends exactly at [MarkerSizes.sealRadiusPx], with the cream star on top. The
+ * same layers, in the same proportions, the globe builds as meshes.
+ */
+fun DrawScope.drawCapitalSeal(center: Offset, starPath: Path, sizes: MarkerSizes) {
+    val rimWidth = sizes.sealRadiusPx * CapitalMarker.RIM_TO_SEAL_RATIO
+    val rimCenterline = sizes.sealRadiusPx - rimWidth / 2f
+    drawCircle(VoyagePalette.capitalMarker, radius = rimCenterline, center = center)
+    drawCircle(
+        color = VoyagePalette.capitalMarkerOutline,
+        radius = rimCenterline,
+        center = center,
+        style = Stroke(width = rimWidth),
+    )
     translate(left = center.x, top = center.y) {
-        drawPath(starPath, SolidColor(VoyagePalette.capitalMarker))
-        drawPath(
-            path = starPath,
-            brush = SolidColor(VoyagePalette.capitalMarkerOutline),
-            style = Stroke(width = sizes.starOutlinePx),
-        )
+        drawPath(starPath, SolidColor(VoyagePalette.capitalMarkerInset))
     }
 }
 

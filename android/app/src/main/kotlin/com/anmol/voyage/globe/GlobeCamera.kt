@@ -7,6 +7,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.tan
 
@@ -173,6 +174,19 @@ data class GlobeCamera(
         maxOf(DOT_RADIUS, minRadiusPx * pixelSizeInWorld(viewportHeight))
 
     /**
+     * The capital seal's outer radius, in world units.
+     *
+     * Sized on the globe rather than on screen, so it reads as printed on the
+     * surface, but not left to perspective alone: on screen it goes as
+     * `screenScale^-0.15`, growing gently as the camera closes in — 8x closer
+     * draws it about 1.4x larger — so it neither shrinks to a speck framing
+     * Russia nor swamps a microstate. iOS `GlobeView.Coordinator`'s
+     * `capitalMarkerRadius` and `capitalMarkerScale`, exactly.
+     */
+    val capitalMarkerRadius: Float
+        get() = CAPITAL_MARKER_RADIUS * screenScale.pow(CAPITAL_MARKER_ZOOM_EXPONENT)
+
+    /**
      * How much to shrink world-sized decorations so they keep a constant size on
      * screen — today the border outlines, and whatever else the globe grows.
      *
@@ -281,6 +295,12 @@ data class GlobeCamera(
         /** Matches iOS `SCNCamera.fieldOfView = 45`. */
         const val FOV_DEGREES = 45.0
         private const val FOV_RADIANS = FOV_DEGREES * PI / 180.0
+
+        /** The capital seal's radius at the default distance — iOS `capitalMarkerRadius`. */
+        const val CAPITAL_MARKER_RADIUS = 0.015f
+
+        /** How much of the zoom the seal follows — iOS `capitalMarkerScale`'s exponent. */
+        const val CAPITAL_MARKER_ZOOM_EXPONENT = 0.85f
 
         /** iOS `GlobeState.zoomLevel` and its starting value. */
         const val DEFAULT_DISTANCE = 4.0f

@@ -375,6 +375,31 @@ class GlobeCameraTest {
         assertEquals(1f, GlobeCamera(distance = GlobeCamera.MAX_DISTANCE).screenScale, 1e-6f)
     }
 
+    // Capital seal
+
+    @Test
+    fun `capital seal matches iOS's size and zoom compensation`() {
+        // iOS: capitalMarkerRadius 0.015 at the default distance, scaled by
+        // screenScale^0.85.
+        assertEquals(0.015f, GlobeCamera(distance = GlobeCamera.DEFAULT_DISTANCE).capitalMarkerRadius, 1e-6f)
+        assertEquals(
+            0.015f * Math.pow(1.0 / 3.0, 0.85).toFloat(),
+            GlobeCamera(distance = 2f).capitalMarkerRadius,
+            1e-6f,
+        )
+    }
+
+    @Test
+    fun `capital seal grows gently on screen as the camera closes in`() {
+        // On screen the seal is its world radius over (distance - 1). Eight times
+        // closer to the surface draws it 8^0.15 ≈ 1.37x larger: still growing,
+        // nowhere near the 8x of a seal sized on the globe alone.
+        fun onScreen(distance: Float) =
+            GlobeCamera(distance = distance).capitalMarkerRadius / (distance - GlobeCamera.GLOBE_RADIUS)
+        val growth = onScreen(1.25f) / onScreen(3f)
+        assertEquals(Math.pow(8.0, 0.15).toFloat(), growth, 1e-3f)
+    }
+
     // Horizon culling
 
     @Test

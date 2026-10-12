@@ -29,7 +29,7 @@ import kotlin.math.roundToInt
  *
  * The globe (Phase 7) and this map have to look and behave identically apart from
  * the projection, so everything that decides *appearance* lives outside this
- * composable — [CountryStyles] for colors, [CapitalMarker] for the star,
+ * composable — [CountryStyles] for colors, [CapitalMarker] for the capital seal,
  * [MapProjection] for the geometry — leaving drawing and gestures here.
  *
  * @param scene what to paint and where taps go — Home's travels. Challenges are
@@ -154,7 +154,7 @@ fun WorldMap(
             drawMicrostateDot(Offset(x, y), scene.styleFor(country.name, hasTexture), sizes)
         }
 
-        // The capital star marks the selected country only, as on the globe.
+        // The capital seal marks the selected country only, as on the globe.
         val selected = scene.selectedCountry?.takeIf { scene.showsCapital }
         val capital = selected?.let { name -> countries.firstOrNull { it.name == name }?.capital }
         if (capital != null) {
@@ -165,7 +165,7 @@ fun WorldMap(
                 offsetX = offset.x,
                 offsetY = offset.y,
             )
-            drawCapitalStar(Offset(x, y), starPath, sizes)
+            drawCapitalSeal(Offset(x, y), starPath, sizes)
         }
     }
 }

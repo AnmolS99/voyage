@@ -50,12 +50,15 @@ enum AppColors {
         }
     }()
 
-    /// Capital star marker — shared by the globe and the map so both match.
+    /// Capital seal marker — shared by the globe and the map so both match.
     /// Uses the app's theme orange rather than restating its RGB.
     static let capitalMarker = buttonColor
     static let capitalMarkerUI = UIColor(buttonColor)
-    /// Thin rim the map strokes around the star to lift it off the country fill
-    static let capitalMarkerOutline = Color(white: 0.3)
+    /// Ink rim around the seal, lifting it off the country fill — the warm brown
+    /// of light-mode text, like the app icon's ink line.
+    static let capitalMarkerOutlineUI = UIColor(textPrimaryLight)
+    /// Cream star cut out of the seal's centre.
+    static let capitalMarkerInsetUI = UIColor(red: 1.0, green: 0.969, blue: 0.925, alpha: 1)
 
     /// Ocean for map view (slightly darker)
     static let oceanMap = Color(red: 0.192, green: 0.451, blue: 0.608)

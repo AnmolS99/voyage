@@ -229,13 +229,10 @@ struct MapView: View {
                    let capital = country.capital {
                     let center = fit.point(lat: capital.lat, lon: capital.lon).applying(transform)
 
-                    // Five-pointed star, matching the globe's capital marker
-                    let starRadius: CGFloat = 6
-                    let starPath = Path(CapitalMarker.starPath(outerRadius: starRadius, yUp: false))
-                        .applying(CGAffineTransform(translationX: center.x, y: center.y))
-
-                    context.fill(starPath, with: .color(AppColors.capitalMarker))
-                    context.stroke(starPath, with: .color(AppColors.capitalMarkerOutline), lineWidth: 1)
+                    // Star seal, drawn by the same routine as the globe's capital marker
+                    context.withCGContext { cgContext in
+                        CapitalMarker.draw(in: cgContext, center: center, radius: 6)
+                    }
                 }
             }
             .gesture(
