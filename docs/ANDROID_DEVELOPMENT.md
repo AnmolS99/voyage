@@ -366,7 +366,7 @@ logs will not show this: Filament's first frame is fast, and the black belongs
 to the window, not the renderer.
 
 **There is one Filament engine per Activity, and keeping it that way constrains
-the navigation.** The engine holds the compiled materials, 181 uploaded meshes
+the navigation.** The engine holds the compiled materials, 182 uploaded meshes
 and the Earth texture, so it has to survive both ways out of the globe: the
 globe/map toggle, which is why `rememberGlobeSurfaceHost` is called by
 `HomeScreen` rather than by the surface that draws with it, and a tab switch,

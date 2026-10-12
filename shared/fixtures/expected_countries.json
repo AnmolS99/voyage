@@ -1,8 +1,8 @@
 {
   "_generatedBy": "scripts/generate_country_fixture.py",
   "_source": "shared/data/world.geojson",
-  "countryCount": 206,
-  "totalCoordinateCount": 170955,
+  "countryCount": 207,
+  "totalCoordinateCount": 171052,
   "countries": [
     {"iso":"AF","name":"Afghanistan","continent":"Asia","capital":{"name":"Kabul","lat":34.5553,"lon":69.2075},"isPointCountry":false,"point":null,"polygonPointCounts":[632],"holePointCounts":[],"bbox":[60.4868,29.3866,74.8923,38.4737]},
     {"iso":"AO","name":"Angola","continent":"Africa","capital":{"name":"Luanda","lat":-8.839,"lon":13.2894},"isPointCountry":false,"point":null,"polygonPointCounts":[61,582,8],"holePointCounts":[],"bbox":[11.6694,-18.0314,24.0611,-4.3912]},
@@ -58,6 +58,7 @@
     {"iso":"FJ","name":"Fiji","continent":"Oceania","capital":{"name":"Suva","lat":-18.1416,"lon":178.4419},"isPointCountry":false,"point":null,"polygonPointCounts":[7,12,9,112,4,8,5,9,7,5,30,6,9,5,11,8,90,5,8,7,6,5,10,5,5,5],"holePointCounts":[],"bbox":[-180,-19.1901,180,-12.4753]},
     {"iso":"FK","name":"Falkland Islands","continent":"South America","capital":{"name":"Stanley","lat":-51.692,"lon":-57.857},"isPointCountry":false,"point":null,"polygonPointCounts":[7,5,18,103,6,13,144,13,6,7,6,4],"holePointCounts":[],"bbox":[-61.2523,-52.4065,-57.7678,-51.03]},
     {"iso":"FR","name":"France","continent":"Europe","capital":{"name":"Paris","lat":48.8566,"lon":2.3522},"isPointCountry":false,"point":null,"polygonPointCounts":[819,87,13,10,6,7],"holePointCounts":[],"bbox":[-4.7834,41.3725,9.5596,51.0875]},
+    {"iso":"FO","name":"Faroe Islands","continent":"Europe","capital":{"name":"Torshavn","lat":62.0117,"lon":-6.7672},"isPointCountry":false,"point":null,"polygonPointCounts":[15,10,11,23,15,8,5,5,5],"holePointCounts":[],"bbox":[-7.4296,61.3959,-6.3131,62.3737]},
     {"iso":"GA","name":"Gabon","continent":"Africa","capital":{"name":"Libreville","lat":0.4162,"lon":9.4673},"isPointCountry":false,"point":null,"polygonPointCounts":[503,10],"holePointCounts":[],"bbox":[8.6956,-3.9369,14.499,2.321]},
     {"iso":"GB","name":"United Kingdom","continent":"Europe","capital":{"name":"London","lat":51.5074,"lon":-0.1278},"isPointCountry":false,"point":null,"polygonPointCounts":[123,866,5,16,11,7,16,9,26,6,17,4,8,33,7,8,10,17,6,7,17,54,58,7,11,26,6,7,6,4,5,6,45,14,12,5,4],"holePointCounts":[],"bbox":[-8.156,49.9667,1.7712,60.8376]},
     {"iso":"GE","name":"Georgia","continent":"Asia","capital":{"name":"Tbilisi","lat":41.7151,"lon":44.8271},"isPointCountry":false,"point":null,"polygonPointCounts":[229],"holePointCounts":[],"bbox":[39.986,41.0448,46.6948,43.5758]},

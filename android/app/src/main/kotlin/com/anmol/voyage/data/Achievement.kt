@@ -139,7 +139,7 @@ object WondersOfTheWorld {
 /**
  * Which features of `world.geojson` are UN member or observer states.
  *
- * The dataset carries 206 countries and territories; progress is counted against
+ * The dataset carries 207 countries and territories; progress is counted against
  * the 195 UN states, so a user is not asked to visit French Guiana to finish the
  * world. The list is iOS's `GlobeState.nonUNTerritories`, verbatim.
  */
@@ -152,6 +152,7 @@ object UnMembership {
         "Antarctica",
         "Bermuda",
         "Falkland Islands",
+        "Faroe Islands",
         "French Guiana",
         "French Southern and Antarctic Lands",
         "Greenland",

@@ -264,6 +264,7 @@ class GlobeState: ObservableObject {
         "Antarctica",
         "Bermuda",
         "Falkland Islands",
+        "Faroe Islands",
         "French Guiana",
         "French Southern and Antarctic Lands",
         "Greenland",

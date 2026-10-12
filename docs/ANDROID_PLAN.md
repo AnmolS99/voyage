@@ -163,7 +163,7 @@ the cross-platform ones is a two-platform change.
   counts them.
 - **Ten medals, counting the same things as iOS's** (`AchievementTest`,
   `AchievementCompletionTests`). Globetrotter and Capital Collector run over the
-  195 UN states, not all 206 features; the explorer medals do count territories;
+  195 UN states, not all 207 features; the explorer medals do count territories;
   Continental Drifter needs all seven continents and counts each once; the eight
   wonders must each name an attraction `country_highlights.json` still lists.
 

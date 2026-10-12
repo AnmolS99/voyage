@@ -23,7 +23,7 @@ import org.junit.Test
 /**
  * One Filament engine per Activity — the Android plan's 7.11.
  *
- * The globe's engine carries the compiled materials, 181 uploaded meshes and a
+ * The globe's engine carries the compiled materials, 182 uploaded meshes and a
  * 4096 x 2048 Earth texture, and rebuilding it was what made leaving the Home
  * tab and coming back cost ~35-45 ms of a ~200 ms switch. It survives now
  * because `HomeScreen` is composed outside the `NavHost` and hidden rather than

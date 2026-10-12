@@ -299,7 +299,7 @@ internal class GlobeSurfaceHost {
      * The camera, owned here rather than held as Compose state.
      *
      * A drag changes it up to once per frame, and recomposing the whole globe
-     * for that would re-resolve all 181 country colors each time for a value
+     * for that would re-resolve all 182 country colors each time for a value
      * only the render loop reads. Everything that touches it — the gesture
      * handlers, the tap hit-test and [doFrame] — runs on the main thread, so it
      * needs no synchronization.
@@ -359,7 +359,7 @@ internal class GlobeSurfaceHost {
      *
      * The meshes come from the process-wide `GlobeGeometryCache`, so the same
      * four objects arriving again means the upload can be skipped — which is
-     * what keeps a trip to the flat map and back from re-uploading 181 meshes
+     * what keeps a trip to the flat map and back from re-uploading 182 meshes
      * onto an engine that never went anywhere.
      */
     private var uploadedOcean: SphereMesh? = null

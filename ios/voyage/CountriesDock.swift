@@ -82,7 +82,9 @@ struct CountriesDock: View {
             justUnvisited = nil
         }
         .sensoryFeedback(.selection, trigger: country) { _, new in new != nil }
-        .sensoryFeedback(.success, trigger: visitedCount) { old, new in new > old }
+        // Keyed on every visit, not `visitedCount`: that counts UN states only,
+        // so visiting a territory (Greenland) would never fire it.
+        .sensoryFeedback(.success, trigger: globeState.visitedCountries) { old, new in new.count > old.count }
         .sensoryFeedback(.impact(weight: .light), trigger: globeState.wishlistCountries)
     }
 

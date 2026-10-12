@@ -34,7 +34,7 @@ class FlagEmojiTest {
     @Test
     fun `every country in the dataset has a real flag`() {
         val countries = cache.countries
-        assertEquals(206, countries.size)
+        assertEquals(207, countries.size)
         for (country in countries) {
             val flag = FlagEmoji.of(country)
             assertEquals("${country.name} has no flag", 2, flag.codePointCount(0, flag.length))

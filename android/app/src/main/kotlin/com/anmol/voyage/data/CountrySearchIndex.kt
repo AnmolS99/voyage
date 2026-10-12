@@ -8,7 +8,7 @@ import java.util.Locale
  *
  * Names are normalized up front — folded to lowercase with accents removed — so
  * a query typed on an English keyboard still finds `Türkiye` and
- * `Côte d'Ivoire`, and so the 206 names are not re-folded on every keystroke.
+ * `Côte d'Ivoire`, and so the 207 names are not re-folded on every keystroke.
  *
  * Ranking differs from the iOS country list, which filters and leaves the
  * result alphabetical: here names *starting* with the query come first, so
