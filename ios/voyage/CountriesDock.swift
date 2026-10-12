@@ -231,7 +231,7 @@ struct CountriesDock: View {
 
     private func countryName(_ country: String) -> some View {
         Text(country)
-            .font(.system(size: 18, weight: .bold))
+            .font(.voyageDisplay(18))
             .foregroundStyle(.primary)
             .lineLimit(1)
     }
@@ -240,7 +240,7 @@ struct CountriesDock: View {
     private func capitalName(_ country: String) -> some View {
         if let capital = globeState.capitalForCountry(country) {
             Text(capital)
-                .font(.system(size: 15))
+                .font(.voyageText(15))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
@@ -365,7 +365,7 @@ private struct CardActionButton: View {
                     .foregroundStyle(tint == nil ? AppColors.buttonColor : onTint)
                     .symbolEffect(.bounce, value: bounceTrigger)
                 Text(title)
-                    .font(.system(size: metrics.buttonFontSize, weight: .semibold))
+                    .font(.voyageText(metrics.buttonFontSize, weight: .semibold))
                     .foregroundStyle(tint == nil ? Color.primary : onTint)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -490,6 +490,6 @@ private struct AnimatableFont: ViewModifier, Animatable {
     }
 
     func body(content: Content) -> some View {
-        content.font(.system(size: size, weight: weight))
+        content.font(.voyageText(size, weight: weight))
     }
 }

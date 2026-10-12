@@ -18,7 +18,7 @@ struct ChallengePlayView: View {
                 switch viewModel.viewState {
                 case .loading:
                     ProgressView("Loading challenge...")
-                        .font(.system(size: 16, design: .rounded))
+                        .font(.voyageText(16))
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
 
                 case .error(let message):
@@ -73,13 +73,13 @@ struct ChallengePlayView: View {
                 .font(.system(size: 40))
                 .foregroundColor(.orange)
             Text(message)
-                .font(.system(size: 16, design: .rounded))
+                .font(.voyageText(16))
                 .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                 .multilineTextAlignment(.center)
             Button("Try Again") {
                 Task { await viewModel.loadChallenge(for: date) }
             }
-            .font(.system(size: 16, weight: .semibold, design: .rounded))
+            .font(.voyageText(16, weight: .semibold))
             .foregroundColor(.white)
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
@@ -183,10 +183,10 @@ struct ChallengePlayView: View {
                 .font(.system(size: 24))
                 .foregroundColor(AppColors.buttonColor)
             Text(type.title)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.voyageDisplay(22))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             Text(type.subtitle)
-                .font(.system(size: 14, design: .rounded))
+                .font(.voyageText(14))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
         }
     }
@@ -222,10 +222,10 @@ struct ChallengePlayView: View {
                 Text(flagEmojiFromCode(challenge.answer))
                     .font(.system(size: 60))
                 Text(country.name)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.voyageDisplay(28))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 Text("What is the capital?")
-                    .font(.system(size: 16, design: .rounded))
+                    .font(.voyageText(16))
                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
             }
         }
@@ -236,7 +236,7 @@ struct ChallengePlayView: View {
             Text(flagEmojiFromCode(challenge.answer))
                 .font(.system(size: 100))
             Text("Which country?")
-                .font(.system(size: 16, design: .rounded))
+                .font(.voyageText(16))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
         }
     }
@@ -268,7 +268,7 @@ struct ChallengePlayView: View {
                     Image(systemName: isCorrectGuess(guess) ? "checkmark.circle.fill" : "xmark.circle.fill")
                         .foregroundColor(isCorrectGuess(guess) ? .green : .red)
                     Text(guess)
-                        .font(.system(size: 15, design: .rounded))
+                        .font(.voyageText(15))
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     Spacer()
                     if isCorrectGuess(guess) {
@@ -279,7 +279,7 @@ struct ChallengePlayView: View {
                                 .font(.system(size: 11, weight: .semibold))
                                 .rotationEffect(.degrees(hint.bearing))
                             Text(hint.distance)
-                                .font(.system(size: 12, design: .rounded))
+                                .font(.voyageText(12))
                         }
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                     }

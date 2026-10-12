@@ -44,12 +44,12 @@ struct ChallengeResultView: View {
                 )
 
             Text(solved ? "Correct!" : "Better luck next time!")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.voyageDisplay(26))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             if solved {
                 Text("Solved in \(attempts) attempt\(attempts == 1 ? "" : "s")")
-                    .font(.system(size: 16, design: .rounded))
+                    .font(.voyageText(16))
                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
             }
         }
@@ -64,7 +64,7 @@ struct ChallengeResultView: View {
                         .font(.system(size: 32))
                 }
                 Text(country.name)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.voyageDisplay(24))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             }
 
@@ -105,11 +105,11 @@ struct ChallengeResultView: View {
                 .foregroundColor(AppColors.buttonColor)
                 .frame(width: 20)
             Text(label)
-                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .font(.voyageText(14, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
             Spacer()
             Text(value)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.voyageText(14, weight: .semibold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
         }
     }
@@ -117,17 +117,17 @@ struct ChallengeResultView: View {
     private var guessesRecap: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Your Guesses")
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.voyageText(14, weight: .semibold))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
 
             ForEach(Array(guesses.enumerated()), id: \.offset) { index, guess in
                 HStack(spacing: 10) {
                     Text("\(index + 1).")
-                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .font(.voyageText(14, weight: .medium).monospacedDigit())
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                         .frame(width: 24, alignment: .trailing)
                     Text(guess)
-                        .font(.system(size: 15, design: .rounded))
+                        .font(.voyageText(15))
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     Spacer()
                     Image(systemName: isCorrect(guess) ? "checkmark.circle.fill" : "xmark.circle.fill")
@@ -148,7 +148,7 @@ struct ChallengeResultView: View {
         VStack(spacing: 12) {
             ShareLink(item: shareText) {
                 Label("Share Result", systemImage: "square.and.arrow.up")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .font(.voyageText(16, weight: .semibold))
                     .foregroundColor(AppColors.buttonColor)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
@@ -160,7 +160,7 @@ struct ChallengeResultView: View {
 
             Button(action: onDismiss) {
                 Text("Back to Calendar")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .font(.voyageText(16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)

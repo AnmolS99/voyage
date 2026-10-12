@@ -84,16 +84,16 @@ struct SweepTopBar: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(AppColors.buttonColor)
                     Text(formatGameTime(viewModel.elapsedTime))
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.voyageText(14, weight: .semibold))
                         .monospacedDigit()
                     Text("·")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.voyageText(14, weight: .semibold))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(AppColors.buttonColor)
                     Text("\(viewModel.correctCount)")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.voyageText(14, weight: .semibold))
                         .monospacedDigit()
                 }
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
@@ -121,7 +121,7 @@ struct SweepPromptCard: View {
         if let target = viewModel.currentTarget {
             VStack(spacing: 8) {
                 Text("\(viewModel.answeredCount + 1)/\(viewModel.totalCountries)")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.voyageText(12, weight: .medium))
                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                     .textCase(.uppercase)
 
@@ -133,14 +133,14 @@ struct SweepPromptCard: View {
                         Text(flagProvider(target))
                             .font(.system(size: 26))
                         Text(target)
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .font(.voyageDisplay(20))
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     }
                 }
 
                 if let question = question {
                     Text(question)
-                        .font(.system(size: 14, design: .rounded))
+                        .font(.voyageText(14))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 }
             }
@@ -163,7 +163,7 @@ struct SweepFeedbackBanner: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 14, weight: .semibold, design: .rounded))
+            .font(.voyageText(14, weight: .semibold))
             .foregroundColor(.white)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -192,7 +192,7 @@ struct SweepResultOverlay: View {
                     .font(.system(size: 44))
 
                 Text("Sweep Complete!")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.voyageDisplay(26))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                 if viewModel.didEarnTrophy {
@@ -202,14 +202,14 @@ struct SweepResultOverlay: View {
                             .foregroundStyle(viewModel.region.trophy.gradient)
                             .shadow(color: viewModel.region.trophy.glowColor.opacity(0.5), radius: 8, y: 2)
                         Text("\(viewModel.region.trophy.displayName) Trophy earned!")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .font(.voyageText(14, weight: .semibold))
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     }
                 }
 
                 if viewModel.isNewBest {
                     Text("🏆 New Best!")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.voyageText(14, weight: .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 6)
@@ -218,16 +218,16 @@ struct SweepResultOverlay: View {
 
                 VStack(spacing: 4) {
                     Text("\(viewModel.correctCount) / \(viewModel.totalCountries)")
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .font(.voyageText(34, weight: .bold))
                         .foregroundColor(AppColors.buttonColor)
                     Text("\(correctPercentage)% · \(formatGameTime(viewModel.elapsedTime))")
-                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .font(.voyageText(15, weight: .medium))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 }
 
                 if let missedSummary = missedSummary {
                     Text(missedSummary)
-                        .font(.system(size: 12, design: .rounded))
+                        .font(.voyageText(12))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                         .lineLimit(3)
                         .multilineTextAlignment(.center)
@@ -236,7 +236,7 @@ struct SweepResultOverlay: View {
                 VStack(spacing: 10) {
                     Button(action: onPlayAgain) {
                         Text("Play Again")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .font(.voyageText(16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -245,7 +245,7 @@ struct SweepResultOverlay: View {
 
                     Button(action: onDismiss) {
                         Text("Done")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .font(.voyageText(16, weight: .semibold))
                             .foregroundColor(AppColors.buttonColor)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)

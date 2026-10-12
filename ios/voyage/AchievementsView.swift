@@ -75,11 +75,11 @@ struct AchievementsView: View {
     private var summaryCard: some View {
         VStack(spacing: 8) {
             Text("\(completedCount) of \(achievements.count)")
-                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .font(.voyageText(32, weight: .bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
 
             Text("Achievements Unlocked")
-                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .font(.voyageText(14, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: globeState.isDarkMode))
         }
         .frame(maxWidth: .infinity)
@@ -141,11 +141,11 @@ struct AchievementCard: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(achievement.name)
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .font(.voyageText(16, weight: .semibold))
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                     Text("\(achievement.current)/\(achievement.total) \(achievement.itemLabel)")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .font(.voyageText(13, weight: .medium))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 }
 
@@ -153,7 +153,7 @@ struct AchievementCard: View {
 
                 HStack(spacing: 8) {
                     Text("\(achievement.percentage)%")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(.voyageText(18, weight: .bold))
                         .foregroundColor(
                             achievement.isCompleted ?
                                 AppColors.buttonVisited :
@@ -248,13 +248,13 @@ struct CountryListSection: View {
                     .foregroundColor(iconColor)
 
                 Text("\(title) (\(count))")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.voyageText(13, weight: .semibold))
                     .foregroundColor(isDarkMode ? AppColors.badgeTextDark : AppColors.badgeTextLight)
             }
             .padding(.horizontal, 16)
 
             Text(countries.joined(separator: ", "))
-                .font(.system(size: 12, design: .rounded))
+                .font(.voyageText(12))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 .lineLimit(4)
                 .padding(.horizontal, 16)

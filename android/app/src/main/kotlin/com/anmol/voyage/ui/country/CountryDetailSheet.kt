@@ -33,11 +33,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
 import com.anmol.voyage.data.CountryDetail
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
 
 /**
@@ -182,6 +184,8 @@ private fun ChecklistSection(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                fontFamily = LocalVoyageFonts.current.display,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
             Text(

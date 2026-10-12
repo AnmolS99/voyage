@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anmol.voyage.R
@@ -53,6 +54,7 @@ import com.anmol.voyage.data.Achievement
 import com.anmol.voyage.data.AchievementCatalog
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
 import com.anmol.voyage.ui.theme.readableWidth
 import com.anmol.voyage.ui.theme.voyageCardColors
@@ -150,6 +152,8 @@ private fun SummaryCard(completed: Int, total: Int, modifier: Modifier = Modifie
             Text(
                 text = stringResource(R.string.achievements_unlocked, completed, total),
                 style = MaterialTheme.typography.headlineMedium,
+                fontFamily = LocalVoyageFonts.current.text,
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = stringResource(R.string.achievements_unlocked_label),

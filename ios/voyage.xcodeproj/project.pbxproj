@@ -9,6 +9,13 @@
 /* Begin PBXBuildFile section */
 		2A8624B82500CE1AE3C92F34 /* CountryDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */; };
 		409A1AEDFDF8E44EBF23A179 /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */; };
+		E812345600F0 /* Newsreader-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E812345500F0 /* Newsreader-Medium.ttf */; };
+		E812345600F1 /* Newsreader-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E812345500F1 /* Newsreader-SemiBold.ttf */; };
+		E812345600F2 /* SchibstedGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E812345500F2 /* SchibstedGrotesk-Regular.ttf */; };
+		E812345600F3 /* SchibstedGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E812345500F3 /* SchibstedGrotesk-Medium.ttf */; };
+		E812345600F4 /* SchibstedGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E812345500F4 /* SchibstedGrotesk-SemiBold.ttf */; };
+		E812345600F5 /* SchibstedGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E812345500F5 /* SchibstedGrotesk-Bold.ttf */; };
+		E812345600F6 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = E812345500F6 /* Typography.swift */; };
 		E81234560001 /* voyageApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550001 /* voyageApp.swift */; };
 		E81234560002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550002 /* ContentView.swift */; };
 		E81234560003 /* GlobeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550003 /* GlobeView.swift */; };
@@ -88,6 +95,13 @@
 /* Begin PBXFileReference section */
 		E81234550050 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
+		E812345500F0 /* Newsreader-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = Newsreader-Medium.ttf; path = "../../shared/data/fonts/Newsreader-Medium.ttf"; sourceTree = "<group>"; };
+		E812345500F1 /* Newsreader-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = Newsreader-SemiBold.ttf; path = "../../shared/data/fonts/Newsreader-SemiBold.ttf"; sourceTree = "<group>"; };
+		E812345500F2 /* SchibstedGrotesk-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = SchibstedGrotesk-Regular.ttf; path = "../../shared/data/fonts/SchibstedGrotesk-Regular.ttf"; sourceTree = "<group>"; };
+		E812345500F3 /* SchibstedGrotesk-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = SchibstedGrotesk-Medium.ttf; path = "../../shared/data/fonts/SchibstedGrotesk-Medium.ttf"; sourceTree = "<group>"; };
+		E812345500F4 /* SchibstedGrotesk-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = SchibstedGrotesk-SemiBold.ttf; path = "../../shared/data/fonts/SchibstedGrotesk-SemiBold.ttf"; sourceTree = "<group>"; };
+		E812345500F5 /* SchibstedGrotesk-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = SchibstedGrotesk-Bold.ttf; path = "../../shared/data/fonts/SchibstedGrotesk-Bold.ttf"; sourceTree = "<group>"; };
+		E812345500F6 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryDataCache.swift; sourceTree = "<group>"; };
 		E81234540001 /* voyage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voyage.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E81234540002 /* voyageTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = voyageTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -219,6 +233,7 @@
 				E81234550028 /* Achievement.swift */,
 				B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */,
 				6BE04D6A494F47DA6209CC31 /* ColorPalette.swift */,
+				E812345500F6 /* Typography.swift */,
 				E81234550022 /* ContinentData.swift */,
 				E81234520005 /* DailyChallenge */,
 				E81234520006 /* Challenges */,
@@ -230,6 +245,12 @@
 				E81234550090 /* earth_texture.jpg */,
 				E81234550091 /* natural_earth_texture.jpg */,
 				E81234550092 /* stylized_earth_texture.jpg */,
+				E812345500F0 /* Newsreader-Medium.ttf */,
+				E812345500F1 /* Newsreader-SemiBold.ttf */,
+				E812345500F2 /* SchibstedGrotesk-Regular.ttf */,
+				E812345500F3 /* SchibstedGrotesk-Medium.ttf */,
+				E812345500F4 /* SchibstedGrotesk-SemiBold.ttf */,
+				E812345500F5 /* SchibstedGrotesk-Bold.ttf */,
 				E81234550019 /* globe.scn */,
 			);
 			path = voyage;
@@ -414,6 +435,12 @@
 				E81234560090 /* earth_texture.jpg in Resources */,
 				E81234560091 /* natural_earth_texture.jpg in Resources */,
 				E81234560092 /* stylized_earth_texture.jpg in Resources */,
+				E812345600F0 /* Newsreader-Medium.ttf in Resources */,
+				E812345600F1 /* Newsreader-SemiBold.ttf in Resources */,
+				E812345600F2 /* SchibstedGrotesk-Regular.ttf in Resources */,
+				E812345600F3 /* SchibstedGrotesk-Medium.ttf in Resources */,
+				E812345600F4 /* SchibstedGrotesk-SemiBold.ttf in Resources */,
+				E812345600F5 /* SchibstedGrotesk-Bold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -450,6 +477,7 @@
 				E81234560028 /* Achievement.swift in Sources */,
 				2A8624B82500CE1AE3C92F34 /* CountryDataCache.swift in Sources */,
 				409A1AEDFDF8E44EBF23A179 /* ColorPalette.swift in Sources */,
+				E812345600F6 /* Typography.swift in Sources */,
 				E81234560022 /* ContinentData.swift in Sources */,
 				E81234560026 /* TipJarManager.swift in Sources */,
 				E81234560031 /* CountryListView.swift in Sources */,

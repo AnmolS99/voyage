@@ -104,6 +104,7 @@ import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.FlagText
 import com.anmol.voyage.ui.map.StatusButtonColors
 import com.anmol.voyage.ui.map.StatusButtons
+import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
 import kotlin.math.PI
 import kotlin.math.max
@@ -384,6 +385,7 @@ private fun ProgressRow(
                 value = progress.visited,
                 text = { "$it" },
                 style = TextStyle(
+                    fontFamily = LocalVoyageFonts.current.text,
                     fontSize = countSize.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -394,6 +396,7 @@ private fun ProgressRow(
             Text(
                 text = "/${progress.total}",
                 style = TextStyle(
+                    fontFamily = LocalVoyageFonts.current.text,
                     fontSize = countSize.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFeatureSettings = TABULAR,
@@ -412,6 +415,7 @@ private fun ProgressRow(
             value = progress.percent,
             text = { stringResource(R.string.dock_percent, it) },
             style = TextStyle(
+                fontFamily = LocalVoyageFonts.current.text,
                 fontSize = percentSize.sp,
                 fontWeight = FontWeight.Bold,
                 color = VoyagePalette.buttonColor,
@@ -634,12 +638,14 @@ private const val HEADER_FADE_OUT_MILLIS = 100
  */
 @Composable
 private fun NameAndCapital(name: String, capital: String?, modifier: Modifier = Modifier) {
+    val fonts = LocalVoyageFonts.current
     val nameStyle = TextStyle(
+        fontFamily = fonts.display,
         fontSize = NAME_SIZE,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurface,
     )
-    val capitalStyle = TextStyle(fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val capitalStyle = TextStyle(fontFamily = fonts.text, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     val measurer = rememberTextMeasurer()
 
     Layout(
@@ -822,7 +828,12 @@ private fun CardActionButton(
             )
             BasicText(
                 text = label,
-                style = TextStyle(fontSize = metrics.buttonFontSize, fontWeight = FontWeight.SemiBold, color = content),
+                style = TextStyle(
+                    fontFamily = LocalVoyageFonts.current.text,
+                    fontSize = metrics.buttonFontSize,
+                    fontWeight = FontWeight.SemiBold,
+                    color = content,
+                ),
                 maxLines = 1,
                 softWrap = false,
                 // iOS lets these shrink to 85% before giving up characters.

@@ -232,6 +232,7 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 | `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights   |
 | `MapView.swift`             | 2D flat map view alternative                      |
 | `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
+| `Typography.swift`          | `Font.voyageDisplay` / `.voyageText` (see Typography below) |
 | `Achievement.swift` / `ContinentData.swift` | Achievement progress model + continent groupings |
 | `MedalOverlayView.swift`    | Tap a card's 3D medal → full-screen blur overlay with a Y-axis-spinnable coin |
 | `DailyChallenge/`           | Daily geography quiz feature (see below)          |
@@ -348,11 +349,27 @@ Schema and migrations live in `shared/supabase/schemas/` and `shared/supabase/mi
 
 All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`AppColors`) and `android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt` (`VoyagePalette`) — and referenced throughout; don't hardcode hex/RGB values elsewhere. The two files hold the same values, and `ColorPaletteTest` on Android pins the table above, so palette changes ship to both platforms together.
 
+## Typography
+
+Two bundled typefaces (SIL OFL), shared by both apps from `shared/data/fonts/`:
+**Newsreader** for titles, country names, prompts and celebrations, and
+**Schibsted Grotesk** for everything else — buttons, labels, numbers and body
+copy. iOS sets them with `Font.voyageDisplay(_:weight:)` /
+`Font.voyageText(_:weight:)` (`ios/voyage/Typography.swift`, fixed sizes like
+the `.system(size:)` fonts they replaced); Android maps Material's type scale
+onto them in `ui/theme/Typography.kt` — display, headline and `titleLarge` are
+Newsreader — and text that needs the other family passes
+`fontFamily = LocalVoyageFonts.current.text` (or `.display`). Never set numbers
+or buttons in Newsreader. SF Symbols, Material icons and emoji stay on the
+system font. The files are static instances (Newsreader at opsz 24) cut from
+the Google Fonts variable fonts; iOS lists them in `Info.plist` `UIAppFonts`.
+
 ## Data Files
 
 - `shared/data/world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
 - `shared/data/country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
 - `shared/fixtures/expected_countries.json` - Parser contract asserted by both platforms. See [Shared Country Fixture](#shared-country-fixture).
+- `shared/data/fonts/` - The bundled typefaces and their OFL licences (see [Typography](#typography)). Android reads them as assets, iOS bundles them in place.
 - `shared/data/textures/` - The three equirectangular Earth textures, one per `GlobeStyle` (`earth_texture.jpg` realistic, `natural_earth_texture.jpg`, `stylized_earth_texture.jpg`). iOS bundles them from here, not from its asset catalog; Android decodes them at most 4096 px wide.
 - `ios/voyage/globe.scn` - Pre-built 3D globe cache, iOS-only (regenerate with GlobeCacheGenerator)
 

@@ -192,7 +192,7 @@ struct ClickCountryGameView: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(AppColors.buttonColor)
                 Text("Tap again to confirm your guess")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.voyageText(14, weight: .semibold))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             }
             .padding(.horizontal, 16)
