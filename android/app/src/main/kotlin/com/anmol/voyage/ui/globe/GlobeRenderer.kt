@@ -469,7 +469,7 @@ internal class GlobeRenderer {
      *
      * Passing null clears it. The mesh is uploaded fresh each time the selection
      * changes rather than kept per country: one country's border is a small
-     * upload, and keeping 206 of them resident on the GPU is not.
+     * upload, and keeping 207 of them resident on the GPU is not.
      */
     fun setSelectedOutline(outline: OutlineMesh?, color: GlobeFill?) {
         releaseSelectedOutline()

@@ -359,8 +359,8 @@ All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`A
 ### Shared Country Fixture
 
 `shared/fixtures/expected_countries.json` pins what parsing `world.geojson` must
-produce: 206 countries in feature order, their ISO codes, names, continents,
-capitals, per-ring point counts (170,955 coordinates total) and bounding boxes.
+produce: 207 countries in feature order, their ISO codes, names, continents,
+capitals, per-ring point counts (171,052 coordinates total) and bounding boxes.
 `voyageTests/GeoJSONFixtureTests` and the Android `GeoJsonParserTest` both assert
 it, so neither hand-written parser can drift from the other or from the data.
 
@@ -400,7 +400,7 @@ regenerate `globe.scn` (see [Globe Cache Generation](#globe-cache-generation)).
 
 ## Country Highlights Data
 
-`shared/data/country_highlights.json` contains 1-5 top cities and 1-5 top attractions for all 206 countries/territories. The data was compiled by cross-referencing at least 3 sources per country to ensure accuracy and reduce bias.
+`shared/data/country_highlights.json` contains 1-5 top cities and 1-5 top attractions for all 207 countries/territories. The data was compiled by cross-referencing at least 3 sources per country to ensure accuracy and reduce bias.
 
 **Sources used:** Lonely Planet, TripAdvisor, Touropia, PlanetWare, Atlas Obscura, Culture Trip, Rough Guides, Wikipedia (tourism pages), official national tourism boards, and regional travel blogs.
 

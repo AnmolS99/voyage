@@ -1623,6 +1623,20 @@
       "Legoland Billund"
     ]
   },
+  "FO": {
+    "cities": [
+      "Torshavn",
+      "Klaksvik",
+      "Gjogv"
+    ],
+    "attractions": [
+      "Mulafossur Waterfall",
+      "Lake Sorvagsvatn",
+      "Mykines",
+      "Kallur Lighthouse",
+      "Saksun"
+    ]
+  },
   "EE": {
     "cities": [
       "Tallinn",

@@ -87,12 +87,12 @@ class AchievementTest {
     // ---- Globetrotter ----
 
     @Test
-    fun `Globetrotter counts the 195 UN states, not all 206 features`() {
+    fun `Globetrotter counts the 195 UN states, not all 207 features`() {
         val globetrotter = achievement(AchievementKind.Globetrotter)
 
         assertEquals(195, globetrotter.total)
         assertEquals(0, globetrotter.current)
-        assertEquals(206, cache.countries.size)
+        assertEquals(207, cache.countries.size)
         assertTrue("Greenland is not a UN state", "Greenland" !in globetrotter.remaining)
         assertTrue("France is", "France" in globetrotter.remaining)
     }
