@@ -44,7 +44,7 @@ import kotlin.math.abs
  *
  * Scene layer order follows iOS: ocean sphere (radius 1.0) → country fills
  * (1.0005) → border outlines (1.001) → the selected country's overlay outline
- * (1.0013) → microstate dots and the capital star (1.0015…1.0021) — kept that
+ * (1.0013) → microstate dots and the capital seal (1.0015…1.0021) — kept that
  * close to the ocean so they don't drift off its texture at close zoom (see
  * [com.anmol.voyage.globe.PolygonTriangulator.FILL_RADIUS]). The ocean is
  * painted with the Earth texture, and a country with nothing to show leaves the
@@ -131,13 +131,8 @@ internal class GlobeRenderer {
 
     private val dots = mutableMapOf<String, Dot>()
 
-    /** The selected country's capital star: outline behind, fill on top. */
-    private var capitalStar: Renderable? = null
-    private var capitalStarOutline: Renderable? = null
-    private var capitalStarMaterial: MaterialInstance? = null
-    private var capitalStarOutlineMaterial: MaterialInstance? = null
-    private var capitalStarRadiusPx = 0f
-    private var capitalStarOutlinePx = 0f
+    /** The selected country's capital seal, rim to star, and the material sizing each. */
+    private val capitalSeal = mutableListOf<Pair<Renderable, MaterialInstance>>()
 
     /** A sector outline entity plus the bounding sphere the horizon test uses. */
     private class OutlineSector(val entity: Int, val mesh: OutlineMesh) {
@@ -212,10 +207,10 @@ internal class GlobeRenderer {
     /**
      * Sizes the markers for the current zoom.
      *
-     * The star covers the same pixels at every zoom, exactly as the flat map's
-     * does outside its pan/zoom matrix. A dot instead keeps a fixed size on the
-     * globe, as iOS's does, so it grows with the land around it and stays the
-     * area a tap on it reaches — down to a floor in pixels when zoomed out
+     * The capital seal is sized on the globe, gently compensated for zoom
+     * ([GlobeCamera.capitalMarkerRadius]), as iOS's is. A dot keeps a fixed size
+     * on the globe, as iOS's does, so it grows with the land around it and stays
+     * the area a tap on it reaches — down to a floor in pixels when zoomed out
      * ([GlobeCamera.dotRadiusInWorld]). Its ring stays a constant width on
      * screen either way, like every other border.
      */
@@ -234,18 +229,12 @@ internal class GlobeRenderer {
             dot.ring.setParameter("thickness", radius - border / 2f)
             dot.ring.setParameter("band", border)
         }
-        // Half a stroke out, half a stroke in — what the map's centered `Stroke`
-        // on the star's own path covers. (The map's miter joins also spike a
-        // little past the five points; that is a stroking artifact, not a
-        // decision, and is not modelled here.)
-        capitalStarOutlineMaterial?.setParameter(
-            "thickness",
-            (capitalStarRadiusPx + capitalStarOutlinePx / 2f) * scale,
-        )
-        capitalStarMaterial?.setParameter(
-            "thickness",
-            (capitalStarRadiusPx - capitalStarOutlinePx / 2f) * scale,
-        )
+        // Every layer's mesh is already in proportion to the seal's outer radius,
+        // so all three take the same uniform.
+        val sealRadius = globeCamera.capitalMarkerRadius
+        for ((_, material) in capitalSeal) {
+            material.setParameter("thickness", sealRadius)
+        }
     }
 
     /**
@@ -437,27 +426,24 @@ internal class GlobeRenderer {
     }
 
     /**
-     * Marks [capital] with a star, or clears it when null.
+     * Marks the selected capital with [seal], or clears it when null.
      *
      * Rebuilt on selection rather than kept per country: unlike the dots, only
-     * one star is ever on screen.
+     * one seal is ever on screen.
      */
-    fun setCapitalStar(outline: MarkerMesh?, fill: MarkerMesh?, radiusPx: Float, outlinePx: Float) {
-        releaseCapitalStar()
-        if (outline == null || fill == null) return
+    fun setCapitalSeal(seal: CapitalSealMeshes?) {
+        releaseCapitalSeal()
+        if (seal == null) return
 
-        capitalStarRadiusPx = radiusPx
-        capitalStarOutlinePx = outlinePx
-
-        val outlineInstance = materials.outline.createInstance()
-        outlineInstance.setFill(GlobeFill(VoyagePalette.capitalMarkerOutline, VoyagePalette.capitalMarkerOutline, false))
-        capitalStarOutlineMaterial = outlineInstance
-        capitalStarOutline = addMarkerRenderable(outline, outlineInstance)
-
-        val fillInstance = materials.outline.createInstance()
-        fillInstance.setFill(GlobeFill(VoyagePalette.capitalMarker, VoyagePalette.capitalMarker, false))
-        capitalStarMaterial = fillInstance
-        capitalStar = addMarkerRenderable(fill, fillInstance)
+        for ((mesh, color) in listOf(
+            seal.rim to VoyagePalette.capitalMarkerOutline,
+            seal.disc to VoyagePalette.capitalMarker,
+            seal.star to VoyagePalette.capitalMarkerInset,
+        )) {
+            val instance = materials.outline.createInstance()
+            instance.setFill(GlobeFill(color, color, false))
+            capitalSeal += addMarkerRenderable(mesh, instance) to instance
+        }
 
         markerScale = Float.NaN
     }
@@ -631,15 +617,12 @@ internal class GlobeRenderer {
             ),
         )
 
-    private fun releaseCapitalStar() {
-        capitalStar?.let { destroy(it) }
-        capitalStar = null
-        capitalStarOutline?.let { destroy(it) }
-        capitalStarOutline = null
-        capitalStarMaterial?.let { engine.destroyMaterialInstance(it) }
-        capitalStarMaterial = null
-        capitalStarOutlineMaterial?.let { engine.destroyMaterialInstance(it) }
-        capitalStarOutlineMaterial = null
+    private fun releaseCapitalSeal() {
+        for ((renderable, material) in capitalSeal) {
+            destroy(renderable)
+            engine.destroyMaterialInstance(material)
+        }
+        capitalSeal.clear()
     }
 
     /** Adds a renderable to the bulk geometry, which [releaseGeometry] frees together. */
@@ -666,7 +649,7 @@ internal class GlobeRenderer {
 
     private fun releaseGeometry() {
         releaseSelectedOutline()
-        releaseCapitalStar()
+        releaseCapitalSeal()
         for (entity in entities) {
             scene.removeEntity(entity)
             engine.destroyEntity(entity)
@@ -750,3 +733,6 @@ private fun IntArray.toDirectBuffer(): ByteBuffer =
     ByteBuffer.allocateDirect(size * Int.SIZE_BYTES)
         .order(ByteOrder.nativeOrder())
         .apply { asIntBuffer().put(this@toDirectBuffer) }
+
+/** The capital seal's three layers, bottom to top, all centered on the capital. */
+internal class CapitalSealMeshes(val rim: MarkerMesh, val disc: MarkerMesh, val star: MarkerMesh)

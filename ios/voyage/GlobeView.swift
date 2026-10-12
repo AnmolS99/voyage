@@ -125,20 +125,20 @@ struct GlobeView: UIViewRepresentable {
         /// control when a single country fills the screen.
         private static let fullZoomTrackingFactor: Float = 0.6
 
-        /// Outer radius of the capital star, in world units at the default distance.
-        /// Slightly larger than the 0.006 dot it replaces — a star of equal radius
-        /// carries less visual weight than a filled circle.
-        private static let capitalMarkerRadius: Float = 0.008
+        /// Outer radius of the capital seal, in world units at the default distance.
+        private static let capitalMarkerRadius: Float = 0.015
 
         /// How much of the perspective shrink the capital marker compensates for.
         ///
-        /// Scaling by the raw zoom scale (fixed on-screen size) leaves a ~4pt speck
-        /// once a single country fills the screen; not scaling at all (fixed world
-        /// size) balloons it to a third of the screen. The square root sits between,
-        /// so at the closest zoom the marker reads about 5x larger than at the
-        /// default distance without covering the capital it marks.
+        /// Scaling by the raw zoom scale would hold a fixed on-screen size; not
+        /// scaling at all would balloon it to a third of the screen up close. On
+        /// screen the seal goes as `zoomScale^-0.15`: it still grows as you zoom in,
+        /// but gently — a camera 8x closer draws it about 1.4x larger rather than
+        /// the 2.8x of a square root — so it neither shrinks to a speck framing
+        /// Russia nor swamps a dot country. Android's `GlobeCamera.capitalMarkerRadius`
+        /// ports this and the radius above, pinned by `GlobeCameraTest`.
         private static func capitalMarkerScale(zoomScale: Float) -> Float {
-            sqrt(zoomScale)
+            pow(zoomScale, 0.85)
         }
 
         /// On-screen scale at `cameraDistance` relative to the reference distance.
@@ -750,60 +750,50 @@ struct GlobeView: UIViewRepresentable {
             let y = radius * sin(latRad)
             let z = radius * cos(latRad) * sin(lonRad)
 
-            // The marker pulses via an SCNAction on its own scale, so the zoom scale
-            // rides on a container instead — otherwise the running action overwrites
-            // it every frame and the marker balloons at close zoom.
+            // The zoom scale rides on a container so it doesn't overwrite the
+            // marker's own size scale.
             let holder = SCNNode()
             holder.position = SCNVector3(x, y, z)
             let markerScale = Self.capitalMarkerScale(zoomScale: currentZoomScale)
             holder.scale = SCNVector3(markerScale, markerScale, markerScale)
             holder.addChildNode(createStarNode())
 
-            // Orient star to face outward from globe center using constraints
-            let billboardConstraint = SCNBillboardConstraint()
-            billboardConstraint.freeAxes = .all
-            holder.constraints = [billboardConstraint]
+            // Lay the seal flat on the globe's tangent plane with the star's point
+            // facing north, as Android does: the plane's +Z is the outward normal,
+            // its +Y the local north. A tangent plane only rises off the sphere
+            // towards its edges, so it never dips into the surface, and the globe
+            // hides it by depth once the capital turns away.
+            let normal = simd_normalize(simd_float3(x, y, z))
+            let east = simd_normalize(simd_cross(simd_float3(0, 1, 0), normal))
+            let north = simd_cross(normal, east)
+            holder.simdOrientation = simd_quatf(simd_float3x3(east, north, normal))
 
             globeNode.addChildNode(holder)
             capitalStarNode = holder
         }
 
         func createStarNode() -> SCNNode {
-            // Five-pointed star, the printed-map convention for a capital. The
-            // holder billboards it, so only the front face is ever seen; the
-            // extrusion just gives the shape a body to shade.
+            // The star seal, drawn by `CapitalMarker` into a texture on a flat
+            // plane. The holder lays it on the surface facing outward, so only the
+            // front face is ever seen.
             //
-            // Built at unit radius and scaled down by the node rather than drawn at
-            // its final 0.008: SCNShape tessellates against the path's flatness, and
-            // a path smaller than the flatness value yields empty geometry.
-            let starPath = UIBezierPath(cgPath: CapitalMarker.starPath(outerRadius: 1, yUp: true))
-            starPath.flatness = 0.01
-            let star = SCNShape(path: starPath, extrusionDepth: 0.05)
+            // A unit plane scaled down by the node, so the seal's radius is
+            // `capitalMarkerRadius` in world units.
+            let plane = SCNPlane(width: 2, height: 2)
 
-            // `.constant` already ignores scene lighting, so the star keeps the exact
-            // theme orange on the night side without an emission wash over it.
+            // `.constant` already ignores scene lighting, so the seal keeps the exact
+            // theme colors on the night side without an emission wash over it.
             let material = SCNMaterial()
-            material.diffuse.contents = AppColors.capitalMarkerUI
+            material.diffuse.contents = CapitalMarker.image
             material.lightingModel = .constant
-            star.materials = [material]
+            plane.materials = [material]
 
-            let starNode = SCNNode(geometry: star)
+            let starNode = SCNNode(geometry: plane)
             starNode.name = "capitalMarker"
             let radius = Self.capitalMarkerRadius
             starNode.scale = SCNVector3(radius, radius, radius)
 
-            // The pulse rides on a parent so it doesn't overwrite the size scale.
-            let pulseNode = SCNNode()
-            pulseNode.addChildNode(starNode)
-
-            let scaleUp = SCNAction.scale(to: 1.5, duration: 0.6)
-            scaleUp.timingMode = .easeInEaseOut
-            let scaleDown = SCNAction.scale(to: 1.0, duration: 0.6)
-            scaleDown.timingMode = .easeInEaseOut
-            let pulse = SCNAction.sequence([scaleUp, scaleDown])
-            pulseNode.runAction(SCNAction.repeatForever(pulse))
-
-            return pulseNode
+            return starNode
         }
     }
 }

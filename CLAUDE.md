@@ -75,15 +75,21 @@ flight, a coasting flick and the idle spin are three cases of one `advance()`
 step, so exactly one of them writes the camera per frame — and the decay curve,
 pan speed, idle rate and flight timing are pinned by tests on each; retuning any
 of them is a two-platform change.
-Capital stars and microstate dots are **meshes in the globe's scene**
+The capital seal and microstate dots are **meshes in the globe's scene**
 (`globe/MarkerMesh.kt`), not a Compose overlay above it: an overlay draws from
 its own copy of the camera and visibly trails the globe by a frame while
-dragging. The two renderers share the shape (`ui/map/CapitalMarker.kt`), the
-colors (`ui/map/CountryStyle.kt`) and the sizes (`ui/map/CountryMarkers.kt`) —
-but not the drawing. The capital star is sized in `dp` on both, so it is the
-same size on the globe as on the map; the globe gets there with the same
-displace-by-a-uniform trick the border outlines use. Microstate dots use that
-trick too, but on the globe their size is fixed **on the sphere** — 0.8° of arc,
+dragging. The two renderers share the shape and its proportions
+(`ui/map/CapitalMarker.kt`), the colors (`ui/map/CountryStyle.kt`,
+`VoyagePalette`) and the sizes (`ui/map/CountryMarkers.kt`) — but not the
+drawing. The capital seal — a terracotta disc with an ink rim and a cream star,
+iOS `CapitalMarker` — is three flat layers lying on the sphere's tangent plane,
+north up, on both platforms (iOS draws it once into a texture on an `SCNPlane`).
+The map draws it at a fixed 6 dp; the globe sizes it on the sphere, gently
+compensated for zoom (`GlobeCamera.capitalMarkerRadius`, iOS
+`capitalMarkerScale`: radius 0.015 × `screenScale^0.85`, pinned by
+`GlobeCameraTest`), so retuning it is a two-platform change. Microstate dots
+use the displace-by-a-uniform trick the border outlines use, but on the globe
+their size is fixed **on the sphere** — 0.8° of arc,
 the `CountryHitTester.POINT_HIT_RADIUS` taps already use, as iOS's
 `SCNCylinder(radius: 0.014)` is — so they grow with the land when zooming in and
 what is drawn is what is tappable. They never drop below the map's 5 dp when

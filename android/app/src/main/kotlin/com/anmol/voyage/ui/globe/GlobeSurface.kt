@@ -143,10 +143,10 @@ internal fun GlobeSurface(
     val fills = countries.map { colorFor(it.name) }
     SideEffect { host.applyColors(countries, fills, dotStyles, sizes) }
 
-    // The star is a mesh, so it is rebuilt when the capital moves — not on every
+    // The seal is meshes, so it is rebuilt when the capital moves — not on every
     // recomposition. Its size is a uniform and rides the per-frame size pass.
     DisposableEffect(host, capital) {
-        host.setCapitalStar(capital, sizes)
+        host.setCapitalSeal(capital)
         onDispose { }
     }
 
@@ -588,25 +588,32 @@ internal class GlobeSurfaceHost {
     }
 
     /**
-     * Builds the capital star's two meshes and hands them to the renderer.
+     * Builds the capital seal's three layers and hands them to the renderer: the
+     * ink rim as a full disc, the terracotta disc inside it, and the cream star.
      *
-     * The corners come from [CapitalMarker], the same definition the flat map
-     * turns into a `Path`, in the +Y-up orientation the sphere's tangent plane
-     * wants. Sizes are unit-relative here — the material scales them to
-     * [sizes] every frame, so a zoom never rebuilds the mesh.
+     * Proportions come from [CapitalMarker], the same ones the flat map paints,
+     * with the star's corners in the +Y-up orientation the sphere's tangent plane
+     * wants. Sizes are relative to the seal's outer radius — the material scales
+     * all three to [GlobeCamera.capitalMarkerRadius] every frame, so a zoom never
+     * rebuilds the meshes.
      */
-    fun setCapitalStar(capital: LatLon?, sizes: MarkerSizes) {
+    fun setCapitalSeal(capital: LatLon?) {
         if (destroyed) return
         if (capital == null) {
-            renderer.setCapitalStar(null, null, 0f, 0f)
+            renderer.setCapitalSeal(null)
             return
         }
-        val corners = CapitalMarker.starVertices(outerRadius = 1f, yUp = true)
-        renderer.setCapitalStar(
-            outline = MarkerMeshes.star(capital.lat, capital.lon, STAR_OUTLINE_RADIUS, corners),
-            fill = MarkerMeshes.star(capital.lat, capital.lon, STAR_FILL_RADIUS, corners),
-            radiusPx = sizes.starRadiusPx,
-            outlinePx = sizes.starOutlinePx,
+        val (lat, lon) = capital
+        val starCorners = CapitalMarker.starVertices(
+            outerRadius = CapitalMarker.STAR_TO_SEAL_RATIO,
+            yUp = true,
+        )
+        renderer.setCapitalSeal(
+            CapitalSealMeshes(
+                rim = MarkerMeshes.disc(lat, lon, SEAL_RIM_RADIUS),
+                disc = MarkerMeshes.disc(lat, lon, SEAL_DISC_RADIUS, 1f - CapitalMarker.RIM_TO_SEAL_RATIO),
+                star = MarkerMeshes.star(lat, lon, SEAL_STAR_RADIUS, starCorners),
+            ),
         )
     }
 
@@ -770,8 +777,9 @@ internal fun zoomForScroll(scrollDelta: Float): Float = exp(-scrollDelta * SCROL
 private const val SCROLL_ZOOM_RATE = 0.2f
 
 /**
- * Sphere radii for the star's two layers, just above the dots so a capital on a
+ * Sphere radii for the seal's three layers, just above the dots so a capital on a
  * microstate is drawn over its dot rather than inside it.
  */
-internal const val STAR_OUTLINE_RADIUS = 1.0019f
-internal const val STAR_FILL_RADIUS = 1.0021f
+internal const val SEAL_RIM_RADIUS = 1.0019f
+internal const val SEAL_DISC_RADIUS = 1.0020f
+internal const val SEAL_STAR_RADIUS = 1.0021f
