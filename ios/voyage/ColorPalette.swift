@@ -106,19 +106,19 @@ enum AppColors {
     static let textSecondaryLight = Color(red: 0.4, green: 0.35, blue: 0.3)
 
     /// Tertiary text (light mode)
-    static let textTertiaryLight = Color(red: 0.5, green: 0.45, blue: 0.4)
+    static let textTertiaryLight = Color(red: 0.47, green: 0.42, blue: 0.37)
 
-    /// Muted text (light mode)
-    static let textMutedLight = Color(red: 0.6, green: 0.55, blue: 0.5)
+    /// Muted (light mode) — icons, chevrons and disabled states at 3:1; readable text uses textTertiary
+    static let textMutedLight = Color(red: 0.57, green: 0.52, blue: 0.47)
 
     /// Secondary text (dark mode)
     static let textSecondaryDark = Color(red: 0.7, green: 0.7, blue: 0.75)
 
     /// Tertiary text (dark mode)
-    static let textTertiaryDark = Color(red: 0.6, green: 0.6, blue: 0.65)
+    static let textTertiaryDark = Color(red: 0.62, green: 0.62, blue: 0.67)
 
-    /// Muted text (dark mode)
-    static let textMutedDark = Color(red: 0.5, green: 0.5, blue: 0.55)
+    /// Muted (dark mode) — icons, chevrons and disabled states at 3:1; readable text uses textTertiary
+    static let textMutedDark = Color(red: 0.52, green: 0.52, blue: 0.57)
 
     /// Close button text (light mode)
     static let closeButtonText = Color(red: 0.3, green: 0.3, blue: 0.3)

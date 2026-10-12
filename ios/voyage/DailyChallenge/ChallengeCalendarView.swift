@@ -108,7 +108,7 @@ struct ChallengeCalendarView: View {
                 ForEach(weekdays, id: \.self) { day in
                     Text(day)
                         .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(AppColors.textMuted(isDarkMode: globeState.isDarkMode))
+                        .foregroundColor(AppColors.textTertiary(isDarkMode: globeState.isDarkMode))
                         .frame(height: 28)
                 }
             }

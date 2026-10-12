@@ -122,7 +122,7 @@ struct MedalOverlayView: View {
 
             Label("Drag to spin", systemImage: "hand.draw")
                 .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 .padding(.top, 4)
 
             Button(action: dismiss) {

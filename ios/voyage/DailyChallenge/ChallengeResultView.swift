@@ -124,7 +124,7 @@ struct ChallengeResultView: View {
                 HStack(spacing: 10) {
                     Text("\(index + 1).")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                         .frame(width: 24, alignment: .trailing)
                     Text(guess)
                         .font(.system(size: 15, design: .rounded))

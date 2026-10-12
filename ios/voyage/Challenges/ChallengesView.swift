@@ -141,7 +141,7 @@ struct GameModeCard: View {
                     .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                 Text(gamesPlayed > 0 ? "Played \(gamesPlayed) time\(gamesPlayed == 1 ? "" : "s")" : "Not played yet")
                     .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
             }
 
             Spacer()
@@ -268,7 +268,7 @@ struct RegionCard: View {
         } else {
             Text("Not played yet")
                 .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(AppColors.textMuted(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
         }
     }
 }
