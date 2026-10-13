@@ -728,13 +728,13 @@ enum MedalArtwork {
     }
 
     /// The overlay's text and beam color: the light end of the metal on the
-    /// dark blur, the dark end on the light one — for silver a darker ink than
-    /// its coin's edge, which all but vanishes into the light blur.
+    /// dark blur, the dark end on the light one — for silver and gold a darker
+    /// ink than their coins' edges, which all but vanish into the light blur.
     static func headingColor(_ tier: MedalTier, isDarkMode: Bool) -> Color {
         switch tier {
         case .bronze: return isDarkMode ? AppColors.trophyBronzeLight : AppColors.trophyBronzeDark
         case .silver: return isDarkMode ? AppColors.trophySilverLight : AppColors.medalSilverInk
-        case .gold: return isDarkMode ? AppColors.trophyGoldLight : AppColors.trophyGoldDark
+        case .gold: return isDarkMode ? AppColors.trophyGoldLight : AppColors.medalGoldInk
         }
     }
 
