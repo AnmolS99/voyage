@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.anmol.voyage.R
 import com.anmol.voyage.data.Achievement
+import com.anmol.voyage.data.MedalTier
 import com.anmol.voyage.ui.challenges.Confetti
 import com.anmol.voyage.ui.theme.VoyagePalette
 import java.util.function.Consumer
@@ -136,7 +138,7 @@ fun MedalOverlay(
                             Spacer(Modifier.weight(1f))
                             SpinningMedal(
                                 medal = achievement.medal,
-                                isEarned = achievement.isCompleted,
+                                tier = achievement.tier,
                                 size = COIN_SIZE,
                             )
                             MedalDetails(
@@ -156,10 +158,10 @@ fun MedalOverlay(
                         // would run off a short screen does it move up.
                         Layout(
                             content = {
-                                Box { if (celebrating) UnlockedHeading(TextAlign.Center) }
+                                Box { if (celebrating) UnlockedHeading(achievement, TextAlign.Center) }
                                 SpinningMedal(
                                     medal = achievement.medal,
-                                    isEarned = achievement.isCompleted,
+                                    tier = achievement.tier,
                                     size = COIN_SIZE,
                                 )
                                 MedalDetails(
@@ -197,13 +199,17 @@ fun MedalOverlay(
     }
 }
 
-/** "Medal unlocked!", over the coin in portrait and over the text in landscape. */
+/**
+ * "Silver medal unlocked!" in the light end of that medal's metal, over the coin
+ * in portrait and over the text in landscape.
+ */
 @Composable
-private fun UnlockedHeading(textAlign: TextAlign) {
+private fun UnlockedHeading(achievement: Achievement, textAlign: TextAlign) {
+    val tier = achievement.tier ?: MedalTier.Bronze
     Text(
-        text = stringResource(R.string.achievement_unlocked_title),
+        text = tier.unlockedTitle(),
         style = MaterialTheme.typography.titleLarge,
-        color = VoyagePalette.medalGoldCenter,
+        color = metalOf(tier).center,
         textAlign = textAlign,
         modifier = Modifier
             .padding(bottom = 12.dp)
@@ -212,7 +218,7 @@ private fun UnlockedHeading(textAlign: TextAlign) {
 }
 
 /**
- * The medal's name, progress, spin hint and close button: under the coin in
+ * The medal's name, progress, medal status, spin hint and close button: under the coin in
  * portrait, or [beside] it — left-aligned, with the unlock heading on top — in
  * landscape.
  */
@@ -230,7 +236,7 @@ private fun MedalDetails(
         horizontalAlignment = if (beside) Alignment.Start else Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (beside && celebrating) UnlockedHeading(textAlign)
+        if (beside && celebrating) UnlockedHeading(achievement, textAlign)
         Text(
             text = achievement.kind.title(),
             style = MaterialTheme.typography.headlineSmall,
@@ -245,6 +251,15 @@ private fun MedalDetails(
             ),
             style = MaterialTheme.typography.bodyMedium,
             color = ON_SCRIM_MUTED,
+            textAlign = textAlign,
+        )
+        Text(
+            text = achievement.medalStatus(),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            // The scrim is dark in either theme, so the light end of the metal
+            // reads where the card's accent would not.
+            color = achievement.tier?.let { metalOf(it).center } ?: VoyagePalette.buttonColor,
             textAlign = textAlign,
         )
 
@@ -321,7 +336,7 @@ private fun Window.blurBehind(radiusPx: Int) {
  * face is drawn, counter-rotated so it is not a mirror image of the front.
  */
 @Composable
-private fun SpinningMedal(medal: String, isEarned: Boolean, size: Dp) {
+private fun SpinningMedal(medal: String, tier: MedalTier?, size: Dp) {
     val spin = remember { MedalSpin() }
 
     LaunchedEffect(spin) {
@@ -363,7 +378,7 @@ private fun SpinningMedal(medal: String, isEarned: Boolean, size: Dp) {
         // it while drawing, so a spinning medal never recomposes.
         MedalCoin(
             medal = medal,
-            isEarned = isEarned,
+            tier = tier,
             size = size,
             rotationDegrees = { spin.degrees },
         )

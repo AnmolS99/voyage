@@ -19,16 +19,17 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import com.anmol.voyage.data.Achievement
 import com.anmol.voyage.data.AchievementCatalog
 import com.anmol.voyage.data.CountryDataCache
+import com.anmol.voyage.data.MedalUnlock
 import com.anmol.voyage.state.VoyageState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Celebrates a medal the moment something the user marks completes it —
- * wherever they marked it, since the country that finishes a continent is
- * usually ticked on Home, not on the Achievements tab. The phone buzzes, and
- * the medal opens in [MedalOverlay] with confetti, one at a time when a single
- * tick completes several.
+ * Celebrates a medal — bronze, silver or gold — the moment something the user
+ * marks earns it, wherever they marked it, since the country that earns a
+ * continent's medal is usually ticked on Home, not on the Achievements tab. The
+ * phone buzzes, and the medal opens in [MedalOverlay] with confetti, one at a
+ * time when a single tick earns several.
  *
  * Composed once, by the app shell. It follows the same three marked sets
  * [AchievementsScreen] builds its list from, off the main thread for the same
@@ -43,9 +44,9 @@ fun AchievementUnlockCelebration(state: VoyageState) {
     val cache = remember { CountryDataCache.shared }
     val haptics = LocalHapticFeedback.current
     val context = LocalContext.current
-    // Ids, not Sets, so the savers need nothing custom.
-    var completed by rememberSaveable { mutableStateOf<List<String>?>(null) }
-    var waiting by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
+    // Lists of a Serializable, so the savers need nothing custom.
+    var unlocked by rememberSaveable { mutableStateOf<List<MedalUnlock>?>(null) }
+    var waiting by rememberSaveable { mutableStateOf<List<MedalUnlock>>(emptyList()) }
     var achievements by remember { mutableStateOf<List<Achievement>>(emptyList()) }
 
     LaunchedEffect(cache, state.visitedCountries, state.checkedCities, state.checkedAttractions) {
@@ -55,22 +56,25 @@ fun AchievementUnlockCelebration(state: VoyageState) {
         val all = withContext(Dispatchers.Default) {
             AchievementCatalog.of(cache, visited, cities, attractions)
         }
-        val now = all.filter { it.isCompleted }.map { it.id }
-        val unlocked = newlyCompleted(before = completed, after = now)
-        if (unlocked.isNotEmpty()) {
+        val now = all.flatMap { it.unlocks }
+        val new = newlyUnlocked(before = unlocked, after = now)
+        if (new.isNotEmpty()) {
             if (!context.playUnlockVibration()) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         }
         // A medal lost again before its turn — the country unticked at once —
-        // is no longer worth celebrating.
-        waiting = waiting.filter { it in now } + unlocked
-        completed = now
+        // is no longer worth celebrating, and one overtaken by a higher medal of
+        // the same achievement gives way to it.
+        val upgraded = new.map { it.id }.toSet()
+        waiting = waiting.filter { it in now && it.id !in upgraded } + new
+        unlocked = now
         achievements = all
     }
 
-    val shown = waiting.firstOrNull()?.let { id -> achievements.firstOrNull { it.id == id } } ?: return
+    val next = waiting.firstOrNull() ?: return
+    val shown = achievements.firstOrNull { it.id == next.id } ?: return
     // Keyed, so the next medal in line springs up and bursts afresh rather than
     // taking over this one's coin mid-spin.
-    key(shown.id) {
+    key(next) {
         MedalOverlay(
             achievement = shown,
             celebrating = true,
@@ -80,12 +84,17 @@ fun AchievementUnlockCelebration(state: VoyageState) {
 }
 
 /**
- * The medals [after] completes that [before] had not, in [after]'s order. A
- * null [before] is the first reading, a baseline rather than a change; losing
- * medals — a reset, an unticked country — unlocks nothing.
+ * The medals [after] holds that [before] did not, in [after]'s order — each list
+ * being every medal held (`Achievement.unlocks`, bronze up). A null [before] is
+ * the first reading, a baseline rather than a change; losing medals — a reset,
+ * an unticked country — unlocks nothing. A jump of several tiers at once
+ * announces only the highest. iOS's `AchievementCatalog.newlyUnlocked`.
  */
-internal fun newlyCompleted(before: List<String>?, after: List<String>): List<String> =
-    if (before == null) emptyList() else after.filter { it !in before }
+internal fun newlyUnlocked(before: List<MedalUnlock>?, after: List<MedalUnlock>): List<MedalUnlock> {
+    if (before == null) return emptyList()
+    val new = after.filter { it !in before }
+    return new.filter { unlock -> new.none { it.id == unlock.id && it.tier > unlock.tier } }
+}
 
 /**
  * The unlock's own pattern: a quick rise into two firm clicks, about a third of

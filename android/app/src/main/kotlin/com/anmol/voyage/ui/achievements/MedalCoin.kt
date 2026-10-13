@@ -11,11 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -23,14 +25,16 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import com.anmol.voyage.data.MedalTier
 import com.anmol.voyage.ui.theme.VoyagePalette
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * An achievement medal: a gold coin struck with the achievement's emoji, or a
- * silver one with the emoji drained of color while the achievement is locked.
+ * An achievement medal: a coin in the metal of the [tier] held, struck with the
+ * achievement's emoji — or, short of bronze, a flat dark coin with the emoji a
+ * silhouette on it, like a locked character in a game.
  *
  * It is drawn flat rather than by a 3D engine, but the shape it draws is a
  * *cylinder in projection*, not a disc. [rotationDegrees] turns it about its
@@ -54,17 +58,16 @@ import kotlin.math.sin
 @Composable
 fun MedalCoin(
     medal: String,
-    isEarned: Boolean,
+    tier: MedalTier?,
     size: Dp,
     modifier: Modifier = Modifier,
     rotationDegrees: () -> Float = FACE_ON,
 ) {
     val diameterPx = with(LocalDensity.current) { size.toPx() }
-    val symbolAlpha = if (isEarned) 1f else LOCKED_SYMBOL_ALPHA
 
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCoin(isEarned, rotationDegrees(), symbolAlpha)
+            drawCoin(tier, rotationDegrees())
         }
 
         val symbolSize = with(LocalDensity.current) { (size * SYMBOL_FRACTION).toSp() }
@@ -82,14 +85,14 @@ fun MedalCoin(
             modifier = Modifier
                 .graphicsLayer {
                     val turn = Turn(rotationDegrees(), diameterPx)
-                    alpha = if (turn.isFrontForward) symbolAlpha else 0f
+                    alpha = if (turn.isFrontForward) 1f else 0f
                     scaleX = turn.faceSqueeze
                     translationX = turn.faceOffset
                 }
-                // Emoji carry color of their own, which no tint can override — a
-                // locked medal drains it through a saturation filter instead, as
-                // iOS's `.saturation(0)` does.
-                .then(if (isEarned) Modifier else Modifier.grayscale()),
+                // Emoji carry color of their own, which no text color can
+                // override — an unearned medal paints over the rendered glyph
+                // instead, keeping only its shape, as iOS masks a fill with it.
+                .then(if (tier != null) Modifier else Modifier.silhouette(VoyagePalette.medalShadowSymbol)),
         )
 
     }
@@ -127,17 +130,14 @@ private class Turn(rotationDegrees: Float, diameterPx: Float) {
 }
 
 /** The metal itself: the rim band, then the visible face struck on top of it. */
-private fun DrawScope.drawCoin(isEarned: Boolean, rotationDegrees: Float, symbolAlpha: Float) {
+private fun DrawScope.drawCoin(tier: MedalTier?, rotationDegrees: Float) {
     val diameter = size.minDimension
     val radius = diameter / 2f
     val turn = Turn(rotationDegrees, diameter)
     val faceHalfWidth = radius * turn.faceSqueeze
     val faceCenter = Offset(center.x + turn.faceOffset, center.y)
 
-    val rimColor = if (isEarned) VoyagePalette.medalGoldRim else VoyagePalette.medalSilverRim
-    val edgeColor = if (isEarned) VoyagePalette.medalGoldEdge else VoyagePalette.medalSilverEdge
-    val centerColor =
-        if (isEarned) VoyagePalette.medalGoldCenter else VoyagePalette.medalSilverCenter
+    val (centerColor, edgeColor, rimColor) = metalOf(tier)
 
     // The whole silhouette — a band capped by a half ellipse at each end — is
     // filled as rim first; the face then covers all of it but the crescent that
@@ -148,12 +148,17 @@ private fun DrawScope.drawCoin(isEarned: Boolean, rotationDegrees: Float, symbol
         path = coinSilhouette(center, turn.edgeHalfWidth, faceHalfWidth, radius),
         // Stands in for the specular highlight iOS gets from a blinn material
         // and a key light: brightest across the middle, falling off to the
-        // silhouette on either side.
-        brush = Brush.horizontalGradient(
-            colors = listOf(rimColor, edgeColor, rimColor),
-            startX = center.x - (turn.edgeHalfWidth + faceHalfWidth),
-            endX = center.x + (turn.edgeHalfWidth + faceHalfWidth),
-        ),
+        // silhouette on either side. A silhouette is flat, as iOS lights an
+        // unearned coin with a constant material.
+        brush = if (tier == null) {
+            SolidColor(rimColor)
+        } else {
+            Brush.horizontalGradient(
+                colors = listOf(rimColor, edgeColor, rimColor),
+                startX = center.x - (turn.edgeHalfWidth + faceHalfWidth),
+                endX = center.x + (turn.edgeHalfWidth + faceHalfWidth),
+            )
+        },
     )
 
     // Edge-on there is no face left to strike, and a zero scale is degenerate.
@@ -180,7 +185,6 @@ private fun DrawScope.drawCoin(isEarned: Boolean, rotationDegrees: Float, symbol
             drawPath(
                 path = starPath(faceCenter, diameter * STAR_WIDTH_FRACTION / STAR_INK_WIDTH),
                 color = rimColor,
-                alpha = symbolAlpha,
             )
         }
     }
@@ -237,15 +241,15 @@ private fun coinSilhouette(
 }
 
 /**
- * Draws the content with every color drained to grey.
+ * Draws the content as a flat [color] silhouette: its shape, none of its colors.
  *
  * A layer is needed rather than a tint: emoji carry their own color, so the
  * filter has to apply to the rendered glyph rather than to a paint.
  */
-private fun Modifier.grayscale(): Modifier = drawWithContent {
+private fun Modifier.silhouette(color: Color): Modifier = drawWithContent {
     drawIntoCanvas { canvas ->
         val paint = Paint().apply {
-            colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+            colorFilter = ColorFilter.tint(color, BlendMode.SrcIn)
         }
         canvas.saveLayer(Rect(Offset.Zero, size), paint)
         drawContent()
@@ -290,9 +294,6 @@ private const val RING_FRACTION = 0.9f
 
 /** Ring stroke width, as a share of the coin's diameter. iOS's `coin * 0.02`. */
 private const val RING_WIDTH_FRACTION = 0.02f
-
-/** How visible a locked medal's symbol is. iOS's `.opacity(0.55)`. */
-private const val LOCKED_SYMBOL_ALPHA = 0.55f
 
 /** Below this many pixels wide, the face is not worth drawing. */
 private const val HAIRLINE = 0.5f

@@ -127,14 +127,18 @@ The Achievements tab (`ui/achievements/`) ports `ios/voyage/AchievementsView.swi
 but only its presentation lives there: which medals exist and what counts toward
 each is `data/AchievementCatalog.kt`, so both platforms assert the same rules
 against the same shared data — `AchievementTest` and `AchievementCompletionTests`,
-pinned in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md). The medal coin is drawn
+pinned in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md). Each achievement is held at
+bronze, silver or gold (`MedalTier` on both), at limits chosen per achievement in
+each platform's `AchievementCatalog` — gold is always the whole total — and short
+of bronze its medal is a dark silhouette; changing a limit is a two-platform
+change. The medal coin is drawn
 rather than rendered by a 3D engine — as a cylinder in projection, so it keeps
 the thickness of iOS's `SCNCylinder` as it turns — and it spins on the globe's
 decay curve (`GlobeInertia.decayed`), exactly as iOS's coin borrows
 `GlobeInertia` — so retuning that curve moves the globe *and* the medal, on both
-platforms. Completing a medal, from any tab, opens it with confetti and a haptic
-on both (`AchievementUnlockCelebration` on each); which medals count as newly
-completed is `newlyCompleted` on both, pinned by tests on each.
+platforms. Earning a medal — any tier, from any tab — opens it with confetti and
+a haptic on both (`AchievementUnlockCelebration` on each); which medals count as
+newly earned is `newlyUnlocked` on both, pinned by tests on each.
 
 The Challenges tab ports `ios/voyage/Challenges/` the same way: the rules — modes,
 regions, trophies, the sweep engine, best-result comparison — live in
@@ -242,7 +246,7 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 | `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
 | `Typography.swift`          | `Font.voyageDisplay` / `.voyageText` (see Typography below) |
 | `Achievement.swift` / `ContinentData.swift` | Achievement progress model + continent groupings |
-| `MedalOverlayView.swift`    | Tap a card's 3D medal → full-screen blur overlay with a Y-axis-spinnable coin |
+| `MedalOverlayView.swift`    | Tap a card's 3D medal → full-screen blur overlay with a Y-axis-spinnable coin; `MedalArtwork` holds each tier's colors |
 | `DailyChallenge/`           | Daily geography quiz feature (see below)          |
 
 ## Globe Rendering

@@ -41,11 +41,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,6 +56,7 @@ import com.anmol.voyage.R
 import com.anmol.voyage.data.Achievement
 import com.anmol.voyage.data.AchievementCatalog
 import com.anmol.voyage.data.CountryDataCache
+import com.anmol.voyage.data.MedalTier
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
@@ -69,7 +73,8 @@ import kotlinx.coroutines.withContext
  * The list itself is [AchievementCatalog]'s, so what counts toward what is the
  * same on both platforms and is asserted by `AchievementTest` rather than by
  * looking at this screen. Everything here is presentation: a progress ring per
- * medal, the items behind it when a card is expanded, and the spinnable medal.
+ * medal marked where bronze and silver fall, the items behind it when a card
+ * is expanded, and the spinnable medal.
  */
 @Composable
 fun AchievementsScreen(state: VoyageState, modifier: Modifier = Modifier) {
@@ -112,8 +117,9 @@ fun AchievementsScreen(state: VoyageState, modifier: Modifier = Modifier) {
     ) {
         item(key = "summary") {
             SummaryCard(
-                completed = list.count { it.isCompleted },
+                unlocked = list.count { it.tier != null },
                 total = list.size,
+                tierCounts = MedalTier.entries.associateWith { tier -> list.count { it.tier == tier } },
                 modifier = Modifier.padding(bottom = 4.dp),
             )
         }
@@ -134,9 +140,17 @@ fun AchievementsScreen(state: VoyageState, modifier: Modifier = Modifier) {
     }
 }
 
-/** "3 of 10 Achievements Unlocked". */
+/**
+ * "7 of 10 Achievements Unlocked" — at any medal — then how many are held at
+ * each, as iOS's summary shows them.
+ */
 @Composable
-private fun SummaryCard(completed: Int, total: Int, modifier: Modifier = Modifier) {
+private fun SummaryCard(
+    unlocked: Int,
+    total: Int,
+    tierCounts: Map<MedalTier, Int>,
+    modifier: Modifier = Modifier,
+) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = voyageCardColors(),
@@ -150,7 +164,7 @@ private fun SummaryCard(completed: Int, total: Int, modifier: Modifier = Modifie
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = stringResource(R.string.achievements_unlocked, completed, total),
+                text = stringResource(R.string.achievements_unlocked, unlocked, total),
                 style = MaterialTheme.typography.headlineMedium,
                 fontFamily = LocalVoyageFonts.current.text,
                 fontWeight = FontWeight.Bold,
@@ -160,7 +174,49 @@ private fun SummaryCard(completed: Int, total: Int, modifier: Modifier = Modifie
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Row(
+                modifier = Modifier.padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(28.dp),
+            ) {
+                MedalTier.entries.forEach { tier ->
+                    TierCount(tier = tier, count = tierCounts[tier] ?: 0)
+                }
+            }
         }
+    }
+}
+
+/** One medal's count: a small coin in its metal, the number, and its name below. */
+@Composable
+private fun TierCount(tier: MedalTier, count: Int) {
+    val metal = metalOf(tier)
+    Column(
+        modifier = Modifier.semantics(mergeDescendants = true) {},
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Canvas(modifier = Modifier.size(TIER_DOT_SIZE)) {
+                drawCircle(
+                    brush = Brush.linearGradient(listOf(metal.center, metal.edge)),
+                )
+                drawCircle(color = metal.rim, style = Stroke(width = 1.dp.toPx()))
+            }
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                fontFamily = LocalVoyageFonts.current.text,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Text(
+            text = tier.label(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -179,7 +235,7 @@ private fun AchievementCard(
     onMedalClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val accent = accentFor(achievement)
+    val accent = accentOf(achievement.tier)
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = voyageCardColors(),
@@ -229,6 +285,12 @@ private fun AchievementCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Text(
+                        text = achievement.medalStatus(),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = accent,
+                    )
                 }
 
                 Text(
@@ -257,7 +319,8 @@ private fun AchievementCard(
 }
 
 /**
- * The medal, ringed by its progress.
+ * The medal, ringed by its progress, with a mark on the ring where bronze and
+ * where silver are earned.
  *
  * The ring is drawn rather than assembled from a `CircularProgressIndicator`:
  * iOS's is a plain trimmed circle with a round cap, and Material's indicator now
@@ -275,6 +338,17 @@ private fun ProgressMedal(
         label = "achievement-progress",
     )
     val track = MaterialTheme.colorScheme.surfaceVariant
+    // The card behind the ring, outlining each mark so it stays visible under a
+    // fill of its own color — as iOS outlines its ticks in the card's color.
+    val cardColor = MaterialTheme.colorScheme.surface
+    val ticks = listOf(MedalTier.Bronze, MedalTier.Silver).mapNotNull { tier ->
+        val count = achievement.thresholds.countFor(tier, achievement.total)
+        if (achievement.total > 0 && count in 1 until achievement.total) {
+            tier to count.toFloat() / achievement.total
+        } else {
+            null
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -303,10 +377,22 @@ private fun ProgressMedal(
                 size = Size(diameter, diameter),
                 style = Stroke(width = stroke, cap = StrokeCap.Round),
             )
+            val tickLength = TICK_LENGTH.toPx()
+            val tickWidth = TICK_WIDTH.toPx()
+            val outline = TICK_OUTLINE.toPx()
+            ticks.forEach { (tier, fraction) ->
+                // Drawn pointing at noon, then turned to its share of the ring.
+                rotate(degrees = fraction * FULL_TURN, pivot = center) {
+                    val top = Offset(center.x, center.y - diameter / 2f - tickLength / 2f)
+                    val bottom = Offset(center.x, center.y - diameter / 2f + tickLength / 2f)
+                    drawLine(cardColor, top, bottom, strokeWidth = tickWidth + 2 * outline, cap = StrokeCap.Round)
+                    drawLine(accentOf(tier), top, bottom, strokeWidth = tickWidth, cap = StrokeCap.Round)
+                }
+            }
         }
         MedalCoin(
             medal = achievement.medal,
-            isEarned = achievement.isCompleted,
+            tier = achievement.tier,
             size = COIN_SIZE,
         )
     }
@@ -377,16 +463,21 @@ private fun ItemList(
     }
 }
 
-/** Green once earned, the app's orange while it is still in progress. */
-private fun accentFor(achievement: Achievement): Color =
-    if (achievement.isCompleted) VoyagePalette.buttonVisited else VoyagePalette.buttonColor
-
 private val RING_SIZE = 56.dp
 
 private val RING_STROKE = 4.dp
 
 /** iOS draws the card's coin at 76% of its 56pt slot. */
 private val COIN_SIZE = 43.dp
+
+/** A tier mark across the ring: iOS's 3 × 9 pt capsule with a 1 pt outline. */
+private val TICK_LENGTH = 9.dp
+
+private val TICK_WIDTH = 3.dp
+
+private val TICK_OUTLINE = 1.dp
+
+private val TIER_DOT_SIZE = 14.dp
 
 private const val COMPLETED_BORDER_ALPHA = 0.5f
 

@@ -14,8 +14,13 @@ struct AchievementsView: View {
         )
     }
 
-    private var completedCount: Int {
-        achievements.filter { $0.isCompleted }.count
+    /// Achievements holding any medal, bronze or better.
+    private var unlockedCount: Int {
+        achievements.filter { $0.tier != nil }.count
+    }
+
+    private func count(at tier: MedalTier) -> Int {
+        achievements.filter { $0.tier == tier }.count
     }
 
     var body: some View {
@@ -72,15 +77,23 @@ struct AchievementsView: View {
         .preferredColorScheme(globeState.themeMode.colorScheme)
     }
 
+    /// "7 of 10 Achievements Unlocked", then how many are held at each medal.
     private var summaryCard: some View {
         VStack(spacing: 8) {
-            Text("\(completedCount) of \(achievements.count)")
+            Text("\(unlockedCount) of \(achievements.count)")
                 .font(.voyageText(32, weight: .bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
 
             Text("Achievements Unlocked")
                 .font(.voyageText(14, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: globeState.isDarkMode))
+
+            HStack(spacing: 28) {
+                ForEach(MedalTier.allCases, id: \.self) { tier in
+                    TierCount(tier: tier, count: count(at: tier), isDarkMode: globeState.isDarkMode)
+                }
+            }
+            .padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
@@ -90,6 +103,49 @@ struct AchievementsView: View {
                 .shadow(color: .black.opacity(globeState.isDarkMode ? 0.3 : 0.08), radius: 12, y: 4)
         )
         .padding(.horizontal, 20)
+    }
+}
+
+/// One medal's count in the summary: a small coin in its metal, the number
+/// beside it and the medal's name under both.
+private struct TierCount: View {
+    let tier: MedalTier
+    let count: Int
+    let isDarkMode: Bool
+
+    var body: some View {
+        let colors = MedalArtwork.colors(tier)
+        VStack(spacing: 4) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(colors.center), Color(colors.edge)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(Circle().stroke(Color(colors.rim), lineWidth: 1))
+                    .frame(width: 14, height: 14)
+
+                Text("\(count)")
+                    .font(.voyageText(18, weight: .bold))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+            }
+
+            Text(tier.displayName)
+                .font(.voyageText(12, weight: .medium))
+                .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+extension Achievement {
+    /// "12 more for silver", or "Gold medal" once there is nothing left.
+    var medalStatus: String {
+        guard let nextTier else { return "Gold medal" }
+        return "\(remainingToNextTier) more for \(nextTier.displayName.lowercased())"
     }
 }
 
@@ -116,13 +172,13 @@ struct AchievementCard: View {
                     Circle()
                         .trim(from: 0, to: achievement.progress)
                         .stroke(
-                            achievement.isCompleted ?
-                                AppColors.buttonVisited :
-                                AppColors.buttonColor,
+                            accent,
                             style: StrokeStyle(lineWidth: 4, lineCap: .round)
                         )
                         .rotationEffect(.degrees(-90))
                         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: achievement.progress)
+
+                    tierTicks
 
                     MedalCardView(achievement: achievement)
                         // Hidden while the 3D medal overlay is up: the overlay's
@@ -147,6 +203,10 @@ struct AchievementCard: View {
                     Text("\(achievement.current)/\(achievement.total) \(achievement.itemLabel)")
                         .font(.voyageText(13, weight: .medium))
                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+
+                    Text(achievement.medalStatus)
+                        .font(.voyageText(12, weight: .semibold))
+                        .foregroundColor(accent)
                 }
 
                 Spacer()
@@ -154,11 +214,7 @@ struct AchievementCard: View {
                 HStack(spacing: 8) {
                     Text("\(achievement.percentage)%")
                         .font(.voyageText(18, weight: .bold))
-                        .foregroundColor(
-                            achievement.isCompleted ?
-                                AppColors.buttonVisited :
-                                AppColors.buttonColor
-                        )
+                        .foregroundColor(accent)
 
                     Image(systemName: "chevron.down")
                         .font(.system(size: 14, weight: .semibold))
@@ -186,12 +242,34 @@ struct AchievementCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
                     achievement.isCompleted ?
-                        AppColors.buttonVisited.opacity(0.5) :
+                        accent.opacity(0.5) :
                         Color.clear,
                     lineWidth: 2
                 )
         )
         .contentShape(Rectangle())
+    }
+
+    private var accent: Color { MedalArtwork.accent(achievement.tier) }
+
+    /// Marks on the ring where bronze and silver are earned, each in its
+    /// medal's color and set off from the ring by a card-colored outline, so
+    /// a mark stays visible under a fill of its own color.
+    private var tierTicks: some View {
+        ZStack {
+            ForEach([MedalTier.bronze, .silver], id: \.self) { tier in
+                let count = achievement.medalThresholds.count(for: tier, total: achievement.total)
+                if achievement.total > 0 && count > 0 && count < achievement.total {
+                    Capsule()
+                        .fill(MedalArtwork.accent(tier))
+                        .overlay(Capsule().stroke(AppColors.cardBackground(isDarkMode: isDarkMode), lineWidth: 1))
+                        .frame(width: 3, height: 9)
+                        .offset(y: -28)
+                        .rotationEffect(.degrees(Double(count) / Double(achievement.total) * 360))
+                }
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 
@@ -262,21 +340,21 @@ struct CountryListSection: View {
     }
 }
 
-/// Celebrates an achievement the moment something the user marks completes it —
-/// wherever they marked it, since the country that finishes a continent is
-/// usually ticked on Home, not on this tab. The medal opens in
-/// `MedalOverlayView` with confetti and a success haptic, one at a time when a
-/// single tick completes several. The Android `AchievementUnlockCelebration`
-/// does the same.
+/// Celebrates a medal — bronze, silver or gold — the moment something the user
+/// marks earns it, wherever they marked it, since the country that earns a
+/// continent's medal is usually ticked on Home, not on this tab. The medal
+/// opens in `MedalOverlayView` with confetti and a success haptic, one at a
+/// time when a single tick earns several. The Android
+/// `AchievementUnlockCelebration` does the same.
 ///
 /// The first reading after launch only sets the baseline, so medals already
 /// held are never celebrated. The overlay is shown in a window of its own
-/// (`CelebrationWindow`), not in this view: most medals are completed from the
+/// (`CelebrationWindow`), not in this view: most medals are earned from the
 /// country list, a sheet, and a sheet covers anything drawn in the `TabView`.
 struct AchievementUnlockCelebration: View {
     @ObservedObject var globeState: GlobeState
-    @State private var completed: [String]?
-    @State private var waiting: [String] = []
+    @State private var unlocked: [MedalUnlock]?
+    @State private var waiting: [MedalUnlock] = []
     @State private var window = CelebrationWindow()
 
     private var achievements: [Achievement] {
@@ -298,20 +376,23 @@ struct AchievementUnlockCelebration: View {
     }
 
     private func update() {
-        let now = achievements.filter(\.isCompleted).map(\.id)
-        let unlocked = AchievementCatalog.newlyCompleted(before: completed, after: now)
+        let now = achievements.flatMap(\.unlocks)
+        let new = AchievementCatalog.newlyUnlocked(before: unlocked, after: now)
         // A medal lost again before its turn — the country unticked at once — is
-        // no longer worth celebrating.
-        waiting = waiting.filter { now.contains($0) } + unlocked
-        completed = now
+        // no longer worth celebrating, and one overtaken by a higher medal of
+        // the same achievement gives way to it.
+        waiting = waiting.filter { old in
+            now.contains(old) && !new.contains { $0.id == old.id }
+        } + new
+        unlocked = now
     }
 
     /// Shows the medal at the head of the line, or nothing once it is empty. A
     /// fresh window per medal, so the next in line springs up and bursts anew.
     private func present() {
         window.hide()
-        guard let id = waiting.first,
-              let achievement = achievements.first(where: { $0.id == id }) else { return }
+        guard let unlock = waiting.first,
+              let achievement = achievements.first(where: { $0.id == unlock.id }) else { return }
         window.show(
             MedalOverlayView(
                 achievement: achievement,

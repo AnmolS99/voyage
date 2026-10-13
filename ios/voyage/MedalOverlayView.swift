@@ -1,6 +1,5 @@
 import SwiftUI
 import SceneKit
-import CoreImage
 import Metal
 
 /// Full-screen overlay shown when the user taps an achievement's small medal.
@@ -95,10 +94,12 @@ struct MedalOverlayView: View {
         }
     }
 
+    /// "Silver medal unlocked!", in that medal's color.
     private var unlockedHeading: some View {
-        Text("Medal unlocked!")
+        let tier = achievement.tier ?? .bronze
+        return Text("\(tier.displayName) medal unlocked!")
             .font(.voyageDisplay(26))
-            .foregroundColor(isDarkMode ? AppColors.trophyGoldLight : AppColors.trophyGoldDark)
+            .foregroundColor(MedalArtwork.headingColor(tier, isDarkMode: isDarkMode))
             .accessibilityAddTraits(.isHeader)
             .opacity(isExpanded ? 1 : 0)
     }
@@ -114,7 +115,7 @@ struct MedalOverlayView: View {
             }
     }
 
-    /// Name, progress, spin hint and close button: under the coin in
+    /// Name, progress, medal status, spin hint and close button: under the coin in
     /// portrait, beside it (leading-aligned, under the unlock heading) in
     /// landscape.
     private func details(alignment: HorizontalAlignment) -> some View {
@@ -130,6 +131,10 @@ struct MedalOverlayView: View {
             Text("\(achievement.current)/\(achievement.total) \(achievement.itemLabel)")
                 .font(.voyageText(15, weight: .medium))
                 .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+
+            Text(achievement.medalStatus)
+                .font(.voyageText(15, weight: .semibold))
+                .foregroundColor(MedalArtwork.accent(achievement.tier))
 
             Label("Drag to spin", systemImage: "hand.draw")
                 .font(.voyageText(13, weight: .medium))
@@ -174,7 +179,7 @@ struct MedalCardView: View {
     @State private var renderedSnapshot: UIImage?
 
     private var snapshot: UIImage? {
-        MedalSceneView.cachedCardSnapshot(medal: achievement.medal, completed: achievement.isCompleted)
+        MedalSceneView.cachedCardSnapshot(medal: achievement.medal, tier: achievement.tier)
             ?? renderedSnapshot
     }
 
@@ -186,14 +191,14 @@ struct MedalCardView: View {
                     .scaledToFit()
                     .transition(.opacity)
             } else {
-                FlatCoinFaceView(medal: achievement.medal, completed: achievement.isCompleted)
+                FlatCoinFaceView(medal: achievement.medal, tier: achievement.tier)
                     .transition(.opacity)
             }
         }
-        .task(id: achievement.isCompleted) {
+        .task(id: achievement.tier) {
             let image = await MedalSceneView.cardSnapshot(
                 medal: achievement.medal,
-                completed: achievement.isCompleted
+                tier: achievement.tier
             )
             withAnimation(.easeIn(duration: 0.2)) {
                 renderedSnapshot = image
@@ -203,26 +208,24 @@ struct MedalCardView: View {
 }
 
 /// Flat 2D stand-in for the coin, mirroring the 3D cap artwork: same radial
-/// gradient, embossed ring, and (desaturated when locked) emoji, sized to
-/// match the coin's footprint in the snapshot (~76% of the slot) so the
-/// crossfade to the real coin barely registers.
+/// gradient, embossed ring, and emoji (a dark silhouette while unearned),
+/// sized to match the coin's footprint in the snapshot (~76% of the slot) so
+/// the crossfade to the real coin barely registers.
 private struct FlatCoinFaceView: View {
     let medal: String
-    let completed: Bool
+    let tier: MedalTier?
 
     var body: some View {
         GeometryReader { geo in
             let side = min(geo.size.width, geo.size.height)
             let coin = side * 0.76
+            let colors = MedalArtwork.colors(tier)
 
             ZStack {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [
-                                Color(completed ? AppColors.medalGoldCenterUI : AppColors.medalSilverCenterUI),
-                                Color(completed ? AppColors.medalGoldEdgeUI : AppColors.medalSilverEdgeUI),
-                            ],
+                            colors: [Color(colors.center), Color(colors.edge)],
                             center: .center,
                             startRadius: 0,
                             endRadius: coin / 2
@@ -231,16 +234,19 @@ private struct FlatCoinFaceView: View {
                     .frame(width: coin, height: coin)
 
                 Circle()
-                    .stroke(
-                        Color(completed ? AppColors.medalGoldRimUI : AppColors.medalSilverRimUI),
-                        lineWidth: coin * 0.02
-                    )
+                    .stroke(Color(colors.rim), lineWidth: coin * 0.02)
                     .frame(width: coin * 0.9, height: coin * 0.9)
 
-                Text(medal)
-                    .font(.system(size: coin * 0.5))
-                    .saturation(completed ? 1 : 0)
-                    .opacity(completed ? 1 : 0.55)
+                if tier == nil {
+                    // Emoji carry their own colors, which no foreground color
+                    // overrides; masking a fill with the glyph leaves its shape.
+                    Color(AppColors.medalShadowSymbolUI)
+                        .mask(Text(medal).font(.system(size: coin * 0.5)))
+                        .frame(width: coin, height: coin)
+                } else {
+                    Text(medal)
+                        .font(.system(size: coin * 0.5))
+                }
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
@@ -264,8 +270,8 @@ struct MedalSceneView: UIViewRepresentable {
         let sceneView = SCNView()
         sceneView.backgroundColor = .clear
         sceneView.antialiasingMode = .multisampling4X
-        sceneView.scene = Self.buildScene(medal: achievement.medal, completed: achievement.isCompleted)
-        context.coordinator.isCompleted = achievement.isCompleted
+        sceneView.scene = Self.buildScene(medal: achievement.medal, tier: achievement.tier)
+        context.coordinator.tier = achievement.tier
         context.coordinator.isSettling = isSettling
 
         context.coordinator.spinNode = sceneView.scene?.rootNode.childNode(withName: "spin", recursively: true)
@@ -278,11 +284,11 @@ struct MedalSceneView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {
-        // Rebuild only when the medal flips between locked (silver) and
-        // unlocked (gold) — e.g. the user checks off the final country
-        if context.coordinator.isCompleted != achievement.isCompleted {
-            context.coordinator.isCompleted = achievement.isCompleted
-            uiView.scene = Self.buildScene(medal: achievement.medal, completed: achievement.isCompleted)
+        // Rebuild only when the medal changes tier — e.g. the user checks off
+        // the country that earns silver
+        if context.coordinator.tier != achievement.tier {
+            context.coordinator.tier = achievement.tier
+            uiView.scene = Self.buildScene(medal: achievement.medal, tier: achievement.tier)
             context.coordinator.spinNode = uiView.scene?.rootNode.childNode(withName: "spin", recursively: true)
             if !isSettling {
                 context.coordinator.startAutoSpin()
@@ -307,7 +313,7 @@ struct MedalSceneView: UIViewRepresentable {
 
     final class Coordinator: NSObject {
         var spinNode: SCNNode?
-        var isCompleted = false
+        var tier: MedalTier?
         var isSettling = false
 
         private let inertia = GlobeInertia()
@@ -398,7 +404,7 @@ struct MedalSceneView: UIViewRepresentable {
 
     // MARK: - Scene construction
 
-    private static func buildScene(medal: String, completed: Bool) -> SCNScene {
+    private static func buildScene(medal: String, tier: MedalTier?) -> SCNScene {
         let scene = SCNScene()
         scene.background.contents = UIColor.clear
 
@@ -434,16 +440,25 @@ struct MedalSceneView: UIViewRepresentable {
         let coin = SCNCylinder(radius: 1.1, height: 0.12)
 
         let rim = SCNMaterial()
-        rim.diffuse.contents = completed ? AppColors.medalGoldRimUI : AppColors.medalSilverRimUI
+        rim.diffuse.contents = MedalArtwork.colors(tier).rim
         rim.specular.contents = UIColor.white
         rim.shininess = 0.4
         rim.lightingModel = .blinn
 
         let face = SCNMaterial()
-        face.diffuse.contents = capImage(completed: completed)
+        face.diffuse.contents = capImage(tier: tier)
         face.specular.contents = UIColor.white
         face.shininess = 0.6
         face.lightingModel = .blinn
+
+        if tier == nil {
+            // A silhouette is flat: no light may pick out metal that has not
+            // been earned yet.
+            for material in [rim, face] {
+                material.lightingModel = .constant
+                material.specular.contents = UIColor.black
+            }
+        }
 
         // Cylinder material order: side, top cap, bottom cap. The caps carry
         // only the rotationally symmetric gradient+ring, so their unpredictable
@@ -457,11 +472,11 @@ struct MedalSceneView: UIViewRepresentable {
 
         // Emoji on the front, star on the back, on thin planes just above the
         // caps — SCNPlane UVs are upright and unmirrored, unlike cylinder caps.
-        let frontNode = symbolPlaneNode(image: symbolImage(medal: medal, front: true, completed: completed))
+        let frontNode = symbolPlaneNode(image: symbolImage(medal: medal, front: true, tier: tier))
         frontNode.position.z = 0.065
         spinNode.addChildNode(frontNode)
 
-        let backNode = symbolPlaneNode(image: symbolImage(medal: medal, front: false, completed: completed))
+        let backNode = symbolPlaneNode(image: symbolImage(medal: medal, front: false, tier: tier))
         backNode.position.z = -0.065
         backNode.eulerAngles.y = .pi
         spinNode.addChildNode(backNode)
@@ -488,39 +503,39 @@ struct MedalSceneView: UIViewRepresentable {
     /// Card coins render into a 56pt slot; 224px covers 3x displays with headroom.
     private static let snapshotSide: CGFloat = 224
 
-    private static func snapshotKey(medal: String, completed: Bool) -> String {
-        "coin|\(medal)|\(completed)"
+    private static func snapshotKey(medal: String, tier: MedalTier?) -> String {
+        "coin|\(medal)|\(MedalArtwork.key(tier))"
     }
 
     /// Non-blocking cache lookup for a card snapshot — safe to call from the
     /// main thread during view body evaluation. Never renders.
-    static func cachedCardSnapshot(medal: String, completed: Bool) -> UIImage? {
+    static func cachedCardSnapshot(medal: String, tier: MedalTier?) -> UIImage? {
         artworkLock.lock()
         defer { artworkLock.unlock() }
-        return artworkCache[snapshotKey(medal: medal, completed: completed)]
+        return artworkCache[snapshotKey(medal: medal, tier: tier)]
     }
 
     /// The card's coin snapshot, rendering it off the calling thread on a
     /// cache miss.
-    static func cardSnapshot(medal: String, completed: Bool) async -> UIImage {
-        if let hit = cachedCardSnapshot(medal: medal, completed: completed) {
+    static func cardSnapshot(medal: String, tier: MedalTier?) async -> UIImage {
+        if let hit = cachedCardSnapshot(medal: medal, tier: tier) {
             return hit
         }
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                continuation.resume(returning: renderCardSnapshot(medal: medal, completed: completed))
+                continuation.resume(returning: renderCardSnapshot(medal: medal, tier: tier))
             }
         }
     }
 
     /// A one-off offscreen render of the front-facing coin, cached per medal
-    /// and completion state. Cards display this instead of a live `SCNView`.
+    /// and tier. Cards display this instead of a live `SCNView`.
     /// Blocking — never call on the main thread.
-    private static func renderCardSnapshot(medal: String, completed: Bool) -> UIImage {
-        cachedArtwork(key: snapshotKey(medal: medal, completed: completed)) {
+    private static func renderCardSnapshot(medal: String, tier: MedalTier?) -> UIImage {
+        cachedArtwork(key: snapshotKey(medal: medal, tier: tier)) {
             snapshotRendererLock.lock()
             defer { snapshotRendererLock.unlock() }
-            let scene = buildScene(medal: medal, completed: completed)
+            let scene = buildScene(medal: medal, tier: tier)
             snapshotRenderer.scene = scene
             // SCNRenderer doesn't reliably adopt the scene's camera on its own
             // the way SCNView does
@@ -537,8 +552,7 @@ struct MedalSceneView: UIViewRepresentable {
 
     // MARK: - Artwork cache
 
-    /// Rendering a symbol image costs ~100ms (mostly Core Image desaturation),
-    /// and one card coin per achievement is needed when the Achievements tab
+    /// Rendering a coin snapshot is not free, and one card coin per achievement is needed when the Achievements tab
     /// first appears. All rendered artwork — symbol textures and finished coin
     /// snapshots — is cached here, and `prewarmArtwork` fills the cache off the
     /// main thread at app launch so the tab opens instantly.
@@ -546,12 +560,8 @@ struct MedalSceneView: UIViewRepresentable {
     private static let artworkLock = NSLock()
     private static var didPrewarm = false
 
-    /// Shared Core Image context — creating one per call is what made
-    /// desaturation expensive.
-    private static let ciContext = CIContext()
-
-    /// Renders and caches every medal's card snapshot in both locked and
-    /// unlocked variants on a background queue (each snapshot transitively
+    /// Renders and caches every medal's card snapshot in all four variants
+    /// (unearned, bronze, silver, gold) on a background queue (each snapshot transitively
     /// renders and caches the cap and symbol textures the overlay coin needs
     /// too). Call once at app launch. Runs at .userInitiated so it usually
     /// finishes before the user can reach the Achievements tab — but the tab
@@ -566,8 +576,8 @@ struct MedalSceneView: UIViewRepresentable {
 
         DispatchQueue.global(qos: .userInitiated).async {
             for medal in medals {
-                for completed in [false, true] {
-                    _ = renderCardSnapshot(medal: medal, completed: completed)
+                for tier in MedalArtwork.variants {
+                    _ = renderCardSnapshot(medal: medal, tier: tier)
                 }
             }
         }
@@ -589,40 +599,46 @@ struct MedalSceneView: UIViewRepresentable {
         return image
     }
 
-    /// Emoji for the front, star for the back; locked achievements get a
-    /// desaturated, faded emoji. Transparent background so the coin face
-    /// shows through.
-    private static func symbolImage(medal: String, front: Bool, completed: Bool) -> UIImage {
-        cachedArtwork(key: "symbol|\(medal)|\(front)|\(completed)") {
-            let ringColor = completed ? AppColors.medalGoldRimUI : AppColors.medalSilverRimUI
+    /// Emoji for the front, star for the back; an unearned medal's emoji is a
+    /// flat dark silhouette. Transparent background so the coin face shows
+    /// through.
+    private static func symbolImage(medal: String, front: Bool, tier: MedalTier?) -> UIImage {
+        cachedArtwork(key: "symbol|\(medal)|\(front)|\(MedalArtwork.key(tier))") {
+            let ringColor = MedalArtwork.colors(tier).rim
             let side: CGFloat = 512
-            var symbol = renderedText(front ? medal : "★", fontSize: 400, color: ringColor)
-            if !completed && front {
-                symbol = desaturated(symbol)
-            }
+            let symbol = renderedText(front ? medal : "★", fontSize: 400, color: ringColor)
             let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
-            let alpha: CGFloat = completed ? 1.0 : 0.55
-            return renderer.image { _ in
+            return renderer.image { ctx in
                 // Fit the symbol inside the square, preserving aspect ratio
                 let scale = min(side / symbol.size.width, side / symbol.size.height)
                 let size = CGSize(width: symbol.size.width * scale, height: symbol.size.height * scale)
                 let origin = CGPoint(x: (side - size.width) / 2, y: (side - size.height) / 2)
-                symbol.draw(in: CGRect(origin: origin, size: size), blendMode: .normal, alpha: alpha)
+                symbol.draw(in: CGRect(origin: origin, size: size))
+                if tier == nil {
+                    // Keep the glyph's shape, lose its colors.
+                    ctx.cgContext.setBlendMode(.sourceIn)
+                    AppColors.medalShadowSymbolUI.setFill()
+                    ctx.fill(CGRect(x: 0, y: 0, width: side, height: side))
+                }
             }
         }
     }
 
-    /// Cached cap textures — every coin shares one of these two images.
-    private static let goldCapImage = renderCapImage(completed: true)
-    private static let silverCapImage = renderCapImage(completed: false)
+    /// Cached cap textures — every coin shares one of these four images.
+    private static let capImages: [String: UIImage] = Dictionary(
+        uniqueKeysWithValues: MedalArtwork.variants.map {
+            (MedalArtwork.key($0), renderCapImage(tier: $0))
+        }
+    )
 
-    private static func capImage(completed: Bool) -> UIImage {
-        completed ? goldCapImage : silverCapImage
+    private static func capImage(tier: MedalTier?) -> UIImage {
+        capImages[MedalArtwork.key(tier)]!
     }
 
-    /// Draws the coin cap: radial gradient with an embossed ring, gold when
-    /// unlocked and silver when locked. Rotationally symmetric by design.
-    private static func renderCapImage(completed: Bool) -> UIImage {
+    /// Draws the coin cap: radial gradient with an embossed ring in the
+    /// medal's metal, or flat dark while unearned. Rotationally symmetric by
+    /// design.
+    private static func renderCapImage(tier: MedalTier?) -> UIImage {
         let side: CGFloat = 1024
         let center = CGPoint(x: side / 2, y: side / 2)
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
@@ -630,8 +646,9 @@ struct MedalSceneView: UIViewRepresentable {
         return renderer.image { ctx in
             let cg = ctx.cgContext
 
-            let centerColor = completed ? AppColors.medalGoldCenterUI : AppColors.medalSilverCenterUI
-            let edgeColor = completed ? AppColors.medalGoldEdgeUI : AppColors.medalSilverEdgeUI
+            let colors = MedalArtwork.colors(tier)
+            let centerColor = colors.center
+            let edgeColor = colors.edge
             let gradient = CGGradient(
                 colorsSpace: CGColorSpaceCreateDeviceRGB(),
                 colors: [centerColor.cgColor, edgeColor.cgColor] as CFArray,
@@ -644,8 +661,7 @@ struct MedalSceneView: UIViewRepresentable {
                 options: [.drawsAfterEndLocation]
             )
 
-            let ringColor = completed ? AppColors.medalGoldRimUI : AppColors.medalSilverRimUI
-            cg.setStrokeColor(ringColor.cgColor)
+            cg.setStrokeColor(colors.rim.cgColor)
             cg.setLineWidth(20)
             cg.strokeEllipse(in: CGRect(x: 48, y: 48, width: side - 96, height: side - 96))
         }
@@ -662,17 +678,46 @@ struct MedalSceneView: UIViewRepresentable {
             attributed.draw(at: .zero)
         }
     }
+}
 
-    private static func desaturated(_ image: UIImage) -> UIImage {
-        guard let ciImage = CIImage(image: image),
-              let filter = CIFilter(name: "CIColorControls", parameters: [
-                  kCIInputImageKey: ciImage,
-                  kCIInputSaturationKey: 0.0,
-              ]),
-              let output = filter.outputImage,
-              let cgImage = ciContext.createCGImage(output, from: output.extent) else {
-            return image
+/// The colors each medal is struck in, shared by the 3D coin, its flat
+/// stand-in and the card around it. Nil is a medal not yet earned.
+enum MedalArtwork {
+    /// Every look a coin can have: unearned, then each medal.
+    static let variants: [MedalTier?] = [nil, .bronze, .silver, .gold]
+
+    static func colors(_ tier: MedalTier?) -> (center: UIColor, edge: UIColor, rim: UIColor) {
+        switch tier {
+        case nil: return (AppColors.medalShadowFaceUI, AppColors.medalShadowFaceUI, AppColors.medalShadowSymbolUI)
+        case .bronze: return (AppColors.medalBronzeCenterUI, AppColors.medalBronzeEdgeUI, AppColors.medalBronzeRimUI)
+        case .silver: return (AppColors.medalSilverCenterUI, AppColors.medalSilverEdgeUI, AppColors.medalSilverRimUI)
+        case .gold: return (AppColors.medalGoldCenterUI, AppColors.medalGoldEdgeUI, AppColors.medalGoldRimUI)
         }
-        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+    }
+
+    /// The progress ring, tick and percentage color: the theme orange short
+    /// of bronze, then the medal's own.
+    static func accent(_ tier: MedalTier?) -> Color {
+        switch tier {
+        case nil: return AppColors.buttonColor
+        case .bronze: return AppColors.medalBronzeAccent
+        case .silver: return AppColors.medalSilverAccent
+        case .gold: return AppColors.medalGoldAccent
+        }
+    }
+
+    /// The unlock heading's color: the light end of the metal on the dark
+    /// blur, the dark end on the light one.
+    static func headingColor(_ tier: MedalTier, isDarkMode: Bool) -> Color {
+        switch tier {
+        case .bronze: return isDarkMode ? AppColors.trophyBronzeLight : AppColors.trophyBronzeDark
+        case .silver: return isDarkMode ? AppColors.trophySilverLight : AppColors.trophySilverDark
+        case .gold: return isDarkMode ? AppColors.trophyGoldLight : AppColors.trophyGoldDark
+        }
+    }
+
+    /// A cache key for each of the four variants.
+    static func key(_ tier: MedalTier?) -> String {
+        tier.map { "\($0)" } ?? "shadow"
     }
 }

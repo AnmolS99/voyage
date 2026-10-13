@@ -310,4 +310,102 @@ class AchievementTest {
         assertEquals(explorer.earned.sorted(), explorer.earned)
         assertEquals(explorer.remaining.sorted(), explorer.remaining)
     }
+
+    // ---- Medal tiers ----
+
+    @Test
+    fun `each achievement's medal limits are the ones chosen, the same as iOS's`() {
+        // Bronze, silver, gold. iOS's AchievementCompletionTests pins this table.
+        val expected = mapOf(
+            AchievementKind.Globetrotter to listOf(25, 100, 195),
+            AchievementKind.CapitalCollector to listOf(25, 100, 195),
+            AchievementKind.Wonders to listOf(2, 5, 8),
+            AchievementKind.ContinentalDrifter to listOf(2, 4, 7),
+            AchievementKind.Explorer(Continent.AFRICA) to listOf(10, 30, 55),
+            AchievementKind.Explorer(Continent.ASIA) to listOf(10, 25, 50),
+            AchievementKind.Explorer(Continent.EUROPE) to listOf(10, 25, 45),
+            AchievementKind.Explorer(Continent.NORTH_AMERICA) to listOf(5, 15, 26),
+            AchievementKind.Explorer(Continent.SOUTH_AMERICA) to listOf(3, 8, 14),
+            AchievementKind.Explorer(Continent.OCEANIA) to listOf(3, 8, 15),
+        )
+        val achievements = catalog()
+        assertEquals(expected.keys, achievements.map { it.kind }.toSet())
+        achievements.forEach { achievement ->
+            assertEquals(
+                achievement.kind.id,
+                expected.getValue(achievement.kind),
+                MedalTier.entries.map { achievement.thresholds.countFor(it, achievement.total) },
+            )
+        }
+    }
+
+    @Test
+    fun `nothing marked holds no medals`() {
+        assertTrue(catalog().all { it.tier == null })
+    }
+
+    @Test
+    fun `an explorer medal climbs through its limits`() {
+        val oceania = countriesOf(Continent.OCEANIA).sorted()
+        fun tier(visiting: Int) =
+            achievement(AchievementKind.Explorer(Continent.OCEANIA), oceania.take(visiting).toSet()).tier
+
+        assertEquals(null, tier(2))
+        assertEquals(MedalTier.Bronze, tier(3))
+        assertEquals(MedalTier.Bronze, tier(7))
+        assertEquals(MedalTier.Silver, tier(8))
+        assertEquals(MedalTier.Silver, tier(14))
+        assertEquals(MedalTier.Gold, tier(oceania.size))
+    }
+
+    @Test
+    fun `tiers, the next one and how far off it is`() {
+        fun at(current: Int) = Achievement(
+            AchievementKind.Globetrotter,
+            earned = List(current) { "v$it" },
+            remaining = List(20 - current) { "r$it" },
+            thresholds = MedalThresholds(bronze = 5, silver = 12),
+        )
+
+        assertEquals(null, at(4).tier)
+        assertEquals(MedalTier.Bronze, at(4).nextTier)
+        assertEquals(1, at(4).remainingToNextTier)
+        assertEquals(MedalTier.Bronze, at(5).tier)
+        assertEquals(7, at(5).remainingToNextTier)
+        assertEquals(MedalTier.Silver, at(12).tier)
+        assertEquals(MedalTier.Gold, at(12).nextTier)
+        assertEquals(8, at(12).remainingToNextTier)
+        assertEquals(MedalTier.Gold, at(20).tier)
+        assertEquals(null, at(20).nextTier)
+        assertEquals(0, at(20).remainingToNextTier)
+    }
+
+    @Test
+    fun `gold is exactly completion`() {
+        (0..10).forEach { current ->
+            val achievement = Achievement(
+                AchievementKind.Wonders,
+                List(current) { "v$it" },
+                List(10 - current) { "r$it" },
+            )
+            assertEquals(achievement.isCompleted, achievement.tier == MedalTier.Gold)
+        }
+    }
+
+    @Test
+    fun `limits default to thirds, rounded up, as iOS's do`() {
+        assertEquals(MedalThresholds(65, 130), MedalThresholds.thirdsOf(195))
+        assertEquals(MedalThresholds(3, 6), MedalThresholds.thirdsOf(8))
+        assertEquals(MedalThresholds(3, 5), MedalThresholds.thirdsOf(7))
+    }
+
+    @Test
+    fun `unlocks list every medal held, bronze up`() {
+        val silver = Achievement(AchievementKind.Wonders, List(6) { "v$it" }, List(3) { "r$it" })
+        assertEquals(
+            listOf(MedalUnlock("wonders", MedalTier.Bronze), MedalUnlock("wonders", MedalTier.Silver)),
+            silver.unlocks,
+        )
+        assertEquals(emptyList<MedalUnlock>(), Achievement(AchievementKind.Wonders, emptyList(), listOf("a")).unlocks)
+    }
 }
