@@ -1,7 +1,8 @@
 name: Store Listing Upload
 
 # Uploads a version's store listing: the screenshots on the Figma page titled
-# with the version (made by the store-screenshots skill), plus What's New and
+# with the version, or with an earlier version's when `screenshots_from` names
+# one (pages made by the store-screenshots skill), plus What's New and
 # promotional text from ios/fastlane/metadata and android/fastlane/metadata.
 # Nothing is submitted for review: App Store Connect keeps the version in
 # Prepare for Submission, and Play holds the changes in Publishing overview.
@@ -18,9 +19,13 @@ on:
         options: [both, ios, android]
         default: both
       screenshots:
-        description: "Upload screenshots (off: text only)"
+        description: "Upload screenshots (off: keep the ones already in the stores)"
         type: boolean
         default: true
+      screenshots_from:
+        description: "Figma page (version) to take the screenshots from; empty = this version"
+        type: string
+        default: ""
       play_track:
         description: "Play track whose newest release gets What's New"
         type: choice
@@ -50,7 +55,7 @@ jobs:
           FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
         run: |
           pip install pillow
-          python3 scripts/export_store_screenshots.py "${{ inputs.version }}" \
+          python3 scripts/export_store_screenshots.py "${{ inputs.screenshots_from || inputs.version }}" \
             --platform "${{ inputs.platforms == 'both' && 'all' || inputs.platforms }}"
 
       - name: Keep iOS screenshots

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Export one version's store screenshots from Figma into fastlane's folders.
+"""Export one Figma page's store screenshots into fastlane's folders.
 
   FIGMA_TOKEN=... python3 scripts/export_store_screenshots.py 1.12.0 [--platform ios|android|all]
 
 The store-screenshots skill builds each version's sets on a Figma page titled
 with the version, one frame per scene named `<set id>/NN-<scene>`. This finds
-those frames, renders them at 1x through Figma's REST API (so each PNG is the
+those frames on any version's page (a release can reuse an earlier version's
+screenshots), renders them at 1x through Figma's REST API (so each PNG is the
 set's exact store size), flattens them (App Store Connect rejects alpha) and
 writes them where deliver and supply read them:
 
@@ -81,7 +82,7 @@ def save(png_bytes, dest, size):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("version", help="the Figma page title, e.g. 1.12.0")
+    ap.add_argument("version", help="the Figma page title: the version whose screenshots to use, e.g. 1.12.0")
     ap.add_argument("--platform", choices=["ios", "android", "all"], default="all")
     args = ap.parse_args()
     if not os.environ.get("FIGMA_TOKEN"):
