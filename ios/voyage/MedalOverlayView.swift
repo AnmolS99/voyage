@@ -38,10 +38,10 @@ struct MedalOverlayView: View {
                     .opacity(isExpanded ? 1 : 0)
                     .onTapGesture { dismiss() }
 
-                // Beams in the medal's color once it is earned, behind
-                // everything else so the text stays on top of them. They
-                // follow the coin out of the card and grow with it.
-                if let tier = achievement.tier {
+                // Beams in the medal's color when it has just been earned —
+                // not when it is only being looked at — behind everything else
+                // so the text stays on top of them.
+                if celebrating, let tier = achievement.tier {
                     MedalRays(color: MedalArtwork.headingColor(tier, isDarkMode: isDarkMode))
                         // The slot is larger than the coin in it, which fills ~76%.
                         .frame(
@@ -153,7 +153,10 @@ struct MedalOverlayView: View {
 
             Text(achievement.medalStatus)
                 .font(.voyageText(15, weight: .semibold))
-                .foregroundColor(MedalArtwork.accent(achievement.tier))
+                .foregroundColor(
+                    achievement.tier.map { MedalArtwork.headingColor($0, isDarkMode: isDarkMode) }
+                        ?? MedalArtwork.accent(nil)
+                )
 
             Label("Drag to spin", systemImage: "hand.draw")
                 .font(.voyageText(13, weight: .medium))
@@ -724,12 +727,13 @@ enum MedalArtwork {
         }
     }
 
-    /// The unlock heading's color: the light end of the metal on the dark
-    /// blur, the dark end on the light one.
+    /// The overlay's text and beam color: the light end of the metal on the
+    /// dark blur, the dark end on the light one — for silver a darker ink than
+    /// its coin's edge, which all but vanishes into the light blur.
     static func headingColor(_ tier: MedalTier, isDarkMode: Bool) -> Color {
         switch tier {
         case .bronze: return isDarkMode ? AppColors.trophyBronzeLight : AppColors.trophyBronzeDark
-        case .silver: return isDarkMode ? AppColors.trophySilverLight : AppColors.trophySilverDark
+        case .silver: return isDarkMode ? AppColors.trophySilverLight : AppColors.medalSilverInk
         case .gold: return isDarkMode ? AppColors.trophyGoldLight : AppColors.trophyGoldDark
         }
     }

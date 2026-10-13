@@ -141,6 +141,7 @@ fun MedalOverlay(
                                 medal = achievement.medal,
                                 tier = achievement.tier,
                                 size = COIN_SIZE,
+                                shining = celebrating,
                             )
                             MedalDetails(
                                 achievement = achievement,
@@ -165,6 +166,7 @@ fun MedalOverlay(
                                     medal = achievement.medal,
                                     tier = achievement.tier,
                                     size = COIN_SIZE,
+                                    shining = celebrating,
                                 )
                                 Box { if (celebrating) UnlockedHeading(achievement, TextAlign.Center) }
                                 MedalDetails(
@@ -339,7 +341,7 @@ private fun Window.blurBehind(radiusPx: Int) {
  * face is drawn, counter-rotated so it is not a mirror image of the front.
  */
 @Composable
-private fun SpinningMedal(medal: String, tier: MedalTier?, size: Dp) {
+private fun SpinningMedal(medal: String, tier: MedalTier?, size: Dp, shining: Boolean) {
     val spin = remember { MedalSpin() }
 
     LaunchedEffect(spin) {
@@ -377,10 +379,11 @@ private fun SpinningMedal(medal: String, tier: MedalTier?, size: Dp) {
             },
         contentAlignment = Alignment.Center,
     ) {
-        // Beams in the medal's color once it is earned, reaching past the coin
-        // without taking up any more room than it. The scrim is dark in either
-        // theme, so it is the light end of the metal that shines.
-        if (tier != null) {
+        // Beams in the medal's color when it has just been earned — not when it
+        // is only being looked at — reaching past the coin without taking up
+        // any more room than it. The scrim is dark in either theme, so it is
+        // the light end of the metal that shines.
+        if (shining && tier != null) {
             MedalRays(
                 color = metalOf(tier).center,
                 modifier = Modifier.requiredSize(size * RAYS_SCALE),

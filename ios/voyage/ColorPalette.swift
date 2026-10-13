@@ -198,6 +198,10 @@ enum AppColors {
     /// of bronze.
     static let medalBronzeAccent = Color(red: 0.69, green: 0.44, blue: 0.23)
     static let medalSilverAccent = Color(medalSilverEdgeUI)
+
+    /// Silver text and beams on a light background (the medal overlay's light
+    /// blur), where the coin's own edge color is too pale to read.
+    static let medalSilverInk = Color(red: 0.40, green: 0.40, blue: 0.45)
     static let medalGoldAccent = Color(medalGoldEdgeUI)
 
     // MARK: - Helper Functions

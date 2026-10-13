@@ -47,6 +47,7 @@ class ColorPaletteTest {
         assertEquals(Color(0xFF4C4C54), VoyagePalette.medalShadowFace) // 0.30, 0.30, 0.33
         assertEquals(Color(0xFF2B2B30), VoyagePalette.medalShadowSymbol) // 0.17, 0.17, 0.19
         assertEquals(Color(0xFFB0703B), VoyagePalette.medalBronzeAccent) // 0.69, 0.44, 0.23
+        assertEquals(Color(0xFF666673), VoyagePalette.medalSilverInk) // 0.40, 0.40, 0.45
         assertEquals(VoyagePalette.medalSilverEdge, VoyagePalette.medalSilverAccent)
         assertEquals(VoyagePalette.medalGoldEdge, VoyagePalette.medalGoldAccent)
     }

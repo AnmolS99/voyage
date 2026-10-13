@@ -211,6 +211,14 @@ object VoyagePalette {
      */
     val medalBronzeAccent = Color(0xFFB0703B)
     val medalSilverAccent = medalSilverEdge
+
+    /**
+     * Silver text and beams on a light background, where the coin's own edge
+     * color is too pale to read. iOS's medal overlay sits on a light blur in
+     * light mode and uses it; Android's always has a dark scrim, so this is
+     * kept for parity with `AppColors`.
+     */
+    val medalSilverInk = Color(0xFF666673)
     val medalGoldAccent = medalGoldEdge
 
     // endregion
