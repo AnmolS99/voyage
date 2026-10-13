@@ -206,6 +206,16 @@ gh workflow run testflight.yml --ref <branch>   # branch is chosen via the dispa
 gh run watch                                    # monitor the build
 ```
 
+### Store Listings
+
+Store screenshots and listing text are uploaded by
+`.github/workflows/store-listing.yml` (the `store-listing` skill), never
+locally: it exports the version's screenshots from Figma (`FIGMA_TOKEN` secret,
+`scripts/export_store_screenshots.py`) and runs the `listing` lane on each
+platform. What's New and promotional text live in `ios/fastlane/metadata/en-US/`
+and `android/fastlane/metadata/android/en-US/changelogs/`. It never submits for
+review.
+
 ## Setup
 
 Supabase credentials are stored in `ios/Secrets.xcconfig` (gitignored). To set up:

@@ -5,12 +5,7 @@ platform :android do
   lane :internal do
     # Play rejects a versionCode it has seen on any track, so take the next one
     # after the highest it holds — including bundles uploaded by hand.
-    version_code = %w[internal alpha beta production].flat_map do |track|
-      google_play_track_version_codes(track: track)
-    rescue StandardError => e
-      UI.important("No version codes read from #{track}: #{e.message}")
-      []
-    end.max.to_i + 1
+    version_code = version_codes(%w[internal alpha beta production]).max.to_i + 1
     UI.message("Building versionCode #{version_code}")
 
     gradle(
@@ -35,5 +30,38 @@ platform :android do
       skip_upload_images: true,
       skip_upload_screenshots: true
     )
+  end
+
+  desc "Upload the Play listing: screenshots, and What's New on the track's newest release"
+  desc "Run by store-listing.yml; changes wait in Publishing overview until sent for review"
+  lane :listing do |options|
+    track = options.fetch(:track, "internal")
+    # Release notes belong to a release, so they go on the newest one on the
+    # track: changelogs/<versionCode>.txt if present, else changelogs/default.txt.
+    version_code = version_codes([track]).max
+    UI.user_error!("No release on the #{track} track to attach What's New to") unless version_code
+    UI.message("What's New goes on versionCode #{version_code} (#{track})")
+
+    upload_to_play_store(
+      track: track,
+      version_code: version_code,
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: options[:screenshots] == false,
+      sync_image_upload: true,
+      changes_not_sent_for_review: true
+    )
+  end
+
+  # Version codes on the given tracks; a track Play can't read counts as empty.
+  def version_codes(tracks)
+    tracks.flat_map do |track|
+      google_play_track_version_codes(track: track)
+    rescue StandardError => e
+      UI.important("No version codes read from #{track}: #{e.message}")
+      []
+    end
   end
 end

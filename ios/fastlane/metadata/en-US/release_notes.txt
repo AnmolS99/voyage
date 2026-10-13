@@ -1,0 +1,9 @@
+Earn bronze, silver and gold: every achievement now has three medal tiers to work towards.
+
+- A fresh look, with new typefaces throughout the app
+- Capitals are marked with a new star seal on the globe and the map
+- Selecting a country zooms to fit it, so Luxembourg fills the screen and Russia fits on it
+- The Faroe Islands are now on the map
+- Small countries' dots grow as you zoom in on the map
+- Clearer, higher-contrast text
+- Country colours and borders stay sharp on the textured globe up close
