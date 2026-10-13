@@ -24,11 +24,11 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * instead, gently compensated for zoom (`GlobeCamera.capitalMarkerRadius`, the
  * port of iOS's `capitalMarkerScale`), so it reads as printed on the surface.
  *
- * The microstate dot is the exception. The map draws it at [MarkerSizes.dotRadiusPx]
- * always, as iOS's map does. The globe gives it a fixed size *on the globe*, as
- * iOS's globe does, so zooming in grows it with the land around it rather than
- * shrinking it against that land; [MarkerSizes.dotRadiusPx] is only its floor
- * there, for when it would otherwise shrink to a speck zoomed out (see
+ * The microstate dot is the exception. Both renderers give it a fixed size *on
+ * the world* — `CountryHitTester.POINT_HIT_RADIUS` of arc, as iOS does — so
+ * zooming in grows it with the land around it rather than shrinking it against
+ * that land; [MarkerSizes.dotRadiusPx] is only its floor, for when it would
+ * otherwise shrink to a speck zoomed out (see `MapProjection.dotRadius` and
  * `GlobeCamera.dotRadiusInWorld`).
  *
  * They are *drawn* differently, and have to be. The map paints them onto its
@@ -104,8 +104,7 @@ fun DrawScope.drawCapitalSeal(center: Offset, starPath: Path, sizes: MarkerSizes
  * The dot carries the same fill and border a shaped country would, so a visited
  * microstate reads as visited and a selected one shows its status on the border.
  */
-fun DrawScope.drawMicrostateDot(center: Offset, style: CountryStyle, sizes: MarkerSizes) {
-    val radius = sizes.dotRadiusPx
+fun DrawScope.drawMicrostateDot(center: Offset, style: CountryStyle, radius: Float) {
     val bounds = Rect(center = center, radius = radius)
     drawCircle(style.fill.brush(bounds), radius = radius, center = center)
     drawCircle(

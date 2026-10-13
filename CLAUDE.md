@@ -92,8 +92,10 @@ use the displace-by-a-uniform trick the border outlines use, but on the globe
 their size is fixed **on the sphere** — 0.8° of arc,
 the `CountryHitTester.POINT_HIT_RADIUS` taps already use, as iOS's
 `SCNCylinder(radius: 0.014)` is — so they grow with the land when zooming in and
-what is drawn is what is tappable. They never drop below the map's 5 dp when
-zoomed out (`GlobeCamera.dotRadiusInWorld`).
+what is drawn is what is tappable. They never drop below 5 dp when
+zoomed out (`GlobeCamera.dotRadiusInWorld`). The map follows the same rule —
+0.8° of map with a 5 dp floor (`MapProjection.dotRadius`, iOS
+`MapView.MapFit.dotRadius`) — so a dot grows with the land on both renderers.
 
 The Android globe renders with **Filament** (`ui/globe/`), not SceneKit. Two
 constraints there are easy to break: its materials are **unlit** and its view

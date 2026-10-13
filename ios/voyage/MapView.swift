@@ -94,6 +94,14 @@ struct MapView: View {
             CGPoint(x: (lon + 180) / 360 * mapWidth + horizontalOffset,
                     y: (90 - lat) / 180 * mapHeight + verticalOffset)
         }
+
+        /// A microstate dot's on-screen radius at `scale`: the hit tester's 0.8° point
+        /// radius on the map, so it grows with the land when zooming in and what is
+        /// drawn is what is tappable — as on the globe — but never below 5 pt, so it
+        /// stays visible zoomed out. Android `MapProjection.dotRadius`.
+        func dotRadius(scale: CGFloat) -> CGFloat {
+            max(5, CGFloat(CountryHitTester.pointHitRadius) / 360 * mapWidth * scale)
+        }
     }
 
     var body: some View {
@@ -180,8 +188,9 @@ struct MapView: View {
                     }
                 }
 
-                // Draw point countries (small island nations and microstates) as fixed-size
-                // dots in screen space, so they stay visible and tappable at any zoom.
+                // Draw point countries (small island nations and microstates) as dots sized
+                // on the map with a screen-space floor, so they stay visible and tappable at any zoom.
+                let dotRadius = fit.dotRadius(scale: scale)
                 for country in countries where country.isPointCountry {
                     let isVisited = globeState.visitedCountries.contains(country.name)
                     let isWishlist = globeState.wishlistCountries.contains(country.name)
@@ -195,7 +204,6 @@ struct MapView: View {
 
                     guard let coord = country.pointCoordinate else { continue }
                     let center = fit.point(lat: coord.lat, lon: coord.lon).applying(transform)
-                    let dotRadius: CGFloat = 5
                     let dotRect = CGRect(x: center.x - dotRadius, y: center.y - dotRadius,
                                          width: dotRadius * 2, height: dotRadius * 2)
 
