@@ -85,6 +85,7 @@ tests run locally, not in CI — 34, green on the Pixel 9 API 36 emulator.
 | 2026-08-30 | The medal overlay is a `Dialog` | It gets the whole window, a scrim and back-gesture dismissal. Drops iOS's flight from the medal's frame — a shared-element transition, several times the code. |
 | 2026-08-30 | The catalog is data; titles and unit labels are string resources | Testable on the JVM, and every user-visible string stays translatable. |
 | 2026-09-14 | Globe microstate dots are sized on the sphere, not on screen | dp sizing made a dot *harder* to hit the further you zoomed in. 5 dp stays as a floor; map dots stay 5 dp as on iOS. |
+| 2026-10-13 | Map microstate dots are sized on the map too, on both platforms | A fixed 5 dp dot shrank to a speck against the land zoomed in. Now 0.8° of map — the tap radius — with 5 dp as its floor (`MapProjection.dotRadius`, iOS `MapFit.dotRadius`). |
 | 2026-09-14 | No atmosphere glow, on either platform | ~5% opaque, and all it left behind was a full-screen blended draw and a tap-skew bug. |
 | 2026-09-14 | Earth textures live in `shared/data/textures/`, halved to ≤4096 px on Android | One copy read in place by both apps. At 8192 × 4096 a bitmap is 128 MB, over the 100 MB a `Canvas` will draw. |
 | 2026-09-14 | Over a texture, plain land is not drawn at all | iOS's `hasTexture ? .clear : land`, expressed once as `MapShading.None`. |

@@ -1,5 +1,6 @@
 package com.anmol.voyage.ui.map
 
+import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
 
 /**
@@ -87,6 +88,15 @@ class MapProjection(val viewWidth: Float, val viewHeight: Float) {
      */
     fun offsetCentring(point: LatLon): Pair<Float, Float> =
         clampOffset(viewWidth / 2f - viewX(point.lon), viewHeight / 2f - viewY(point.lat), MIN_SCALE)
+
+    /**
+     * A microstate dot's on-screen radius at [scale]: [CountryHitTester.POINT_HIT_RADIUS]
+     * of the map, so it grows with the land when zooming in and what is drawn is
+     * what is tappable — the globe's rule (`GlobeCamera.dotRadiusInWorld`) — but
+     * never below [minRadiusPx], so it stays visible zoomed out. iOS `MapFit.dotRadius`.
+     */
+    fun dotRadius(minRadiusPx: Float, scale: Float): Float =
+        maxOf(minRadiusPx, (CountryHitTester.POINT_HIT_RADIUS / 360.0).toFloat() * mapWidth * scale)
 
     companion object {
         /** Zoom limits, as on iOS. */

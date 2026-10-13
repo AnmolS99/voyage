@@ -139,8 +139,10 @@ fun WorldMap(
         }
 
         // Microstates and small island nations are Point features with no shape to
-        // fill: they are dots in screen space, so they stay visible — and tappable —
-        // at every zoom level, as on iOS.
+        // fill: they are dots drawn outside the matrix, sized on the map with a
+        // screen-space floor, so they stay visible — and tappable — at every zoom
+        // level, as on iOS.
+        val dotRadius = projection.dotRadius(sizes.dotRadiusPx, scale)
         for (country in countries) {
             if (!country.isPointCountry) continue
             val coord = country.pointCoordinate ?: continue
@@ -151,7 +153,7 @@ fun WorldMap(
                 offsetX = offset.x,
                 offsetY = offset.y,
             )
-            drawMicrostateDot(Offset(x, y), scene.styleFor(country.name, hasTexture), sizes)
+            drawMicrostateDot(Offset(x, y), scene.styleFor(country.name, hasTexture), dotRadius)
         }
 
         // The capital seal marks the selected country only, as on the globe.

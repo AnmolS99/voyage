@@ -65,10 +65,14 @@ final class CountryHitTester {
         self.countriesByName = countriesByName
     }
 
+    /// How many degrees around a microstate still count as a tap on it — also the
+    /// radius both renderers draw its dot at, so what is drawn is what is tappable.
+    static let pointHitRadius: Double = 0.8
+
     /// Finds the country at a lat/lon, checking point countries first, then exact polygon
     /// containment, then an expanding-radius search so small countries stay tappable.
     func findCountry(lat: Double, lon: Double) -> String? {
-        let pointHitRadius: Double = 0.8
+        let pointHitRadius = Self.pointHitRadius
         for point in pointCountries {
             let distance = ((lat - point.lat) * (lat - point.lat) + (lon - point.lon) * (lon - point.lon)).squareRoot()
             if distance < pointHitRadius {

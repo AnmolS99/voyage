@@ -153,4 +153,13 @@ class MapProjectionTest {
         assertEquals(expectedX, x, tolerance)
         assertEquals(expectedY, y, tolerance)
     }
+
+    @Test
+    fun `a microstate dot keeps its floor zoomed out and grows with the map zoomed in`() {
+        // 0.8 degrees of a 4000px-wide map is 8.9px at scale 1: above a 5px floor...
+        assertEquals(4000f * 0.8f / 360f, projection.dotRadius(minRadiusPx = 5f, scale = 1f), tolerance)
+        // ...but below a 12px one, which holds until the map outgrows it.
+        assertEquals(12f, projection.dotRadius(minRadiusPx = 12f, scale = 1f), tolerance)
+        assertEquals(4000f * 0.8f / 360f * 10f, projection.dotRadius(minRadiusPx = 12f, scale = 10f), tolerance)
+    }
 }
