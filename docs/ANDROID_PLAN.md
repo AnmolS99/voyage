@@ -98,6 +98,8 @@ tests run locally, not in CI — 34, green on the Pixel 9 API 36 emulator.
 | 2026-09-19 | Status chips label black or white by contrast, not always white as on iOS | White on the visited green is 2.7:1; black is 7.9:1. `ContrastTest` holds both chips to AA's 4.5. |
 | 2026-09-19 | A medal unlock vibrates its own composition, not `HapticFeedbackType.Confirm` | One UI plays `CONFIRM` as a ~130 ms tap indistinguishable from the selection tick before it; on the A55 the unlock went unnoticed. |
 | 2026-09-19 | Unlocking a medal celebrates it, on both platforms | Built on Android and ported to iOS together. Which medals are new is `newlyCompleted` on both, pinned by `UnlockCelebrationTest` and `AchievementCompletionTests`. iOS shows it in its own `UIWindow`: most medals are completed from the country-list sheet, which covers anything in the `TabView`. |
+| 2026-10-13 | Every achievement has bronze, silver and gold medals, on both platforms | Short of bronze the medal is a dark coin with a "?" for its emoji; earned, it shines turning beams in its metal's color in the full-screen view — from the start of an unlock celebration, and only once the coin has reached full size when opened from its card (`MedalRays`: 12 beams, 10° wide, one turn in 40 s, reaching 1.8× the coin). The limits are per achievement and chosen, not computed — `AchievementCatalog` on each, gold always the whole total — and each tier is celebrated. `newlyUnlocked` replaces `newlyCompleted`: it compares every medal held, so dropping back a tier celebrates nothing and a jump of several tiers announces only the highest. |
+| 2026-10-13 | The medal overlay's dialog draws edge to edge | A `Dialog` window otherwise stops at the status bar, leaving the screen above it undimmed. `decorFitsSystemWindows = false`, the cutout band and transparent bars put the scrim under the bars; the medal and text keep to `safeDrawingPadding`. |
 | 2026-09-19 | No tip jar on Android yet | iOS's is StoreKit. Play Billing is its own integration, and it belongs with the store listing in Phase 11. |
 | 2026-09-17 | One Filament engine per Activity: `HomeScreen` sits outside the `NavHost`, hidden rather than removed | A detached view loses its surface however carefully the engine is kept. 99th percentile frame across tab switches: 48–53 ms → 18–19 ms on the A55. |
 
@@ -167,6 +169,12 @@ the cross-platform ones is a two-platform change.
   195 UN states, not all 207 features; the explorer medals do count territories;
   Continental Drifter needs all seven continents and counts each once; the eight
   wonders must each name an attraction `country_highlights.json` still lists.
+- **The same medal limits as iOS's** (`AchievementTest`,
+  `AchievementCompletionTests`): bronze / silver / gold are 25 / 100 / 195 for
+  Globetrotter and Capital Collector, 2 / 5 / 8 for Wonders, 2 / 4 / 7 for
+  Continental Drifter, and for the explorers Africa 10 / 30 / 55, Asia
+  10 / 25 / 50, Europe 10 / 25 / 45, North America 5 / 15 / 26, South America
+  3 / 8 / 14, Oceania 3 / 8 / 15. Gold is exactly completion.
 
 ## Phase 9 — Daily Challenge
 

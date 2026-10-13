@@ -181,25 +181,54 @@ object VoyagePalette {
 
     // region Medal colors (achievement medals)
 
-    /** Gold face gradient (unlocked medal) */
+    /** Bronze face gradient (bronze medal) */
+    val medalBronzeCenter = Color(0xFFD98F4C)
+    val medalBronzeEdge = Color(0xFF8C5426)
+    val medalBronzeRim = Color(0xFF73421A)
+
+    /** Gold face gradient (gold medal) */
     val medalGoldCenter = Color(0xFFFFDE6B)
     val medalGoldEdge = Color(0xFFC78F26)
     val medalGoldRim = Color(0xFFA6731A)
 
-    /** Silver face gradient (locked medal) */
+    /** Silver face gradient (silver medal) */
     val medalSilverCenter = Color(0xFFD1D1D6)
     val medalSilverEdge = Color(0xFF8C8C94)
     val medalSilverRim = Color(0xFF73737A)
+
+    /**
+     * A medal not yet earned: one flat dark coin with the symbol a darker
+     * silhouette on it, like a locked character in a game.
+     */
+    val medalShadowFace = Color(0xFF4C4C54)
+    val medalShadowSymbol = Color(0xFF2B2B30)
+
+    /**
+     * Progress ring, ticks and percentage per medal tier. Silver and gold use
+     * their coins' edge color; bronze is a shade browner than its coin, so it
+     * does not read as the theme orange ([buttonColor]) of a ring short of
+     * bronze.
+     */
+    val medalBronzeAccent = Color(0xFFB0703B)
+    val medalSilverAccent = medalSilverEdge
+
+    /**
+     * Silver and gold text and beams on a light background, where the coins'
+     * own edge colors are too pale to read. iOS's medal overlay sits on a light blur in
+     * light mode and uses it; Android's always has a dark scrim, so this is
+     * kept for parity with `AppColors`.
+     */
+    val medalSilverInk = Color(0xFF666673)
+    val medalGoldInk = Color(0xFF8C610D)
+    val medalGoldAccent = medalGoldEdge
 
     // endregion
 
     // region Trophy colors (challenge trophies)
 
-    /** Bronze trophy gradient */
-    val trophyBronzeLight = Color(0xFFD98F4C)
-    val trophyBronzeDark = Color(0xFF8C5426)
-
-    /** Silver/gold trophy gradients reuse the medal palette */
+    /** Trophy gradients reuse the medal palette */
+    val trophyBronzeLight = medalBronzeCenter
+    val trophyBronzeDark = medalBronzeEdge
     val trophySilverLight = medalSilverCenter
     val trophySilverDark = medalSilverEdge
     val trophyGoldLight = medalGoldCenter

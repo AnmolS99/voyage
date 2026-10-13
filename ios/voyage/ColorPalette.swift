@@ -152,11 +152,9 @@ enum AppColors {
 
     // MARK: - Trophy Colors (challenge trophies)
 
-    /// Bronze trophy gradient
-    static let trophyBronzeLight = Color(red: 0.85, green: 0.56, blue: 0.30)
-    static let trophyBronzeDark = Color(red: 0.55, green: 0.33, blue: 0.15)
-
-    /// Silver/gold trophy gradients reuse the 3D medal palette
+    /// Trophy gradients reuse the 3D medal palette
+    static let trophyBronzeLight = Color(medalBronzeCenterUI)
+    static let trophyBronzeDark = Color(medalBronzeEdgeUI)
     static let trophySilverLight = Color(medalSilverCenterUI)
     static let trophySilverDark = Color(medalSilverEdgeUI)
     static let trophyGoldLight = Color(medalGoldCenterUI)
@@ -174,15 +172,39 @@ enum AppColors {
 
     // MARK: - Medal Colors (3D achievement medals)
 
-    /// Gold face gradient (unlocked medal)
+    /// Bronze face gradient (bronze medal)
+    static let medalBronzeCenterUI = UIColor(red: 0.85, green: 0.56, blue: 0.30, alpha: 1.0)
+    static let medalBronzeEdgeUI = UIColor(red: 0.55, green: 0.33, blue: 0.15, alpha: 1.0)
+    static let medalBronzeRimUI = UIColor(red: 0.45, green: 0.26, blue: 0.10, alpha: 1.0)
+
+    /// Gold face gradient (gold medal)
     static let medalGoldCenterUI = UIColor(red: 1.0, green: 0.87, blue: 0.42, alpha: 1.0)
     static let medalGoldEdgeUI = UIColor(red: 0.78, green: 0.56, blue: 0.15, alpha: 1.0)
     static let medalGoldRimUI = UIColor(red: 0.65, green: 0.45, blue: 0.1, alpha: 1.0)
 
-    /// Silver face gradient (locked medal)
+    /// Silver face gradient (silver medal)
     static let medalSilverCenterUI = UIColor(red: 0.82, green: 0.82, blue: 0.84, alpha: 1.0)
     static let medalSilverEdgeUI = UIColor(red: 0.55, green: 0.55, blue: 0.58, alpha: 1.0)
     static let medalSilverRimUI = UIColor(red: 0.45, green: 0.45, blue: 0.48, alpha: 1.0)
+
+    /// A medal not yet earned: one flat dark coin with the symbol a darker
+    /// silhouette on it, like a locked character in a game.
+    static let medalShadowFaceUI = UIColor(red: 0.30, green: 0.30, blue: 0.33, alpha: 1.0)
+    static let medalShadowSymbolUI = UIColor(red: 0.17, green: 0.17, blue: 0.19, alpha: 1.0)
+
+    /// Progress ring, ticks and percentage per medal tier. Silver and gold
+    /// use their coins' edge color; bronze is a shade browner than its coin,
+    /// so it does not read as the theme orange (`buttonColor`) of a ring short
+    /// of bronze.
+    static let medalBronzeAccent = Color(red: 0.69, green: 0.44, blue: 0.23)
+    static let medalSilverAccent = Color(medalSilverEdgeUI)
+
+    /// Silver and gold text and beams on a light background (the medal
+    /// overlay's light blur), where the coins' own edge colors are too pale
+    /// to read.
+    static let medalSilverInk = Color(red: 0.40, green: 0.40, blue: 0.45)
+    static let medalGoldInk = Color(red: 0.55, green: 0.38, blue: 0.05)
+    static let medalGoldAccent = Color(medalGoldEdgeUI)
 
     // MARK: - Helper Functions
 

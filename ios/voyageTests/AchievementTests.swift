@@ -118,4 +118,69 @@ final class AchievementTests: XCTestCase {
         XCTAssertEqual(achievement.total, 5)
         XCTAssertFalse(achievement.isCompleted)
     }
+
+    // MARK: - Medal tiers
+
+    func testTierWithExplicitThresholds() {
+        func tier(_ current: Int) -> Achievement {
+            Achievement(
+                name: "Test",
+                medal: "🏆",
+                visitedCountries: (0..<current).map { "V\($0)" },
+                remainingCountries: (0..<(20 - current)).map { "R\($0)" },
+                thresholds: MedalThresholds(bronze: 5, silver: 12)
+            )
+        }
+        XCTAssertNil(tier(0).tier)
+        XCTAssertNil(tier(4).tier)
+        XCTAssertEqual(tier(5).tier, .bronze)
+        XCTAssertEqual(tier(11).tier, .bronze)
+        XCTAssertEqual(tier(12).tier, .silver)
+        XCTAssertEqual(tier(19).tier, .silver)
+        XCTAssertEqual(tier(20).tier, .gold)
+    }
+
+    func testNextTierAndRemaining() {
+        func achievement(_ current: Int) -> Achievement {
+            Achievement(
+                name: "Test",
+                medal: "🏆",
+                visitedCountries: (0..<current).map { "V\($0)" },
+                remainingCountries: (0..<(20 - current)).map { "R\($0)" },
+                thresholds: MedalThresholds(bronze: 5, silver: 12)
+            )
+        }
+        XCTAssertEqual(achievement(3).nextTier, .bronze)
+        XCTAssertEqual(achievement(3).remainingToNextTier, 2)
+        XCTAssertEqual(achievement(5).nextTier, .silver)
+        XCTAssertEqual(achievement(5).remainingToNextTier, 7)
+        XCTAssertEqual(achievement(15).nextTier, .gold)
+        XCTAssertEqual(achievement(15).remainingToNextTier, 5)
+        XCTAssertNil(achievement(20).nextTier)
+        XCTAssertEqual(achievement(20).remainingToNextTier, 0)
+    }
+
+    func testGoldIsExactlyCompletion() {
+        for current in 0...10 {
+            let achievement = makeAchievement(current: current, total: 10)
+            XCTAssertEqual(achievement.tier == .gold, achievement.isCompleted)
+        }
+    }
+
+    func testThresholdsDefaultToThirdsRoundedUp() {
+        XCTAssertEqual(MedalThresholds.thirds(of: 195), MedalThresholds(bronze: 65, silver: 130))
+        XCTAssertEqual(MedalThresholds.thirds(of: 8), MedalThresholds(bronze: 3, silver: 6))
+        XCTAssertEqual(MedalThresholds.thirds(of: 7), MedalThresholds(bronze: 3, silver: 5))
+        XCTAssertNil(makeAchievement(current: 2, total: 8).tier)
+        XCTAssertEqual(makeAchievement(current: 3, total: 8).tier, .bronze)
+    }
+
+    func testUnlocksListEveryTierHeld() {
+        XCTAssertEqual(makeAchievement(current: 0, total: 9).unlocks, [])
+        XCTAssertEqual(
+            makeAchievement(name: "A", current: 6, total: 9).unlocks,
+            [MedalUnlock(id: "A", tier: .bronze), MedalUnlock(id: "A", tier: .silver)]
+        )
+        XCTAssertEqual(makeAchievement(current: 9, total: 9).unlocks.map(\.tier), [.bronze, .silver, .gold])
+    }
 }

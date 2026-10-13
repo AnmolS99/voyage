@@ -418,25 +418,102 @@ final class AchievementCompletionTests: XCTestCase {
         XCTAssertEqual(explorer?.isCompleted, true)
     }
 
-    func testFirstReadingIsABaseline() {
-        XCTAssertEqual(AchievementCatalog.newlyCompleted(before: nil, after: ["Globetrotter"]), [])
+    private func unlock(_ id: String, _ tier: MedalTier) -> MedalUnlock {
+        MedalUnlock(id: id, tier: tier)
     }
 
-    func testNewlyCompletedAchievementIsCelebrated() {
+    func testFirstReadingIsABaseline() {
+        XCTAssertEqual(AchievementCatalog.newlyUnlocked(before: nil, after: [unlock("Globetrotter", .bronze)]), [])
+    }
+
+    func testNewlyEarnedMedalIsCelebrated() {
         XCTAssertEqual(
-            AchievementCatalog.newlyCompleted(before: ["Wonders of the World"], after: ["Wonders of the World", "Explorer of Europe"]),
-            ["Explorer of Europe"]
+            AchievementCatalog.newlyUnlocked(
+                before: [unlock("Wonders of the World", .bronze)],
+                after: [unlock("Wonders of the World", .bronze), unlock("Explorer of Europe", .bronze)]
+            ),
+            [unlock("Explorer of Europe", .bronze)]
         )
     }
 
-    func testLosingAchievementsCelebratesNothing() {
-        XCTAssertEqual(AchievementCatalog.newlyCompleted(before: ["Globetrotter"], after: []), [])
+    func testEachTierIsCelebratedInTurn() {
+        let bronze = [unlock("Globetrotter", .bronze)]
+        let silver = bronze + [unlock("Globetrotter", .silver)]
+        let gold = silver + [unlock("Globetrotter", .gold)]
+        XCTAssertEqual(AchievementCatalog.newlyUnlocked(before: [], after: bronze), [unlock("Globetrotter", .bronze)])
+        XCTAssertEqual(AchievementCatalog.newlyUnlocked(before: bronze, after: silver), [unlock("Globetrotter", .silver)])
+        XCTAssertEqual(AchievementCatalog.newlyUnlocked(before: silver, after: gold), [unlock("Globetrotter", .gold)])
+    }
+
+    func testJumpingSeveralTiersCelebratesOnlyTheHighest() {
+        let gold = MedalTier.allCases.map { unlock("Explorer of Oceania", $0) }
+        XCTAssertEqual(AchievementCatalog.newlyUnlocked(before: [], after: gold), [unlock("Explorer of Oceania", .gold)])
+    }
+
+    func testLosingMedalsCelebratesNothing() {
+        let silver = [unlock("Globetrotter", .bronze), unlock("Globetrotter", .silver)]
+        XCTAssertEqual(AchievementCatalog.newlyUnlocked(before: silver, after: []), [])
+        XCTAssertEqual(
+            AchievementCatalog.newlyUnlocked(before: silver, after: [unlock("Globetrotter", .bronze)]),
+            [],
+            "dropping back to bronze must not celebrate bronze again"
+        )
     }
 
     func testSeveralAtOnceAreCelebratedInListOrder() {
         XCTAssertEqual(
-            AchievementCatalog.newlyCompleted(before: [], after: ["Continental Drifter", "Explorer of Oceania"]),
-            ["Continental Drifter", "Explorer of Oceania"]
+            AchievementCatalog.newlyUnlocked(
+                before: [],
+                after: [unlock("Continental Drifter", .bronze), unlock("Explorer of Oceania", .bronze)]
+            ),
+            [unlock("Continental Drifter", .bronze), unlock("Explorer of Oceania", .bronze)]
         )
+    }
+
+    // MARK: - Medal tiers
+
+    /// The limits chosen for each medal — bronze, silver, gold. Android's
+    /// `AchievementTest` pins the same table.
+    func testMedalLimitsPerAchievement() {
+        let expected: [String: [Int]] = [
+            "Globetrotter": [25, 100, 195],
+            "Capital Collector": [25, 100, 195],
+            "Wonders of the World": [2, 5, 8],
+            "Continental Drifter": [2, 4, 7],
+            "Explorer of Africa": [10, 30, 55],
+            "Explorer of Asia": [10, 25, 50],
+            "Explorer of Europe": [10, 25, 45],
+            "Explorer of North America": [5, 15, 26],
+            "Explorer of South America": [3, 8, 14],
+            "Explorer of Oceania": [3, 8, 15],
+        ]
+        let achievements = AchievementCatalog.achievements(visited: [], checkedCities: [:], checkedAttractions: [:])
+        XCTAssertEqual(Set(achievements.map(\.name)), Set(expected.keys))
+        for achievement in achievements {
+            let limits = MedalTier.allCases.map {
+                achievement.medalThresholds.count(for: $0, total: achievement.total)
+            }
+            XCTAssertEqual(limits, expected[achievement.name], achievement.name)
+        }
+    }
+
+    func testNothingVisitedHoldsNoMedals() {
+        let achievements = AchievementCatalog.achievements(visited: [], checkedCities: [:], checkedAttractions: [:])
+        XCTAssertTrue(achievements.allSatisfy { $0.tier == nil })
+    }
+
+    func testExplorerTiersFollowTheirLimits() {
+        let oceania = Array(Continent.oceania.countries).sorted()
+        func tier(visiting count: Int) -> MedalTier? {
+            AchievementCatalog.achievements(
+                visited: Set(oceania.prefix(count)), checkedCities: [:], checkedAttractions: [:]
+            ).first { $0.name == "Explorer of Oceania" }?.tier
+        }
+        XCTAssertNil(tier(visiting: 2))
+        XCTAssertEqual(tier(visiting: 3), .bronze)
+        XCTAssertEqual(tier(visiting: 7), .bronze)
+        XCTAssertEqual(tier(visiting: 8), .silver)
+        XCTAssertEqual(tier(visiting: 14), .silver)
+        XCTAssertEqual(tier(visiting: oceania.count), .gold)
     }
 }

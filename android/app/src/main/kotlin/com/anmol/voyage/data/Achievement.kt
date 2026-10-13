@@ -63,16 +63,57 @@ sealed interface AchievementKind {
 }
 
 /**
+ * The three medals each achievement can be held at, in the order they are
+ * earned — iOS's `MedalTier`. An achievement short of bronze holds none, and its
+ * medal is drawn as a silhouette.
+ */
+enum class MedalTier { Bronze, Silver, Gold }
+
+/**
+ * How many items earn bronze and silver. Gold is always the whole achievement,
+ * so it is not stored: it moves with the total if the data does. iOS's
+ * `MedalThresholds`.
+ */
+data class MedalThresholds(val bronze: Int, val silver: Int) {
+
+    /** The item count at which [tier] is earned, out of [total]. */
+    fun countFor(tier: MedalTier, total: Int): Int = when (tier) {
+        MedalTier.Bronze -> bronze
+        MedalTier.Silver -> silver
+        MedalTier.Gold -> total
+    }
+
+    companion object {
+        /**
+         * A third and two thirds of [total], rounded up — the fallback for an
+         * achievement built without limits of its own (tests, mostly).
+         */
+        fun thirdsOf(total: Int) = MedalThresholds(bronze = (total + 2) / 3, silver = (2 * total + 2) / 3)
+    }
+}
+
+/**
+ * One medal of one achievement — what the unlock celebration announces.
+ *
+ * Serializable so the celebration can keep its queue in `rememberSaveable`
+ * across a rotation without a custom saver.
+ */
+data class MedalUnlock(val id: String, val tier: MedalTier) : java.io.Serializable
+
+/**
  * One achievement and how far along it is — the Kotlin analogue of the iOS
  * `Achievement` struct.
  *
  * [earned] and [remaining] are the items themselves, not just counts, because
  * the card lists them when it is expanded. Both are sorted by the builder.
+ * [thresholds] are the catalog's limits for this achievement; left out, they
+ * fall back to thirds of the total, as iOS's do.
  */
 data class Achievement(
     val kind: AchievementKind,
     val earned: List<String>,
     val remaining: List<String>,
+    val thresholds: MedalThresholds = MedalThresholds.thirdsOf(earned.size + remaining.size),
 ) {
 
     val id: String get() = kind.id
@@ -98,6 +139,36 @@ data class Achievement(
      * one percent less.
      */
     val percentage: Int get() = if (total > 0) current * 100 / total else 0
+
+    /**
+     * The highest medal held, or null while short of bronze. Gold is exactly
+     * [isCompleted], so a medal and its completion can never disagree.
+     */
+    val tier: MedalTier?
+        get() = when {
+            isCompleted -> MedalTier.Gold
+            current >= thresholds.silver -> MedalTier.Silver
+            current >= thresholds.bronze -> MedalTier.Bronze
+            else -> null
+        }
+
+    /** The next medal to earn, or null once gold is held. */
+    val nextTier: MedalTier?
+        get() = when (tier) {
+            null -> MedalTier.Bronze
+            MedalTier.Bronze -> MedalTier.Silver
+            MedalTier.Silver -> MedalTier.Gold
+            MedalTier.Gold -> null
+        }
+
+    /** How many more items the next medal needs; 0 once gold is held. */
+    val remainingToNextTier: Int
+        get() = nextTier?.let { (thresholds.countFor(it, total) - current).coerceAtLeast(0) } ?: 0
+
+    /** Every medal held — bronze up to [tier] — for the unlock celebration. */
+    val unlocks: List<MedalUnlock>
+        get() = tier?.let { held -> MedalTier.entries.filter { it <= held }.map { MedalUnlock(id, it) } }
+            .orEmpty()
 }
 
 /**

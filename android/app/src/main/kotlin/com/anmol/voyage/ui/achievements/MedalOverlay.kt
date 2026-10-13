@@ -7,6 +7,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -21,6 +22,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.TouchApp
@@ -53,14 +56,17 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import com.anmol.voyage.R
 import com.anmol.voyage.data.Achievement
+import com.anmol.voyage.data.MedalTier
 import com.anmol.voyage.ui.challenges.Confetti
 import com.anmol.voyage.ui.theme.VoyagePalette
 import java.util.function.Consumer
@@ -91,9 +97,13 @@ fun MedalOverlay(
     Dialog(
         onDismissRequest = onDismiss,
         // Full window rather than the platform's dialog width: there is no card
-        // here to be sized, only a scrim the medal floats on.
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        // here to be sized, only a scrim the medal floats on. And behind the
+        // system bars, as the app itself draws: a dialog otherwise stops at
+        // the status bar, leaving the screen behind undimmed above it.
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
+        EdgeToEdgeDialogWindow()
+
         // iOS floats the medal on `.ultraThinMaterial`. The platform can blur
         // what is behind a window since API 31, but only when the device and
         // the user's current settings allow it, so the scrim behind the medal
@@ -122,7 +132,12 @@ fun MedalOverlay(
             // there is none here, and the scrim is dark whatever the theme, so
             // the text is light in both.
             CompositionLocalProvider(LocalContentColor provides ON_SCRIM) {
-                BoxWithConstraints(contentAlignment = Alignment.Center) {
+                // The scrim runs under the system bars; the medal and its text
+                // stay clear of them.
+                BoxWithConstraints(
+                    modifier = Modifier.safeDrawingPadding(),
+                    contentAlignment = Alignment.Center,
+                ) {
                     if (maxWidth > maxHeight) {
                         // Landscape: there is no height under the coin for the
                         // text, so it moves beside the coin, which stays in the
@@ -136,8 +151,9 @@ fun MedalOverlay(
                             Spacer(Modifier.weight(1f))
                             SpinningMedal(
                                 medal = achievement.medal,
-                                isEarned = achievement.isCompleted,
+                                tier = achievement.tier,
                                 size = COIN_SIZE,
+                                shineAtOnce = celebrating,
                             )
                             MedalDetails(
                                 achievement = achievement,
@@ -155,13 +171,16 @@ fun MedalOverlay(
                         // so neither pulls it off center. Only when the details
                         // would run off a short screen does it move up.
                         Layout(
+                            // The coin comes first so it draws first: its beams
+                            // reach past it, and the text belongs on top of them.
                             content = {
-                                Box { if (celebrating) UnlockedHeading(TextAlign.Center) }
                                 SpinningMedal(
                                     medal = achievement.medal,
-                                    isEarned = achievement.isCompleted,
+                                    tier = achievement.tier,
                                     size = COIN_SIZE,
+                                    shineAtOnce = celebrating,
                                 )
+                                Box { if (celebrating) UnlockedHeading(achievement, TextAlign.Center) }
                                 MedalDetails(
                                     achievement = achievement,
                                     celebrating = celebrating,
@@ -175,7 +194,7 @@ fun MedalOverlay(
                                 .padding(horizontal = 24.dp),
                         ) { measurables, constraints ->
                             val loose = constraints.copy(minWidth = 0, minHeight = 0)
-                            val (heading, coin, details) = measurables.map { it.measure(loose) }
+                            val (coin, heading, details) = measurables.map { it.measure(loose) }
                             val width = constraints.maxWidth
                             val height = constraints.maxHeight
                             val coinTop = ((height - coin.height) / 2)
@@ -197,13 +216,17 @@ fun MedalOverlay(
     }
 }
 
-/** "Medal unlocked!", over the coin in portrait and over the text in landscape. */
+/**
+ * "Silver medal unlocked!" in the light end of that medal's metal, over the coin
+ * in portrait and over the text in landscape.
+ */
 @Composable
-private fun UnlockedHeading(textAlign: TextAlign) {
+private fun UnlockedHeading(achievement: Achievement, textAlign: TextAlign) {
+    val tier = achievement.tier ?: MedalTier.Bronze
     Text(
-        text = stringResource(R.string.achievement_unlocked_title),
+        text = tier.unlockedTitle(),
         style = MaterialTheme.typography.titleLarge,
-        color = VoyagePalette.medalGoldCenter,
+        color = metalOf(tier).center,
         textAlign = textAlign,
         modifier = Modifier
             .padding(bottom = 12.dp)
@@ -212,7 +235,7 @@ private fun UnlockedHeading(textAlign: TextAlign) {
 }
 
 /**
- * The medal's name, progress, spin hint and close button: under the coin in
+ * The medal's name, progress, medal status, spin hint and close button: under the coin in
  * portrait, or [beside] it — left-aligned, with the unlock heading on top — in
  * landscape.
  */
@@ -230,7 +253,7 @@ private fun MedalDetails(
         horizontalAlignment = if (beside) Alignment.Start else Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (beside && celebrating) UnlockedHeading(textAlign)
+        if (beside && celebrating) UnlockedHeading(achievement, textAlign)
         Text(
             text = achievement.kind.title(),
             style = MaterialTheme.typography.headlineSmall,
@@ -245,6 +268,15 @@ private fun MedalDetails(
             ),
             style = MaterialTheme.typography.bodyMedium,
             color = ON_SCRIM_MUTED,
+            textAlign = textAlign,
+        )
+        Text(
+            text = achievement.medalStatus(),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            // The scrim is dark in either theme, so the light end of the metal
+            // reads where the card's accent would not.
+            color = achievement.tier?.let { metalOf(it).center } ?: VoyagePalette.buttonColor,
             textAlign = textAlign,
         )
 
@@ -305,6 +337,44 @@ private fun dialogBackgroundBlur(radius: Dp): Boolean {
     return blurring
 }
 
+/**
+ * Lets this dialog's window reach into the status bar and display cutout, with
+ * the bars themselves transparent and their icons light over the dark scrim.
+ * `decorFitsSystemWindows = false` alone lays the content out under the bars
+ * but leaves the cutout band, and on older releases the bars' own color, to
+ * the platform.
+ */
+@Composable
+private fun EdgeToEdgeDialogWindow() {
+    val view = LocalView.current
+    DisposableEffect(view) {
+        val window = (view.parent as? DialogWindowProvider)?.window
+        if (window != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                // Edge-to-edge from API 35 on; before it the bars keep a color.
+                @Suppress("DEPRECATION")
+                window.statusBarColor = android.graphics.Color.TRANSPARENT
+                @Suppress("DEPRECATION")
+                window.navigationBarColor = android.graphics.Color.TRANSPARENT
+            }
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
+        }
+        onDispose { }
+    }
+}
+
 @RequiresApi(Build.VERSION_CODES.S)
 private fun Window.blurBehind(radiusPx: Int) {
     addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
@@ -321,7 +391,7 @@ private fun Window.blurBehind(radiusPx: Int) {
  * face is drawn, counter-rotated so it is not a mirror image of the front.
  */
 @Composable
-private fun SpinningMedal(medal: String, isEarned: Boolean, size: Dp) {
+private fun SpinningMedal(medal: String, tier: MedalTier?, size: Dp, shineAtOnce: Boolean) {
     val spin = remember { MedalSpin() }
 
     LaunchedEffect(spin) {
@@ -342,11 +412,21 @@ private fun SpinningMedal(medal: String, isEarned: Boolean, size: Dp) {
     // the first composition on purpose: `animateFloatAsState` starts *at* its
     // target, so there is nothing to animate unless the target changes.
     var shown by remember { mutableStateOf(false) }
+    var fullSize by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
     val entry by animateFloatAsState(
         targetValue = if (shown) 1f else ENTRY_SCALE,
         animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
         label = "medal-entry",
+        finishedListener = { fullSize = true },
+    )
+    // An unlock shines from the moment the coin springs up; a medal opened from
+    // its card only once the coin has reached full size, fading in then — as
+    // iOS waits for its coin to finish flying out of the card.
+    val raysAlpha by animateFloatAsState(
+        targetValue = if (shineAtOnce || fullSize) 1f else 0f,
+        animationSpec = tween(RAYS_FADE_MILLIS),
+        label = "medal-rays-fade",
     )
 
     Box(
@@ -359,11 +439,22 @@ private fun SpinningMedal(medal: String, isEarned: Boolean, size: Dp) {
             },
         contentAlignment = Alignment.Center,
     ) {
+        // Beams in the medal's color once it is earned, reaching past the coin
+        // without taking up any more room than it. The scrim is dark in either
+        // theme, so it is the light end of the metal that shines.
+        if (tier != null) {
+            MedalRays(
+                color = metalOf(tier).center,
+                modifier = Modifier
+                    .requiredSize(size * RAYS_SCALE)
+                    .graphicsLayer { alpha = raysAlpha },
+            )
+        }
         // The turn is handed over as a function, not a value: the coin re-reads
         // it while drawing, so a spinning medal never recomposes.
         MedalCoin(
             medal = medal,
-            isEarned = isEarned,
+            tier = tier,
             size = size,
             rotationDegrees = { spin.degrees },
         )
@@ -416,6 +507,9 @@ private const val NANOS_PER_SECOND = 1_000_000_000f
 private const val MAX_FRAME_STEP = 0.1f
 
 private const val ENTRY_SCALE = 0.7f
+
+/** How long a medal opened from its card takes to fade its beams in. iOS's 0.35 s. */
+private const val RAYS_FADE_MILLIS = 350
 
 /** How much the medal's blur softens what is behind it. */
 private val BLUR_RADIUS = 32.dp

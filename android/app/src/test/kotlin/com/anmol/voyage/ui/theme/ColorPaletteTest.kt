@@ -30,10 +30,27 @@ class ColorPaletteTest {
 
     @Test
     fun `trophy gradients reuse the medal palette`() {
+        assertEquals(VoyagePalette.medalBronzeCenter, VoyagePalette.trophyBronzeLight)
+        assertEquals(VoyagePalette.medalBronzeEdge, VoyagePalette.trophyBronzeDark)
         assertEquals(VoyagePalette.medalSilverCenter, VoyagePalette.trophySilverLight)
         assertEquals(VoyagePalette.medalSilverEdge, VoyagePalette.trophySilverDark)
         assertEquals(VoyagePalette.medalGoldCenter, VoyagePalette.trophyGoldLight)
         assertEquals(VoyagePalette.medalGoldEdge, VoyagePalette.trophyGoldDark)
+    }
+
+    @Test
+    fun `medal colors match iOS AppColors`() {
+        // iOS writes these as 0–1 components; each is that value × 255, rounded.
+        assertEquals(Color(0xFFD98F4C), VoyagePalette.medalBronzeCenter) // 0.85, 0.56, 0.30
+        assertEquals(Color(0xFF8C5426), VoyagePalette.medalBronzeEdge) // 0.55, 0.33, 0.15
+        assertEquals(Color(0xFF73421A), VoyagePalette.medalBronzeRim) // 0.45, 0.26, 0.10
+        assertEquals(Color(0xFF4C4C54), VoyagePalette.medalShadowFace) // 0.30, 0.30, 0.33
+        assertEquals(Color(0xFF2B2B30), VoyagePalette.medalShadowSymbol) // 0.17, 0.17, 0.19
+        assertEquals(Color(0xFFB0703B), VoyagePalette.medalBronzeAccent) // 0.69, 0.44, 0.23
+        assertEquals(Color(0xFF666673), VoyagePalette.medalSilverInk) // 0.40, 0.40, 0.45
+        assertEquals(Color(0xFF8C610D), VoyagePalette.medalGoldInk) // 0.55, 0.38, 0.05
+        assertEquals(VoyagePalette.medalSilverEdge, VoyagePalette.medalSilverAccent)
+        assertEquals(VoyagePalette.medalGoldEdge, VoyagePalette.medalGoldAccent)
     }
 
     @Test

@@ -74,7 +74,16 @@
     <string name="achievement_show_medal">Show the %1$s medal</string>
     <string name="medal_drag_to_spin">Drag to spin</string>
     <string name="medal_close">Close</string>
-    <string name="achievement_unlocked_title">Medal unlocked!</string>
+    <string name="achievement_unlocked_title_bronze">Bronze medal unlocked!</string>
+    <string name="achievement_unlocked_title_silver">Silver medal unlocked!</string>
+    <string name="achievement_unlocked_title_gold">Gold medal unlocked!</string>
+    <string name="medal_tier_bronze">Bronze</string>
+    <string name="medal_tier_silver">Silver</string>
+    <string name="medal_tier_gold">Gold</string>
+    <string name="achievement_status_next_bronze">%1$d more for bronze</string>
+    <string name="achievement_status_next_silver">%1$d more for silver</string>
+    <string name="achievement_status_next_gold">%1$d more for gold</string>
+    <string name="achievement_status_gold">Gold medal</string>
     <string name="achievement_unlocked_done">Awesome!</string>
 
     <!-- Settings (wording mirrors iOS SettingsView) -->

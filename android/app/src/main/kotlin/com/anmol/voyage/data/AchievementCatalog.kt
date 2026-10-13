@@ -33,6 +33,26 @@ object AchievementCatalog {
     }
 
     /**
+     * Bronze and silver limits per achievement; gold is all of it. iOS's
+     * `AchievementCatalog` holds the same table, and `AchievementTest` pins it.
+     */
+    internal val GLOBETROTTER = MedalThresholds(bronze = 25, silver = 100)
+    internal val CAPITAL_COLLECTOR = MedalThresholds(bronze = 25, silver = 100)
+    internal val WONDERS = MedalThresholds(bronze = 2, silver = 5)
+    internal val CONTINENTAL_DRIFTER = MedalThresholds(bronze = 2, silver = 4)
+
+    internal fun explorerThresholds(continent: Continent) = when (continent) {
+        Continent.AFRICA -> MedalThresholds(bronze = 10, silver = 30)
+        Continent.ASIA -> MedalThresholds(bronze = 10, silver = 25)
+        Continent.EUROPE -> MedalThresholds(bronze = 10, silver = 25)
+        Continent.NORTH_AMERICA -> MedalThresholds(bronze = 5, silver = 15)
+        Continent.SOUTH_AMERICA -> MedalThresholds(bronze = 3, silver = 8)
+        Continent.OCEANIA -> MedalThresholds(bronze = 3, silver = 8)
+        // No explorer medal; listed so the `when` stays exhaustive.
+        Continent.ANTARCTICA -> MedalThresholds(bronze = 1, silver = 1)
+    }
+
+    /**
      * Every UN state. Both halves are intersected with the dataset rather than
      * subtracted from the visited set: a name saved by an older version and
      * since renamed would otherwise be counted as visited *and* leave its
@@ -42,6 +62,7 @@ object AchievementCatalog {
         kind = AchievementKind.Globetrotter,
         earned = (unCountries intersect visited).sorted(),
         remaining = (unCountries - visited).sorted(),
+        thresholds = GLOBETROTTER,
     )
 
     /** The capital of every UN state that has one, ticked off in its city list. */
@@ -58,6 +79,7 @@ object AchievementCatalog {
             kind = AchievementKind.CapitalCollector,
             earned = checked.map { it.capital!!.name }.sorted(),
             remaining = unchecked.map { it.capital!!.name }.sorted(),
+            thresholds = CAPITAL_COLLECTOR,
         )
     }
 
@@ -65,6 +87,7 @@ object AchievementCatalog {
         kind = AchievementKind.Wonders,
         earned = WondersOfTheWorld.visited(checkedAttractions),
         remaining = WondersOfTheWorld.remaining(checkedAttractions),
+        thresholds = WONDERS,
     )
 
     /** One item per continent, earned by setting foot on all seven. */
@@ -72,6 +95,7 @@ object AchievementCatalog {
         kind = AchievementKind.ContinentalDrifter,
         earned = cache.continents.visitedContinentNames(visited),
         remaining = cache.continents.remainingContinentNames(visited),
+        thresholds = CONTINENTAL_DRIFTER,
     )
 
     /** Every country on one continent, territories included. */
@@ -85,6 +109,7 @@ object AchievementCatalog {
             kind = AchievementKind.Explorer(continent),
             earned = (countries intersect visited).sorted(),
             remaining = (countries - visited).sorted(),
+            thresholds = explorerThresholds(continent),
         )
     }
 }
