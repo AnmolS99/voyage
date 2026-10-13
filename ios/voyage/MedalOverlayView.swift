@@ -52,12 +52,23 @@ struct MedalOverlayView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    VStack(spacing: 8) {
-                        if celebrating { unlockedHeading }
-                        coinPlaceholder
-                        details(alignment: .center)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // The coin sits in the middle of the screen; the heading
+                    // and the details hang off it as overlays, so they don't
+                    // pull it off center.
+                    coinPlaceholder
+                        .overlay(alignment: .top) {
+                            if celebrating {
+                                unlockedHeading
+                                    .fixedSize()
+                                    .alignmentGuide(.top) { $0[.bottom] + 8 }
+                            }
+                        }
+                        .overlay(alignment: .bottom) {
+                            details(alignment: .center)
+                                .fixedSize()
+                                .alignmentGuide(.bottom) { $0[.top] - 8 }
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 
                 MedalSceneView(achievement: achievement, isSettling: !isExpanded)
