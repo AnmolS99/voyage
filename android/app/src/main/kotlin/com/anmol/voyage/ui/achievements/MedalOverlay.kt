@@ -47,6 +47,7 @@ import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -149,23 +150,42 @@ fun MedalOverlay(
                             )
                         }
                     } else {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            if (celebrating) UnlockedHeading(TextAlign.Center)
-                            SpinningMedal(
-                                medal = achievement.medal,
-                                isEarned = achievement.isCompleted,
-                                size = COIN_SIZE,
-                            )
-                            MedalDetails(
-                                achievement = achievement,
-                                celebrating = celebrating,
-                                onDismiss = onDismiss,
-                                beside = false,
-                                modifier = Modifier.padding(top = 20.dp),
-                            )
+                        // The coin sits in the middle of the screen, as on iOS,
+                        // with the heading hung above it and the details below,
+                        // so neither pulls it off center. Only when the details
+                        // would run off a short screen does it move up.
+                        Layout(
+                            content = {
+                                Box { if (celebrating) UnlockedHeading(TextAlign.Center) }
+                                SpinningMedal(
+                                    medal = achievement.medal,
+                                    isEarned = achievement.isCompleted,
+                                    size = COIN_SIZE,
+                                )
+                                MedalDetails(
+                                    achievement = achievement,
+                                    celebrating = celebrating,
+                                    onDismiss = onDismiss,
+                                    beside = false,
+                                    modifier = Modifier.padding(top = 20.dp),
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 24.dp),
+                        ) { measurables, constraints ->
+                            val loose = constraints.copy(minWidth = 0, minHeight = 0)
+                            val (heading, coin, details) = measurables.map { it.measure(loose) }
+                            val width = constraints.maxWidth
+                            val height = constraints.maxHeight
+                            val coinTop = ((height - coin.height) / 2)
+                                .coerceAtMost(height - coin.height - details.height)
+                                .coerceAtLeast(heading.height)
+                            layout(width, height) {
+                                heading.placeRelative((width - heading.width) / 2, coinTop - heading.height)
+                                coin.placeRelative((width - coin.width) / 2, coinTop)
+                                details.placeRelative((width - details.width) / 2, coinTop + coin.height)
+                            }
                         }
                     }
                 }
