@@ -23,6 +23,9 @@ struct MedalOverlayView: View {
     let onDismissed: () -> Void
 
     @State private var isExpanded = false
+    /// Whether the coin has finished flying out to full size — when a medal
+    /// opened from its card begins to shine.
+    @State private var isSettled = false
     /// Global frame of the expanded coin's slot, measured from the placeholder.
     @State private var targetFrame: CGRect = .zero
 
@@ -38,10 +41,13 @@ struct MedalOverlayView: View {
                     .opacity(isExpanded ? 1 : 0)
                     .onTapGesture { dismiss() }
 
-                // Beams in the medal's color when it has just been earned —
-                // not when it is only being looked at — behind everything else
-                // so the text stays on top of them.
-                if celebrating, let tier = achievement.tier {
+                // Beams in the medal's color once it is earned, behind
+                // everything else so the text stays on top of them. An unlock
+                // shines as the coin springs up; a medal opened from its card
+                // only once the coin has reached full size, fading in then,
+                // and fading out as it flies back.
+                if let tier = achievement.tier {
+                    let shining = celebrating ? isExpanded : isSettled
                     MedalRays(color: MedalArtwork.headingColor(tier, isDarkMode: isDarkMode))
                         // The slot is larger than the coin in it, which fills ~76%.
                         .frame(
@@ -53,7 +59,8 @@ struct MedalOverlayView: View {
                             y: medalFrame.midY - overlayOrigin.y
                         )
                         .scaleEffect(sourceFrame == nil && !isExpanded ? 0.01 : 1)
-                        .opacity(isExpanded ? 1 : 0)
+                        .opacity(shining ? 1 : 0)
+                        .animation(.easeInOut(duration: 0.35), value: isSettled)
                         .allowsHitTesting(false)
                 }
 
@@ -107,8 +114,11 @@ struct MedalOverlayView: View {
         .task {
             // The unlock's haptic, as the games answer a correct guess.
             if celebrating { UINotificationFeedbackGenerator().notificationOccurred(.success) }
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.85), completionCriteria: .logicallyComplete) {
                 isExpanded = true
+            } completion: {
+                // Not if it was dismissed mid-flight.
+                if isExpanded { isSettled = true }
             }
         }
     }
@@ -181,6 +191,7 @@ struct MedalOverlayView: View {
     }
 
     private func dismiss() {
+        isSettled = false
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85), completionCriteria: .logicallyComplete) {
             isExpanded = false
         } completion: {

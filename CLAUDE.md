@@ -131,8 +131,9 @@ pinned in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md). Each achievement is held
 bronze, silver or gold (`MedalTier` on both), at limits chosen per achievement in
 each platform's `AchievementCatalog` — gold is always the whole total. Short of
 bronze its medal is a dark coin with a "?" where the emoji goes; earned, it
-shines beams in its own color when its unlock is celebrated (`MedalRays` on each,
-same count, width and pace). Changing a limit is a two-platform change. The medal coin is drawn
+shines beams in its own color in the full-screen view — from the start of an
+unlock celebration, and once the coin reaches full size when opened from the
+tab (`MedalRays` on each, same count, width and pace). Changing a limit is a two-platform change. The medal coin is drawn
 rather than rendered by a 3D engine — as a cylinder in projection, so it keeps
 the thickness of iOS's `SCNCylinder` as it turns — and it spins on the globe's
 decay curve (`GlobeInertia.decayed`), exactly as iOS's coin borrows
