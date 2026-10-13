@@ -1,0 +1,72 @@
+{
+  "_comment": "The storyboard for every store screenshot set. Copy follows the Voyage design system's voice: a well-travelled friend, short and warm, Title-free sentence case, exclamation marks only for achievements. Change copy HERE, then rerun the skill: every platform and size reads it. `platforms` limits a scene to the apps that have that screen. `theme` is the app's theme for that capture (seeded on Android, switched with Home's sun/moon button on iOS); `frame` is the screenshot frame's own theme.",
+  "scenes": [
+    {
+      "id": "globe",
+      "platforms": ["ios", "android"],
+      "eyebrow": "Voyage",
+      "headline": "Your travels, on a globe",
+      "subline": "Tap a country to mark it visited or save it for a future trip.",
+      "theme": "dark",
+      "frame": "dark",
+      "capture": "Home tab, globe mode, nothing selected. Spin the globe so Europe and Africa face the camera (the demo traveller's yellow cluster). Wait for the idle spin to settle or drag once to stop it."
+    },
+    {
+      "id": "country",
+      "platforms": ["ios", "android"],
+      "eyebrow": "Cities and sights",
+      "headline": "Tick off the places you've been",
+      "subline": "Top cities and attractions for every country.",
+      "theme": "light",
+      "frame": "light",
+      "capture": "Home tab, select France (search or tap it), then open its card fully so Top Cities and Top Attractions show; Paris, Lyon, Nice and three sights are ticked by the demo state."
+    },
+    {
+      "id": "map",
+      "platforms": ["ios", "android"],
+      "eyebrow": "Map view",
+      "headline": "See how far you've come",
+      "subline": "Flip to the map and see your travels laid flat.",
+      "theme": "light",
+      "frame": "light",
+      "capture": "Home tab in map mode (the globe/map toggle), nothing selected, zoomed fully out (in portrait the map fills the height, so Europe and Africa show) with the progress dock reading 34."
+    },
+    {
+      "id": "achievements",
+      "platforms": ["ios", "android"],
+      "eyebrow": "Achievements",
+      "headline": "Earn a medal for every milestone",
+      "subline": "Bronze, silver and gold for each continent and more.",
+      "theme": "light",
+      "frame": "light",
+      "capture": "Achievements tab, scrolled to the top: Continental Drifter at 7/7 shows the gold medal (the demo traveller has been to Antarctica), beside silver and bronze ones. If it is not gold, the seed is stale."
+    },
+    {
+      "id": "challenges",
+      "platforms": ["ios", "android"],
+      "eyebrow": "Challenges",
+      "headline": "Put your geography to the test",
+      "subline": "Find countries, name capitals and spot flags, region by region.",
+      "theme": "dark",
+      "frame": "dark",
+      "capture": "Challenges tab, then Click the Country: the region list, every region but Oceania showing a seeded best (Europe and North America at 100%, outlined green). A live game reads worse and differs every run."
+    },
+    {
+      "id": "daily",
+      "platforms": ["ios"],
+      "eyebrow": "Daily challenge",
+      "headline": "A new puzzle every day",
+      "subline": "Guess the country, capital or flag and keep your streak going.",
+      "theme": "dark",
+      "frame": "dark",
+      "capture": "Daily tab, current month, showing the demo streak of ticks. Needs network: the calendar fetches available dates from Supabase."
+    }
+  ],
+  "sets": [
+    { "id": "ios-iphone-6.9", "platform": "ios", "label": "App Store · iPhone 6.9\"", "width": 1320, "height": 2868, "device": "Voyage Shots iPhone", "chrome": "iphone" },
+    { "id": "ios-ipad-13", "platform": "ios", "label": "App Store · iPad 13\"", "width": 2064, "height": 2752, "device": "Voyage Shots iPad", "chrome": "ipad" },
+    { "id": "android-phone", "platform": "android", "label": "Google Play · Phone", "width": 1080, "height": 1920, "device": "voyage_shots_phone", "chrome": "android" },
+    { "id": "android-tablet-7", "platform": "android", "label": "Google Play · 7\" tablet", "width": 1440, "height": 2560, "device": "voyage_shots_tablet7", "chrome": "android" },
+    { "id": "android-tablet-10", "platform": "android", "label": "Google Play · 10\" tablet", "width": 2160, "height": 3840, "device": "voyage_shots_tablet10", "chrome": "android" }
+  ]
+}

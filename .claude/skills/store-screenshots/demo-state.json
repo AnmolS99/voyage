@@ -1,0 +1,245 @@
+{
+  "_comment": "The one traveller every store screenshot shows, on both platforms. scripts/store_shots.py seed writes it into the iOS simulator's UserDefaults or the Android emulator's DataStore. Countries are ISO codes (the seed script turns them into the names both apps store); cities and attractions are keyed by country NAME and must match shared/data/country_highlights.json exactly. Challenge stats are keyed mode|region as both apps key them. AQ (Antarctica) is there for the seventh continent: it earns Continental Drifter its gold medal, so the achievements screenshot shows all three tiers, and as a non-UN territory it leaves the 34/195 count alone.",
+  "visitedCountries": [
+    "NO",
+    "SE",
+    "DK",
+    "FI",
+    "IS",
+    "GB",
+    "IE",
+    "FR",
+    "ES",
+    "PT",
+    "IT",
+    "DE",
+    "NL",
+    "BE",
+    "CH",
+    "AT",
+    "CZ",
+    "PL",
+    "GR",
+    "HR",
+    "US",
+    "CA",
+    "MX",
+    "JP",
+    "TH",
+    "IN",
+    "AE",
+    "MA",
+    "EG",
+    "ZA",
+    "AU",
+    "NZ",
+    "BR",
+    "AR",
+    "AQ"
+  ],
+  "wishlistCountries": [
+    "PE",
+    "CL",
+    "KE",
+    "TZ",
+    "VN",
+    "ID",
+    "KR",
+    "NP",
+    "NA",
+    "MG"
+  ],
+  "checkedCities": {
+    "France": [
+      "Paris",
+      "Lyon",
+      "Nice"
+    ],
+    "Italy": [
+      "Rome",
+      "Florence"
+    ],
+    "Japan": [
+      "Tokyo",
+      "Kyoto"
+    ],
+    "Norway": [
+      "Oslo"
+    ],
+    "Sweden": [
+      "Stockholm"
+    ],
+    "Denmark": [
+      "Copenhagen"
+    ],
+    "Finland": [
+      "Helsinki"
+    ],
+    "Iceland": [
+      "Reykjavik"
+    ],
+    "United Kingdom": [
+      "London"
+    ],
+    "Ireland": [
+      "Dublin"
+    ],
+    "Spain": [
+      "Madrid"
+    ],
+    "Portugal": [
+      "Lisbon"
+    ],
+    "Germany": [
+      "Berlin"
+    ],
+    "Netherlands": [
+      "Amsterdam"
+    ],
+    "Belgium": [
+      "Brussels"
+    ],
+    "Switzerland": [
+      "Bern"
+    ],
+    "Austria": [
+      "Vienna"
+    ],
+    "Czechia": [
+      "Prague"
+    ],
+    "Poland": [
+      "Warsaw"
+    ],
+    "Greece": [
+      "Athens"
+    ],
+    "Croatia": [
+      "Zagreb"
+    ],
+    "United States of America": [
+      "Washington D.C."
+    ],
+    "Canada": [
+      "Ottawa"
+    ],
+    "Mexico": [
+      "Mexico City"
+    ],
+    "Thailand": [
+      "Bangkok"
+    ],
+    "India": [
+      "New Delhi"
+    ],
+    "United Arab Emirates": [
+      "Abu Dhabi"
+    ],
+    "Morocco": [
+      "Rabat"
+    ],
+    "Egypt": [
+      "Cairo"
+    ],
+    "South Africa": [
+      "Pretoria"
+    ],
+    "Australia": [
+      "Canberra"
+    ],
+    "New Zealand": [
+      "Wellington"
+    ],
+    "Brazil": [
+      "Brasilia"
+    ],
+    "Argentina": [
+      "Buenos Aires"
+    ]
+  },
+  "checkedAttractions": {
+    "France": [
+      "Eiffel Tower",
+      "Louvre Museum",
+      "Mont Saint-Michel"
+    ],
+    "Brazil": [
+      "Christ the Redeemer"
+    ],
+    "Egypt": [
+      "Pyramids of Giza"
+    ],
+    "India": [
+      "Taj Mahal"
+    ],
+    "Italy": [
+      "Colosseum"
+    ],
+    "Mexico": [
+      "Chichen Itza"
+    ]
+  },
+  "challengeStats": {
+    "clickCountry|europe": {
+      "gamesPlayed": 6,
+      "bestCorrect": 51,
+      "bestTotal": 51,
+      "bestTime": 212.4
+    },
+    "clickCountry|world": {
+      "gamesPlayed": 2,
+      "bestCorrect": 171,
+      "bestTotal": 207,
+      "bestTime": 1180.0
+    },
+    "nameCapital|europe": {
+      "gamesPlayed": 3,
+      "bestCorrect": 46,
+      "bestTotal": 51,
+      "bestTime": 340.0
+    },
+    "nameFlag|oceania": {
+      "gamesPlayed": 4,
+      "bestCorrect": 18,
+      "bestTotal": 18,
+      "bestTime": 96.0
+    },
+    "nameFlag|southAmerica": {
+      "gamesPlayed": 1,
+      "bestCorrect": 12,
+      "bestTotal": 14,
+      "bestTime": 88.0
+    },
+    "clickCountry|africa": {
+      "gamesPlayed": 3,
+      "bestCorrect": 41,
+      "bestTotal": 54,
+      "bestTime": 610.0
+    },
+    "clickCountry|asia": {
+      "gamesPlayed": 2,
+      "bestCorrect": 38,
+      "bestTotal": 49,
+      "bestTime": 540.0
+    },
+    "clickCountry|northAmerica": {
+      "gamesPlayed": 4,
+      "bestCorrect": 23,
+      "bestTotal": 23,
+      "bestTime": 148.0
+    },
+    "clickCountry|southAmerica": {
+      "gamesPlayed": 1,
+      "bestCorrect": 10,
+      "bestTotal": 12,
+      "bestTime": 95.0
+    }
+  },
+  "dailyChallenges": {
+    "_comment": "iOS only (Android has no Daily tab yet). Results are written for the past `days` days, counted back from the day you seed, so the calendar shows a live streak. `failedDaysAgo` lists days (1 = yesterday) that show a red X instead of a tick.",
+    "days": 12,
+    "failedDaysAgo": [
+      9
+    ]
+  }
+}
