@@ -38,6 +38,25 @@ struct MedalOverlayView: View {
                     .opacity(isExpanded ? 1 : 0)
                     .onTapGesture { dismiss() }
 
+                // Beams in the medal's color once it is earned, behind
+                // everything else so the text stays on top of them. They
+                // follow the coin out of the card and grow with it.
+                if let tier = achievement.tier {
+                    MedalRays(color: MedalArtwork.headingColor(tier, isDarkMode: isDarkMode))
+                        // The slot is larger than the coin in it, which fills ~76%.
+                        .frame(
+                            width: medalFrame.width * 0.76 * MedalRays.scale,
+                            height: medalFrame.height * 0.76 * MedalRays.scale
+                        )
+                        .position(
+                            x: medalFrame.midX - overlayOrigin.x,
+                            y: medalFrame.midY - overlayOrigin.y
+                        )
+                        .scaleEffect(sourceFrame == nil && !isExpanded ? 0.01 : 1)
+                        .opacity(isExpanded ? 1 : 0)
+                        .allowsHitTesting(false)
+                }
+
                 if geo.size.width > geo.size.height {
                     // Landscape: there is no height under the coin for the
                     // text, so it moves beside the coin, which stays centered
@@ -208,7 +227,7 @@ struct MedalCardView: View {
 }
 
 /// Flat 2D stand-in for the coin, mirroring the 3D cap artwork: same radial
-/// gradient, embossed ring, and emoji (a dark silhouette while unearned),
+/// gradient, embossed ring, and emoji (a question mark while unearned),
 /// sized to match the coin's footprint in the snapshot (~76% of the slot) so
 /// the crossfade to the real coin barely registers.
 private struct FlatCoinFaceView: View {
@@ -238,11 +257,9 @@ private struct FlatCoinFaceView: View {
                     .frame(width: coin * 0.9, height: coin * 0.9)
 
                 if tier == nil {
-                    // Emoji carry their own colors, which no foreground color
-                    // overrides; masking a fill with the glyph leaves its shape.
-                    Color(AppColors.medalShadowSymbolUI)
-                        .mask(Text(medal).font(.system(size: coin * 0.5)))
-                        .frame(width: coin, height: coin)
+                    Text("?")
+                        .font(.system(size: coin * 0.5, weight: .bold))
+                        .foregroundColor(Color(colors.rim))
                 } else {
                     Text(medal)
                         .font(.system(size: coin * 0.5))
@@ -599,27 +616,23 @@ struct MedalSceneView: UIViewRepresentable {
         return image
     }
 
-    /// Emoji for the front, star for the back; an unearned medal's emoji is a
-    /// flat dark silhouette. Transparent background so the coin face shows
-    /// through.
+    /// Emoji for the front, star for the back; an unearned medal shows a
+    /// question mark in place of its emoji. Transparent background so the coin
+    /// face shows through.
     private static func symbolImage(medal: String, front: Bool, tier: MedalTier?) -> UIImage {
         cachedArtwork(key: "symbol|\(medal)|\(front)|\(MedalArtwork.key(tier))") {
             let ringColor = MedalArtwork.colors(tier).rim
             let side: CGFloat = 512
-            let symbol = renderedText(front ? medal : "★", fontSize: 400, color: ringColor)
+            let symbol = front && tier == nil
+                ? renderedText("?", fontSize: 400, weight: .bold, color: ringColor)
+                : renderedText(front ? medal : "★", fontSize: 400, color: ringColor)
             let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
-            return renderer.image { ctx in
+            return renderer.image { _ in
                 // Fit the symbol inside the square, preserving aspect ratio
                 let scale = min(side / symbol.size.width, side / symbol.size.height)
                 let size = CGSize(width: symbol.size.width * scale, height: symbol.size.height * scale)
                 let origin = CGPoint(x: (side - size.width) / 2, y: (side - size.height) / 2)
                 symbol.draw(in: CGRect(origin: origin, size: size))
-                if tier == nil {
-                    // Keep the glyph's shape, lose its colors.
-                    ctx.cgContext.setBlendMode(.sourceIn)
-                    AppColors.medalShadowSymbolUI.setFill()
-                    ctx.fill(CGRect(x: 0, y: 0, width: side, height: side))
-                }
             }
         }
     }
@@ -667,9 +680,14 @@ struct MedalSceneView: UIViewRepresentable {
         }
     }
 
-    private static func renderedText(_ text: String, fontSize: CGFloat, color: UIColor) -> UIImage {
+    private static func renderedText(
+        _ text: String,
+        fontSize: CGFloat,
+        weight: UIFont.Weight = .regular,
+        color: UIColor
+    ) -> UIImage {
         let attributed = NSAttributedString(string: text, attributes: [
-            .font: UIFont.systemFont(ofSize: fontSize),
+            .font: UIFont.systemFont(ofSize: fontSize, weight: weight),
             .foregroundColor: color,
         ])
         let size = attributed.size()
@@ -719,5 +737,67 @@ enum MedalArtwork {
     /// A cache key for each of the four variants.
     static func key(_ tier: MedalTier?) -> String {
         tier.map { "\($0)" } ?? "shadow"
+    }
+}
+
+/// Beams of light fanning out from behind an earned medal in its own color,
+/// slowly turning. Android's `MedalRays` draws the same twelve beams, as wide,
+/// fading the same way and turning at the same pace.
+struct MedalRays: View {
+    let color: Color
+
+    /// How much larger than the coin the beams reach.
+    static let scale: CGFloat = 1.8
+    private static let count = 12
+    private static let widthDegrees: Double = 10
+    /// One turn of the beams, in seconds.
+    private static let turnDuration: Double = 40
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let seconds = timeline.date.timeIntervalSinceReferenceDate
+            let turn = (seconds / Self.turnDuration).truncatingRemainder(dividingBy: 1) * 360
+
+            Canvas { context, size in
+                let center = CGPoint(x: size.width / 2, y: size.height / 2)
+                let radius = min(size.width, size.height) / 2
+                let disc = Path(ellipseIn: CGRect(
+                    x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2
+                ))
+
+                // A soft halo first, so the beams rise out of light rather
+                // than a hard rim.
+                context.fill(disc, with: .radialGradient(
+                    Gradient(stops: [
+                        .init(color: color.opacity(0.35), location: 0.45),
+                        .init(color: color.opacity(0), location: 1),
+                    ]),
+                    center: center, startRadius: 0, endRadius: radius
+                ))
+
+                var beams = Path()
+                for index in 0..<Self.count {
+                    let middle = turn + Double(index) * 360 / Double(Self.count) - 90
+                    beams.move(to: center)
+                    beams.addArc(
+                        center: center,
+                        radius: radius,
+                        startAngle: .degrees(middle - Self.widthDegrees / 2),
+                        endAngle: .degrees(middle + Self.widthDegrees / 2),
+                        clockwise: false
+                    )
+                    beams.closeSubpath()
+                }
+                // Full strength out to the coin's edge, gone by the tips.
+                context.fill(beams, with: .radialGradient(
+                    Gradient(stops: [
+                        .init(color: color.opacity(0.55), location: 1 / Self.scale),
+                        .init(color: color.opacity(0), location: 1),
+                    ]),
+                    center: center, startRadius: 0, endRadius: radius
+                ))
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

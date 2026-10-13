@@ -8,33 +8,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import com.anmol.voyage.data.MedalTier
-import com.anmol.voyage.ui.theme.VoyagePalette
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
 /**
  * An achievement medal: a coin in the metal of the [tier] held, struck with the
- * achievement's emoji — or, short of bronze, a flat dark coin with the emoji a
- * silhouette on it, like a locked character in a game.
+ * achievement's emoji — or, short of bronze, a flat dark coin with a question
+ * mark in its place, like a locked character in a game.
  *
  * It is drawn flat rather than by a 3D engine, but the shape it draws is a
  * *cylinder in projection*, not a disc. [rotationDegrees] turns it about its
@@ -80,19 +74,17 @@ fun MedalCoin(
         // The star on the reverse is struck by the Canvas above, where it can
         // be centered exactly.
         Text(
-            text = medal,
+            text = if (tier == null) UNEARNED_SYMBOL else medal,
             fontSize = symbolSize,
+            fontWeight = if (tier == null) FontWeight.Bold else null,
+            color = metalOf(tier).rim,
             modifier = Modifier
                 .graphicsLayer {
                     val turn = Turn(rotationDegrees(), diameterPx)
                     alpha = if (turn.isFrontForward) 1f else 0f
                     scaleX = turn.faceSqueeze
                     translationX = turn.faceOffset
-                }
-                // Emoji carry color of their own, which no text color can
-                // override — an unearned medal paints over the rendered glyph
-                // instead, keeping only its shape, as iOS masks a fill with it.
-                .then(if (tier != null) Modifier else Modifier.silhouette(VoyagePalette.medalShadowSymbol)),
+                },
         )
 
     }
@@ -240,22 +232,8 @@ private fun coinSilhouette(
     }
 }
 
-/**
- * Draws the content as a flat [color] silhouette: its shape, none of its colors.
- *
- * A layer is needed rather than a tint: emoji carry their own color, so the
- * filter has to apply to the rendered glyph rather than to a paint.
- */
-private fun Modifier.silhouette(color: Color): Modifier = drawWithContent {
-    drawIntoCanvas { canvas ->
-        val paint = Paint().apply {
-            colorFilter = ColorFilter.tint(color, BlendMode.SrcIn)
-        }
-        canvas.saveLayer(Rect(Offset.Zero, size), paint)
-        drawContent()
-        canvas.restore()
-    }
-}
+/** What an unearned medal shows where its emoji will be — iOS's bold "?". */
+private const val UNEARNED_SYMBOL = "?"
 
 /** A coin that is not being spun, and so shows no rim at all. */
 private val FACE_ON: () -> Float = { 0f }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.TouchApp
@@ -157,13 +158,15 @@ fun MedalOverlay(
                         // so neither pulls it off center. Only when the details
                         // would run off a short screen does it move up.
                         Layout(
+                            // The coin comes first so it draws first: its beams
+                            // reach past it, and the text belongs on top of them.
                             content = {
-                                Box { if (celebrating) UnlockedHeading(achievement, TextAlign.Center) }
                                 SpinningMedal(
                                     medal = achievement.medal,
                                     tier = achievement.tier,
                                     size = COIN_SIZE,
                                 )
+                                Box { if (celebrating) UnlockedHeading(achievement, TextAlign.Center) }
                                 MedalDetails(
                                     achievement = achievement,
                                     celebrating = celebrating,
@@ -177,7 +180,7 @@ fun MedalOverlay(
                                 .padding(horizontal = 24.dp),
                         ) { measurables, constraints ->
                             val loose = constraints.copy(minWidth = 0, minHeight = 0)
-                            val (heading, coin, details) = measurables.map { it.measure(loose) }
+                            val (coin, heading, details) = measurables.map { it.measure(loose) }
                             val width = constraints.maxWidth
                             val height = constraints.maxHeight
                             val coinTop = ((height - coin.height) / 2)
@@ -374,6 +377,15 @@ private fun SpinningMedal(medal: String, tier: MedalTier?, size: Dp) {
             },
         contentAlignment = Alignment.Center,
     ) {
+        // Beams in the medal's color once it is earned, reaching past the coin
+        // without taking up any more room than it. The scrim is dark in either
+        // theme, so it is the light end of the metal that shines.
+        if (tier != null) {
+            MedalRays(
+                color = metalOf(tier).center,
+                modifier = Modifier.requiredSize(size * RAYS_SCALE),
+            )
+        }
         // The turn is handed over as a function, not a value: the coin re-reads
         // it while drawing, so a spinning medal never recomposes.
         MedalCoin(
