@@ -405,15 +405,22 @@ private fun GuessEntry(session: ChallengeSession, onRestart: () -> Unit, modifie
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             ) {
                 LazyColumn(modifier = Modifier.heightIn(max = SUGGESTIONS_MAX_HEIGHT)) {
-                    itemsIndexed(matches, key = { _, item -> item }) { position, suggestion ->
-                        Text(
-                            text = suggestion,
-                            style = MaterialTheme.typography.bodyLarge,
+                    itemsIndexed(matches, key = { _, match -> match.item }) { position, match ->
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { submit(suggestion) }
+                                .clickable { submit(match.item) }
                                 .padding(horizontal = 16.dp, vertical = 14.dp),
-                        )
+                        ) {
+                            Text(text = match.item, style = MaterialTheme.typography.bodyLarge)
+                            match.matchedAlias?.let { alias ->
+                                Text(
+                                    text = stringResource(R.string.search_also_known_as, alias),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                         if (position < matches.lastIndex) HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
                     }
                 }

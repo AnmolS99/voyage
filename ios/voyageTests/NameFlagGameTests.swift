@@ -129,37 +129,46 @@ final class NameFlagGameTests: XCTestCase {
 
     // MARK: - Suggestion ranking
 
-    func testRankedMatchesPutsPrefixMatchesFirst() {
+    private func suggestions(_ items: [String], for query: String) -> [String] {
+        CountrySearchIndex<String>.plain(items).suggestions(for: query).map(\.item)
+    }
+
+    func testSuggestionsPutPrefixMatchesFirst() {
         let capitals = ["Buenos Aires", "Moscow", "Nicosia", "Oslo"]
 
         // "Os" is a prefix of "Oslo" but appears mid-word in the others, so
         // Oslo must rank first (see the reported search bug).
-        XCTAssertEqual(capitals.rankedMatches(for: "Os").first, "Oslo")
+        XCTAssertEqual(suggestions(capitals, for: "Os").first, "Oslo")
     }
 
-    func testRankedMatchesPreservesOrderWithinGroups() {
-        let capitals = ["Buenos Aires", "Moscow", "Nicosia", "Oslo"]
+    func testSuggestionsAreAlphabeticalWithinGroups() {
+        let capitals = ["Oslo", "Nicosia", "Moscow", "Buenos Aires"]
 
-        // Prefix match first, then the interior matches in their original
-        // (alphabetical) order.
-        XCTAssertEqual(capitals.rankedMatches(for: "os"),
+        // Prefix match first, then the interior matches alphabetically.
+        XCTAssertEqual(suggestions(capitals, for: "os"),
                        ["Oslo", "Buenos Aires", "Moscow", "Nicosia"])
     }
 
-    func testRankedMatchesIsCaseInsensitive() {
+    func testSuggestionsAreCaseInsensitive() {
         let names = ["oslo", "OSAKA", "Buenos Aires"]
 
-        XCTAssertEqual(names.rankedMatches(for: "OS"), ["oslo", "OSAKA", "Buenos Aires"])
+        XCTAssertEqual(suggestions(names, for: "OS"), ["OSAKA", "oslo", "Buenos Aires"])
     }
 
-    func testRankedMatchesEmptyQueryReturnsNothing() {
-        XCTAssertTrue(["Oslo", "Paris"].rankedMatches(for: "").isEmpty)
-        XCTAssertTrue(["Oslo", "Paris"].rankedMatches(for: "   ").isEmpty)
+    func testSuggestionsForEmptyQueryAreEmpty() {
+        XCTAssertTrue(suggestions(["Oslo", "Paris"], for: "").isEmpty)
+        XCTAssertTrue(suggestions(["Oslo", "Paris"], for: "   ").isEmpty)
     }
 
-    func testRankedMatchesExcludesNonMatches() {
+    func testSuggestionsExcludeNonMatches() {
         let capitals = ["Buenos Aires", "Moscow", "Nicosia", "Oslo"]
 
-        XCTAssertEqual(capitals.rankedMatches(for: "Osl"), ["Oslo"])
+        XCTAssertEqual(suggestions(capitals, for: "Osl"), ["Oslo"])
+    }
+
+    func testCountryNameSuggestionsMatchAliases() {
+        let matches = CountrySearchIndex<String>.countryNames().suggestions(for: "uk")
+        XCTAssertEqual(matches.first?.item, "United Kingdom")
+        XCTAssertEqual(matches.first?.matchedAlias, "UK")
     }
 }

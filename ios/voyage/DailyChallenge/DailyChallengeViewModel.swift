@@ -87,16 +87,22 @@ final class DailyChallengeViewModel: ObservableObject {
         }
     }
 
-    var suggestions: [String] {
-        guard let type = challenge?.questionType else { return [] }
-        let countries = CountryDataCache.shared.countries
+    /// What a typed guess is matched against: country names (found by alias
+    /// too) or capitals, depending on the question.
+    var suggestions: CountrySearchIndex<String> {
+        guard let type = challenge?.questionType else { return .plain([]) }
         switch type {
         case .country, .flag:
-            return countries.compactMap { $0.name }.sorted()
+            return countryNameIndex
         case .capital:
-            return countries.compactMap { $0.capital?.name }.sorted()
+            return capitalIndex
         }
     }
+
+    private lazy var countryNameIndex = CountrySearchIndex<String>.countryNames()
+    private lazy var capitalIndex = CountrySearchIndex<String>.plain(
+        Array(Set(CountryDataCache.shared.countries.compactMap { $0.capital?.name }))
+    )
 
     private func saveResult(completed: Bool) {
         guard let dateString = challenge?.date else { return }

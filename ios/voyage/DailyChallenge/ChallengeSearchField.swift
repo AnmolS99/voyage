@@ -1,31 +1,12 @@
 import SwiftUI
 
-extension String {
-    /// Case-insensitive prefix test used by suggestion ranking, so a typed
-    /// query like "Os" counts "Oslo" as a prefix match but "Buenos Aires" not.
-    func hasCaseInsensitivePrefix(_ prefix: String) -> Bool {
-        range(of: prefix, options: [.caseInsensitive, .anchored]) != nil
-    }
-}
-
-extension Array where Element == String {
-    /// Filters to elements containing `query` (case-insensitive), ranking
-    /// those that *begin* with `query` above interior matches — so typing
-    /// "Os" surfaces "Oslo" before "Buenos Aires". Ties preserve the
-    /// receiver's existing order (callers pass alphabetically sorted lists),
-    /// keeping the sort stable.
-    func rankedMatches(for query: String) -> [String] {
-        let trimmed = query.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return [] }
-        return enumerated()
-            .filter { $0.element.localizedCaseInsensitiveContains(trimmed) }
-            .sorted { lhs, rhs in
-                let lPrefix = lhs.element.hasCaseInsensitivePrefix(trimmed)
-                let rPrefix = rhs.element.hasCaseInsensitivePrefix(trimmed)
-                if lPrefix != rPrefix { return lPrefix }
-                return lhs.offset < rhs.offset
-            }
-            .map(\.element)
+extension CountrySearchIndex {
+    /// Guess-field suggestions for `query`: nothing until something is typed,
+    /// then the index's ranked matches — prefix matches first, so typing "Os"
+    /// surfaces "Oslo" before "Buenos Aires".
+    func suggestions(for query: String) -> [SearchMatch<Item>] {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
+        return search(query)
     }
 }
 
@@ -34,7 +15,7 @@ extension Array where Element == String {
 /// the native search field in Name the Capital.
 struct ChallengeSuggestionList: View {
     /// Filtered matches; the list shows the first five.
-    let suggestions: [String]
+    let suggestions: [SearchMatch<String>]
     let guessedItems: Set<String>
     let isDarkMode: Bool
     /// Liquid glass styling (iOS 26) for in-game HUDs.
@@ -47,7 +28,7 @@ struct ChallengeSuggestionList: View {
 
     private static let maxHeight: CGFloat = 200
 
-    private var shown: [String] { Array(suggestions.prefix(5)) }
+    private var shown: [SearchMatch<String>] { Array(suggestions.prefix(5)) }
 
     private func isGuessed(_ item: String) -> Bool {
         guessedItems.contains(where: { $0.caseInsensitiveCompare(item) == .orderedSame })
@@ -70,17 +51,26 @@ struct ChallengeSuggestionList: View {
     private var list: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(shown, id: \.self) { suggestion in
+                ForEach(shown, id: \.item) { match in
+                    let suggestion = match.item
                     let guessed = isGuessed(suggestion)
                     Button {
                         onSelect(suggestion)
                     } label: {
                         HStack {
-                            Text(suggestion)
-                                .font(.voyageText(15))
-                                .foregroundColor(guessed
-                                    ? AppColors.textMuted(isDarkMode: isDarkMode)
-                                    : AppColors.textPrimary(isDarkMode: isDarkMode))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(suggestion)
+                                    .font(.voyageText(15))
+                                    .foregroundColor(guessed
+                                        ? AppColors.textMuted(isDarkMode: isDarkMode)
+                                        : AppColors.textPrimary(isDarkMode: isDarkMode))
+                                // Why a country turned up for "uk" or "burma".
+                                if let alias = match.matchedAlias {
+                                    Text("Also known as \(alias)")
+                                        .font(.voyageText(12))
+                                        .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
+                                }
+                            }
                             Spacer()
                             if guessed {
                                 Text("Guessed")
@@ -92,7 +82,7 @@ struct ChallengeSuggestionList: View {
                         .padding(.vertical, 14)
                     }
                     .disabled(guessed)
-                    if suggestion != shown.last {
+                    if suggestion != shown.last?.item {
                         Divider()
                             .padding(.leading, 16)
                     }
@@ -110,12 +100,13 @@ struct ChallengeSuggestionList: View {
 }
 
 /// Floating suggestion dropdown for a guess-entry field: ranks `suggestions`
-/// against `query` (prefix matches first), greys out already-guessed items, and
+/// against `query` (prefix matches first, country names also by alias), greys
+/// out already-guessed items, and
 /// reports the tapped suggestion. Renders nothing when the query has no matches.
 /// Shared by the Daily Challenge and the Challenges game modes so suggestions
 /// look and behave identically everywhere.
 struct GuessSuggestionDropdown: View {
-    let suggestions: [String]
+    let suggestions: CountrySearchIndex<String>
     let query: String
     /// Already-guessed items, greyed out. Only the daily challenge (five
     /// attempts) has any; the one-guess game modes leave it empty.
@@ -126,7 +117,7 @@ struct GuessSuggestionDropdown: View {
     let onSelect: (String) -> Void
 
     var body: some View {
-        let matches = suggestions.rankedMatches(for: query)
+        let matches = suggestions.suggestions(for: query)
         if !matches.isEmpty {
             ChallengeSuggestionList(
                 suggestions: matches,
@@ -201,7 +192,7 @@ extension View {
 
 struct ChallengeSearchField: View {
     @Binding var searchText: String
-    let suggestions: [String]
+    let suggestions: CountrySearchIndex<String>
     /// Already-guessed items, greyed out in the suggestion list. Only the
     /// daily challenge (five attempts) has any.
     var guessedItems: Set<String> = []
@@ -223,8 +214,8 @@ struct ChallengeSearchField: View {
     /// Fixed height of the glass field row, so in-game HUD buttons can match.
     static let fieldHeight: CGFloat = 46
 
-    private var filtered: [String] {
-        suggestions.rankedMatches(for: searchText)
+    private var filtered: [SearchMatch<String>] {
+        suggestions.suggestions(for: searchText)
     }
 
     var body: some View {

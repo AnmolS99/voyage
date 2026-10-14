@@ -4,24 +4,22 @@ struct CountryListView: View {
     @ObservedObject var globeState: GlobeState
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
+    /// Matching and ordering, by name and by alias ("uk", "england", "burma").
+    /// Built once: the country list never changes.
+    private static let index = CountrySearchIndex<GeoJSONCountry>.countries(CountryDataCache.shared.countries)
 
-    private var filteredCountries: [GeoJSONCountry] {
-        let countries = CountryDataCache.shared.countries.sorted { $0.name < $1.name }
-        if searchText.isEmpty {
-            return countries
-        }
-        return countries.filter {
-            $0.name.localizedCaseInsensitiveContains(searchText)
-        }
+    private var results: [SearchMatch<GeoJSONCountry>] {
+        Self.index.search(searchText)
     }
 
     var body: some View {
         NavigationStack {
-            List(filteredCountries, id: \.name) { country in
+            List(results, id: \.item.name) { match in
                 CountryRow(
-                    country: country,
+                    country: match.item,
+                    matchedAlias: match.matchedAlias,
                     globeState: globeState,
-                    onSelect: { navigateToCountry(country) }
+                    onSelect: { navigateToCountry(match.item) }
                 )
             }
             .searchable(text: $searchText, prompt: "Search countries")
@@ -70,6 +68,9 @@ struct CountryListView: View {
 
 struct CountryRow: View {
     let country: GeoJSONCountry
+    /// The alias the search found this country by, shown under its name so
+    /// the match is clear. Nil when the name itself matched.
+    var matchedAlias: String? = nil
     @ObservedObject var globeState: GlobeState
     let onSelect: () -> Void
 
@@ -83,9 +84,16 @@ struct CountryRow: View {
             Text(globeState.flagForCountry(country.name))
                 .font(.system(size: 24))
 
-            Text(country.name)
-                .font(.voyageText(16, weight: .medium))
-                .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(country.name)
+                    .font(.voyageText(16, weight: .medium))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
+                if let matchedAlias {
+                    Text("Also known as \(matchedAlias)")
+                        .font(.voyageText(13))
+                        .foregroundColor(AppColors.textMuted(isDarkMode: globeState.isDarkMode))
+                }
+            }
 
             Spacer()
 

@@ -272,6 +272,7 @@ fun HomeScreen(
     if (visible && challengeScene == null && showingSearch && countries != null) {
         CountrySearchSheet(
             countries = countries,
+            cache = cache,
             state = state,
             onSelect = { country ->
                 state.selectCountry(country.name, data?.hitTester?.center(country.name))

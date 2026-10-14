@@ -45,11 +45,13 @@
 		E81234560028 /* Achievement.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550028 /* Achievement.swift */; };
 		E81234560030 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550030 /* main.swift */; };
 		E81234560031 /* CountryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550031 /* CountryListView.swift */; };
+		E81234560106 /* CountrySearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550106 /* CountrySearchIndex.swift */; };
 		E81234560032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550032 /* HomeView.swift */; };
 		E81234560104 /* CountriesDock.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550104 /* CountriesDock.swift */; };
 		E81234560033 /* PolygonTriangulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550009 /* PolygonTriangulator.swift */; };
 		E81234560034 /* CountryExploreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550034 /* CountryExploreView.swift */; };
 		E81234560035 /* country_highlights.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550035 /* country_highlights.json */; };
+		E81234560105 /* country_aliases.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550105 /* country_aliases.json */; };
 		E81234560090 /* earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550090 /* earth_texture.jpg */; };
 		E81234560091 /* natural_earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550091 /* natural_earth_texture.jpg */; };
 		E81234560092 /* stylized_earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550092 /* stylized_earth_texture.jpg */; };
@@ -76,6 +78,7 @@
 		E81234560070 /* NameCapitalGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550070 /* NameCapitalGameTests.swift */; };
 		E81234560073 /* NameFlagGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550073 /* NameFlagGameView.swift */; };
 		E81234560074 /* NameFlagGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550074 /* NameFlagGameTests.swift */; };
+		E81234560107 /* CountrySearchIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550107 /* CountrySearchIndexTests.swift */; };
 		E81234560080 /* expected_countries.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550080 /* expected_countries.json */; };
 		E81234560081 /* GeoJSONFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550081 /* GeoJSONFixtureTests.swift */; };
 		E81234560082 /* OutlineSectorCullingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550082 /* OutlineSectorCullingTests.swift */; };
@@ -135,10 +138,12 @@
 		E81234550028 /* Achievement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievement.swift; sourceTree = "<group>"; };
 		E81234550030 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		E81234550031 /* CountryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryListView.swift; sourceTree = "<group>"; };
+		E81234550106 /* CountrySearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountrySearchIndex.swift; sourceTree = "<group>"; };
 		E81234550032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		E81234550104 /* CountriesDock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountriesDock.swift; sourceTree = "<group>"; };
 		E81234550034 /* CountryExploreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryExploreView.swift; sourceTree = "<group>"; };
 		E81234550035 /* country_highlights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = country_highlights.json; path = "../../shared/data/country_highlights.json"; sourceTree = "<group>"; };
+		E81234550105 /* country_aliases.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = country_aliases.json; path = "../../shared/data/country_aliases.json"; sourceTree = "<group>"; };
 		E81234550090 /* earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = earth_texture.jpg; path = "../../shared/data/textures/earth_texture.jpg"; sourceTree = "<group>"; };
 		E81234550091 /* natural_earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = natural_earth_texture.jpg; path = "../../shared/data/textures/natural_earth_texture.jpg"; sourceTree = "<group>"; };
 		E81234550092 /* stylized_earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = stylized_earth_texture.jpg; path = "../../shared/data/textures/stylized_earth_texture.jpg"; sourceTree = "<group>"; };
@@ -165,6 +170,7 @@
 		E81234550070 /* NameCapitalGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameTests.swift; sourceTree = "<group>"; };
 		E81234550073 /* NameFlagGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameFlagGameView.swift; sourceTree = "<group>"; };
 		E81234550074 /* NameFlagGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameFlagGameTests.swift; sourceTree = "<group>"; };
+		E81234550107 /* CountrySearchIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountrySearchIndexTests.swift; sourceTree = "<group>"; };
 		E81234550080 /* expected_countries.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = expected_countries.json; path = "../../shared/fixtures/expected_countries.json"; sourceTree = "<group>"; };
 		E81234550081 /* GeoJSONFixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoJSONFixtureTests.swift; sourceTree = "<group>"; };
 		E81234550082 /* OutlineSectorCullingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutlineSectorCullingTests.swift; sourceTree = "<group>"; };
@@ -217,6 +223,7 @@
 				E81234550104 /* CountriesDock.swift */,
 				E81234550014 /* SettingsView.swift */,
 				E81234550031 /* CountryListView.swift */,
+				E81234550106 /* CountrySearchIndex.swift */,
 				E81234550034 /* CountryExploreView.swift */,
 				E81234550003 /* GlobeView.swift */,
 				E81234550011 /* MapView.swift */,
@@ -242,6 +249,7 @@
 				E81234550006 /* Assets.xcassets */,
 				E81234550010 /* world.geojson */,
 				E81234550035 /* country_highlights.json */,
+				E81234550105 /* country_aliases.json */,
 				E81234550090 /* earth_texture.jpg */,
 				E81234550091 /* natural_earth_texture.jpg */,
 				E81234550092 /* stylized_earth_texture.jpg */,
@@ -276,6 +284,7 @@
 				E81234550065 /* ClickCountryGameTests.swift */,
 				E81234550070 /* NameCapitalGameTests.swift */,
 				E81234550074 /* NameFlagGameTests.swift */,
+				E81234550107 /* CountrySearchIndexTests.swift */,
 				E81234550081 /* GeoJSONFixtureTests.swift */,
 				E81234550082 /* OutlineSectorCullingTests.swift */,
 				E81234550080 /* expected_countries.json */,
@@ -432,6 +441,7 @@
 				E81234560019 /* globe.scn in Resources */,
 				E81234560027 /* TipJar.storekit in Resources */,
 				E81234560035 /* country_highlights.json in Resources */,
+				E81234560105 /* country_aliases.json in Resources */,
 				E81234560090 /* earth_texture.jpg in Resources */,
 				E81234560091 /* natural_earth_texture.jpg in Resources */,
 				E81234560092 /* stylized_earth_texture.jpg in Resources */,
@@ -481,6 +491,7 @@
 				E81234560022 /* ContinentData.swift in Sources */,
 				E81234560026 /* TipJarManager.swift in Sources */,
 				E81234560031 /* CountryListView.swift in Sources */,
+				E81234560106 /* CountrySearchIndex.swift in Sources */,
 				E81234560032 /* HomeView.swift in Sources */,
 				E81234560104 /* CountriesDock.swift in Sources */,
 				E81234560034 /* CountryExploreView.swift in Sources */,
@@ -518,6 +529,7 @@
 				E81234560065 /* ClickCountryGameTests.swift in Sources */,
 				E81234560070 /* NameCapitalGameTests.swift in Sources */,
 				E81234560074 /* NameFlagGameTests.swift in Sources */,
+				E81234560107 /* CountrySearchIndexTests.swift in Sources */,
 				E81234560081 /* GeoJSONFixtureTests.swift in Sources */,
 				E81234560082 /* OutlineSectorCullingTests.swift in Sources */,
 				E81234560066 /* ChallengeStoreMergeTests.swift in Sources */,

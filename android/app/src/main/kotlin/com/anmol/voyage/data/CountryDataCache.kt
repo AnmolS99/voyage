@@ -40,6 +40,15 @@ class CountryDataCache(
         CountryHighlightsParser.parse(openAsset(COUNTRY_HIGHLIGHTS))
     }
 
+    /**
+     * Other names each country goes by, keyed by ISO code — short forms, former
+     * names and native names (`country_aliases.json`, shared with iOS). Parsed on
+     * first use.
+     */
+    val countryAliases: Map<String, List<String>> by lazy {
+        CountryAliasesParser.parse(openAsset(COUNTRY_ALIASES))
+    }
+
     /** Countries grouped by continent. */
     val continents: ContinentIndex by lazy { ContinentIndex(countries) }
 
@@ -60,8 +69,13 @@ class CountryDataCache(
 
     fun highlights(isoCode: String): CountryHighlights? = countryHighlights[isoCode]
 
+    /** The other names [country] goes by — what search finds it by besides its name and ISO code. */
+    fun aliases(country: GeoJsonCountry): List<String> =
+        country.isoCode?.let { countryAliases[it] }.orEmpty()
+
     companion object {
         const val COUNTRY_HIGHLIGHTS = "country_highlights.json"
+        const val COUNTRY_ALIASES = "country_aliases.json"
 
         @Volatile
         private var instance: CountryDataCache? = null

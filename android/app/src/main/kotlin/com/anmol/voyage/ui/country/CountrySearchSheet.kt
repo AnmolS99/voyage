@@ -45,6 +45,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
+import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountrySearchIndex
 import com.anmol.voyage.data.FlagEmoji
 import com.anmol.voyage.data.GeoJsonCountry
@@ -60,12 +61,15 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * shows it on the map.
  *
  * Matching and ordering live in [CountrySearchIndex], which folds accents so
- * `Türkiye` is reachable from an English keyboard.
+ * `Türkiye` is reachable from an English keyboard, and finds countries by their
+ * other names too — "uk", "england", "burma". A country found only by one of
+ * those shows it under its name, so it is clear why it is listed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountrySearchSheet(
     countries: List<GeoJsonCountry>,
+    cache: CountryDataCache,
     state: VoyageState,
     onSelect: (GeoJsonCountry) -> Unit,
     onDismiss: () -> Unit,
@@ -77,7 +81,7 @@ fun CountrySearchSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var query by rememberSaveable { mutableStateOf("") }
-    val index = remember(countries) { CountrySearchIndex.ofCountries(countries) }
+    val index = remember(countries, cache) { CountrySearchIndex.ofCountries(countries, cache) }
     val results = remember(index, query) { index.search(query) }
     val focusRequester = remember { FocusRequester() }
 
@@ -138,11 +142,12 @@ fun CountrySearchSheet(
                         .weight(1f)
                         .navigationBarsPadding(),
                 ) {
-                    items(results, key = { it.name }) { country ->
+                    items(results, key = { it.item.name }) { match ->
                         CountryRow(
-                            country = country,
+                            country = match.item,
+                            matchedAlias = match.matchedAlias,
                             state = state,
-                            onSelect = { onSelect(country) },
+                            onSelect = { onSelect(match.item) },
                         )
                     }
                 }
@@ -154,18 +159,21 @@ fun CountrySearchSheet(
 @Composable
 private fun CountryRow(
     country: GeoJsonCountry,
+    matchedAlias: String?,
     state: VoyageState,
     onSelect: () -> Unit,
 ) {
     val flag = remember(country) { FlagEmoji.of(country) }
-    val capital = country.capital?.name
+    // The alias that found the country explains the match better than its capital.
+    val supporting = matchedAlias?.let { stringResource(R.string.search_also_known_as, it) }
+        ?: country.capital?.name
     val wishlisted = state.isInWishlist(country.name)
     ListItem(
         headlineContent = { Text(country.name) },
-        supportingContent = if (capital == null) {
+        supportingContent = if (supporting == null) {
             null
         } else {
-            { Text(capital) }
+            { Text(supporting) }
         },
         leadingContent = { FlagText(flag = flag, country = country.name, fontSize = 28.sp) },
         trailingContent = {

@@ -3,6 +3,7 @@ package com.anmol.voyage.data
 import java.io.InputStream
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -24,4 +25,14 @@ object CountryHighlightsParser {
     @OptIn(ExperimentalSerializationApi::class)
     fun parse(input: InputStream): Map<String, CountryHighlights> =
         input.use { json.decodeFromStream(serializer, it) }
+}
+
+/** Parses `country_aliases.json` (shared with iOS) into alias lists keyed by ISO code. */
+object CountryAliasesParser {
+
+    private val serializer = MapSerializer(String.serializer(), ListSerializer(String.serializer()))
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun parse(input: InputStream): Map<String, List<String>> =
+        input.use { Json.decodeFromStream(serializer, it) }
 }

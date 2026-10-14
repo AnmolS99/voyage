@@ -28,7 +28,7 @@ struct NameCapitalGameView: View {
     private let isDarkMode: Bool
     /// Every capital in the dataset — the search field's suggestion pool, so
     /// the answer never stands out by being the only nearby suggestion.
-    private let capitalSuggestions: [String]
+    private let capitalSuggestions: CountrySearchIndex<String>
     private static let revealDuration: TimeInterval = 2.6
 
     init(region: ChallengeRegion, mainState: GlobeState, onDismiss: @escaping () -> Void) {
@@ -44,7 +44,7 @@ struct NameCapitalGameView: View {
         globe.showsCapitalMarker = false
         _gameGlobe = StateObject(wrappedValue: globe)
 
-        capitalSuggestions = Set(CountryDataCache.shared.countries.compactMap { $0.capital?.name }).sorted()
+        capitalSuggestions = .plain(Array(Set(CountryDataCache.shared.countries.compactMap { $0.capital?.name })))
     }
 
     private enum Feedback: Equatable {
