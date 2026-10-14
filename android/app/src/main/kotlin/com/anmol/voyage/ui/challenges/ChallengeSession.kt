@@ -71,13 +71,15 @@ class ChallengeSession(
     /**
      * What a typed guess is matched against: every capital, or every country
      * name, in the dataset — never just the region's, so the answer does not
-     * stand out as the only suggestion nearby. Null for Click the Country.
+     * stand out as the only suggestion nearby. Country names are also found by
+     * their aliases ("uk", "burma"); capitals have none. Null for Click the
+     * Country.
      */
     val suggestions: CountrySearchIndex<String>? = when (mode) {
         ChallengeGameMode.ClickCountry -> null
         ChallengeGameMode.NameCapital ->
             CountrySearchIndex(cache.countries.mapNotNull { it.capital?.name }.distinct()) { it }
-        ChallengeGameMode.NameFlag -> CountrySearchIndex(cache.countries.map { it.name }) { it }
+        ChallengeGameMode.NameFlag -> CountrySearchIndex.ofCountryNames(cache)
     }
 
     var feedback: SweepFeedback? by mutableStateOf(null)

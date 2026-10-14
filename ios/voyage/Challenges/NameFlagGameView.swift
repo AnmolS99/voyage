@@ -34,7 +34,7 @@ struct NameFlagGameView: View {
     private let isDarkMode: Bool
     /// Every country name in the dataset — the search field's suggestion pool,
     /// so the answer never stands out by being the only nearby suggestion.
-    private let countrySuggestions: [String]
+    private let countrySuggestions: CountrySearchIndex<String>
     private static let revealDuration: TimeInterval = 2.6
 
     init(region: ChallengeRegion, mainState: GlobeState, onDismiss: @escaping () -> Void) {
@@ -50,7 +50,7 @@ struct NameFlagGameView: View {
         globe.showsCapitalMarker = false
         _gameGlobe = StateObject(wrappedValue: globe)
 
-        countrySuggestions = CountryDataCache.shared.countries.map { $0.name }.sorted()
+        countrySuggestions = .countryNames()
     }
 
     private enum Feedback: Equatable {

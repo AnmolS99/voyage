@@ -17,6 +17,33 @@ final class CountryDataCache {
         CountryHighlightsParser.loadHighlights()
     }()
 
+    /// Other names each country is searched by, keyed by ISO code
+    /// (`country_aliases.json`, shared with Android): its other names first, then
+    /// its former names, then its parts.
+    private(set) lazy var countryAliases: [String: [CountryAlias]] = {
+        struct Entry: Decodable {
+            var names: [String]?
+            var formerly: [String]?
+            var includes: [String]?
+        }
+        guard let url = Bundle.main.url(forResource: "country_aliases", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let entries = try? JSONDecoder().decode([String: Entry].self, from: data) else {
+            print("Failed to load country aliases")
+            return [:]
+        }
+        return entries.mapValues { entry in
+            (entry.names ?? []).map { CountryAlias(text: $0, kind: .name) }
+                + (entry.formerly ?? []).map { CountryAlias(text: $0, kind: .formerName) }
+                + (entry.includes ?? []).map { CountryAlias(text: $0, kind: .part) }
+        }
+    }()
+
+    /// The other names `country` goes by — what search finds it by besides its name and ISO code.
+    func aliases(for country: GeoJSONCountry) -> [CountryAlias] {
+        country.flagCode.flatMap { countryAliases[$0] } ?? []
+    }
+
     /// Kicks off GeoJSON parsing (and hit-test index building) on a background
     /// queue so it overlaps the rest of app startup instead of blocking the
     /// first globe/map render.

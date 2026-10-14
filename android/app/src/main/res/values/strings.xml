@@ -50,6 +50,10 @@
     <string name="search_countries">Search countries</string>
     <string name="search_clear_query">Clear search</string>
     <string name="search_close">Close</string>
+    <string name="search_also_known_as">Also known as %1$s</string>
+    <string name="search_formerly">Formerly %1$s</string>
+    <string name="search_includes">Includes %1$s</string>
+    <string name="search_country_code">Country code %1$s</string>
     <string name="search_no_results">No countries match “%1$s”.</string>
 
     <!-- Achievements -->
