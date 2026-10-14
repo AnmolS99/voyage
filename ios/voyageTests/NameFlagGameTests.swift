@@ -169,6 +169,6 @@ final class NameFlagGameTests: XCTestCase {
     func testCountryNameSuggestionsMatchAliases() {
         let matches = CountrySearchIndex<String>.countryNames().suggestions(for: "uk")
         XCTAssertEqual(matches.first?.item, "United Kingdom")
-        XCTAssertEqual(matches.first?.matchedAlias, "UK")
+        XCTAssertEqual(matches.first?.matchedAlias?.text, "UK")
     }
 }

@@ -70,7 +70,7 @@ struct CountryRow: View {
     let country: GeoJSONCountry
     /// The alias the search found this country by, shown under its name so
     /// the match is clear. Nil when the name itself matched.
-    var matchedAlias: String? = nil
+    var matchedAlias: CountryAlias? = nil
     @ObservedObject var globeState: GlobeState
     let onSelect: () -> Void
 
@@ -89,7 +89,7 @@ struct CountryRow: View {
                     .font(.voyageText(16, weight: .medium))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
                 if let matchedAlias {
-                    Text("Also known as \(matchedAlias)")
+                    Text(matchedAlias.label)
                         .font(.voyageText(13))
                         .foregroundColor(AppColors.textMuted(isDarkMode: globeState.isDarkMode))
                 }

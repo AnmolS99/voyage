@@ -3,7 +3,6 @@ package com.anmol.voyage.data
 import java.io.InputStream
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -27,12 +26,27 @@ object CountryHighlightsParser {
         input.use { json.decodeFromStream(serializer, it) }
 }
 
-/** Parses `country_aliases.json` (shared with iOS) into alias lists keyed by ISO code. */
+/**
+ * Parses `country_aliases.json` (shared with iOS) into alias lists keyed by ISO
+ * code — other names first, then former names, then parts.
+ */
 object CountryAliasesParser {
 
-    private val serializer = MapSerializer(String.serializer(), ListSerializer(String.serializer()))
+    @Serializable
+    private class Entry(
+        val names: List<String> = emptyList(),
+        val formerly: List<String> = emptyList(),
+        val includes: List<String> = emptyList(),
+    ) {
+        fun aliases(): List<CountryAlias> =
+            names.map { CountryAlias(it, CountryAlias.Kind.NAME) } +
+                formerly.map { CountryAlias(it, CountryAlias.Kind.FORMER_NAME) } +
+                includes.map { CountryAlias(it, CountryAlias.Kind.PART) }
+    }
+
+    private val serializer = MapSerializer(String.serializer(), Entry.serializer())
 
     @OptIn(ExperimentalSerializationApi::class)
-    fun parse(input: InputStream): Map<String, List<String>> =
-        input.use { Json.decodeFromStream(serializer, it) }
+    fun parse(input: InputStream): Map<String, List<CountryAlias>> =
+        input.use { Json.decodeFromStream(serializer, it) }.mapValues { it.value.aliases() }
 }

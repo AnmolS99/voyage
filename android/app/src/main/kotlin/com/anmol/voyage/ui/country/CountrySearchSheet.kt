@@ -45,6 +45,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
+import com.anmol.voyage.data.CountryAlias
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountrySearchIndex
 import com.anmol.voyage.data.FlagEmoji
@@ -159,13 +160,13 @@ fun CountrySearchSheet(
 @Composable
 private fun CountryRow(
     country: GeoJsonCountry,
-    matchedAlias: String?,
+    matchedAlias: CountryAlias?,
     state: VoyageState,
     onSelect: () -> Unit,
 ) {
     val flag = remember(country) { FlagEmoji.of(country) }
     // The alias that found the country explains the match better than its capital.
-    val supporting = matchedAlias?.let { stringResource(R.string.search_also_known_as, it) }
+    val supporting = matchedAlias?.let { matchedAliasLabel(it) }
         ?: country.capital?.name
     val wishlisted = state.isInWishlist(country.name)
     ListItem(
@@ -208,6 +209,22 @@ private fun CountryRow(
         modifier = Modifier.clickable(onClick = onSelect),
     )
 }
+
+/**
+ * Why a search listed a country its name does not explain, worded by what the
+ * alias is to it: "Also known as UK", "Formerly Burma", "Includes Scotland",
+ * "Country code GB". Shared with the challenges' guess suggestions.
+ */
+@Composable
+fun matchedAliasLabel(alias: CountryAlias): String = stringResource(
+    when (alias.kind) {
+        CountryAlias.Kind.NAME -> R.string.search_also_known_as
+        CountryAlias.Kind.FORMER_NAME -> R.string.search_formerly
+        CountryAlias.Kind.PART -> R.string.search_includes
+        CountryAlias.Kind.CODE -> R.string.search_country_code
+    },
+    alias.text,
+)
 
 /**
  * A row's visited/wishlist toggle. [IconToggleButton] carries the checked state

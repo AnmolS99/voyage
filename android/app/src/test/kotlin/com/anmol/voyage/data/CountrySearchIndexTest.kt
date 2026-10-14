@@ -16,6 +16,9 @@ class CountrySearchIndexTest {
 
     /** The alias shown for [country] when searching [query], or null. */
     private fun aliasShown(query: String, country: String): String? =
+        matchedAlias(query, country)?.text
+
+    private fun matchedAlias(query: String, country: String): CountryAlias? =
         index.search(query).first { it.item.name == country }.matchedAlias
 
     @Test
@@ -146,6 +149,16 @@ class CountrySearchIndexTest {
     }
 
     @Test
+    fun `each alias says what it is to the country`() {
+        // The UK is known as the UK, but it *includes* Scotland.
+        assertEquals(CountryAlias("UK", CountryAlias.Kind.NAME), matchedAlias("uk", "United Kingdom"))
+        assertEquals(CountryAlias("Scotland", CountryAlias.Kind.PART), matchedAlias("scot", "United Kingdom"))
+        assertEquals(CountryAlias("Hawaii", CountryAlias.Kind.PART), matchedAlias("hawaii", "United States of America"))
+        assertEquals(CountryAlias("Burma", CountryAlias.Kind.FORMER_NAME), matchedAlias("burma", "Myanmar"))
+        assertEquals(CountryAlias("GB", CountryAlias.Kind.CODE), matchedAlias("gb", "United Kingdom"))
+    }
+
+    @Test
     fun `a match the name already explains shows no alias`() {
         assertNull(aliasShown("congo", "Democratic Republic of the Congo"))
         assertNull(aliasShown("united", "United Kingdom"))
@@ -166,7 +179,7 @@ class CountrySearchIndexTest {
         val seen = mutableMapOf<String, String>()
         for ((isoCode, aliases) in cache.countryAliases) {
             assertTrue("$isoCode is not a country in world.geojson", isoCode in isoCodes)
-            for (alias in aliases) {
+            for (alias in aliases.map { it.text }) {
                 val normalized = CountrySearchIndex.normalize(alias)
                 assertTrue("$isoCode: $alias is already a country name", normalized !in names)
                 val owner = seen.put(normalized, isoCode)
@@ -179,6 +192,6 @@ class CountrySearchIndexTest {
     fun `the guess field's country names are found by alias too`() {
         val names = CountrySearchIndex.ofCountryNames(cache)
         assertEquals(listOf("Myanmar"), names.search("burma").map { it.item })
-        assertEquals("Burma", names.search("burma").single().matchedAlias)
+        assertEquals("Burma", names.search("burma").single().matchedAlias?.text)
     }
 }

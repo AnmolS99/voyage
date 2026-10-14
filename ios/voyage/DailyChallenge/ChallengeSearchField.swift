@@ -66,7 +66,7 @@ struct ChallengeSuggestionList: View {
                                         : AppColors.textPrimary(isDarkMode: isDarkMode))
                                 // Why a country turned up for "uk" or "burma".
                                 if let alias = match.matchedAlias {
-                                    Text("Also known as \(alias)")
+                                    Text(alias.label)
                                         .font(.voyageText(12))
                                         .foregroundColor(AppColors.textTertiary(isDarkMode: isDarkMode))
                                 }

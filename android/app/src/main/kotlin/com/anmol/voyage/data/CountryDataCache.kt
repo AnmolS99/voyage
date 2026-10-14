@@ -45,7 +45,7 @@ class CountryDataCache(
      * names and native names (`country_aliases.json`, shared with iOS). Parsed on
      * first use.
      */
-    val countryAliases: Map<String, List<String>> by lazy {
+    val countryAliases: Map<String, List<CountryAlias>> by lazy {
         CountryAliasesParser.parse(openAsset(COUNTRY_ALIASES))
     }
 
@@ -70,7 +70,7 @@ class CountryDataCache(
     fun highlights(isoCode: String): CountryHighlights? = countryHighlights[isoCode]
 
     /** The other names [country] goes by — what search finds it by besides its name and ISO code. */
-    fun aliases(country: GeoJsonCountry): List<String> =
+    fun aliases(country: GeoJsonCountry): List<CountryAlias> =
         country.isoCode?.let { countryAliases[it] }.orEmpty()
 
     companion object {

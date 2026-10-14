@@ -1,9 +1,39 @@
 import Foundation
 
-/// A search result, and the alternative name that found it when its own name did not.
+/// One other name an item is found by, and what it is to the item — so a match
+/// can say why it is listed: the UK is *known as* "UK" and *includes* Scotland;
+/// it is not "known as Scotland".
+struct CountryAlias: Equatable {
+    enum Kind: Equatable {
+        /// Another name for the whole country: "UK", "Deutschland".
+        case name
+        /// A name it no longer goes by: "Burma", "Swaziland".
+        case formerName
+        /// A part of it, searched for as if a country: "Scotland", "Hawaii".
+        case part
+        /// Its ISO 3166-1 alpha-2 code: "GB".
+        case code
+    }
+
+    let text: String
+    let kind: Kind
+
+    /// Why a search listed a country its name does not explain: "Also known as
+    /// UK", "Formerly Burma", "Includes Scotland", "Country code GB".
+    var label: String {
+        switch kind {
+        case .name: "Also known as \(text)"
+        case .formerName: "Formerly \(text)"
+        case .part: "Includes \(text)"
+        case .code: "Country code \(text)"
+        }
+    }
+}
+
+/// A search result, and the alias that found it when its own name did not.
 struct SearchMatch<Item> {
     let item: Item
-    var matchedAlias: String? = nil
+    var matchedAlias: CountryAlias? = nil
 }
 
 extension SearchMatch: Equatable where Item: Equatable {}
@@ -39,7 +69,7 @@ extension SearchMatch: Equatable where Item: Equatable {}
 /// `CountrySearchIndexTest`, so a rule change is a two-platform change.
 struct CountrySearchIndex<Item> {
     private struct Alias {
-        let text: String
+        let alias: CountryAlias
         let normalized: String
     }
 
@@ -59,11 +89,11 @@ struct CountrySearchIndex<Item> {
     init(
         _ items: [Item],
         name: (Item) -> String,
-        aliases: (Item) -> [String] = { _ in [] },
+        aliases: (Item) -> [CountryAlias] = { _ in [] },
         code: (Item) -> String? = { _ in nil }
     ) {
-        func alias(_ text: String) -> Alias {
-            Alias(text: text, normalized: CountrySearchIndexText.normalize(text))
+        func alias(_ alias: CountryAlias) -> Alias {
+            Alias(alias: alias, normalized: CountrySearchIndexText.normalize(alias.text))
         }
         entries = items
             .map { item in
@@ -71,7 +101,7 @@ struct CountrySearchIndex<Item> {
                     item: item,
                     normalized: CountrySearchIndexText.normalize(name(item)),
                     aliases: aliases(item).map(alias),
-                    code: code(item).map(alias)
+                    code: code(item).map { alias(CountryAlias(text: $0, kind: .code)) }
                 )
             }
             .sorted { $0.normalized < $1.normalized }
@@ -114,7 +144,7 @@ struct CountrySearchIndex<Item> {
             } else {
                 continue
             }
-            tiers[tier].append(SearchMatch(item: entry.item, matchedAlias: nameContains ? nil : alias?.text))
+            tiers[tier].append(SearchMatch(item: entry.item, matchedAlias: nameContains ? nil : alias?.alias))
         }
         return tiers.flatMap { $0 }
     }

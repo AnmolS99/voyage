@@ -3,8 +3,29 @@ package com.anmol.voyage.data
 import java.text.Normalizer
 import java.util.Locale
 
-/** A search result, and the alternative name that found it when its own name did not. */
-data class SearchMatch<T>(val item: T, val matchedAlias: String? = null)
+/**
+ * One other name an item is found by, and what it is to the item — so a match
+ * can say why it is listed: the UK is *known as* "UK" and *includes* Scotland;
+ * it is not "known as Scotland".
+ */
+data class CountryAlias(val text: String, val kind: Kind) {
+    enum class Kind {
+        /** Another name for the whole country: "UK", "Deutschland". */
+        NAME,
+
+        /** A name it no longer goes by: "Burma", "Swaziland". */
+        FORMER_NAME,
+
+        /** A part of it, searched for as if a country: "Scotland", "Hawaii". */
+        PART,
+
+        /** Its ISO 3166-1 alpha-2 code: "GB". */
+        CODE,
+    }
+}
+
+/** A search result, and the alias that found it when its own name did not. */
+data class SearchMatch<T>(val item: T, val matchedAlias: CountryAlias? = null)
 
 /**
  * Name search over a fixed set of items, built once and queried per keystroke.
@@ -43,11 +64,13 @@ data class SearchMatch<T>(val item: T, val matchedAlias: String? = null)
 class CountrySearchIndex<T>(
     items: List<T>,
     name: (T) -> String,
-    aliases: (T) -> List<String> = { emptyList() },
+    aliases: (T) -> List<CountryAlias> = { emptyList() },
     code: (T) -> String? = { null },
 ) {
 
-    private class Alias(val text: String, val normalized: String)
+    private class Alias(val alias: CountryAlias) {
+        val normalized = normalize(alias.text)
+    }
 
     private class Entry<T>(
         val item: T,
@@ -58,9 +81,9 @@ class CountrySearchIndex<T>(
 
     private val entries: List<Entry<T>> =
         items.map { item ->
-            val aliasList = aliases(item).map { Alias(it, normalize(it)) }
+            val aliasList = aliases(item).map(::Alias)
             // The code is matched whole, so it sits apart from the aliases.
-            val codeAlias = code(item)?.let { Alias(it, normalize(it)) }
+            val codeAlias = code(item)?.let { Alias(CountryAlias(it, CountryAlias.Kind.CODE)) }
             Entry(item, normalize(name(item)), aliasList, codeAlias)
         }.sortedBy { it.normalized }
 
@@ -96,7 +119,7 @@ class CountrySearchIndex<T>(
                     }
                 }
             }
-            tiers[tier].add(SearchMatch(entry.item, alias?.text?.takeUnless { nameContains }))
+            tiers[tier].add(SearchMatch(entry.item, alias?.alias?.takeUnless { nameContains }))
         }
         return tiers.flatten()
     }

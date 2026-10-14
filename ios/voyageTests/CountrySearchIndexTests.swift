@@ -14,6 +14,10 @@ final class CountrySearchIndexTests: XCTestCase {
 
     /// The alias shown for `country` when searching `query`, or nil.
     private func aliasShown(_ query: String, _ country: String) -> String? {
+        matchedAlias(query, country)?.text
+    }
+
+    private func matchedAlias(_ query: String, _ country: String) -> CountryAlias? {
         Self.index.search(query).first { $0.item.name == country }?.matchedAlias
     }
 
@@ -92,6 +96,17 @@ final class CountrySearchIndexTests: XCTestCase {
         XCTAssertTrue(results.allSatisfy { CountrySearchIndexText.normalize($0).contains("s") })
     }
 
+    func testEachAliasSaysWhatItIsToTheCountry() {
+        // The UK is known as the UK, but it *includes* Scotland.
+        XCTAssertEqual(matchedAlias("uk", "United Kingdom"), CountryAlias(text: "UK", kind: .name))
+        XCTAssertEqual(matchedAlias("scot", "United Kingdom"), CountryAlias(text: "Scotland", kind: .part))
+        XCTAssertEqual(matchedAlias("hawaii", "United States of America"), CountryAlias(text: "Hawaii", kind: .part))
+        XCTAssertEqual(matchedAlias("burma", "Myanmar"), CountryAlias(text: "Burma", kind: .formerName))
+        XCTAssertEqual(matchedAlias("gb", "United Kingdom"), CountryAlias(text: "GB", kind: .code))
+        XCTAssertEqual(matchedAlias("scot", "United Kingdom")?.label, "Includes Scotland")
+        XCTAssertEqual(matchedAlias("burma", "Myanmar")?.label, "Formerly Burma")
+    }
+
     func testMatchTheNameExplainsShowsNoAlias() {
         XCTAssertNil(aliasShown("congo", "Democratic Republic of the Congo"))
         XCTAssertNil(aliasShown("united", "United Kingdom"))
@@ -111,7 +126,7 @@ final class CountrySearchIndexTests: XCTestCase {
         XCTAssertFalse(Self.cache.countryAliases.isEmpty, "country_aliases.json is bundled")
         for (code, aliases) in Self.cache.countryAliases {
             XCTAssertTrue(codes.contains(code), "\(code) is not a country in world.geojson")
-            for alias in aliases {
+            for alias in aliases.map(\.text) {
                 let normalized = CountrySearchIndexText.normalize(alias)
                 XCTAssertFalse(names.contains(normalized), "\(code): \(alias) is already a country name")
                 if let owner = seen.updateValue(code, forKey: normalized) {

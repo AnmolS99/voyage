@@ -91,6 +91,7 @@ import com.anmol.voyage.challenges.NameCapitalGame
 import com.anmol.voyage.challenges.RegionSweepGame
 import com.anmol.voyage.challenges.SweepGuessOutcome
 import com.anmol.voyage.challenges.formatGameTime
+import com.anmol.voyage.ui.country.matchedAliasLabel
 import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
 import com.anmol.voyage.ui.theme.voyageCardColors
@@ -415,7 +416,7 @@ private fun GuessEntry(session: ChallengeSession, onRestart: () -> Unit, modifie
                             Text(text = match.item, style = MaterialTheme.typography.bodyLarge)
                             match.matchedAlias?.let { alias ->
                                 Text(
-                                    text = stringResource(R.string.search_also_known_as, alias),
+                                    text = matchedAliasLabel(alias),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
