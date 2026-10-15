@@ -89,6 +89,7 @@ class GlobeGestureTest {
                     GlobeCountryFills.of(isVisited = false, isWishlist = false, isSelected = false, hasTexture = false)
                 },
                 earthTexture = null,
+                reliefTexture = null,
                 oceanColor = Color.Blue,
                 hitTester = hitTester,
                 onCountryTapped = {},

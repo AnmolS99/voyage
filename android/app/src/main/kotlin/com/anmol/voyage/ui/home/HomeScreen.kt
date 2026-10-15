@@ -103,6 +103,20 @@ private fun rememberEarthTexture(style: GlobeStyle): EarthTexture? {
 }
 
 /**
+ * The shaded-relief layer, or null until it is decoded — the world is drawn
+ * unshaded until then rather than held behind a spinner — and on devices that
+ * cannot blend it (see [EarthTextureCache.relief]).
+ */
+@Composable
+private fun rememberReliefTexture(): Bitmap? {
+    val cache = remember { EarthTextureCache.shared }
+    val relief by produceState(cache.cachedRelief(), cache) {
+        if (value == null) value = withContext(Dispatchers.IO) { cache.relief() }
+    }
+    return relief
+}
+
+/**
  * The Home tab: the world — as a 3D globe or a flat map — the current
  * selection, and the two sheets that reach a country.
  *
@@ -303,6 +317,7 @@ private fun BoxScope.GlobeBody(
 ) {
     val geometry: GlobeGeometry? = rememberGlobeGeometry(data?.countries)
     val texture = rememberEarthTexture(state.globeStyle)
+    val relief = rememberReliefTexture()
     val hitTester = data?.hitTester
 
     // The selected country's border is its own mesh, built off the main thread:
@@ -346,6 +361,7 @@ private fun BoxScope.GlobeBody(
         microstateDots = geometry.microstateDots,
         colorFor = { name -> scene.styleFor(name, hasTexture).fill.toGlobeFillOrNull() },
         earthTexture = texture.image,
+        reliefTexture = relief,
         oceanColor = VoyagePalette.ocean,
         hitTester = hitTester,
         onCountryTapped = scene::onCountryTapped,
@@ -381,6 +397,7 @@ private fun BoxScope.MapBody(data: HomeData?, scene: WorldScene?, state: VoyageS
     }
 
     val texture = rememberEarthTexture(state.mapStyle)
+    val relief = rememberReliefTexture()
 
     if (data == null || scene == null || paths.isEmpty() || texture == null) {
         HomeLoading()
@@ -388,6 +405,7 @@ private fun BoxScope.MapBody(data: HomeData?, scene: WorldScene?, state: VoyageS
     }
 
     val image = remember(texture.image) { texture.image?.asImageBitmap() }
+    val reliefImage = remember(relief) { relief?.asImageBitmap() }
     WorldMap(
         countries = data.countries,
         paths = paths,
@@ -395,6 +413,7 @@ private fun BoxScope.MapBody(data: HomeData?, scene: WorldScene?, state: VoyageS
         scene = scene,
         projection = projection,
         texture = image,
+        relief = reliefImage,
     )
 }
 

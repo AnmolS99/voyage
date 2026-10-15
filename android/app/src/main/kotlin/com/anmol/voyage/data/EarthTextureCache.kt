@@ -3,6 +3,7 @@ package com.anmol.voyage.data
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import com.anmol.voyage.state.GlobeStyle
@@ -41,10 +42,40 @@ class EarthTextureCache(private val openAsset: (String) -> InputStream) {
         decoded[style] ?: decode(style)?.also { decoded[style] = it }
     }
 
-    private fun decode(style: GlobeStyle): Bitmap? {
+    @Volatile
+    private var reliefDecoded = false
+    private var relief: Bitmap? = null
+
+    /**
+     * The shaded-relief layer both renderers hard-light over everything they
+     * paint, decoding it on first call — off the main thread, like [get].
+     *
+     * Null where it cannot be drawn, and then neither renderer shades: the map
+     * blends it with `BlendMode.Hardlight`, which a hardware `Canvas` only has
+     * from API 29, and the globe going without it too is what keeps the two
+     * looking alike on the devices below that.
+     */
+    fun relief(): Bitmap? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+        if (reliefDecoded) return relief
+        return synchronized(this) {
+            if (!reliefDecoded) {
+                relief = decodeAsset(RELIEF_ASSET)
+                reliefDecoded = true
+            }
+            relief
+        }
+    }
+
+    /** [relief] if it is already decoded, without decoding it. */
+    fun cachedRelief(): Bitmap? = relief
+
+    private fun decode(style: GlobeStyle): Bitmap? = decodeAsset(style.textureAsset)
+
+    private fun decodeAsset(asset: String): Bitmap? {
         val started = SystemClock.elapsedRealtime()
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        openAsset(style.textureAsset).use { BitmapFactory.decodeStream(it, null, bounds) }
+        openAsset(asset).use { BitmapFactory.decodeStream(it, null, bounds) }
 
         val options = BitmapFactory.Options().apply {
             inSampleSize = sampleSizeFor(bounds.outWidth)
@@ -53,9 +84,9 @@ class EarthTextureCache(private val openAsset: (String) -> InputStream) {
             // bitmap's pixels cannot be read back.
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-        val bitmap = openAsset(style.textureAsset).use { BitmapFactory.decodeStream(it, null, options) }
+        val bitmap = openAsset(asset).use { BitmapFactory.decodeStream(it, null, options) }
         if (bitmap == null) {
-            Log.w(TAG, "could not decode ${style.textureAsset}")
+            Log.w(TAG, "could not decode $asset")
             return null
         }
         // Drawn far smaller than its size on the map, so it needs mipmaps there
@@ -63,7 +94,7 @@ class EarthTextureCache(private val openAsset: (String) -> InputStream) {
         bitmap.setHasMipMap(true)
         Log.i(
             TAG,
-            "decoded ${style.textureAsset} at ${bitmap.width}x${bitmap.height} " +
+            "decoded $asset at ${bitmap.width}x${bitmap.height} " +
                 "in ${SystemClock.elapsedRealtime() - started} ms",
         )
         return bitmap
@@ -74,6 +105,12 @@ class EarthTextureCache(private val openAsset: (String) -> InputStream) {
         const val MAX_TEXTURE_WIDTH = 4096
 
         private const val RETAINED_STYLES = 2
+
+        /**
+         * Neutral (128) on flat ground and the ocean, darker on slopes facing
+         * away from a northwest light — `scripts/generate_relief_texture.py`.
+         */
+        internal const val RELIEF_ASSET = "textures/relief.png"
 
         /** The power-of-two downsampling that brings [width] within [MAX_TEXTURE_WIDTH]. */
         internal fun sampleSizeFor(width: Int): Int {
