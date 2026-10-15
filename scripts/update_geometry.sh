@@ -31,6 +31,10 @@ NE_DISPUTED_URL="https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_0_d
 SIMPLIFY_PCT="30%"
 MIN_ISLAND_AREA="10km2"
 
+# Pinned: mapshaper 0.7.87 skips simplification in this command chain (~535k points
+# instead of ~171k, a 10 MB world.geojson). 0.7.83-0.7.86 reproduce the checked-in data.
+MAPSHAPER="mapshaper@0.7.86"
+
 echo "Downloading Natural Earth 1:10m admin-0 countries..."
 curl -sL -o "$WORK_DIR/ne10m.zip" "$NE_URL"
 unzip -o -q "$WORK_DIR/ne10m.zip" -d "$WORK_DIR"
@@ -53,7 +57,7 @@ if (ISO_A2_EH=="SJ") ISO_A2_EH="NO"; else if (m[ADM0_A3]) ISO_A2_EH=m[ADM0_A3];'
 # Flanders+Wallonia+Brussels -> BE, ...) so no internal unit borders are drawn.
 # Crimea is erased from the map units and merged back as a UA unit, so the dissolve
 # joins it to mainland Ukraine without a border between them.
-npx -y mapshaper -i "$WORK_DIR/ne_10m_admin_0_map_units.shp" \
+npx -y "$MAPSHAPER" -i "$WORK_DIR/ne_10m_admin_0_map_units.shp" \
         "$WORK_DIR/ne_10m_admin_0_disputed_areas.shp" combine-files \
     -filter 'BRK_A3=="B89"' target=ne_10m_admin_0_disputed_areas \
     -each 'ISO_A2_EH="UA"; ADM0_A3="UKR"' target=ne_10m_admin_0_disputed_areas \
