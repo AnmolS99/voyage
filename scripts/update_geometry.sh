@@ -21,6 +21,10 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 # (e.g. French Guiana) keep their own ISO-coded features instead of being folded
 # into the parent country.
 NE_URL="https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_0_map_units.zip"
+# Natural Earth's default (de facto) view draws Crimea inside Russia's unit. Its
+# disputed-areas layer carries Crimea on its own (BRK_A3 B89), which is used to
+# cut it out of Russia and give it to Ukraine, as UN member states recognise it.
+NE_DISPUTED_URL="https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_0_disputed_areas.zip"
 
 # Simplification budget: ~30% weighted retention of 1:10m ≈ 175k points world-wide
 # (~17x the original 1:110m data). This is the main knob for detail vs. size.
@@ -30,6 +34,8 @@ MIN_ISLAND_AREA="10km2"
 echo "Downloading Natural Earth 1:10m admin-0 countries..."
 curl -sL -o "$WORK_DIR/ne10m.zip" "$NE_URL"
 unzip -o -q "$WORK_DIR/ne10m.zip" -d "$WORK_DIR"
+curl -sL -o "$WORK_DIR/ne10m_disputed.zip" "$NE_DISPUTED_URL"
+unzip -o -q "$WORK_DIR/ne10m_disputed.zip" -d "$WORK_DIR"
 
 echo "Simplifying with mapshaper (retention: $SIMPLIFY_PCT, min island: $MIN_ISLAND_AREA)..."
 # Some NE units carry no valid ISO code (-99: disputed/special areas) or a code the app
@@ -45,7 +51,14 @@ if (ISO_A2_EH=="SJ") ISO_A2_EH="NO"; else if (m[ADM0_A3]) ISO_A2_EH=m[ADM0_A3];'
 
 # dissolve2 merges map units sharing an ISO code (England+Scotland+Wales+N.Ireland -> GB,
 # Flanders+Wallonia+Brussels -> BE, ...) so no internal unit borders are drawn.
-npx -y mapshaper "$WORK_DIR/ne_10m_admin_0_map_units.shp" \
+# Crimea is erased from the map units and merged back as a UA unit, so the dissolve
+# joins it to mainland Ukraine without a border between them.
+npx -y mapshaper -i "$WORK_DIR/ne_10m_admin_0_map_units.shp" \
+        "$WORK_DIR/ne_10m_admin_0_disputed_areas.shp" combine-files \
+    -filter 'BRK_A3=="B89"' target=ne_10m_admin_0_disputed_areas \
+    -each 'ISO_A2_EH="UA"; ADM0_A3="UKR"' target=ne_10m_admin_0_disputed_areas \
+    -erase ne_10m_admin_0_disputed_areas target=ne_10m_admin_0_map_units \
+    -merge-layers target=ne_10m_admin_0_map_units,ne_10m_admin_0_disputed_areas force name=units \
     -clean \
     -filter-islands min-area="$MIN_ISLAND_AREA" \
     -each "$REMAP" \

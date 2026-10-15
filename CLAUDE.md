@@ -392,7 +392,7 @@ the Google Fonts variable fonts; iOS lists them in `Info.plist` `UIAppFonts`.
 
 `shared/fixtures/expected_countries.json` pins what parsing `world.geojson` must
 produce: 207 countries in feature order, their ISO codes, names, continents,
-capitals, per-ring point counts (171,052 coordinates total) and bounding boxes.
+capitals, per-ring point counts (171,005 coordinates total) and bounding boxes.
 `voyageTests/GeoJSONFixtureTests` and the Android `GeoJsonParserTest` both assert
 it, so neither hand-written parser can drift from the other or from the data.
 
@@ -423,6 +423,11 @@ Map units splitting one country into several features (GB = England + Scotland +
 N. Ireland, BE = Flanders + Wallonia + Brussels, PT = mainland + Madeira + Azores, ...)
 are dissolved by ISO code in mapshaper (`-dissolve2`) so countries render as single
 shapes without internal unit borders.
+
+Crimea belongs to Ukraine (UA), not Russia: Natural Earth's default view folds it into
+Russia's unit, so `update_geometry.sh` erases it from the map units using NE's
+disputed-areas layer (`BRK_A3 == "B89"`) and merges it back as a UA unit before the
+dissolve.
 
 The merge (`scripts/merge_geometry.py`) replaces only feature geometry, matched by ISO
 code; all custom properties (name, continent, capital, `renderAs`) are preserved. Larger
