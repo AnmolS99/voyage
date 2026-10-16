@@ -73,7 +73,7 @@ class CountrySearchIndexTest {
 
     @Test
     fun `the index is generic over what it searches`() {
-        val capitals = CountrySearchIndex(countries.mapNotNull { it.capital }) { it.name }
+        val capitals = CountrySearchIndex(countries.mapNotNull { it.capital }, name = { it.name })
         assertEquals(listOf("Oslo"), capitals.search("oslo").map { it.item.name })
     }
 
