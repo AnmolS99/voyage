@@ -24,6 +24,8 @@ ios/fastlane/screenshots/
 ios/fastlane/test_output/
 android/fastlane/report.xml
 android/fastlane/README.md
+# Exported from Figma by scripts/export_store_screenshots.py on each upload
+android/fastlane/metadata/android/*/images/
 
 # Supabase
 shared/supabase/.branches

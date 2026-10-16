@@ -16,8 +16,9 @@ description: >-
 
 Screenshots belong to an app **version**. Every run starts by settling that
 version (step 0), then builds the sets on a Figma page titled with it, e.g. `1.12.0`.
-Nothing is exported or uploaded to a store. Other pages and sets are never
-touched unless the user asks.
+Nothing is exported or uploaded to a store here: the `store-listing` skill does
+that from the version's page. Other pages and sets are never touched unless the
+user asks.
 
 - **Figma file:** `https://www.figma.com/design/CphnOVwvLUEKxSDfplU37i/voyage`
   (fileKey `CphnOVwvLUEKxSDfplU37i`). `Page 1` holds the brand assets and the
