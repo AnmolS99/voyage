@@ -76,6 +76,18 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun theTerrainSwitchTurnsShadingOffAndOnAgain() {
+        showSettings()
+        assertTrue(state.showsTerrain)
+
+        composeTestRule.onNodeWithTag(TERRAIN_TAG).performScrollTo().performClick()
+        composeTestRule.runOnIdle { assertEquals(false, state.showsTerrain) }
+
+        composeTestRule.onNodeWithTag(TERRAIN_TAG).performClick()
+        composeTestRule.runOnIdle { assertTrue(state.showsTerrain) }
+    }
+
+    @Test
     fun eachFieldShowsItsCurrentStyle() {
         showSettings()
         composeTestRule.runOnIdle { state.setMapStyle(GlobeStyle.Stylized) }

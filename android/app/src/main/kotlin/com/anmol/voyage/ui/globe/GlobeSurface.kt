@@ -71,6 +71,8 @@ internal class GlobeDotStyle(
  * @param colorFor a country's fill, or null to leave it undrawn over the texture.
  * @param earthTexture the image the ocean sphere is painted with. Null paints it
  *   flat [oceanColor] instead, and then every fill should be painted.
+ * @param reliefTexture the shaded-relief layer the ocean and the fills are
+ *   hard-lit with, as the flat map draws it. Null shades nothing.
  * @param dotStyles how each microstate's dot is currently painted. The dots
  *   themselves are meshes in the scene, uploaded with the rest of the geometry.
  * @param capital the selected country's capital, marked with a star.
@@ -97,6 +99,7 @@ internal fun GlobeSurface(
     microstateDots: List<MicrostateDot>,
     colorFor: (String) -> GlobeFill?,
     earthTexture: Bitmap?,
+    reliefTexture: Bitmap?,
     oceanColor: androidx.compose.ui.graphics.Color,
     hitTester: CountryHitTester,
     onCountryTapped: (String?) -> Unit,
@@ -132,6 +135,11 @@ internal fun GlobeSurface(
     // recolor. After the geometry, whose ocean it is bound to.
     DisposableEffect(host, earthTexture, oceanColor) {
         host.setEarthTexture(earthTexture, oceanColor)
+        onDispose { }
+    }
+
+    DisposableEffect(host, reliefTexture) {
+        host.setReliefTexture(reliefTexture)
         onDispose { }
     }
 
@@ -619,6 +627,10 @@ internal class GlobeSurfaceHost {
 
     fun setEarthTexture(image: Bitmap?, fallback: androidx.compose.ui.graphics.Color) {
         if (!destroyed) renderer.setEarthTexture(image, fallback)
+    }
+
+    fun setReliefTexture(image: Bitmap?) {
+        if (!destroyed) renderer.setReliefTexture(image)
     }
 
     fun applyColors(

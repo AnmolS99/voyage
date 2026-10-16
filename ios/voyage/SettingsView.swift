@@ -87,11 +87,26 @@ struct SettingsView: View {
                         .pickerStyle(.menu)
                     }
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+
+                    // One switch for the globe and the map: shading one and not the
+                    // other would break their consistency
+                    Toggle(isOn: Binding(
+                        get: { globeState.showsTerrain },
+                        set: { globeState.setShowsTerrain($0) }
+                    )) {
+                        HStack {
+                            Image(systemName: "mountain.2")
+                                .foregroundColor(AppColors.buttonColor)
+                            Text("Terrain")
+                        }
+                    }
+                    .tint(AppColors.buttonColor)
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } header: {
                     Text("Appearance")
                         .font(.voyageText(17, weight: .semibold))
                 } footer: {
-                    Text("Choose the app's theme and the texture styles for the globe and map views.")
+                    Text("Choose the app's theme, the texture styles for the globe and map views, and whether they shade terrain.")
                         .font(.voyageText(13))
                 }
 

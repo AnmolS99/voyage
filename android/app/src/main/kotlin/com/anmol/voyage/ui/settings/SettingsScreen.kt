@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.rounded.Contrast
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Terrain
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -35,6 +37,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -73,8 +77,9 @@ import com.anmol.voyage.ui.theme.voyageCardElevation
  * The texture pickers are exposed dropdown menus, Material's counterpart to
  * iOS's menu picker, so the list can grow as textures are added without the
  * screen changing shape. They are separate preferences, as on iOS, so the globe
- * and the map can differ. Every choice goes straight to [VoyageState], which
- * saves it.
+ * and the map can differ. Terrain is one switch for both, since shading one and
+ * not the other would break the globe/map consistency rule. Every choice goes
+ * straight to [VoyageState], which saves it.
  */
 @Composable
 fun SettingsScreen(state: VoyageState, modifier: Modifier = Modifier) {
@@ -107,6 +112,7 @@ fun SettingsScreen(state: VoyageState, modifier: Modifier = Modifier) {
                 onSelect = state::setMapStyle,
                 tag = MAP_STYLE_TAG,
             )
+            TerrainSetting(checked = state.showsTerrain, onCheckedChange = state::setShowsTerrain)
         }
 
         SettingsSection(title = R.string.settings_data, footer = R.string.settings_reset_footer) {
@@ -239,6 +245,35 @@ private fun ThemeSetting(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
 }
 
 /**
+ * The Terrain switch. The whole row toggles, not just the thumb, and reads as
+ * one switch to TalkBack.
+ */
+@Composable
+private fun TerrainSetting(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .testTag(TERRAIN_TAG),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Terrain,
+            contentDescription = null,
+            tint = VoyagePalette.buttonColor,
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = stringResource(R.string.settings_terrain),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        // The row handles the toggle; the switch only shows it.
+        Switch(checked = checked, onCheckedChange = null)
+    }
+}
+
+/**
  * One texture preference: a read-only field showing the current style, which
  * opens a menu of every [GlobeStyle] with the current one ticked.
  */
@@ -320,6 +355,9 @@ internal val ThemeMode.labelRes: Int
 /** Test tags for the two pickers' fields. */
 internal const val GLOBE_STYLE_TAG = "settings_globe_style"
 internal const val MAP_STYLE_TAG = "settings_map_style"
+
+/** Test tag for the Terrain switch's row. */
+internal const val TERRAIN_TAG = "settings_terrain"
 
 /** Test tag for one style's item in a picker's menu. */
 internal fun styleOptionTag(pickerTag: String, style: GlobeStyle) = "$pickerTag:${style.name}"

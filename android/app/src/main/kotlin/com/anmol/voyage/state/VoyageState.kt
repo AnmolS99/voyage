@@ -100,6 +100,8 @@ class VoyageState(
 
     val mapStyle: GlobeStyle get() = persisted.mapStyle
 
+    val showsTerrain: Boolean get() = persisted.showsTerrain
+
     val themeMode: ThemeMode get() = persisted.themeMode
 
     override val challengeStats: ChallengeStatsBook get() = ChallengeStatsBook(persisted.challengeStats)
@@ -214,6 +216,8 @@ class VoyageState(
     fun setGlobeStyle(style: GlobeStyle) = mutate { it.copy(globeStyle = style) }
 
     fun setMapStyle(style: GlobeStyle) = mutate { it.copy(mapStyle = style) }
+
+    fun setShowsTerrain(shows: Boolean) = mutate { it.copy(showsTerrain = shows) }
 
     fun setThemeMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }
 

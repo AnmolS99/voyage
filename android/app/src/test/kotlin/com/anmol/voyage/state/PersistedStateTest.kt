@@ -24,6 +24,7 @@ class PersistedStateTest {
         viewMode = ViewMode.Globe,
         globeStyle = GlobeStyle.Stylized,
         mapStyle = GlobeStyle.Natural,
+        showsTerrain = false,
         themeMode = ThemeMode.Dark,
     )
 
@@ -52,6 +53,11 @@ class PersistedStateTest {
     fun `a document missing fields reads back with defaults`() {
         val decoded = PersistedStateCodec.decode("""{"version":1,"visitedCountries":["Chile"]}""")
         assertEquals(PersistedState(visitedCountries = setOf("Chile")), decoded)
+    }
+
+    @Test
+    fun `a document from before the terrain setting shows terrain`() {
+        assertTrue(PersistedStateCodec.decode("""{"version":1,"mapStyle":"natural"}""").showsTerrain)
     }
 
     @Test

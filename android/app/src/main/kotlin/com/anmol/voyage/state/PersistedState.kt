@@ -36,6 +36,12 @@ data class PersistedState(
     val viewMode: ViewMode = ViewMode.Globe,
     val globeStyle: GlobeStyle = GlobeStyle.Realistic,
     val mapStyle: GlobeStyle = GlobeStyle.Realistic,
+    /**
+     * Whether the globe and the map shade terrain (the relief layer). One
+     * switch for both, so they never disagree; on unless turned off, and a
+     * document from before the setting existed reads back with it on.
+     */
+    val showsTerrain: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.System,
     /**
      * Challenge statistics, keyed `mode|region` as iOS `ChallengeStatsStore`

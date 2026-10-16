@@ -152,17 +152,20 @@ class VoyageStateTest {
         state.setThemeMode(ThemeMode.Light)
         state.setGlobeStyle(GlobeStyle.Stylized)
         state.setMapStyle(GlobeStyle.Natural)
+        state.setShowsTerrain(false)
         state.setViewMode(ViewMode.Globe)
 
         assertEquals(ThemeMode.Light, state.themeMode)
         assertEquals(GlobeStyle.Stylized, state.globeStyle)
         assertEquals(GlobeStyle.Natural, state.mapStyle)
+        assertEquals(false, state.showsTerrain)
         assertEquals(ViewMode.Globe, state.viewMode)
         assertEquals(
             PersistedState(
                 themeMode = ThemeMode.Light,
                 globeStyle = GlobeStyle.Stylized,
                 mapStyle = GlobeStyle.Natural,
+                showsTerrain = false,
                 viewMode = ViewMode.Globe,
             ),
             store.state,

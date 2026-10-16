@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -38,6 +39,9 @@ import kotlin.math.roundToInt
  *   are still being built, which draws the ocean alone.
  * @param texture the Earth image under the countries. Null draws a flat ocean and
  *   land-green countries instead — iOS's fallback when its image is missing.
+ * @param relief the shaded-relief layer, hard-lit over the texture and the fills
+ *   but under the borders and markers — what the globe's materials do. Null
+ *   draws the world unshaded.
  */
 @Composable
 fun WorldMap(
@@ -48,6 +52,7 @@ fun WorldMap(
     projection: MapProjection,
     texture: ImageBitmap?,
     modifier: Modifier = Modifier,
+    relief: ImageBitmap? = null,
     darkTheme: Boolean = isSystemInDarkTheme(),
 ) {
     // Keyed on the projection: a view-size change (rotation, foldable, split
@@ -125,9 +130,24 @@ fun WorldMap(
                 )
             }
 
-            for (country in paths) {
-                val style = scene.styleFor(country.name, hasTexture)
+            val styles = paths.map { scene.styleFor(it.name, hasTexture) }
+            for ((country, style) in paths.zip(styles)) {
                 drawPath(country.fill, style.fill.brush(country.bounds))
+            }
+
+            // Hard light, the blend the globe's materials apply per fragment:
+            // neutral gray leaves a color as it is, so the ocean and flat land
+            // keep their palette colors and only slopes shade. Over the fills,
+            // under the borders — borders and markers are not shaded on the globe.
+            if (relief != null) {
+                drawImage(
+                    image = relief,
+                    dstSize = IntSize(projection.mapWidth.roundToInt(), projection.mapHeight.roundToInt()),
+                    blendMode = BlendMode.Hardlight,
+                )
+            }
+
+            for ((country, style) in paths.zip(styles)) {
                 // The matrix magnifies strokes, so divide out the scale to keep
                 // borders a constant width on screen.
                 val strokeWidth = style.borderWidth.toPx() / scale

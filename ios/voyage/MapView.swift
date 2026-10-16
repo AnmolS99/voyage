@@ -122,19 +122,21 @@ struct MapView: View {
                 transform = transform.scaledBy(x: scale, y: scale)
                 transform = transform.translatedBy(x: -size.width / 2, y: -size.height / 2)
 
+                // The whole map on screen, which the texture and the relief fill
+                let topLeft = CGPoint(x: fit.horizontalOffset, y: fit.verticalOffset).applying(transform)
+                let bottomRight = CGPoint(x: fit.horizontalOffset + fit.mapWidth,
+                                          y: fit.verticalOffset + fit.mapHeight).applying(transform)
+                let mapRect = CGRect(
+                    x: topLeft.x, y: topLeft.y,
+                    width: bottomRight.x - topLeft.x,
+                    height: bottomRight.y - topLeft.y
+                )
+
                 // Draw map texture background
                 var hasTexture = false
                 if let textureImage = UIImage(named: globeState.mapStyle.textureName) {
-                    let topLeft = CGPoint(x: fit.horizontalOffset, y: fit.verticalOffset).applying(transform)
-                    let bottomRight = CGPoint(x: fit.horizontalOffset + fit.mapWidth,
-                                              y: fit.verticalOffset + fit.mapHeight).applying(transform)
-                    let textureRect = CGRect(
-                        x: topLeft.x, y: topLeft.y,
-                        width: bottomRight.x - topLeft.x,
-                        height: bottomRight.y - topLeft.y
-                    )
                     let resolved = context.resolve(Image(uiImage: textureImage))
-                    context.draw(resolved, in: textureRect)
+                    context.draw(resolved, in: mapRect)
                     hasTexture = true
                 }
 
@@ -148,6 +150,7 @@ struct MapView: View {
                 mapContext.translateBy(x: -size.width / 2, y: -size.height / 2)
                 mapContext.translateBy(x: fit.horizontalOffset, y: fit.verticalOffset)
 
+                var borders: [(paths: [Path], shading: GraphicsContext.Shading, width: CGFloat)] = []
                 for entry in pathCache.entries {
                     let isVisited = globeState.visitedCountries.contains(entry.name)
                     let isWishlist = globeState.wishlistCountries.contains(entry.name)
@@ -182,9 +185,23 @@ struct MapView: View {
                     // Even-odd fill: hole sub-paths toggle the winding count, leaving
                     // enclave areas (Lesotho) transparent so the underlying country shows through.
                     mapContext.fill(entry.fillPath, with: fillShading, style: FillStyle(eoFill: true))
-                    // Only stroke outer country borders; enclave borders belong to the enclave country.
-                    for path in entry.outerPaths {
-                        mapContext.stroke(path, with: borderShading, lineWidth: borderWidth)
+                    borders.append((entry.outerPaths, borderShading, borderWidth))
+                }
+
+                // Hard light, the blend the globe's shader modifier applies: neutral
+                // gray leaves a color as it is, so the ocean and flat land keep their
+                // palette colors and only slopes shade. Over the fills, under the
+                // borders and markers — which the globe leaves unshaded too.
+                if globeState.showsTerrain, let relief = TerrainRelief.image {
+                    var reliefContext = context
+                    reliefContext.blendMode = .hardLight
+                    reliefContext.draw(reliefContext.resolve(Image(uiImage: relief)), in: mapRect)
+                }
+
+                // Only stroke outer country borders; enclave borders belong to the enclave country.
+                for (paths, shading, width) in borders {
+                    for path in paths {
+                        mapContext.stroke(path, with: shading, lineWidth: width)
                     }
                 }
 

@@ -39,6 +39,7 @@ struct NameCapitalGameView: View {
 
         let globe = GlobeState(inMemory: true)
         globe.globeStyle = mainState.globeStyle
+        globe.showsTerrain = mainState.showsTerrain
         globe.isDarkMode = mainState.isDarkMode
         globe.isAutoRotating = false
         globe.showsCapitalMarker = false

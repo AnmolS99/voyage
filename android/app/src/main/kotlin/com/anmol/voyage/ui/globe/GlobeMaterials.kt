@@ -20,6 +20,11 @@ import java.nio.ByteBuffer
  * palette value through the lighting equation, so #34BE82 would reach the screen
  * as something else — and differently at each latitude. Unlit puts the palette
  * on screen unchanged, exactly as the flat map's `Canvas` does.
+ *
+ * Terrain is the one thing that shades them, and it is baked rather than lit: the
+ * ocean and the fills hard-light a shaded-relief image over their color (see
+ * [HARD_LIGHT]), which the map draws with the same blend. Flat ground is neutral
+ * in that image, so it still shows the palette color; only slopes change.
  */
 internal class GlobeMaterials private constructor(
     val country: Material,
@@ -47,14 +52,71 @@ internal class GlobeMaterials private constructor(
          * `CountryStyles` documents for the flat map.
          */
         private val COUNTRY_SHADER = """
+            $HARD_LIGHT
             void material(inout MaterialInputs material) {
                 prepareMaterial(material);
                 vec2 uv = getUV0();
                 float t = clamp((uv.x + uv.y) * 0.5, 0.0, 1.0);
                 vec4 gradientColor = mix(materialParams.colorA, materialParams.colorB, t);
-                material.baseColor = mix(materialParams.colorA, gradientColor, materialParams.gradient);
+                vec4 color = mix(materialParams.colorA, gradientColor, materialParams.gradient);
+                material.baseColor = vec4(hardLight(color.rgb, reliefAt(variable_spherePosition.xyz)), color.a);
             }
         """.trimIndent()
+
+        /**
+         * Hands the fill's model-space position to the fragment stage, where it
+         * becomes a latitude and longitude for the relief lookup. A fill's own
+         * UVs span its country's bounding box (they draw the visited+wishlist
+         * diagonal), so they cannot address a world-wide image.
+         */
+        private val COUNTRY_VERTEX_SHADER = """
+            void materialVertex(inout MaterialVertexInputs material) {
+                material.spherePosition = getPosition();
+            }
+        """.trimIndent()
+
+        /**
+         * The relief blend, shared by the fills and the ocean.
+         *
+         * Hard light, per channel, exactly as Skia composites
+         * `BlendMode.Hardlight` for opaque layers — which is how the flat map
+         * draws the same image — so the globe and the map shade alike. 0.5 is
+         * neutral: the ocean and flat land keep their palette colors, shadowed
+         * slopes darken proportionally, lit slopes lighten toward white.
+         *
+         * `reliefAt` turns a point on the sphere into the image's
+         * equirectangular coordinates — the inverse of
+         * `PolygonTriangulator.latLonToSphere`, top-left at (180°W, 90°N) like
+         * the Earth textures. `u` jumps from 1 to 0 at the antimeridian, which
+         * would make the GPU pick the smallest mip level for the pixels on
+         * that line and draw a seam; measuring the gradient of `u` shifted
+         * half a turn as well, and keeping the smaller one, removes it. The
+         * maths is `highp` because fragment shaders default to half precision
+         * on mobile, whose 1/2048 steps near u = 1 are half a texel here.
+         */
+        private const val HARD_LIGHT = """
+            float reliefAt(highp vec3 position) {
+                highp vec3 d = normalize(position);
+                highp float lat = asin(clamp(d.y, -1.0, 1.0));
+                highp float lon = -atan(d.z, d.x);
+                highp vec2 uv = vec2(lon * (0.5 / PI) + 0.5, 0.5 - lat / PI);
+                highp vec2 dx = dFdx(uv);
+                highp vec2 dy = dFdy(uv);
+                highp float dxShifted = dFdx(fract(uv.x + 0.5));
+                highp float dyShifted = dFdy(fract(uv.x + 0.5));
+                if (abs(dxShifted) + abs(dyShifted) < abs(dx.x) + abs(dy.x)) {
+                    dx.x = dxShifted;
+                    dy.x = dyShifted;
+                }
+                return textureGrad(materialParams_relief, uv, dx, dy).r;
+            }
+
+            vec3 hardLight(vec3 base, float shade) {
+                return shade <= 0.5
+                    ? 2.0 * shade * base
+                    : 1.0 - 2.0 * (1.0 - shade) * (1.0 - base);
+            }
+        """
 
         /**
          * The ocean sphere, painted with the Earth texture.
@@ -65,11 +127,18 @@ internal class GlobeMaterials private constructor(
          * the framebuffer untouched, which holds only while post-processing is
          * off. A flat ocean is a 1 × 1 texture of the palette color, so there is
          * one ocean material rather than two.
+         *
+         * The relief image shares the sphere's geographic UVs, so it needs none
+         * of the fills' position-to-UV work; `reliefAt` is compiled in only
+         * because it sits beside `hardLight`.
          */
         private val OCEAN_SHADER = """
+            $HARD_LIGHT
             void material(inout MaterialInputs material) {
                 prepareMaterial(material);
-                material.baseColor = texture(materialParams_earth, getUV0());
+                vec4 earth = texture(materialParams_earth, getUV0());
+                float shade = texture(materialParams_relief, getUV0()).r;
+                material.baseColor = vec4(hardLight(earth.rgb, shade), earth.a);
             }
         """.trimIndent()
 
@@ -165,9 +234,12 @@ internal class GlobeMaterials private constructor(
                     .targetApi(MaterialBuilder.TargetApi.OPENGL)
                     .shading(MaterialBuilder.Shading.UNLIT)
                     .require(MaterialBuilder.VertexAttribute.UV0)
+                    .variable(MaterialBuilder.Variable.CUSTOM0, "spherePosition")
                     .uniformParameter(MaterialBuilder.UniformType.FLOAT4, "colorA")
                     .uniformParameter(MaterialBuilder.UniformType.FLOAT4, "colorB")
                     .uniformParameter(MaterialBuilder.UniformType.FLOAT, "gradient")
+                    .reliefSampler()
+                    .materialVertex(COUNTRY_VERTEX_SHADER)
                     .material(COUNTRY_SHADER)
                     .build()
 
@@ -187,6 +259,7 @@ internal class GlobeMaterials private constructor(
                         MaterialBuilder.ParameterPrecision.DEFAULT,
                         "earth",
                     )
+                    .reliefSampler()
                     .material(OCEAN_SHADER)
                     .build()
 
@@ -224,6 +297,14 @@ internal class GlobeMaterials private constructor(
                 MaterialBuilder.shutdown()
             }
         }
+
+        /** The shaded-relief image both surface materials blend with — see [HARD_LIGHT]. */
+        private fun MaterialBuilder.reliefSampler(): MaterialBuilder = samplerParameter(
+            MaterialBuilder.SamplerType.SAMPLER_2D,
+            MaterialBuilder.SamplerFormat.FLOAT,
+            MaterialBuilder.ParameterPrecision.DEFAULT,
+            "relief",
+        )
 
         private fun Engine.material(payload: ByteBuffer): Material =
             Material.Builder().payload(payload, payload.remaining()).build(this)

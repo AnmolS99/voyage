@@ -97,6 +97,20 @@ internal class GlobeRenderer {
     )
 
     /**
+     * The shaded-relief image the ocean and every fill hard-light over their
+     * color (see `GlobeMaterials`), or a 1 × 1 neutral gray when there is none,
+     * which leaves every color as it is. Engine-owned like [earthTexture], and
+     * bound to each new material instance.
+     */
+    private var reliefTexture: Texture = uploadTexture(neutralRelief())
+
+    /** What [reliefTexture] was made from; null for the neutral swatch. */
+    private var reliefSource: Bitmap? = null
+
+    /** Same addressing as the Earth texture: the relief is laid out like it. */
+    private val reliefSampler = earthSampler
+
+    /**
      * The shared border material, and the sectors drawn with it.
      *
      * One instance for every sector, as on iOS: zoom then writes a single
@@ -299,6 +313,7 @@ internal class GlobeRenderer {
         materialInstances += oceanInstance
         oceanMaterial = oceanInstance
         earthTexture?.let { oceanInstance.setParameter("earth", it, earthSampler) }
+        oceanInstance.setParameter("relief", reliefTexture, reliefSampler)
         track(
             addRenderable(
                 positions = ocean.positions,
@@ -313,6 +328,7 @@ internal class GlobeRenderer {
             val instance = materials.country.createInstance()
             materialInstances += instance
             countryMaterials[country.name] = instance
+            instance.setParameter("relief", reliefTexture, reliefSampler)
             val renderable = addRenderable(
                 positions = country.mesh.positions,
                 secondary = Secondary.uvs(country.mesh.uvs),
@@ -379,6 +395,36 @@ internal class GlobeRenderer {
 
         val bitmap = image
             ?: Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(fallback.toArgb()) }
+        val texture = uploadTexture(bitmap)
+
+        oceanMaterial?.setParameter("earth", texture, earthSampler)
+        // Only once nothing samples the old one.
+        earthTexture?.let { engine.destroyTexture(it) }
+        earthTexture = texture
+        earthSource = source
+    }
+
+    /**
+     * Shades the ocean and the fills with [image], or with nothing when it is
+     * null. An upload, so it returns early for the image already on the GPU.
+     */
+    fun setReliefTexture(image: Bitmap?) {
+        if (image === reliefSource) return
+        val texture = uploadTexture(image ?: neutralRelief())
+        oceanMaterial?.setParameter("relief", texture, reliefSampler)
+        for (instance in countryMaterials.values) instance.setParameter("relief", texture, reliefSampler)
+        // Only once nothing samples the old one.
+        engine.destroyTexture(reliefTexture)
+        reliefTexture = texture
+        reliefSource = image
+    }
+
+    /** Hard light's identity: 128 of 255, which shifts a color by under one 8-bit step. */
+    private fun neutralRelief(): Bitmap =
+        Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.rgb(128, 128, 128)) }
+
+    /** Uploads [bitmap] as a mipmapped texture owned by this engine. */
+    private fun uploadTexture(bitmap: Bitmap): Texture {
         val levels = 32 - Integer.numberOfLeadingZeros(maxOf(bitmap.width, bitmap.height))
         val texture = Texture.Builder()
             .width(bitmap.width)
@@ -393,12 +439,7 @@ internal class GlobeRenderer {
         // The globe shows the whole image in a few hundred pixels when zoomed
         // out; without mipmaps it shimmers as it turns.
         if (levels > 1) texture.generateMipmaps(engine)
-
-        oceanMaterial?.setParameter("earth", texture, earthSampler)
-        // Only once nothing samples the old one.
-        earthTexture?.let { engine.destroyTexture(it) }
-        earthTexture = texture
-        earthSource = source
+        return texture
     }
 
     /**
@@ -522,6 +563,7 @@ internal class GlobeRenderer {
         engine.flushAndWait()
         releaseGeometry()
         earthTexture?.let { engine.destroyTexture(it) }
+        engine.destroyTexture(reliefTexture)
         swapChain?.let { engine.destroySwapChain(it) }
         materials.destroy(engine)
         engine.destroyView(view)
