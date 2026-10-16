@@ -78,7 +78,7 @@ class ChallengeSession(
     val suggestions: CountrySearchIndex<String>? = when (mode) {
         ChallengeGameMode.ClickCountry -> null
         ChallengeGameMode.NameCapital ->
-            CountrySearchIndex(cache.countries.mapNotNull { it.capital?.name }.distinct()) { it }
+            CountrySearchIndex(cache.countries.mapNotNull { it.capital?.name }.distinct(), name = { it })
         ChallengeGameMode.NameFlag -> CountrySearchIndex.ofCountryNames(cache)
     }
 
