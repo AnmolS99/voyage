@@ -253,6 +253,9 @@ class GlobeState: ObservableObject {
     @Published var viewMode: ViewMode = .globe
     @Published var globeStyle: GlobeStyle = .realistic
     @Published var mapStyle: GlobeStyle = .realistic
+    /// Whether the globe and the map shade terrain (`TerrainRelief`). One switch
+    /// for both, so they never disagree; on unless turned off, as on Android.
+    @Published var showsTerrain: Bool = true
     let totalUNCountries = 195
 
     // Flag codes and capital names loaded from GeoJSON
@@ -309,6 +312,7 @@ class GlobeState: ObservableObject {
     private let wishlistCountriesKey = "wishlistCountries"
     private let globeStyleKey = "globeStyle"
     private let mapStyleKey = "mapStyle"
+    private let showsTerrainKey = "showsTerrain"
     private let themeModeKey = "themeMode"
     /// Pre-`themeMode` boolean, read once to migrate an explicit light/dark choice.
     private let isDarkModeKey = "isDarkMode"
@@ -379,6 +383,12 @@ class GlobeState: ObservableObject {
             mapStyle = style
         }
 
+        // Load the Terrain setting (prefer iCloud, fall back to local); absent
+        // before the setting existed, which reads as on
+        if let shows = (iCloudStore.object(forKey: showsTerrainKey) ?? userDefaults.object(forKey: showsTerrainKey)) as? Bool {
+            showsTerrain = shows
+        }
+
         // Load theme (prefer iCloud, fall back to local); a saved legacy
         // boolean predates the system option and was always an explicit choice
         if let raw = iCloudStore.string(forKey: themeModeKey) ?? userDefaults.string(forKey: themeModeKey),
@@ -413,6 +423,9 @@ class GlobeState: ObservableObject {
         userDefaults.set(mapStyle.rawValue, forKey: mapStyleKey)
         iCloudStore.set(mapStyle.rawValue, forKey: mapStyleKey)
 
+        userDefaults.set(showsTerrain, forKey: showsTerrainKey)
+        iCloudStore.set(showsTerrain, forKey: showsTerrainKey)
+
         userDefaults.set(themeMode.rawValue, forKey: themeModeKey)
         iCloudStore.set(themeMode.rawValue, forKey: themeModeKey)
 
@@ -434,6 +447,11 @@ class GlobeState: ObservableObject {
 
     func setMapStyle(_ style: GlobeStyle) {
         mapStyle = style
+        saveData()
+    }
+
+    func setShowsTerrain(_ shows: Bool) {
+        showsTerrain = shows
         saveData()
     }
 

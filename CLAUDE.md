@@ -396,7 +396,7 @@ the Google Fonts variable fonts; iOS lists them in `Info.plist` `UIAppFonts`.
 - `shared/fixtures/expected_countries.json` - Parser contract asserted by both platforms. See [Shared Country Fixture](#shared-country-fixture).
 - `shared/data/fonts/` - The bundled typefaces and their OFL licences (see [Typography](#typography)). Android reads them as assets, iOS bundles them in place.
 - `shared/data/textures/` - The three equirectangular Earth textures, one per `GlobeStyle` (`earth_texture.jpg` realistic, `natural_earth_texture.jpg`, `stylized_earth_texture.jpg`). iOS bundles them from here, not from its asset catalog; Android decodes them at most 4096 px wide.
-  `relief.png` beside them is a shaded-relief layer (Natural Earth SR_LR, re-centred so flat ground and the ocean are exactly 128) that the Android globe's materials and map hard-light over every fill and texture — not yet on iOS. Regenerate it with `python3 scripts/generate_relief_texture.py`; `ReliefTextureTest` pins its layout.
+  `relief.png` beside them is a shaded-relief layer (Natural Earth SR_LR, re-centred so flat ground and the ocean are exactly 128) that both platforms' globes and maps hard-light over every fill and texture, under the borders and markers — Android in `GlobeMaterials` and `WorldMap`, iOS in `TerrainRelief` (a fragment shader modifier on the ocean and fills, and a `.hardLight` draw in `MapView`). The Terrain setting (`showsTerrain`, on by default) turns it off for both views at once, on both platforms. Regenerate it with `python3 scripts/generate_relief_texture.py`; `ReliefTextureTest` pins its layout.
 - `ios/voyage/globe.scn` - Pre-built 3D globe cache, iOS-only (regenerate with GlobeCacheGenerator)
 
 ### Shared Country Fixture

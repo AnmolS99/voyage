@@ -47,6 +47,7 @@ struct GlobeView: UIViewRepresentable {
     func updateUIView(_ uiView: SCNView, context: Context) {
         context.coordinator.onCountryTapped = onCountryTapped
         context.coordinator.updateGlobeStyle()
+        context.coordinator.updateTerrain()
         context.coordinator.updateHighlights()
         context.coordinator.updateAutoRotation()
         context.coordinator.centerOnSelectedCountry()
@@ -191,6 +192,8 @@ struct GlobeView: UIViewRepresentable {
         private var doubleTapDragStartY: CGFloat = 0
         private var doubleTapDragStartDistance: Float = 0
         private var lastGlobeStyle: GlobeStyle?
+        private var lastShowsTerrain: Bool?
+        private var reliefTexture: MTLTexture?
 
         // Interactive spin state, applied on the render thread (renderer(_:updateAtTime:))
         // and fed from main-thread gesture handlers — guarded by motionLock.
@@ -579,6 +582,27 @@ struct GlobeView: UIViewRepresentable {
                 // latLonToSphere maps lon=0 to +X axis, but SCNSphere UV has U=0.5 offset
                 oceanMaterial.diffuse.contentsTransform = SCNMatrix4MakeTranslation(-0.25, 0, 0)
                 oceanMaterial.diffuse.wrapS = .repeat
+            }
+        }
+
+        /// Hard-lights the relief over the ocean and the polygon fills, as the map
+        /// does (see `TerrainRelief`). Microstate dots are markers and stay unshaded.
+        func updateTerrain() {
+            guard globeState.showsTerrain != lastShowsTerrain,
+                  let sceneView,
+                  let globeNode = sceneView.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+            lastShowsTerrain = globeState.showsTerrain
+
+            if reliefTexture == nil, globeState.showsTerrain, let device = sceneView.device {
+                reliefTexture = TerrainRelief.texture(device: device)
+            }
+
+            var materials = globeNode.childNode(withName: "ocean", recursively: false)?.geometry?.materials ?? []
+            for node in countryNodes.values where !(node.geometry is SCNCylinder) {
+                materials += node.geometry?.materials ?? []
+            }
+            for material in materials {
+                TerrainRelief.apply(to: material, texture: reliefTexture, enabled: globeState.showsTerrain)
             }
         }
 
