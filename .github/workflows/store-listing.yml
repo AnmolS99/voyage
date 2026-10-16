@@ -1,0 +1,136 @@
+name: Store Listing Upload
+
+# Uploads a version's store listing: the screenshots on the Figma page titled
+# with the version, or with an earlier version's when `screenshots_from` names
+# one (pages made by the store-screenshots skill), plus What's New and
+# promotional text from ios/fastlane/metadata and android/fastlane/metadata.
+# Nothing is submitted for review: App Store Connect keeps the version in
+# Prepare for Submission, and Play holds the changes in Publishing overview.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "App version, and the title of its Figma page (e.g. 1.12.0)"
+        required: true
+        type: string
+      platforms:
+        description: "Stores to upload to"
+        type: choice
+        options: [both, ios, android]
+        default: both
+      screenshots:
+        description: "Upload screenshots (off: keep the ones already in the stores)"
+        type: boolean
+        default: true
+      screenshots_from:
+        description: "Figma page (version) to take the screenshots from; empty = this version"
+        type: string
+        default: ""
+      play_track:
+        description: "Play track whose newest release gets What's New"
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
+
+concurrency:
+  group: store-listing
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: inputs.screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Export screenshots from Figma
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+        run: |
+          pip install pillow
+          python3 scripts/export_store_screenshots.py "${{ inputs.screenshots_from || inputs.version }}" \
+            --platform "${{ inputs.platforms == 'both' && 'all' || inputs.platforms }}"
+
+      - name: Keep iOS screenshots
+        if: inputs.platforms != 'android'
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots-ios
+          path: ios/fastlane/screenshots/
+          if-no-files-found: error
+
+      - name: Keep Play screenshots
+        if: inputs.platforms != 'ios'
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots-android
+          path: android/fastlane/metadata/android/en-US/images/
+          if-no-files-found: error
+
+  ios:
+    needs: export
+    if: ${{ !cancelled() && needs.export.result != 'failure' && inputs.platforms != 'android' }}
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Fetch screenshots
+        if: inputs.screenshots
+        uses: actions/download-artifact@v8
+        with:
+          name: screenshots-ios
+          path: ios/fastlane/screenshots/
+
+      - name: Install Ruby gems
+        run: bundle install
+
+      - name: Upload to App Store Connect
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: bundle exec fastlane listing version:"${{ inputs.version }}" screenshots:${{ inputs.screenshots }}
+
+  android:
+    needs: export
+    if: ${{ !cancelled() && needs.export.result != 'failure' && inputs.platforms != 'ios' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Fetch screenshots
+        if: inputs.screenshots
+        uses: actions/download-artifact@v8
+        with:
+          name: screenshots-android
+          path: android/fastlane/metadata/android/en-US/images/
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install Ruby gems
+        run: bundle install
+
+      - name: Upload to Google Play
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: bundle exec fastlane listing track:${{ inputs.play_track }} screenshots:${{ inputs.screenshots }}

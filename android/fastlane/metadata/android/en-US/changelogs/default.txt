@@ -1,0 +1,8 @@
+Earn bronze, silver and gold: every achievement now has three medal tiers.
+
+• A fresh look, with new typefaces
+• A new progress dock that opens into the country card
+• Capitals marked with a new star seal
+• Selecting a country zooms to fit it
+• The Faroe Islands are now on the map
+• Clearer, higher-contrast text
