@@ -35,8 +35,8 @@ it from Git.
 
 1. Cloudflare dashboard → **Workers & Pages** → **Create application** →
    **Import a repository** → pick `AnmolS99/voyage`.
-2. Project name: `voyage-globe`. It must match `name` in `wrangler.jsonc`, and
-   it becomes the URL, `https://voyage-globe.<account subdomain>.workers.dev`.
+2. Project name: `voyage`. It must match `name` in `wrangler.jsonc`, and
+   it becomes the URL, `https://voyage.<account subdomain>.workers.dev`.
 3. Build settings:
    - Build command: `npm run build`
    - Deploy command: `npx wrangler deploy`
@@ -53,7 +53,7 @@ After that, every push to `master` redeploys the site. That includes edits to
 
 ## Privacy policy URL for the stores
 
-Use `https://voyage-globe.<account subdomain>.workers.dev/privacy` in both places:
+Use `https://voyage.<account subdomain>.workers.dev/privacy` in both places:
 
 - **App Store Connect** → the app → **App Information** → **Privacy Policy URL**
 - **Google Play Console** → the app → **Policy and programs → App content →

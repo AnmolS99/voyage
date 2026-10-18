@@ -2,7 +2,7 @@
 // build.mjs writes it. The name must match the Worker's name in the dashboard.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "voyage-globe",
+  "name": "voyage",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./dist",
