@@ -162,6 +162,10 @@ Read the failure with `gh run view <id> --log-failed`.
   rename frames by hand without keeping the `<set id>/NN-<scene>` pattern.
 - **"Figma rendered (w, h)":** a frame was resized in Figma; fix it there.
 - **Figma 403:** the token expired or lacks `file_content:read`.
+- **"Figma rate limit … retry after Ns":** the plan's render budget is spent
+  (it can lock out for days). If an earlier run exported the same page, rerun
+  with `-f screenshots_run=<that run's ID>` to reuse its screenshots and skip
+  Figma; otherwise wait it out.
 - **deliver can't find a screen size:** a fastlane release too old for the
   6.9"/13" sizes; the Gemfiles are unpinned, so a rerun picks up the latest.
 - **"No release on the … track":** nothing uploaded to that track yet; run
