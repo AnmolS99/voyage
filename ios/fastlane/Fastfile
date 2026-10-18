@@ -54,6 +54,9 @@ platform :ios do
       skip_screenshots: options[:screenshots] == false,
       overwrite_screenshots: true,
       submit_for_review: false,
+      # Precheck can't read in-app purchases with an API key and fails the
+      # whole upload over it; the metadata checks still run.
+      precheck_include_in_app_purchases: false,
       force: true
     )
   end
