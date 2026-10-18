@@ -62,8 +62,14 @@
       "capture": "Daily tab, current month, showing the demo streak of ticks. Needs network: the calendar fetches available dates from Supabase."
     }
   ],
+  "_sets_comment": "One entry per store canvas. `pending` sets can't be made yet (the reason says why): the skill and the export skip them. `kind: creative` sets are App Store creative assets — one frame built from other sets' captures (`shots`: scene ids, `from`: the set whose captures to reuse), uploaded by hand in App Store Connect's Asset Library, never by deliver.",
   "sets": [
     { "id": "ios-iphone-6.9", "platform": "ios", "label": "App Store · iPhone 6.9\"", "width": 1320, "height": 2868, "device": "Voyage Shots iPhone", "chrome": "iphone" },
+    { "id": "ios-iphone-6.3", "platform": "ios", "label": "App Store · iPhone 6.3\"", "width": 1206, "height": 2622, "device": "Voyage Shots iPhone 6.3", "chrome": "iphone" },
+    { "id": "ios-iphone-duo-outer", "platform": "ios", "label": "App Store · iPhone Duo outer", "width": 1398, "height": 2034, "device": "Voyage Shots iPhone Duo", "chrome": "iphone", "pending": "needs Xcode with the iOS 27.1 SDK and an iPhone Duo simulator, and an upload deliver can't do yet (APP_IPHONE_DUO via the asc CLI)" },
+    { "id": "ios-iphone-duo-inner", "platform": "ios", "label": "App Store · iPhone Duo inner", "width": 2007, "height": 2853, "device": "Voyage Shots iPhone Duo", "chrome": "ipad", "pending": "needs Xcode with the iOS 27.1 SDK and an iPhone Duo simulator, and an upload deliver can't do yet (APP_IPHONE_DUO via the asc CLI)" },
+    { "id": "ios-header", "platform": "ios", "kind": "creative", "label": "App Store · Product page header", "width": 3840, "height": 1646, "from": "ios-iphone-6.9", "shots": ["map", "globe", "achievements"], "frame": "dark" },
+    { "id": "ios-search", "platform": "ios", "kind": "creative", "label": "App Store · Search results", "width": 3840, "height": 2560, "from": "ios-iphone-6.9", "shots": ["country", "globe", "challenges"], "frame": "dark", "eyebrow": "Voyage", "headline": "Every country you've been to, on one globe" },
     { "id": "ios-ipad-13", "platform": "ios", "label": "App Store · iPad 13\"", "width": 2064, "height": 2752, "device": "Voyage Shots iPad", "chrome": "ipad" },
     { "id": "android-phone", "platform": "android", "label": "Google Play · Phone", "width": 1080, "height": 1920, "device": "voyage_shots_phone", "chrome": "android" },
     { "id": "android-tablet-7", "platform": "android", "label": "Google Play · 7\" tablet", "width": 1440, "height": 2560, "device": "voyage_shots_tablet7", "chrome": "android" },

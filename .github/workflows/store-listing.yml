@@ -72,6 +72,16 @@ jobs:
           path: ios/fastlane/screenshots/
           if-no-files-found: error
 
+      # Header and search results images: no API uploads them, so they're kept
+      # here for the user to download and add in App Store Connect's Asset Library.
+      - name: Keep App Store creative assets
+        if: inputs.platforms != 'android'
+        uses: actions/upload-artifact@v7
+        with:
+          name: creative-ios
+          path: ios/fastlane/creative/
+          if-no-files-found: ignore
+
       - name: Keep Play screenshots
         if: inputs.platforms != 'ios'
         uses: actions/upload-artifact@v7

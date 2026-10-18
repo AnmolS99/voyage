@@ -9,7 +9,8 @@ description: >-
   night backgrounds, terracotta accent). Use whenever the user asks to update,
   refresh, redo or make store screenshots, App Store previews, Play Store
   listing images or marketing screenshots — for iPhone, iPad, Android phone or
-  Android tablets — even if they don't mention Figma.
+  Android tablets — or the App Store's product page header and search results
+  images, even if they don't mention Figma.
 ---
 
 # Store screenshots
@@ -38,17 +39,18 @@ user asks.
 
 | File | What it holds |
 | --- | --- |
-| `scenes.json` | The storyboard: each scene's copy (eyebrow, headline, subline), app theme, frame theme, what to capture, and which platforms have it; plus the five **sets** (sizes, device, chrome). Change copy here, not in Figma. |
+| `scenes.json` | The storyboard: each scene's copy (eyebrow, headline, subline), app theme, frame theme, what to capture, and which platforms have it; plus the **sets** (sizes, device, chrome; `pending` ones are skipped, `kind: creative` ones are the header and search images). Change copy here, not in Figma. |
 | `demo-state.json` | The demo traveller both apps are seeded with: visited countries, wishlist, ticked cities and sights, challenge stats, daily streak. |
 | `scripts/version.py` | `status`: both apps' versions and the user-facing commits since the iOS version was set. `set X.Y.Z`: writes iOS `MARKETING_VERSION` (app target only) and Android `versionName`. |
 | `scripts/store_shots.py` | `seed`, `statusbar` and `capture` for iOS (simctl) and Android (adb). |
-| `figma/build_set.js` | Builds one set in Figma: a Section, one frame per scene, an empty `screen:<scene>` slot in each frame for the capture. |
+| `figma/build_set.js` | Builds one set in Figma: a Section, one frame per scene, an empty `screen:<scene>` slot in each frame for the capture. For a creative set, one frame with a `screen:<scene>` slot per entry in its `shots`. |
 
 ## Sets
 
 | Set | Canvas | Capture on | Device chrome |
 | --- | --- | --- | --- |
 | `ios-iphone-6.9` | 1320×2868 | sim `Voyage Shots iPhone` (iPhone 17 Pro Max) | Reuses the old set's iPhone bezel image |
+| `ios-iphone-6.3` | 1206×2622 | sim `Voyage Shots iPhone 6.3` (iPhone 17 Pro) | Same bezel image |
 | `ios-ipad-13` | 2064×2752 | sim `Voyage Shots iPad` (iPad Pro 13-inch M5) | Drawn dark bezel |
 | `android-phone` | 1080×1920 | AVD `voyage_shots_phone` (pixel_9) | No frame: a rounded screen with a shadow (Play discourages device frames) |
 | `android-tablet-7` | 1440×2560 | AVD `voyage_shots_tablet7` (Nexus 7 2013) | Same as phone |
@@ -57,8 +59,29 @@ user asks.
 **Use only these dedicated devices, never the user's own sims or AVDs.**
 Seeding replaces the app's saved state, and every iOS run starts by erasing the device.
 
+Apple **requires** the 6.3″ set (iPhone with Dynamic Island, medium display)
+and doesn't scale it down from 6.9″, so never skip it for an App Store version.
+
+**App Store creative assets** (`ios-header` 3840×1646 at 21:9, `ios-search`
+3840×2560 at 3:2) aren't captures of their own: each is one frame with three
+iPhones holding the `shots` scenes' captures from its `from` set (6.9″), so
+build them after that set and reuse its PNGs. Only App Store Connect's Asset
+Library takes them (no API, so no deliver), and Apple reviews them separately
+from a version: `store-listing` exports them for the user to upload by hand.
+Keep the focal point central (Apple's templates' safe area); the header has no
+copy, the search image states what the app does.
+
+**iPhone Duo** (`ios-iphone-duo-outer` 1398×2034, `ios-iphone-duo-inner`
+2007×2853) is `pending`: it needs Xcode with the iOS 27.1 SDK and an iPhone Duo
+simulator, which this Mac doesn't have yet, and deliver can't upload the
+`APP_IPHONE_DUO` display type (the `asc` CLI can). Apple requires it from April
+2027 for apps built with the iOS 27.1 SDK. Skip both sets until then; when the
+simulator is installed, capture real Duo screens (never stretched iPhone or iPad
+ones), drop `pending` from both, check how `build_set.js` frames them, and add
+an `asc` upload step to `store-listing.yml` before shipping them.
+
 Android sizes are exactly 9:16, which meets Play's phone limit (320–3840 px)
-and tablet limit (1080–7680 px). Make all five sets unless the user names fewer.
+and tablet limit (1080–7680 px). Make every set that isn't `pending` unless the user names fewer.
 Android has no Daily tab yet, so the `daily` scene is iOS-only. When it ships,
 add `"android"` to its `platforms`.
 
@@ -107,7 +130,7 @@ If the chosen version already has a page with sets, ask whether to replace them
 
 - **Missing devices:** create them once if absent. iOS:
   `xcrun simctl create "Voyage Shots iPhone" "iPhone 17 Pro Max" <iOS runtime id>`
-  (and `"Voyage Shots iPad" "iPad Pro 13-inch (M5)"`). Android: see Tablet AVDs below.
+  (and `"Voyage Shots iPhone 6.3" "iPhone 17 Pro"`, `"Voyage Shots iPad" "iPad Pro 13-inch (M5)"`). Android: see Tablet AVDs below.
 - **Erase the iOS sims at the start of every run:**
   `xcrun simctl shutdown <udid>; xcrun simctl erase <udid>`. The app merges
   UserDefaults with the iCloud key-value store and writes the merge back. That
@@ -183,7 +206,9 @@ const CONFIG = {
 };
 ```
 
-Pass only the scene fields shown, to keep the script small. The script returns
+Pass only the scene fields shown, to keep the script small. For a creative set,
+pass the whole set entry from `scenes.json` as `set`, `scenes: []`, and the
+`shotAspect` of its `from` set's captures; fill its slots with those PNGs. The script returns
 `pageId` and the `screenIds` in scene order. Then fill them:
 
 1. `upload_assets` with `count` = number of scenes, `nodeIds` = `screenIds`,

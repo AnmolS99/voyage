@@ -32,13 +32,17 @@ tell the user where to press it.
 | --- | --- | --- |
 | iOS What's New | `ios/fastlane/metadata/en-GB/release_notes.txt` | Version's *What's New* (max 4000 chars) |
 | iOS promotional text | `ios/fastlane/metadata/en-GB/promotional_text.txt` | *Promotional Text* (max 170 chars) |
+| iOS description | `ios/fastlane/metadata/en-GB/description.txt` | *Description* (max 4000 chars) |
+| iOS keywords | `ios/fastlane/metadata/en-GB/keywords.txt` | *Keywords* (max 100 chars, comma-separated, no spaces; words in the name or subtitle are wasted) |
 | Play What's New | `android/fastlane/metadata/android/en-US/changelogs/default.txt` | Release notes of the newest release on the chosen track (max 500 chars) |
-| Screenshots | A Figma page titled with a version (this one or an earlier one); exported in CI, gitignored locally | iPhone 6.9", iPad 13", Play phone, 7" and 10" tablet |
+| Screenshots | A Figma page titled with a version (this one or an earlier one); exported in CI, gitignored locally | iPhone 6.9" and 6.3", iPad 13", Play phone, 7" and 10" tablet |
+| Product page header, search results image | Same page (`ios-header`, `ios-search`); exported in CI to the `creative-ios` artifact | Asset Library — **uploaded by hand**: no API takes them, and Apple reviews them apart from the version |
 
 Only those files exist on purpose: deliver and supply send only what is
-present, so the name, description, keywords and Play listing text stay as
+present, so the App Store name and subtitle and the Play listing text stay as
 they are in the consoles. Don't add those files unless the user asks to manage
-that text here too. One locale per store: en-GB on the App Store (its primary
+that text here too. The description and keywords change rarely: draft them
+only when the user asks, or when a release changes what the app is about. One locale per store: en-GB on the App Store (its primary
 language), en-US on Play.
 
 `scripts/export_store_screenshots.py` maps frames named `<set id>/NN-<scene>`
@@ -151,6 +155,10 @@ watch it (`gh run watch <id>`) if the user asks.
 
 - **App Store Connect:** open the version, pick the build, check the
   screenshots, then *Add for Review*.
+- **Creative assets** (when the page has them): download the run's
+  `creative-ios` artifact (`gh run download <id> -n creative-ios`) and add the
+  header and search image in App Store Connect's *Asset Library*, then submit
+  them there. iPhone Duo screenshots aren't made yet (see `store-screenshots`).
 - **Play Console:** *Publishing overview* → *Send changes for review*.
 
 ## If something goes wrong

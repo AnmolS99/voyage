@@ -78,6 +78,111 @@ function stars(frame, seed) {
   }
 }
 
+// A capture slot at (x, y, w, h) in the given chrome: the iPhone bezel image
+// over it, a drawn iPad body under it, or a bare rounded screen for Play.
+function addScreen(f, chrome, x, y, w, h, sceneId, frameTheme) {
+  if (chrome === 'ipad') {
+    const b = Math.round(w * 0.03);
+    const body = figma.createRectangle();
+    body.name = 'bezel';
+    body.resize(w + 2 * b, h + 2 * b);
+    body.x = x - b; body.y = y - b;
+    body.cornerRadius = w * 0.045 + b;
+    body.fills = [solid('#1c1c1e')];
+    body.strokes = [solid('#3a3a3c')]; body.strokeWeight = Math.max(2, b * 0.12);
+    body.effects = [shadow(w)];
+    f.appendChild(body);
+  }
+
+  const screen = figma.createRectangle();
+  screen.name = `screen:${sceneId}`;
+  screen.resize(w, h);
+  screen.x = x; screen.y = y;
+  screen.cornerRadius = w * (chrome === 'iphone' ? IPHONE_BEZEL.radius : chrome === 'ipad' ? 0.045 : 0.06);
+  screen.fills = [solid(T.track[frameTheme])];
+  // Play discourages device frames: a rounded screen with the overlay shadow.
+  if (chrome === 'android') screen.effects = [shadow(w)];
+  f.appendChild(screen);
+
+  if (chrome === 'iphone') {
+    const bezel = figma.createRectangle();
+    bezel.name = 'bezel';
+    bezel.resize(w * IPHONE_BEZEL.w, h * IPHONE_BEZEL.h);
+    bezel.x = x + IPHONE_BEZEL.x * w; bezel.y = y + IPHONE_BEZEL.y * h;
+    bezel.fills = [{ type: 'IMAGE', imageHash: IPHONE_BEZEL.hash, scaleMode: 'FILL' }];
+    f.appendChild(bezel);
+  }
+  return screen;
+}
+
+// Sized to the device, not the frame, so a phone casts the same shadow in a
+// portrait screenshot and a 21:9 header.
+function shadow(w) {
+  return { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.3 }, offset: { x: 0, y: w * 0.026 }, radius: w * 0.066, spread: 0, visible: true, blendMode: 'NORMAL' };
+}
+
+// The night backdrop every frame shares: wash, stars, and the ocean horizon.
+function backdrop(f, frameTheme, seed, horizonY) {
+  const theme = T[frameTheme];
+  f.fills = [vGradient(theme.bgTop, theme.bgBottom)];
+  if (frameTheme === 'dark') stars(f, seed);
+  const horizon = figma.createEllipse();
+  horizon.name = 'horizon';
+  const D = Math.max(W, H) * 1.5;
+  horizon.resize(D, D);
+  horizon.x = (W - D) / 2; horizon.y = horizonY;
+  horizon.fills = [solid(T.ocean, frameTheme === 'dark' ? 0.9 : 1)];
+  f.appendChild(horizon);
+}
+
+function eyebrowPill(label, size) {
+  const pill = figma.createAutoLayout('HORIZONTAL', { name: 'eyebrow', cornerRadius: 9999 });
+  pill.paddingLeft = pill.paddingRight = Math.round(size * 0.88);
+  pill.paddingTop = pill.paddingBottom = Math.round(size * 0.35);
+  pill.fills = [solid(T.accent)];
+  pill.appendChild(text(label, FONTS.label, size, T.accentLabel, { tracking: 2 }));
+  return pill;
+}
+
+// App Store creative assets (product page header, search results): one frame
+// with a row of iPhones, the middle one larger, rising from the bottom edge;
+// key content stays central, where Apple's templates keep their safe area.
+if (set.kind === 'creative') {
+  const f = figma.createFrame();
+  f.name = `${set.id}/01-${set.id.replace(/^ios-/, '')}`;
+  f.resize(W, H);
+  f.clipsContent = true;
+  section.appendChild(f);
+  backdrop(f, set.frame, 7, H * 0.62);
+
+  let top = Math.round(H * 0.1);
+  if (set.headline) {
+    const copy = figma.createAutoLayout('VERTICAL', { name: 'copy', itemSpacing: Math.round(H * 0.025), counterAxisAlignItems: 'CENTER' });
+    copy.fills = [];
+    f.appendChild(copy);
+    copy.appendChild(eyebrowPill(set.eyebrow, Math.round(H * 0.024)));
+    copy.appendChild(text(set.headline, FONTS.display, Math.round(H * 0.07), T[set.frame].text, { lineHeight: 1.08, tracking: -1.5, width: Math.round(W * 0.6) }));
+    copy.x = (W - copy.width) / 2; copy.y = Math.round(H * 0.07);
+    top = copy.y + copy.height + Math.round(H * 0.06);
+  }
+
+  // Centre phone fills the space below the copy and runs off the bottom edge.
+  const ch = (H - top) / (1 - 0.1), cw = ch / shotAspect;
+  const side = 0.84, gap = cw * 0.2;
+  const slots = [
+    { x: W / 2 - cw / 2 - gap - cw * side, y: top + ch * 0.1, w: cw * side },
+    { x: W / 2 - cw / 2, y: top, w: cw },
+    { x: W / 2 + cw / 2 + gap, y: top + ch * 0.1, w: cw * side },
+  ];
+  const ids = set.shots.map((sceneId, i) => {
+    const s = slots[i];
+    return addScreen(f, 'iphone', s.x, s.y - IPHONE_BEZEL.y * s.w * shotAspect, s.w, s.w * shotAspect, sceneId, set.frame).id;
+  });
+  section.resizeWithoutConstraints(W, H);
+  section.x = originX; section.y = originY;
+  return { pageId: page.id, sectionId: section.id, frameIds: [f.id], screenIds: ids, sceneIds: set.shots };
+}
+
 const frames = [], screens = [];
 scenes.forEach((scene, i) => {
   const theme = T[scene.frame];
@@ -85,19 +190,10 @@ scenes.forEach((scene, i) => {
   f.name = `${set.id}/${String(i + 1).padStart(2, '0')}-${scene.id}`;
   f.resize(W, H);
   f.clipsContent = true;
-  f.fills = [vGradient(theme.bgTop, theme.bgBottom)];
   section.appendChild(f);
   f.x = i * (W + GAP); f.y = 0;
-  if (scene.frame === 'dark') stars(f, i + 1);
-
   // A globe rising from the bottom edge: ocean is Voyage's identity colour #1.
-  const horizon = figma.createEllipse();
-  horizon.name = 'horizon';
-  const D = Math.max(W, H) * 1.5;
-  horizon.resize(D, D);
-  horizon.x = (W - D) / 2; horizon.y = H * 0.70;
-  horizon.fills = [solid(T.ocean, scene.frame === 'dark' ? 0.9 : 1)];
-  f.appendChild(horizon);
+  backdrop(f, scene.frame, i + 1, H * 0.70);
 
   // Copy block: accent pill eyebrow, Newsreader headline, Grotesk subline.
   const copy = figma.createAutoLayout('VERTICAL', { name: 'copy', itemSpacing: Math.round(W * 0.028), counterAxisAlignItems: 'CENTER' });
@@ -105,12 +201,7 @@ scenes.forEach((scene, i) => {
   f.appendChild(copy);
   const textW = Math.round(W * (isTablet ? 0.72 : 0.86));
 
-  const pill = figma.createAutoLayout('HORIZONTAL', { name: 'eyebrow', cornerRadius: 9999 });
-  pill.paddingLeft = pill.paddingRight = Math.round(W * 0.03);
-  pill.paddingTop = pill.paddingBottom = Math.round(W * 0.012);
-  pill.fills = [solid(T.accent)];
-  pill.appendChild(text(scene.eyebrow, FONTS.label, Math.round(W * 0.034), T.accentLabel, { tracking: 2 }));
-  copy.appendChild(pill);
+  copy.appendChild(eyebrowPill(scene.eyebrow, Math.round(W * 0.034)));
   copy.appendChild(text(scene.headline, FONTS.display, Math.round(W * (isTablet ? 0.066 : 0.084)), theme.text, { lineHeight: 1.08, tracking: -1.5, width: textW }));
   copy.appendChild(text(scene.subline, FONTS.text, Math.round(W * (isTablet ? 0.03 : 0.038)), theme.text2, { lineHeight: 1.35, width: Math.round(textW * 0.92) }));
   copy.x = (W - copy.width) / 2;
@@ -128,44 +219,7 @@ const sw = Math.min(W * (isTablet ? 0.78 : 0.76) / outer.w, (H - top) / (shotAsp
 const sh = sw * shotAspect;
 const sx = (W - sw) / 2, sy = top + (set.chrome === 'iphone' ? -IPHONE_BEZEL.y * sh : 0);
 
-frames.forEach((f, i) => {
-  const scene = scenes[i];
-
-  if (set.chrome === 'ipad') {
-    const b = Math.round(sw * 0.03);
-    const body = figma.createRectangle();
-    body.name = 'bezel';
-    body.resize(sw + 2 * b, sh + 2 * b);
-    body.x = sx - b; body.y = sy - b;
-    body.cornerRadius = sw * 0.045 + b;
-    body.fills = [solid('#1c1c1e')];
-    body.strokes = [solid('#3a3a3c')]; body.strokeWeight = Math.max(2, b * 0.12);
-    body.effects = [{ type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.3 }, offset: { x: 0, y: W * 0.02 }, radius: W * 0.05, spread: 0, visible: true, blendMode: 'NORMAL' }];
-    f.appendChild(body);
-  }
-
-  const screen = figma.createRectangle();
-  screen.name = `screen:${scene.id}`;
-  screen.resize(sw, sh);
-  screen.x = sx; screen.y = sy;
-  screen.cornerRadius = sw * (set.chrome === 'iphone' ? IPHONE_BEZEL.radius : set.chrome === 'ipad' ? 0.045 : 0.06);
-  screen.fills = [solid(T.track[scene.frame])];
-  if (set.chrome === 'android') {
-    // Play discourages device frames: a rounded screen with the overlay shadow.
-    screen.effects = [{ type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.3 }, offset: { x: 0, y: W * 0.02 }, radius: W * 0.05, spread: 0, visible: true, blendMode: 'NORMAL' }];
-  }
-  f.appendChild(screen);
-
-  if (set.chrome === 'iphone') {
-    const bezel = figma.createRectangle();
-    bezel.name = 'bezel';
-    bezel.resize(sw * IPHONE_BEZEL.w, sh * IPHONE_BEZEL.h);
-    bezel.x = sx + IPHONE_BEZEL.x * sw; bezel.y = sy + IPHONE_BEZEL.y * sh;
-    bezel.fills = [{ type: 'IMAGE', imageHash: IPHONE_BEZEL.hash, scaleMode: 'FILL' }];
-    f.appendChild(bezel);
-  }
-  screens.push(screen.id);
-});
+frames.forEach((f, i) => screens.push(addScreen(f, set.chrome, sx, sy, sw, sh, scenes[i].id, scenes[i].frame).id));
 
 section.resizeWithoutConstraints(scenes.length * (W + GAP) - GAP, H);
 section.x = originX; section.y = originY;
