@@ -212,9 +212,12 @@ Store screenshots and listing text are uploaded by
 `.github/workflows/store-listing.yml` (the `store-listing` skill), never
 locally: it exports the version's screenshots from Figma (`FIGMA_TOKEN` secret,
 `scripts/export_store_screenshots.py`) and runs the `listing` lane on each
-platform. What's New and promotional text live in `ios/fastlane/metadata/en-US/`
-and `android/fastlane/metadata/android/en-US/changelogs/`. It never submits for
-review.
+platform. What's New, promotional text, description and keywords live in
+`ios/fastlane/metadata/en-GB/` (the App Store's primary language) and Play's
+What's New in `android/fastlane/metadata/android/en-US/changelogs/`. The App
+Store's header and search results images can't be uploaded by API: the
+workflow exports them as the `creative-ios` artifact for the Asset Library. It
+never submits for review.
 
 ## Setup
 

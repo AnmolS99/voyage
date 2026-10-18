@@ -4,6 +4,8 @@ name: Store Listing Upload
 # with the version, or with an earlier version's when `screenshots_from` names
 # one (pages made by the store-screenshots skill), plus What's New and
 # promotional text from ios/fastlane/metadata and android/fastlane/metadata.
+# `screenshots_run` reuses an earlier run's export instead, for when Figma's
+# render rate limit is spent (it can lock out for days).
 # Nothing is submitted for review: App Store Connect keeps the version in
 # Prepare for Submission, and Play holds the changes in Publishing overview.
 on:
@@ -26,6 +28,10 @@ on:
         description: "Figma page (version) to take the screenshots from; empty = this version"
         type: string
         default: ""
+      screenshots_run:
+        description: "Reuse the screenshots an earlier run exported (its run ID) instead of exporting from Figma"
+        type: string
+        default: ""
       play_track:
         description: "Play track whose newest release gets What's New"
         type: choice
@@ -38,7 +44,7 @@ concurrency:
 
 jobs:
   export:
-    if: inputs.screenshots
+    if: inputs.screenshots && !inputs.screenshots_run
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -66,6 +72,16 @@ jobs:
           path: ios/fastlane/screenshots/
           if-no-files-found: error
 
+      # Header and search results images: no API uploads them, so they're kept
+      # here for the user to download and add in App Store Connect's Asset Library.
+      - name: Keep App Store creative assets
+        if: inputs.platforms != 'android'
+        uses: actions/upload-artifact@v7
+        with:
+          name: creative-ios
+          path: ios/fastlane/creative/
+          if-no-files-found: ignore
+
       - name: Keep Play screenshots
         if: inputs.platforms != 'ios'
         uses: actions/upload-artifact@v7
@@ -76,6 +92,9 @@ jobs:
 
   ios:
     needs: export
+    permissions:
+      contents: read
+      actions: read  # to fetch another run's screenshots
     if: ${{ !cancelled() && needs.export.result != 'failure' && inputs.platforms != 'android' }}
     runs-on: macos-15
     timeout-minutes: 45
@@ -91,7 +110,21 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: screenshots-ios
+          run-id: ${{ inputs.screenshots_run || github.run_id }}
+          github-token: ${{ github.token }}
           path: ios/fastlane/screenshots/
+
+      # deliver reads screenshots from the App Store's primary language folder;
+      # a reused export from before the move to en-GB holds them under en-US.
+      - name: Put screenshots under en-GB
+        if: inputs.screenshots
+        run: |
+          cd fastlane/screenshots
+          for d in */; do
+            [ "$d" = "en-GB/" ] && continue
+            mkdir -p en-GB && mv "$d"* en-GB/ && rmdir "$d"
+          done
+          ls en-GB
 
       - name: Install Ruby gems
         run: bundle install
@@ -105,6 +138,9 @@ jobs:
 
   android:
     needs: export
+    permissions:
+      contents: read
+      actions: read  # to fetch another run's screenshots
     if: ${{ !cancelled() && needs.export.result != 'failure' && inputs.platforms != 'ios' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -120,6 +156,8 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: screenshots-android
+          run-id: ${{ inputs.screenshots_run || github.run_id }}
+          github-token: ${{ github.token }}
           path: android/fastlane/metadata/android/en-US/images/
 
       - name: Set up Ruby

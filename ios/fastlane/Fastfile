@@ -46,7 +46,7 @@ platform :ios do
   lane :listing do |options|
     # Creates the version in App Store Connect if it isn't there yet, and
     # fills the one being prepared for submission. Text comes from
-    # fastlane/metadata/en-US; only the files present there are sent.
+    # fastlane/metadata/en-GB; only the files present there are sent.
     upload_to_app_store(
       api_key: asc_api_key,
       app_version: options.fetch(:version),
@@ -54,6 +54,9 @@ platform :ios do
       skip_screenshots: options[:screenshots] == false,
       overwrite_screenshots: true,
       submit_for_review: false,
+      # Precheck can't read in-app purchases with an API key and fails the
+      # whole upload over it; the metadata checks still run.
+      precheck_include_in_app_purchases: false,
       force: true
     )
   end

@@ -1,8 +1,10 @@
 Earn bronze, silver and gold: every achievement now has three medal tiers.
 
 • A fresh look, with new typefaces
+• Terrain shading on the globe and the map
+• Search countries by their other names, like Burma or the UK
 • A new progress dock that opens into the country card
 • Capitals marked with a new star seal
 • Selecting a country zooms to fit it
-• The Faroe Islands are now on the map
+• The Faroe Islands are now on the map, and Crimea is shown as part of Ukraine
 • Clearer, higher-contrast text

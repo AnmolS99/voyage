@@ -21,6 +21,7 @@ Carthage/Build/
 ios/fastlane/report.xml
 ios/fastlane/Preview.html
 ios/fastlane/screenshots/
+ios/fastlane/creative/
 ios/fastlane/test_output/
 android/fastlane/report.xml
 android/fastlane/README.md
