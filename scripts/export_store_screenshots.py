@@ -24,6 +24,8 @@ import json
 import os
 import shutil
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -46,13 +48,30 @@ OUT = {
 MAX_PER_SET = {"ios": 10, "android": 8}
 # Play rejects screenshots over 8 MB; past that a high-quality JPEG goes instead.
 MAX_BYTES = 8 * 1024 * 1024
+# A 429 is waited out this many times, for at most this many seconds each.
+MAX_RATE_LIMIT_RETRIES = 3
+MAX_RATE_LIMIT_WAIT = 300
 
 
 def figma(path, **params):
     url = f"https://api.figma.com/v1/{path}?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"X-Figma-Token": os.environ["FIGMA_TOKEN"]})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.load(r)
+    for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code != 429:
+                raise
+            # Figma says how long to wait; short waits are worth sitting out,
+            # long ones (a plan's monthly render budget) are not.
+            wait = int(e.headers.get("Retry-After") or 60)
+            limit = e.headers.get("X-Figma-Rate-Limit-Type", "unknown")
+            if wait > MAX_RATE_LIMIT_WAIT or attempt == MAX_RATE_LIMIT_RETRIES:
+                sys.exit(f"Figma rate limit ({limit}) on {path}: retry after {wait}s "
+                         f"(~{wait / 3600:.1f} h). Rerun once that has passed.")
+            print(f"Figma rate limit ({limit}); retrying {path} in {wait}s", flush=True)
+            time.sleep(wait)
 
 
 def frames_on(page):
