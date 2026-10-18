@@ -10,7 +10,7 @@ screenshots), renders them at 1x through Figma's REST API (so each PNG is the
 set's exact store size), flattens them (App Store Connect rejects alpha) and
 writes them where deliver and supply read them:
 
-  ios-iphone-6.9, ios-ipad-13 -> ios/fastlane/screenshots/en-US/
+  ios-iphone-6.9, ios-ipad-13 -> ios/fastlane/screenshots/en-GB/
   android-phone               -> android/fastlane/metadata/android/en-US/images/phoneScreenshots/
   android-tablet-7            -> .../sevenInchScreenshots/
   android-tablet-10           -> .../tenInchScreenshots/
@@ -35,7 +35,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 SCENES = ROOT / ".claude/skills/store-screenshots/scenes.json"
 FILE_KEY = "CphnOVwvLUEKxSDfplU37i"
-IOS_DIR = ROOT / "ios/fastlane/screenshots/en-US"
+IOS_DIR = ROOT / "ios/fastlane/screenshots/en-GB"
 PLAY_DIR = ROOT / "android/fastlane/metadata/android/en-US/images"
 # Where each set lands; iOS sets share a folder, deliver tells them apart by size.
 OUT = {

@@ -104,6 +104,18 @@ jobs:
           github-token: ${{ github.token }}
           path: ios/fastlane/screenshots/
 
+      # deliver reads screenshots from the App Store's primary language folder;
+      # a reused export from before the move to en-GB holds them under en-US.
+      - name: Put screenshots under en-GB
+        if: inputs.screenshots
+        run: |
+          cd fastlane/screenshots
+          for d in */; do
+            [ "$d" = "en-GB/" ] && continue
+            mkdir -p en-GB && mv "$d"* en-GB/ && rmdir "$d"
+          done
+          ls en-GB
+
       - name: Install Ruby gems
         run: bundle install
 

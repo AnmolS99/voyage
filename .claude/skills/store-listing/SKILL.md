@@ -30,15 +30,16 @@ tell the user where to press it.
 
 | Content | File in the repo | Store field |
 | --- | --- | --- |
-| iOS What's New | `ios/fastlane/metadata/en-US/release_notes.txt` | Version's *What's New* (max 4000 chars) |
-| iOS promotional text | `ios/fastlane/metadata/en-US/promotional_text.txt` | *Promotional Text* (max 170 chars) |
+| iOS What's New | `ios/fastlane/metadata/en-GB/release_notes.txt` | Version's *What's New* (max 4000 chars) |
+| iOS promotional text | `ios/fastlane/metadata/en-GB/promotional_text.txt` | *Promotional Text* (max 170 chars) |
 | Play What's New | `android/fastlane/metadata/android/en-US/changelogs/default.txt` | Release notes of the newest release on the chosen track (max 500 chars) |
 | Screenshots | A Figma page titled with a version (this one or an earlier one); exported in CI, gitignored locally | iPhone 6.9", iPad 13", Play phone, 7" and 10" tablet |
 
 Only those files exist on purpose: deliver and supply send only what is
 present, so the name, description, keywords and Play listing text stay as
 they are in the consoles. Don't add those files unless the user asks to manage
-that text here too. en-US is the only locale.
+that text here too. One locale per store: en-GB on the App Store (its primary
+language), en-US on Play.
 
 `scripts/export_store_screenshots.py` maps frames named `<set id>/NN-<scene>`
 (as `store-screenshots`' `figma/build_set.js` names them) to fastlane's folders,
