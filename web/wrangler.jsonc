@@ -1,0 +1,13 @@
+// The site is a Worker with static assets only: no script, just dist/ as
+// build.mjs writes it. The name must match the Worker's name in the dashboard.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "voyage-globe",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // /privacy serves privacy.html; unknown paths get dist/404.html with a 404.
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

@@ -20,7 +20,7 @@ voyage/
 │   ├── data/       # world.geojson, country_highlights.json, textures/ — consumed by BOTH apps
 │   ├── fixtures/   # expected_countries.json — parser contract for BOTH apps
 │   └── supabase/   # schemas/, migrations/, seed.sql
-├── web/        # Marketing site + /privacy (rendered from PRIVACY.md), Cloudflare Pages — see web/README.md
+├── web/        # Marketing site + /privacy (rendered from PRIVACY.md), Cloudflare Workers — see web/README.md
 ├── scripts/    # update_geometry.sh, merge_geometry.py, generate_country_fixture.py
 └── docs/       # ANDROID_PLAN.md, ANDROID_DEVELOPMENT.md
 ```
