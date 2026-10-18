@@ -7,7 +7,7 @@ straight from the repo and is never copied:
 | On the site      | Comes from                                              |
 | ---------------- | ------------------------------------------------------- |
 | `/privacy`       | `PRIVACY.md` at the repo root (the only copy of the policy) |
-| Hero globe       | `shared/data/world.geojson`, drawn to SVG at build time |
+| Hero globe       | `shared/data/world.geojson` (fills, borders) and `shared/data/textures/` (`earth_texture.jpg` with `relief.png` hard-lit over it, as in the apps with Terrain on), projected at build time |
 | Fonts            | `shared/data/fonts/`                                    |
 | Icon             | `ios/voyage/Assets.xcassets/AppIcon.appiconset/`        |
 | Colors           | Mirrored by hand from `ios/voyage/ColorPalette.swift` in `src/static/styles.css` |
@@ -21,7 +21,7 @@ The store links are constants at the top of `build.mjs`.
 ```bash
 cd web
 npm install
-npm run preview        # builds into dist/ and serves it on http://localhost:3000
+npm run dev            # serves http://localhost:4321 and rebuilds on every save (refresh to see it)
 ```
 
 The build fails if `PRIVACY.md` is missing. To preview with a different policy file,

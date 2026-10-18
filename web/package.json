@@ -7,10 +7,12 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "preview": "node build.mjs && npx --yes serve@14.2.4 dist"
+    "preview": "node build.mjs && npx --yes serve@14.2.4 dist",
+    "dev": "node build.mjs && (node --watch-path=src --watch-path=build.mjs --watch-path=../PRIVACY.md build.mjs & npx --yes serve@14.2.4 dist -l 4321)"
   },
   "dependencies": {
     "d3-geo": "3.1.1",
-    "marked": "18.1.1"
+    "marked": "18.1.1",
+    "sharp": "0.35.5"
   }
 }

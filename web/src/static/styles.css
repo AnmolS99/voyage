@@ -19,8 +19,6 @@
   --accent: #D98C59;        /* buttonColor, terracotta */
 
   /* Globe */
-  --ocean: #2F86A6;
-  --land: #34BE82;
   --visited: #F2F013;
   --wishlist: #9966CC;
   --border: #1A1A1F;
@@ -78,11 +76,11 @@ a:hover { color: var(--accent); }
 .play-badge { margin: -11px; } /* Google's badge ships with built-in padding */
 
 .globe { width: 100%; height: auto; display: block; filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.25)); }
-.globe .ocean { fill: var(--ocean); }
-.globe .land, .globe .visited, .globe .wishlist { stroke: var(--border); stroke-width: 0.5; stroke-linejoin: round; }
-.globe .land { fill: var(--land); }
+.globe .surface { isolation: isolate; }
+.globe .relief { mix-blend-mode: hard-light; }
 .globe .visited { fill: var(--visited); }
 .globe .wishlist { fill: var(--wishlist); }
+.globe .borders { fill: none; stroke: var(--border); stroke-width: 0.5; stroke-linejoin: round; }
 
 .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 48px 0 0; }
 .features article { background: var(--card); border: 1px solid var(--track); border-radius: 20px; padding: 28px; }
