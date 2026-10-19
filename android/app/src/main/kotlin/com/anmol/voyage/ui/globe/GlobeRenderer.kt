@@ -139,8 +139,11 @@ internal class GlobeRenderer {
         /** The smallest the dot gets on screen, however far out the camera is. */
         var minRadiusPx = 0f
 
-        /** The ring's width, from the country's current style. */
-        var borderWidthPx = 0f
+        /** The thinnest the ring gets on screen, however far out the camera is. */
+        var minRingPx = 0f
+
+        /** Selection widens the ring outward, as iOS's does. */
+        var isSelected = false
     }
 
     private val dots = mutableMapOf<String, Dot>()
@@ -225,8 +228,9 @@ internal class GlobeRenderer {
      * ([GlobeCamera.capitalMarkerRadius]), as iOS's is. A dot keeps a fixed size
      * on the globe, as iOS's does, so it grows with the land around it and stays
      * the area a tap on it reaches — down to a floor in pixels when zoomed out
-     * ([GlobeCamera.dotRadiusInWorld]). Its ring stays a constant width on
-     * screen either way, like every other border.
+     * ([GlobeCamera.dotRadiusInWorld]). Its ring is in proportion to the dot,
+     * as iOS's `SCNTube` is ([GlobeCamera.DOT_RING_RATIO]), so it grows with
+     * it — and like the dot it holds a floor in pixels zoomed out.
      */
     private fun setMarkerSizes(globeCamera: GlobeCamera) {
         if (viewportHeight == 0) return
@@ -236,12 +240,14 @@ internal class GlobeRenderer {
 
         for (dot in dots.values) {
             val radius = globeCamera.dotRadiusInWorld(dot.minRadiusPx, viewportHeight.toFloat())
-            val border = dot.borderWidthPx * scale
-            // The fill stops half a border inside the radius; the ring runs from
-            // there to half a border outside it.
-            dot.fill.setParameter("thickness", radius - border / 2f)
-            dot.ring.setParameter("thickness", radius - border / 2f)
-            dot.ring.setParameter("band", border)
+            val ring = maxOf(radius * GlobeCamera.DOT_RING_RATIO, dot.minRingPx * scale)
+            // The fill stops a ring's width inside the radius; the ring runs from
+            // there to the radius, or past it when selected.
+            val inner = radius - ring
+            val band = if (dot.isSelected) ring * GlobeCamera.DOT_SELECTED_RING_GROWTH else ring
+            dot.fill.setParameter("thickness", inner)
+            dot.ring.setParameter("thickness", inner)
+            dot.ring.setParameter("band", band)
         }
         // Every layer's mesh is already in proportion to the seal's outer radius,
         // so all three take the same uniform.
@@ -443,24 +449,24 @@ internal class GlobeRenderer {
     }
 
     /**
-     * Paints one microstate's dot. [radiusPx] and [borderWidthPx] are the map's
-     * own screen measurements: the ring reaches half a border outside them and
-     * the fill stops half a border inside, which is what a stroked circle looks
-     * like.
+     * Paints one microstate's dot. [radiusPx] and [ringPx] are floors on its
+     * on-screen radius and ring width; [isSelected] widens the ring outward.
      */
     fun setDotAppearance(
         name: String,
         fill: GlobeFill?,
         border: GlobeFill,
         radiusPx: Float,
-        borderWidthPx: Float,
+        ringPx: Float,
+        isSelected: Boolean,
     ) {
         val dot = dots[name] ?: return
         dot.ring.setFill(border)
         setShown(dot.fillEntity, fill != null)
         fill?.let { dot.fill.setFill(it) }
         dot.minRadiusPx = radiusPx
-        dot.borderWidthPx = borderWidthPx
+        dot.minRingPx = ringPx
+        dot.isSelected = isSelected
         // A new size only reaches the shader on the next size pass, which the
         // render loop runs every frame; nothing here needs the camera.
         markerScale = Float.NaN

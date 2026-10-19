@@ -289,6 +289,15 @@ data class GlobeCamera(
         private val DOT_RADIUS =
             (Math.toRadians(CountryHitTester.POINT_HIT_RADIUS) * GLOBE_RADIUS).toFloat()
 
+        /**
+         * A dot's ring width as a fraction of its radius: iOS's 0.012…0.014
+         * `SCNTube` around a 0.014 dot.
+         */
+        const val DOT_RING_RATIO = 0.002f / 0.014f
+
+        /** How much wider selection makes the ring, outward: iOS's tube out to 0.0155. */
+        const val DOT_SELECTED_RING_GROWTH = 0.0035f / 0.002f
+
         private fun rawScreenScale(distance: Float): Float =
             (distance - GLOBE_RADIUS) / (DEFAULT_DISTANCE - GLOBE_RADIUS)
 

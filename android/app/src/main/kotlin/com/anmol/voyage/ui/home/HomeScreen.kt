@@ -345,14 +345,13 @@ private fun BoxScope.GlobeBody(
     // Microstates have no shape to fill, so the globe marks them the way the map
     // does — a dot in their status colors. Only the colors are resolved here;
     // the dots themselves are meshes built once with the rest of the geometry.
-    val density = LocalDensity.current
     val dotStyles = geometry.microstateDots.map { dot ->
         val style = scene.styleFor(dot.name, hasTexture)
         GlobeDotStyle(
             name = dot.name,
             fill = style.fill.toGlobeFillOrNull(),
             border = style.border.toGlobeFill(),
-            borderWidthPx = with(density) { style.borderWidth.toPx() },
+            isSelected = dot.name == scene.selectedCountry,
         )
     }
 

@@ -47,16 +47,16 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * How one microstate's dot is currently painted.
  *
- * Resolved in composition, where the density needed to turn the style's border
- * `dp` into pixels is available — the renderer works in pixels and world units
- * and has no business knowing about `dp`.
+ * Only its colors and whether it is selected: on the globe the ring is sized
+ * in proportion to the dot, as iOS's is ([GlobeCamera.DOT_RING_RATIO]), not by
+ * the style's on-screen border width the map uses.
  */
 internal class GlobeDotStyle(
     val name: String,
     /** Null over an Earth texture for an unmarked dot, which is then only its ring. */
     val fill: GlobeFill?,
     val border: GlobeFill,
-    val borderWidthPx: Float,
+    val isSelected: Boolean,
 )
 
 /**
@@ -649,7 +649,8 @@ internal class GlobeSurfaceHost {
                 fill = dot.fill,
                 border = dot.border,
                 radiusPx = sizes.dotRadiusPx,
-                borderWidthPx = dot.borderWidthPx,
+                ringPx = sizes.dotRingPx,
+                isSelected = dot.isSelected,
             )
         }
     }

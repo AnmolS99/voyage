@@ -46,9 +46,15 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * A dot's border width is not here: it comes from [CountryStyle.borderWidth],
  * because it thickens with selection like any other border.
  */
-class MarkerSizes(val dotRadiusPx: Float, val sealRadiusPx: Float)
+class MarkerSizes(val dotRadiusPx: Float, val dotRingPx: Float, val sealRadiusPx: Float)
 
 private val MICROSTATE_DOT_RADIUS = 5.dp
+
+/**
+ * The globe dot's thinnest ring, zoomed out: about what iOS's proportional ring
+ * measures on a dot this size. The map's ring is the style's border width instead.
+ */
+private val MICROSTATE_DOT_RING = 1.dp
 
 /** The seal's outer edge, rim included — iOS `MapView`'s 6 pt. */
 private val CAPITAL_SEAL_RADIUS = 6.dp
@@ -60,6 +66,7 @@ fun rememberMarkerSizes(): MarkerSizes {
         with(density) {
             MarkerSizes(
                 dotRadiusPx = MICROSTATE_DOT_RADIUS.toPx(),
+                dotRingPx = MICROSTATE_DOT_RING.toPx(),
                 sealRadiusPx = CAPITAL_SEAL_RADIUS.toPx(),
             )
         }
