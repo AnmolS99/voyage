@@ -163,6 +163,26 @@ final class voyageTests: XCTestCase {
         )
     }
 
+    // Checking a city or attraction marks its country visited; unchecking it,
+    // or removing the visit, leaves the other alone (Android VoyageStateTest)
+    func testCheckingAHighlightMarksTheCountryVisited() {
+        let state = GlobeState(inMemory: true)
+        state.addToWishlist("Peru")
+
+        state.toggleCheckedCity("Oslo", for: "Norway")
+        XCTAssertTrue(state.isVisited("Norway"))
+        state.toggleCheckedCity("Oslo", for: "Norway")
+        XCTAssertTrue(state.isVisited("Norway"), "Unchecking should not remove the visit")
+
+        state.toggleCheckedAttraction("Machu Picchu", for: "Peru")
+        XCTAssertTrue(state.isVisited("Peru"))
+        XCTAssertTrue(state.isInWishlist("Peru"), "The wishlist is left as the Visited button leaves it")
+
+        state.removeVisit("Peru")
+        XCTAssertFalse(state.isVisited("Peru"))
+        XCTAssertEqual(state.checkedAttractionsForCountry("Peru"), ["Machu Picchu"])
+    }
+
     // Test finding country at known coordinates
     func testFindCountryAtCoordinates() {
         let countries = GeoJSONParser.loadCountries()
