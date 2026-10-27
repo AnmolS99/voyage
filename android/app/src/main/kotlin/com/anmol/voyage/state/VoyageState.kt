@@ -197,12 +197,23 @@ class VoyageState(
     fun isAttractionChecked(attraction: String, country: String): Boolean =
         attraction in checkedAttractionsFor(country)
 
+    // Checking a city or attraction marks its country visited — you've been
+    // there. Unchecking leaves the visit alone: only the Visited button removes
+    // one. As iOS's `GlobeState.toggleCheckedCity`.
     fun toggleCheckedCity(city: String, country: String) = mutate {
-        it.copy(checkedCities = it.checkedCities.toggling(city, country))
+        val checked = it.checkedCities.toggling(city, country)
+        it.copy(
+            checkedCities = checked,
+            visitedCountries = it.visitedCountries.visitedIfChecked(city, country, checked),
+        )
     }
 
     fun toggleCheckedAttraction(attraction: String, country: String) = mutate {
-        it.copy(checkedAttractions = it.checkedAttractions.toggling(attraction, country))
+        val checked = it.checkedAttractions.toggling(attraction, country)
+        it.copy(
+            checkedAttractions = checked,
+            visitedCountries = it.visitedCountries.visitedIfChecked(attraction, country, checked),
+        )
     }
 
     // ---- Preferences ----
@@ -290,3 +301,10 @@ private fun Map<String, Set<String>>.toggling(
     val updated = if (item in current) current - item else current + item
     return if (updated.isEmpty()) this - country else this + (country to updated)
 }
+
+/** [this] plus [country] when [item] is now among its checked items in [checked]. */
+private fun Set<String>.visitedIfChecked(
+    item: String,
+    country: String,
+    checked: Map<String, Set<String>>,
+): Set<String> = if (item in checked[country].orEmpty()) this + country else this

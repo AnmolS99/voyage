@@ -542,16 +542,28 @@ class GlobeState: ObservableObject {
         checkedAttractions[name] ?? []
     }
 
+    // Checking a city or attraction marks its country visited — you've been
+    // there. Unchecking leaves the visit alone: only the Visited button removes one.
     func toggleCheckedCity(_ city: String, for country: String) {
         var set = checkedCities[country] ?? []
-        if set.contains(city) { set.remove(city) } else { set.insert(city) }
+        if set.contains(city) {
+            set.remove(city)
+        } else {
+            set.insert(city)
+            visitedCountries.insert(country)
+        }
         checkedCities[country] = set.isEmpty ? nil : set
         saveData()
     }
 
     func toggleCheckedAttraction(_ attraction: String, for country: String) {
         var set = checkedAttractions[country] ?? []
-        if set.contains(attraction) { set.remove(attraction) } else { set.insert(attraction) }
+        if set.contains(attraction) {
+            set.remove(attraction)
+        } else {
+            set.insert(attraction)
+            visitedCountries.insert(country)
+        }
         checkedAttractions[country] = set.isEmpty ? nil : set
         saveData()
     }

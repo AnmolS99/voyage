@@ -145,6 +145,39 @@ class VoyageStateTest {
     }
 
     @Test
+    fun `checking a city or attraction marks its country visited, unchecking leaves it`() {
+        val store = InMemoryStateStore()
+        val state = stateOver(store)
+
+        state.toggleCheckedCity("Oslo", "Norway")
+        assertTrue(state.isVisited("Norway"))
+        assertEquals(setOf("Norway"), store.state.visitedCountries)
+
+        state.toggleCheckedCity("Oslo", "Norway")
+        assertTrue(state.isVisited("Norway"))
+
+        state.toggleCheckedAttraction("Machu Picchu", "Peru")
+        assertTrue(state.isVisited("Peru"))
+
+        state.toggleCheckedAttraction("Machu Picchu", "Peru")
+        assertEquals(setOf("Norway", "Peru"), store.state.visitedCountries)
+    }
+
+    @Test
+    fun `a checked item keeps the country on the wishlist and survives removing the visit`() {
+        val state = state()
+        state.addToWishlist("Peru")
+
+        state.toggleCheckedAttraction("Machu Picchu", "Peru")
+        assertTrue(state.isVisited("Peru"))
+        assertTrue(state.isInWishlist("Peru"))
+
+        state.removeVisit("Peru")
+        assertFalse(state.isVisited("Peru"))
+        assertTrue(state.isAttractionChecked("Machu Picchu", "Peru"))
+    }
+
+    @Test
     fun `preferences are stored`() {
         val store = InMemoryStateStore()
         val state = stateOver(store)
@@ -195,7 +228,8 @@ class VoyageStateTest {
 
         assertEquals(
             PersistedState(
-                visitedCountries = setOf("Norway"),
+                // Peru by checking Machu Picchu.
+                visitedCountries = setOf("Norway", "Peru"),
                 wishlistCountries = setOf("Peru"),
                 checkedCities = mapOf("Norway" to setOf("Oslo")),
                 checkedAttractions = mapOf("Peru" to setOf("Machu Picchu")),
