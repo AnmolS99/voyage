@@ -111,6 +111,7 @@
     <string name="settings_reset_confirm">Reset</string>
     <string name="settings_cancel">Cancel</string>
     <string name="settings_version">Version</string>
+    <string name="settings_privacy_policy">Privacy policy</string>
     <string name="settings_copyright">© 2026 Anmol Singh. All rights reserved.</string>
 
     <!-- Challenges (wording mirrors iOS ChallengesView and the game views) -->

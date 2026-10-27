@@ -2,6 +2,7 @@ package com.anmol.voyage.ui.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -16,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Contrast
 import androidx.compose.material.icons.rounded.DeleteForever
@@ -48,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -67,8 +70,8 @@ import com.anmol.voyage.ui.theme.voyageCardColors
 import com.anmol.voyage.ui.theme.voyageCardElevation
 
 /**
- * The Settings tab — iOS's `SettingsView`, less its tip jar: Appearance, Data and
- * the version.
+ * The Settings tab — iOS's `SettingsView`, less its tip jar: Appearance, Data,
+ * the version and a link to the privacy policy.
  *
  * Appearance starts with the theme, as on iOS. Home's sun/moon button flips
  * light and dark on both, but only an explicit choice here can hand the
@@ -146,6 +149,7 @@ fun SettingsScreen(state: VoyageState, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            PrivacyPolicyLink()
         }
     }
 
@@ -274,6 +278,31 @@ private fun TerrainSetting(checked: Boolean, onCheckedChange: (Boolean) -> Unit)
 }
 
 /**
+ * Opens the privacy policy in the browser, as iOS's `Link` row does. The whole
+ * row is the target, and it reads as one button to TalkBack.
+ */
+@Composable
+private fun PrivacyPolicyLink() {
+    val uriHandler = LocalUriHandler.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button) { uriHandler.openUri(PRIVACY_POLICY_URL) }
+            .testTag(PRIVACY_POLICY_TAG),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(stringResource(R.string.settings_privacy_policy), style = MaterialTheme.typography.bodyLarge)
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+/**
  * One texture preference: a read-only field showing the current style, which
  * opens a menu of every [GlobeStyle] with the current one ticked.
  */
@@ -368,3 +397,9 @@ internal fun themeOptionTag(mode: ThemeMode) = "settings_theme:${mode.name}"
 /** Test tags for the reset button and its dialog's confirmation. */
 internal const val RESET_TAG = "settings_reset"
 internal const val RESET_CONFIRM_TAG = "settings_reset_confirm"
+
+/** The policy the marketing site renders from `PRIVACY.md` (see web/README.md). */
+internal const val PRIVACY_POLICY_URL = "https://voyage.anmol-singh.workers.dev/privacy"
+
+/** Test tag for the privacy policy row. */
+internal const val PRIVACY_POLICY_TAG = "settings_privacy_policy"
