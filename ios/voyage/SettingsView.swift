@@ -175,14 +175,6 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text(appVersion)
-                            .foregroundColor(.secondary)
-                    }
-                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
-
                     Link(destination: Self.privacyPolicyURL) {
                         HStack {
                             Text("Privacy Policy")
@@ -191,6 +183,14 @@ struct SettingsView: View {
                             Image(systemName: "arrow.up.right")
                                 .foregroundColor(.secondary)
                         }
+                    }
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text(appVersion)
+                            .foregroundColor(.secondary)
                     }
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                 } footer: {

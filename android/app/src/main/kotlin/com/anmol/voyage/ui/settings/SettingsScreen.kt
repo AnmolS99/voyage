@@ -71,7 +71,7 @@ import com.anmol.voyage.ui.theme.voyageCardElevation
 
 /**
  * The Settings tab — iOS's `SettingsView`, less its tip jar: Appearance, Data,
- * the version and a link to the privacy policy.
+ * a link to the privacy policy and the version.
  *
  * Appearance starts with the theme, as on iOS. Home's sun/moon button flips
  * light and dark on both, but only an explicit choice here can hand the
@@ -138,6 +138,7 @@ fun SettingsScreen(state: VoyageState, modifier: Modifier = Modifier) {
         }
 
         SettingsSection(title = null, footer = R.string.settings_copyright) {
+            PrivacyPolicyLink()
             Row(
                 modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -149,7 +150,6 @@ fun SettingsScreen(state: VoyageState, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            PrivacyPolicyLink()
         }
     }
 
