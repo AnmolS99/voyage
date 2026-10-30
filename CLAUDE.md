@@ -21,7 +21,8 @@ voyage/
 │   ├── fixtures/   # expected_countries.json — parser contract for BOTH apps
 │   └── supabase/   # schemas/, migrations/, seed.sql
 ├── web/        # Marketing site + /privacy (rendered from PRIVACY.md), Cloudflare Workers — see web/README.md
-├── scripts/    # update_geometry.sh, merge_geometry.py, generate_country_fixture.py
+├── scripts/    # update_geometry.sh, merge_geometry.py, generate_country_fixture.py, journey_art.py
+├── journey-art/ # gitignored workspace for Journey Art (photos, attempts, exports)
 └── docs/       # ANDROID_PLAN.md, ANDROID_DEVELOPMENT.md
 ```
 
@@ -463,6 +464,33 @@ regenerate `globe.scn` (see [Globe Cache Generation](#globe-cache-generation)).
 - **Small/less-visited countries** (e.g., Nauru, Tuvalu, Falkland Islands) have appropriately reduced entries (1-2 per list).
 - **Conflict zones** (e.g., Syria, Yemen) include historically significant sites known pre-conflict.
 - The data was reviewed continent by continent before finalizing.
+
+## Journey Art
+
+Painted header art for the country sheet's 390×240 banner (the "Journey"
+design), one day (light mode) and one night (dark mode) image per country. It is
+made one country at a time from a real photo by `scripts/journey_art.py`, which
+has a Gemini image model repaint the photo as an expert painter's gouache/oil
+landscape: visible brushwork, deliberately not anime. The night version is
+generated from the chosen day version, not the photo, so both share one
+composition. The top-left stays calm sky and the night moon sits upper-right,
+because the flag and country name are laid over the top-left.
+
+```bash
+python3 scripts/journey_art.py day JP ~/Photos/fuji.jpg -n 3   # day attempts from the photo
+python3 scripts/journey_art.py night JP 4                      # nights from day-4
+python3 scripts/journey_art.py export JP 4 3                   # day-4 + night-4-3 → 1170×720 WebP
+```
+
+Everything goes under the gitignored `journey-art/<ISO>/`: the photo, every
+attempt with the prompt that made it, an `index.html` that previews each one as
+the banner in both themes, and `export/`. `day` also needs a style reference at
+`journey-art/style_reference.webp`, which is not in the repo (it's a
+third-party print, used only for mood and palette); get it from the maintainer.
+Needs `GEMINI_API_KEY` on a **paid** tier, since the free tier allows no
+image generation. Change the look in the script's shared `STYLE` prompt, not per
+country; country-specific direction goes in `--hint`. Where the exported images
+will live (bundled or hosted) and the app integration aren't decided yet.
 
 ## Globe Cache Generation
 

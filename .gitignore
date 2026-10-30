@@ -43,3 +43,6 @@ ios/Secrets.xcconfig
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Journey card art workspace: photos, style reference and attempts (scripts/journey_art.py)
+journey-art/
