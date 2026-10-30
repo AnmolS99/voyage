@@ -15,6 +15,9 @@ struct SettingsView: View {
         return "\(version) (\(build))"
     }
 
+    /// The policy the marketing site renders from `PRIVACY.md` (see web/README.md).
+    private static let privacyPolicyURL = URL(string: "https://voyage.anmol-singh.workers.dev/privacy")!
+
     private var thankYouMessage: String {
         switch tipJarManager.lastPurchasedProductId {
         case "com.anmol.voyage.tip.small":
@@ -172,6 +175,17 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Link(destination: Self.privacyPolicyURL) {
+                        HStack {
+                            Text("Privacy Policy")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+
                     HStack {
                         Text("Version")
                         Spacer()

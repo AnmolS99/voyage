@@ -1,5 +1,8 @@
 package com.anmol.voyage.ui.settings
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -21,7 +24,8 @@ import org.junit.Test
 
 /**
  * The Settings tab driven as a user would: the theme's segments, the texture
- * pickers through their menus, and the reset behind its dialog.
+ * pickers through their menus, the reset behind its dialog, and the privacy
+ * policy link.
  *
  * The two menus list the same styles, so every item is found by a tag scoped to
  * its picker — the thing most likely to go wrong here is picking from the map's
@@ -163,5 +167,22 @@ class SettingsScreenTest {
         choose(GLOBE_STYLE_TAG, GlobeStyle.Stylized)
 
         composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, GlobeStyle.Natural)).assertDoesNotExist()
+    }
+
+    @Test
+    fun thePrivacyPolicyRowOpensThePolicy() {
+        val opened = mutableListOf<String>()
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                opened += uri
+            }
+        }
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalUriHandler provides uriHandler) { SettingsScreen(state = state) }
+        }
+
+        composeTestRule.onNodeWithTag(PRIVACY_POLICY_TAG).performScrollTo().performClick()
+
+        assertEquals(listOf(PRIVACY_POLICY_URL), opened)
     }
 }
