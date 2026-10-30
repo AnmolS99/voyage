@@ -40,7 +40,7 @@ android {
         versionCode = providers.gradleProperty("voyage.versionCode").orNull?.toInt() ?: 2
         // Aligned with the iOS MARKETING_VERSION at release time (Phase 11);
         // pre-parity scaffold builds stay on 0.x.
-        versionName = "1.12.0"
+        versionName = "1.13.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
