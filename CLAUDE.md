@@ -17,7 +17,7 @@ voyage/
 │               # GlobeCacheGenerator/, fastlane/, Gemfile, Secrets.xcconfig
 ├── android/    # Android app: Kotlin/Compose Gradle project (app/, gradle/, tools/)
 ├── shared/
-│   ├── data/       # world.geojson, country_highlights.json, textures/ — consumed by BOTH apps
+│   ├── data/       # world.geojson, country_highlights.json, textures/, journey/ — consumed by BOTH apps
 │   ├── fixtures/   # expected_countries.json — parser contract for BOTH apps
 │   └── supabase/   # schemas/, migrations/, seed.sql
 ├── web/        # Marketing site + /privacy (rendered from PRIVACY.md), Cloudflare Workers — see web/README.md
@@ -467,30 +467,39 @@ regenerate `globe.scn` (see [Globe Cache Generation](#globe-cache-generation)).
 
 ## Journey Art
 
-Painted header art for the country sheet's 390×240 banner (the "Journey"
-design), one day (light mode) and one night (dark mode) image per country. It is
-made one country at a time from a real photo by `scripts/journey_art.py`, which
-has a Gemini image model repaint the photo as an expert painter's gouache/oil
-landscape: visible brushwork, deliberately not anime. The night version is
-generated from the chosen day version, not the photo, so both share one
-composition. The top-left stays calm sky and the night moon sits upper-right,
-because the flag and country name are laid over the top-left.
+Painted header art for the country sheet (the "Journey" design), one day (light
+mode) and one night (dark mode) image per country: iOS `CountryExploreView`
+(`JourneyHeader`) and Android `CountryDetailSheet` (`ui/country/JourneyHeader.kt`)
+show it full-bleed with the flag and name over its top-left, fading into the
+sheet at the bottom. A country without art keeps the plain header, so art can be
+added one country at a time. The images are `shared/data/journey/<ISO>_day.webp`
+and `<ISO>_night.webp` (1170×720, the 390×240 banner at 3×). iOS bundles the
+folder through a folder reference, and Android packages it with the rest of
+`shared/data/`, so dropping in a pair is all either app needs.
+
+The art is made from a real photo by `scripts/journey_art.py`, which has a Gemini
+image model repaint the photo as an expert painter's gouache/oil landscape:
+visible brushwork, deliberately not anime. The night version is generated from
+the chosen day version, not the photo, so both share one composition. The
+top-left stays calm sky and the night moon sits upper-right, because the flag
+and country name are laid over the top-left.
 
 ```bash
 python3 scripts/journey_art.py day JP ~/Photos/fuji.jpg -n 3   # day attempts from the photo
 python3 scripts/journey_art.py night JP 4                      # nights from day-4
-python3 scripts/journey_art.py export JP 4 3                   # day-4 + night-4-3 → 1170×720 WebP
+python3 scripts/journey_art.py export JP 4 3                   # day-4 + night-4-3 → shared/data/journey/
 ```
 
-Everything goes under the gitignored `journey-art/<ISO>/`: the photo, every
-attempt with the prompt that made it, an `index.html` that previews each one as
-the banner in both themes, and `export/`. `day` also needs a style reference at
-`journey-art/style_reference.webp`, which is not in the repo (it's a
-third-party print, used only for mood and palette); get it from the maintainer.
-Needs `GEMINI_API_KEY` on a **paid** tier, since the free tier allows no
-image generation. Change the look in the script's shared `STYLE` prompt, not per
-country; country-specific direction goes in `--hint`. Where the exported images
-will live (bundled or hosted) and the app integration aren't decided yet.
+Attempts go under the gitignored `journey-art/<ISO>/`: the photo, every attempt
+with the prompt that made it, and an `index.html` that previews each one as the
+banner in both themes. `day` also needs a style reference at
+`journey-art/style_reference.webp`, which is not in the repo (it's a third-party
+print, used only for mood and palette); get it from the maintainer. Needs
+`GEMINI_API_KEY` on a **paid** tier, since the free tier allows no image
+generation. Change the look in the script's shared `STYLE` prompt, not per
+country; country-specific direction goes in `--hint`. The banner's shape, the
+title's place and the fade are the same on both platforms, so changing one is a
+two-platform change.
 
 ## Globe Cache Generation
 
