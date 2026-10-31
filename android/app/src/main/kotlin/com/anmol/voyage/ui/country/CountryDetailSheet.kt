@@ -47,8 +47,10 @@ import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
 import com.anmol.voyage.data.CountryDetail
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.theme.DisplayCapitalsCentre
 import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.displayCapitalsCentre
 
 /**
  * Country details: flag, name, capital and continent, the visited/wishlist
@@ -207,23 +209,30 @@ private fun ChecklistSection(
     badgedItem: String? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // The icon centres on the title's capitals, not its line box, and the
+        // count sits on the title's baseline — as on iOS.
+        val titleSize = MaterialTheme.typography.titleMedium.fontSize
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier
+                    .size(20.dp)
+                    .alignBy { it.measuredHeight / 2 },
             )
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontFamily = LocalVoyageFonts.current.display,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .alignBy(DisplayCapitalsCentre)
+                    .displayCapitalsCentre(titleSize),
             )
             Text(
                 text = stringResource(
@@ -233,6 +242,11 @@ private fun ChecklistSection(
                 ),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
+                // The title's capitals' centre, measured from this text's own
+                // baseline, puts the two on one baseline.
+                modifier = Modifier
+                    .alignBy(DisplayCapitalsCentre)
+                    .displayCapitalsCentre(titleSize),
             )
         }
 

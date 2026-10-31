@@ -272,6 +272,7 @@ struct ChecklistSection: View {
                 Text(title)
                     .font(.voyageDisplay(20))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .centredOnDisplayCapitals()
             }
 
             VStack(spacing: 0) {
