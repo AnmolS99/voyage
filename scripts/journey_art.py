@@ -16,20 +16,27 @@ day N) with the prompt that made it beside it (`.txt`), an `index.html` that
 shows every attempt as the banner in both themes. Attempts are numbered on from
 what's there, so nothing is overwritten. `export` writes the picked pair to
 `shared/data/journey/<ISO>_day.webp` and `<ISO>_night.webp`, where both apps
-read them (iOS `CountryExploreView`, Android `CountryDetailSheet`).
+read them (iOS `CountryExploreView`, Android `CountryDetailSheet`), and names
+the place the painting shows in `places.json` beside them — the apps show it
+behind a small pin on the art.
 
 Usage:
   python3 scripts/journey_art.py day EG ~/Photos/giza.jpg [-n 3] [--hint "..."]
   python3 scripts/journey_art.py night EG 2 [-n 2] [--hint "..."]
-  python3 scripts/journey_art.py export EG 2 1        # day-2 + night-2-1
+  python3 scripts/journey_art.py export EG 2 1 --place "Pyramids of Giza"  # day-2 + night-2-1
+  python3 scripts/journey_art.py edit EG day-2 "add a felucca on the Nile" [-n 2]  # small change, same picture
+  python3 scripts/journey_art.py reframe EG 2 [1] [--scale 0.8]  # day-2 (+ night-2-1), lower in the frame
   python3 scripts/journey_art.py preview EG           # rebuild index.html only
 
   -n       attempts to make in parallel (default 2)
   --hint   extra direction for this country ("keep the three pyramids", ...)
+  --scale  reframe: how much of the frame the painting keeps (default 0.78)
+  --place  what the painting shows (export; needed the first time)
   --model  Gemini image model (default gemini-nano-banana-2.1;
            gemini-3-pro-image for the premium model)
 
-Needs GEMINI_API_KEY in the environment, and macOS `sips` plus `cwebp`.
+Needs GEMINI_API_KEY in the environment, and macOS `sips` plus `cwebp`;
+`reframe` also needs Pillow.
 """
 
 from __future__ import annotations
@@ -43,6 +50,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -52,6 +60,7 @@ ROOT = Path(__file__).resolve().parent.parent
 WORK = ROOT / "journey-art"
 APP_ART = ROOT / "shared" / "data" / "journey"
 STYLE_REFERENCE = WORK / "style_reference.webp"
+PLACES = APP_ART / "places.json"
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"
 DEFAULT_MODEL = "gemini-nano-banana-2.1"
@@ -63,6 +72,7 @@ EXPORT_SCALE = 3
 ASPECT_RATIO = "16:9"
 IMAGE_SIZE = "2K"
 MAX_UPLOAD_PX = 2048
+RETRIES = 3
 
 STYLE = """\
 Rendering style: a hand-painted landscape by an expert painter in gouache and \
@@ -77,10 +87,30 @@ drifting particles that fit the place (petals, leaves, dust or sand). No \
 photographic detail, no outlines around everything, no text, no lettering, no \
 watermark, no frame, no people in close-up."""
 
-COMPOSITION = """\
+# Where the banner's overlays sit, said once and given to every prompt: the flag
+# and name run from the left edge to about 3/4 across (a long name like "United
+# Kingdom" reaches that far) and the sheet's Done button sits top-right. Every
+# country so far had to be reframed or edited until its landmark, trees or moon
+# started about a third of the way down.
+SKY_BAND = """\
+The top third of the image, edge to edge, is open, calm sky: a country's flag \
+and name are laid across it from the left edge to about three-quarters of the \
+way across, and a round button sits in its top-right corner. Nothing reaches \
+into that band — no peak, tower, spire, roof, gable, tree canopy, moon or other \
+eye-catching shape; the tallest point of the scene starts about a third of the \
+way down. Keep the band soft and low in contrast so text reads over it."""
+
+COMPOSITION = f"""\
 Composition: a wide 16:9 landscape whose centre 13:8 crop must work on its own. \
-Keep the upper-left quarter calm, simple sky — a title is laid over it. Keep the \
-landmark recognisable and in the same place as in the photo."""
+{SKY_BAND} If the photo's landmark rises higher than that, set the whole scene \
+lower and smaller in the frame and paint more sky above it — never crop the \
+landmark. Keep it recognisable and in the same arrangement as in the photo."""
+
+# Night, edit and reframe each repaint the whole picture, and have dropped a
+# taxi and pigeons along the way.
+KEEP_EVERYTHING = """\
+Keep every element of the picture where it is — buildings, landmarks, trees, \
+vehicles, boats, people and animals — none removed, moved or resized."""
 
 DAY_PROMPT = f"""\
 Repaint the FIRST image (a real photo) as a daytime illustration. Keep its \
@@ -97,11 +127,47 @@ Light: bright, warm golden-hour daylight with a soft pastel sky.
 NIGHT_PROMPT = f"""\
 Turn this illustration into the same scene at night. Keep the composition, \
 every shape and the painting style exactly; change only the light: a deep \
-indigo-to-violet sky with stars and a soft moon placed in the upper RIGHT \
-part of the sky (never the upper-left quarter, where a title is laid over the \
-image), cool moonlit rim light on the landmark, and a few warm glowing \
-windows or lanterns where they would naturally be. Calm and dreamy, not dark and muddy — the landmark must stay \
-clearly readable.
+indigo-to-violet sky with faint stars, cool moonlit rim light on the landmark, \
+warm glowing windows, lamps and lanterns where they would naturally be, and \
+lit headlights on any vehicles. Calm and dreamy, not dark and muddy — the \
+landmark must stay clearly readable.
+
+The moon is a soft crescent, small, LOW in the sky: just above the skyline, \
+right of centre, about a third of the way down the image — never in the top \
+third.
+
+{KEEP_EVERYTHING}
+
+{SKY_BAND}
+
+{STYLE}"""
+
+
+EDIT_PROMPT = f"""\
+Keep this illustration exactly as it is — same composition, every shape, the \
+light and the painting style — and exactly the same framing: the output has the \
+same field of view as the input, edge for edge, with no zoom, crop or shift. Make only the change described below, painted in \
+the same brushwork so it looks as if it was always there; change nothing else.
+
+{KEEP_EVERYTHING} (Unless the change itself says otherwise.)
+
+{SKY_BAND}
+
+{STYLE}
+
+Change: {{change}}"""
+
+REFRAME_PAD_COLOR = "808080"
+
+REFRAME_PROMPT = f"""\
+This painting has been shrunk and set at the bottom of the frame; the flat grey \
+area above and beside it is empty canvas. Paint the grey area so the picture \
+continues seamlessly: mostly more of the same sky above, and the scenery at the \
+sides carried on naturally. Leave the existing painting itself exactly as it is \
+— every shape, colour and light — and match its brushwork, so no seam or border \
+shows. Paint nothing eye-catching in the new sky: no moon, sun or bold clouds.
+
+{KEEP_EVERYTHING}
 
 {STYLE}"""
 
@@ -156,11 +222,23 @@ def generate(model: str, prompt: str, image_parts: list[dict]) -> bytes:
         API_URL, data=json.dumps(body).encode(), method="POST",
         headers={"x-goog-api-key": key, "Content-Type": "application/json"},
     )
-    try:
-        with urllib.request.urlopen(request, timeout=300) as response:
-            payload = json.load(response)
-    except urllib.error.HTTPError as error:
-        die(f"{error.code} from Gemini: {error.read().decode(errors='replace')[:800]}")
+    # Gemini often answers one request of a parallel batch with a 504 deadline
+    # error; the same request a little later goes through.
+    for attempt in range(1, RETRIES + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=300) as response:
+                payload = json.load(response)
+            break
+        except urllib.error.HTTPError as error:
+            detail = f"{error.code} from Gemini: {error.read().decode(errors='replace')[:800]}"
+            if error.code < 500 or attempt == RETRIES:
+                die(detail)
+        except (TimeoutError, urllib.error.URLError) as error:
+            detail = f"no answer from Gemini: {error}"
+            if attempt == RETRIES:
+                die(detail)
+        print(f"  {detail.splitlines()[0][:120]} — retrying ({attempt}/{RETRIES - 1})")
+        time.sleep(10 * attempt)
     image = find_image(payload)
     if image is None:
         die(f"no image in the response: {json.dumps(payload)[:800]}")
@@ -214,12 +292,76 @@ def cmd_night(args) -> None:
     write_preview(args.iso)
 
 
-def export_banner(source: Path, out: Path) -> None:
-    """Centre-crop to 13:8, scale to the banner at EXPORT_SCALE, encode WebP."""
+def pixel_size(image: Path) -> tuple[int, int]:
     width, height = (int(v) for v in re.findall(
         r"pixel(?:Width|Height): (\d+)",
-        subprocess.run(["sips", "-g", "pixelWidth", "-g", "pixelHeight", str(source)],
+        subprocess.run(["sips", "-g", "pixelWidth", "-g", "pixelHeight", str(image)],
                        check=True, capture_output=True, text=True).stdout))
+    return width, height
+
+
+def shrink_to_bottom(source: Path, out: Path, scale: float) -> None:
+    """The painting scaled by `scale`, centred along the bottom edge of a grey frame its original size."""
+    from PIL import Image  # only reframe needs it: sips can pad, but not anchor the painting to the bottom
+
+    with Image.open(source) as painting:
+        painting = painting.convert("RGB")
+        width, height = painting.size
+        small = painting.resize((round(width * scale), round(height * scale)), Image.LANCZOS)
+    frame = Image.new("RGB", (width, height), f"#{REFRAME_PAD_COLOR}")
+    frame.paste(small, ((width - small.width) // 2, height - small.height))
+    frame.save(out)
+
+
+def cmd_reframe(args) -> None:
+    """Moves a chosen pair lower in the frame, painting in more sky above, for when the title covers the landmark.
+
+    Day and night are shrunk to the same place and filled in separately, so the
+    painting itself stays as picked and the two still line up. Written as a new
+    day-N and its night-N-1, ready for `export ISO N 1`. Without a night, only
+    the day is reframed, ready for `night ISO N`.
+    """
+    folder = country_dir(args.iso)
+    pairs = [(folder / f"day-{args.day}.png", "day-{n}")]
+    if args.night is not None:
+        pairs.append((folder / f"night-{args.day}-{args.night}.png", "night-{n}-1"))
+    for path, _ in pairs:
+        if not path.exists():
+            die(f"no {path.relative_to(ROOT)}")
+    n = next_index(folder, r"day-(\d+)\.png")
+    for source, out in ((source, folder / f"{name.format(n=n)}.png") for source, name in pairs):
+        canvas = folder / f"{out.stem}.canvas.png"
+        shrink_to_bottom(source, canvas, args.scale)
+        run_batch(args.model, REFRAME_PROMPT, [canvas], [out])
+        canvas.unlink()
+    write_preview(args.iso)
+
+
+def cmd_edit(args) -> None:
+    """A small change to one attempt, written as the next attempt in its series.
+
+    An edited day-N becomes a new day-M (so its nights are made from the edit);
+    an edited night-N-M becomes another night of day-N.
+    """
+    folder = country_dir(args.iso)
+    source = folder / f"{args.attempt}.png"
+    if not source.exists():
+        die(f"no {source.relative_to(ROOT)}")
+    if m := re.fullmatch(r"day-\d+", args.attempt):
+        first = next_index(folder, r"day-(\d+)\.png")
+        outputs = [folder / f"day-{i}.png" for i in range(first, first + args.n)]
+    elif m := re.fullmatch(r"night-(\d+)-\d+", args.attempt):
+        first = next_index(folder, rf"night-{m.group(1)}-(\d+)\.png")
+        outputs = [folder / f"night-{m.group(1)}-{i}.png" for i in range(first, first + args.n)]
+    else:
+        die(f"expected an attempt like day-3 or night-2-4, got {args.attempt!r}")
+    run_batch(args.model, EDIT_PROMPT.format(change=args.change), [source], outputs)
+    write_preview(args.iso)
+
+
+def export_banner(source: Path, out: Path) -> None:
+    """Centre-crop to 13:8, scale to the banner at EXPORT_SCALE, encode WebP."""
+    width, height = pixel_size(source)
     crop_w = min(width, round(height * BANNER_W / BANNER_H))
     crop_h = round(crop_w * BANNER_H / BANNER_W)
     png = WORK / f"{out.stem}.tmp.png"
@@ -240,7 +382,13 @@ def cmd_export(args) -> None:
     for path in (day, night):
         if not path.exists():
             die(f"no {path.relative_to(ROOT)}")
+    places = json.loads(PLACES.read_text()) if PLACES.exists() else {}
+    if args.place:
+        places[args.iso] = args.place.strip()
+    elif args.iso not in places:
+        die('name the place the painting shows: --place "..."')
     APP_ART.mkdir(exist_ok=True)
+    PLACES.write_text(json.dumps(dict(sorted(places.items())), indent=2, ensure_ascii=False) + "\n")
     export_banner(day, APP_ART / f"{args.iso}_day.webp")
     export_banner(night, APP_ART / f"{args.iso}_night.webp")
 
@@ -303,6 +451,17 @@ def main() -> None:
     export = add("export", cmd_export)
     export.add_argument("day", type=int)
     export.add_argument("night", type=int)
+    export.add_argument("--place")
+    edit = add("edit", cmd_edit)
+    edit.add_argument("attempt", help="day-N or night-N-M")
+    edit.add_argument("change")
+    edit.add_argument("-n", type=int, default=2)
+    edit.add_argument("--model", default=DEFAULT_MODEL)
+    reframe = add("reframe", cmd_reframe)
+    reframe.add_argument("day", type=int)
+    reframe.add_argument("night", type=int, nargs="?", help="omit to reframe the day alone")
+    reframe.add_argument("--scale", type=float, default=0.78)
+    reframe.add_argument("--model", default=DEFAULT_MODEL)
     add("preview", lambda args: write_preview(args.iso))
 
     args = parser.parse_args()

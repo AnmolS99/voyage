@@ -476,19 +476,33 @@ added one country at a time. The images are `shared/data/journey/<ISO>_day.webp`
 and `<ISO>_night.webp` (1170×720, the 390×240 banner at 3×). iOS bundles the
 folder through a folder reference, and Android packages it with the rest of
 `shared/data/`, so dropping in a pair is all either app needs.
+`shared/data/journey/places.json` names what each painting shows, keyed by ISO
+code; both headers show it behind a small pin in the art's bottom-right
+(`JourneyPlaceButton` on each, colors `journeyChip*` in both palettes), and
+`JourneyArtTest` (Android) and `testJourneyArtNamesItsPlace` (iOS) fail if a
+painting has no place.
 
 The art is made from a real photo by `scripts/journey_art.py`, which has a Gemini
 image model repaint the photo as an expert painter's gouache/oil landscape:
 visible brushwork, deliberately not anime. The night version is generated from
-the chosen day version, not the photo, so both share one composition. The
-top-left stays calm sky and the night moon sits upper-right, because the flag
-and country name are laid over the top-left.
+the chosen day version, not the photo, so both share one composition. The top
+third stays open sky edge to edge — a long name like "United Kingdom" runs
+three-quarters across, and the Done button sits top-right — so the scene starts
+a third of the way down and the night moon sits low above the skyline, right of
+centre. Every prompt shares that rule (`SKY_BAND`) and the instruction to keep
+every vehicle, person and animal (`KEEP_EVERYTHING`); change them there.
 
 ```bash
 python3 scripts/journey_art.py day JP ~/Photos/fuji.jpg -n 3   # day attempts from the photo
 python3 scripts/journey_art.py night JP 4                      # nights from day-4
-python3 scripts/journey_art.py export JP 4 3                   # day-4 + night-4-3 → shared/data/journey/
+python3 scripts/journey_art.py export JP 4 3 --place "Chureito Pagoda and Mount Fuji"  # → shared/data/journey/
+python3 scripts/journey_art.py reframe NO 2 4                  # pair lower in the frame, more sky above
 ```
+
+If the title covers the landmark, `reframe` shrinks the picked pair to the
+bottom of the frame (`--scale`, default 0.78) and has Gemini paint only the
+new sky around it, so the painting stays as picked and day and night still
+line up.
 
 Attempts go under the gitignored `journey-art/<ISO>/`: the photo, every attempt
 with the prompt that made it, and an `index.html` that previews each one as the
