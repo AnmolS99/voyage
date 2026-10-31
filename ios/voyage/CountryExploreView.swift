@@ -230,6 +230,9 @@ struct JourneyPlaceButton: View {
             .frame(minWidth: 26, minHeight: 26)
             .padding(.horizontal, isOpen ? 10 : 0)
             .background(Capsule().fill(AppColors.journeyChipBackground))
+            // The name fades out where it stood while the pill shrinks around
+            // it; without the clip it hangs outside the pill mid-animation.
+            .clipShape(Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
