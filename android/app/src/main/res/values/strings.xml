@@ -42,6 +42,7 @@
     <string name="country_attractions">Top Attractions</string>
     <string name="country_capital_badge">Capital city</string>
     <string name="country_checked_count">%1$d of %2$d</string>
+    <string name="journey_place">About this place</string>
     <string name="country_no_highlights">No highlights for this country yet.</string>
     <string name="country_toggle_visited">Visited: %1$s</string>
     <string name="country_toggle_wishlist">Wishlist: %1$s</string>

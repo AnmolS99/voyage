@@ -29,6 +29,13 @@ enum AppFonts {
         }
     }
 
+    /// Newsreader's cap height as a share of its line height — the same at any
+    /// size, so it holds for text scaled down to fit.
+    static let displayCapHeightOfLine: CGFloat = {
+        guard let font = UIFont(name: displayName(for: .medium), size: 100) else { return 0.67 }
+        return font.capHeight / font.lineHeight
+    }()
+
     /// Navigation-bar titles are display type, set once at launch.
     static func configureAppearance() {
         let appearance = UINavigationBar.appearance()
@@ -50,5 +57,16 @@ extension Font {
     /// Schibsted Grotesk — everything you tap or read that isn't a title.
     static func voyageText(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
         .custom(AppFonts.textName(for: weight), fixedSize: size)
+    }
+}
+
+extension View {
+    /// Centres this Newsreader text in an `HStack` on the middle of its
+    /// capitals rather than its line box, whose room below the baseline
+    /// otherwise lifts it above a flag beside it — Android `DisplayCapitalsCentre`.
+    func centredOnDisplayCapitals() -> some View {
+        alignmentGuide(VerticalAlignment.center) { d in
+            d[.firstTextBaseline] - d.height * AppFonts.displayCapHeightOfLine / 2
+        }
     }
 }

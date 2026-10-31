@@ -17,7 +17,9 @@ object SharedFiles {
             .firstOrNull { File(it, "shared/data/world.geojson").isFile }
             ?: error("shared/data not found above ${File("").absolutePath}")
 
-    fun open(path: String): InputStream = File(repoRoot, path).inputStream()
+    fun file(path: String): File = File(repoRoot, path)
+
+    fun open(path: String): InputStream = file(path).inputStream()
 
     /** `world.geojson`, parsed — what the build writes into the app's `countries.bin`. */
     fun parseCountries(): List<GeoJsonCountry> = GeoJsonParser.parse(open("shared/data/world.geojson"))

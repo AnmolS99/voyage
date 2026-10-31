@@ -67,6 +67,7 @@ fun CountryDetailSheet(
     val sheetState = rememberModalBottomSheetState()
     val isDark = state.themeMode.isDark(isSystemInDarkTheme())
     val art = rememberJourneyArt(detail.isoCode, isDark)
+    val place = rememberJourneyPlace(detail.isoCode)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -89,6 +90,7 @@ fun CountryDetailSheet(
                         art = art,
                         flag = detail.flag,
                         countryName = detail.name,
+                        place = place,
                         isDark = isDark,
                     )
                     BottomSheetDefaults.DragHandle(modifier = Modifier.align(Alignment.TopCenter))

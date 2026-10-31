@@ -75,7 +75,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -104,8 +107,10 @@ import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.FlagText
 import com.anmol.voyage.ui.map.StatusButtonColors
 import com.anmol.voyage.ui.map.StatusButtons
+import com.anmol.voyage.ui.theme.DisplayCapitalsCentre
 import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.displayCapitalsCentre
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
@@ -611,18 +616,24 @@ private fun CountryHeader(
         val shownInfo = countryNamed(name)
         Row(
             modifier = Modifier.semantics(mergeDescendants = true) { },
-            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(9.dp),
         ) {
             if (shownInfo != null) {
-                FlagText(flag = FlagEmoji.of(shownInfo), country = name, fontSize = 24.sp)
+                FlagText(
+                    flag = FlagEmoji.of(shownInfo),
+                    country = name,
+                    fontSize = 24.sp,
+                    modifier = Modifier.alignBy { it.measuredHeight / 2 },
+                )
             }
             // Not filled: the layout reports only the width it needs, and a
             // filled slot would center it rather than keep it by the flag.
             NameAndCapital(
                 name = name,
                 capital = shownInfo?.capital?.name,
-                modifier = Modifier.weight(1f, fill = false),
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .alignBy(DisplayCapitalsCentre),
             )
         }
     }
@@ -658,7 +669,9 @@ private fun NameAndCapital(name: String, capital: String?, modifier: Modifier = 
                 autoSize = TextAutoSize.StepBased(minFontSize = NAME_SIZE * 0.5f, maxFontSize = NAME_SIZE),
                 // Announced as it changes: a country selected from the search
                 // sheet is otherwise chosen in silence.
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                modifier = Modifier
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .displayCapitalsCentre(NAME_SIZE),
             )
             if (capital != null) {
                 Text(text = capital, style = capitalStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -679,18 +692,24 @@ private fun NameAndCapital(name: String, capital: String?, modifier: Modifier = 
 
         if (capitalMeasurable == null) {
             val namePlaced = nameMeasurable.measure(upTo(nameIdeal))
-            return@Layout layout(namePlaced.width, namePlaced.height) { namePlaced.place(0, 0) }
+            return@Layout layout(namePlaced.width, namePlaced.height, capitalsAt(namePlaced, 0)) {
+                namePlaced.place(0, 0)
+            }
         }
 
         val capitalIdeal = capitalMeasurable.maxIntrinsicWidth(Constraints.Infinity)
         if (nameIdeal + spacing + capitalIdeal <= width) {
-            // One line, centered on each other.
+            // One line, on a shared baseline: the two fonts' line boxes differ,
+            // so centring the boxes would leave the capital sitting low — as on iOS.
             val namePlaced = nameMeasurable.measure(upTo(nameIdeal))
             val capitalPlaced = capitalMeasurable.measure(upTo(capitalIdeal))
-            val height = max(namePlaced.height, capitalPlaced.height)
-            layout(namePlaced.width + spacing + capitalPlaced.width, height) {
-                namePlaced.place(0, (height - namePlaced.height) / 2)
-                capitalPlaced.place(namePlaced.width + spacing, (height - capitalPlaced.height) / 2)
+            val baseline = max(namePlaced[FirstBaseline], capitalPlaced[FirstBaseline])
+            val nameY = baseline - namePlaced[FirstBaseline]
+            val capitalY = baseline - capitalPlaced[FirstBaseline]
+            val height = max(nameY + namePlaced.height, capitalY + capitalPlaced.height)
+            layout(namePlaced.width + spacing + capitalPlaced.width, height, capitalsAt(namePlaced, nameY)) {
+                namePlaced.place(0, nameY)
+                capitalPlaced.place(namePlaced.width + spacing, capitalY)
             }
         } else {
             val namePlaced = nameMeasurable.measure(upTo(nameIdeal))
@@ -698,6 +717,7 @@ private fun NameAndCapital(name: String, capital: String?, modifier: Modifier = 
             layout(
                 max(namePlaced.width, capitalPlaced.width),
                 namePlaced.height + lineSpacing + capitalPlaced.height,
+                capitalsAt(namePlaced, 0),
             ) {
                 namePlaced.place(0, 0)
                 capitalPlaced.place(0, namePlaced.height + lineSpacing)
@@ -707,6 +727,10 @@ private fun NameAndCapital(name: String, capital: String?, modifier: Modifier = 
 }
 
 private val NAME_SIZE = 18.sp
+
+/** The name's [DisplayCapitalsCentre], placed at [nameY], so the flag lines up with the name. */
+private fun capitalsAt(name: Placeable, nameY: Int): Map<AlignmentLine, Int> =
+    mapOf(DisplayCapitalsCentre to nameY + name[DisplayCapitalsCentre])
 
 /** The card's ✕: a subtle circle with a red glyph. */
 @Composable

@@ -236,6 +236,17 @@ object VoyagePalette {
 
     // endregion
 
+    // region Journey art
+
+    /**
+     * The place button over the Journey art: a faint dark glass that reads on
+     * both the day and the night painting without drawing the eye.
+     */
+    val journeyChipBackground = Color(0x52000000)
+    val journeyChipContent = Color(0xEBFFFFFF)
+
+    // endregion
+
     // region Dark-mode helpers (mirror the iOS helper functions)
 
     fun textPrimary(isDark: Boolean): Color = if (isDark) Color.White else textPrimaryLight
