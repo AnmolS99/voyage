@@ -5,10 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
@@ -72,7 +77,12 @@ fun CountryDetailSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = modifier,
+        // Fully open, the sheet stops below the status bar with the globe showing
+        // above it, as iOS's sheet does, instead of running to the screen's top
+        // and padding its own content down with a bare band. The content keeps
+        // only the side insets: the column below pads for the navigation bar.
+        modifier = modifier.statusBarsPadding(),
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) },
         // With art, the handle is drawn over it so the art reaches the sheet's top.
         dragHandle = if (art == null) ({ BottomSheetDefaults.DragHandle() }) else null,
     ) {
