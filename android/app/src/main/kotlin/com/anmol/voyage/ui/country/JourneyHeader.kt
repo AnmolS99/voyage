@@ -262,5 +262,9 @@ private fun JourneyPlaceButton(place: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** Close to iOS `JourneyPlaceButton`'s spring(response: 0.35, dampingFraction: 0.85). */
-private fun <T> placeSpring() = spring<T>(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)
+/**
+ * The pin's spring: iOS `JourneyPlaceButton`'s pace, without its slight bounce.
+ * A bouncing spring swings the closing padding and text width past zero, which
+ * Compose rejects ("Padding must be non-negative").
+ */
+private fun <T> placeSpring() = spring<T>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
