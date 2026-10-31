@@ -3,11 +3,13 @@ package com.anmol.voyage.ui.country
 import android.content.res.AssetManager
 import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -219,17 +221,20 @@ private val TITLE_SIZE = 40.sp
 private fun JourneyPlaceButton(place: String, modifier: Modifier = Modifier) {
     var isOpen by rememberSaveable { mutableStateOf(false) }
     val label = stringResource(R.string.journey_place)
+    // One spring for the padding and the text, so the pill grows and shrinks in
+    // a single motion — iOS animates all of it with one withAnimation. Fading the
+    // text out before shrinking left the pill wide and empty for a moment.
+    val padding by animateDpAsState(if (isOpen) 10.dp else 0.dp, placeSpring(), label = "place padding")
     Row(
         modifier = modifier
             .clip(CircleShape)
             .background(VoyagePalette.journeyChipBackground)
             .clickable(role = Role.Button, onClickLabel = label) { isOpen = !isOpen }
             .semantics { stateDescription = place }
-            .animateContentSize(spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow))
             .defaultMinSize(minWidth = 26.dp, minHeight = 26.dp)
-            .padding(horizontal = if (isOpen) 10.dp else 0.dp),
+            .padding(horizontal = padding),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.Center,
     ) {
         Icon(
             imageVector = Icons.Rounded.Place,
@@ -237,7 +242,11 @@ private fun JourneyPlaceButton(place: String, modifier: Modifier = Modifier) {
             tint = VoyagePalette.journeyChipContent,
             modifier = Modifier.size(13.dp),
         )
-        AnimatedVisibility(visible = isOpen, enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(
+            visible = isOpen,
+            enter = fadeIn(placeSpring()) + expandHorizontally(placeSpring(), expandFrom = Alignment.Start),
+            exit = fadeOut(placeSpring()) + shrinkHorizontally(placeSpring(), shrinkTowards = Alignment.Start),
+        ) {
             Text(
                 text = place,
                 fontFamily = LocalVoyageFonts.current.text,
@@ -246,7 +255,12 @@ private fun JourneyPlaceButton(place: String, modifier: Modifier = Modifier) {
                 color = VoyagePalette.journeyChipContent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                // The gap to the pin, inside the text so it shrinks away with it.
+                modifier = Modifier.padding(start = 5.dp),
             )
         }
     }
 }
+
+/** Close to iOS `JourneyPlaceButton`'s spring(response: 0.35, dampingFraction: 0.85). */
+private fun <T> placeSpring() = spring<T>(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)
