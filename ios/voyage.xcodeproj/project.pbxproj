@@ -53,6 +53,7 @@
 		E81234560034 /* CountryExploreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550034 /* CountryExploreView.swift */; };
 		E81234560035 /* country_highlights.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550035 /* country_highlights.json */; };
 		E81234560105 /* country_aliases.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550105 /* country_aliases.json */; };
+		E81234560108 /* journey in Resources */ = {isa = PBXBuildFile; fileRef = E81234550108 /* journey */; };
 		E81234560090 /* earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550090 /* earth_texture.jpg */; };
 		E81234560091 /* natural_earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550091 /* natural_earth_texture.jpg */; };
 		E81234560092 /* stylized_earth_texture.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E81234550092 /* stylized_earth_texture.jpg */; };
@@ -147,6 +148,7 @@
 		E81234550034 /* CountryExploreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryExploreView.swift; sourceTree = "<group>"; };
 		E81234550035 /* country_highlights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = country_highlights.json; path = "../../shared/data/country_highlights.json"; sourceTree = "<group>"; };
 		E81234550105 /* country_aliases.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = country_aliases.json; path = "../../shared/data/country_aliases.json"; sourceTree = "<group>"; };
+		E81234550108 /* journey */ = {isa = PBXFileReference; lastKnownFileType = folder; name = journey; path = "../../shared/data/journey"; sourceTree = "<group>"; };
 		E81234550090 /* earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = earth_texture.jpg; path = "../../shared/data/textures/earth_texture.jpg"; sourceTree = "<group>"; };
 		E81234550091 /* natural_earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = natural_earth_texture.jpg; path = "../../shared/data/textures/natural_earth_texture.jpg"; sourceTree = "<group>"; };
 		E81234550092 /* stylized_earth_texture.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = stylized_earth_texture.jpg; path = "../../shared/data/textures/stylized_earth_texture.jpg"; sourceTree = "<group>"; };
@@ -255,6 +257,7 @@
 				E81234550010 /* world.geojson */,
 				E81234550035 /* country_highlights.json */,
 				E81234550105 /* country_aliases.json */,
+				E81234550108 /* journey */,
 				E81234550090 /* earth_texture.jpg */,
 				E81234550091 /* natural_earth_texture.jpg */,
 				E81234550092 /* stylized_earth_texture.jpg */,
@@ -448,6 +451,7 @@
 				E81234560027 /* TipJar.storekit in Resources */,
 				E81234560035 /* country_highlights.json in Resources */,
 				E81234560105 /* country_aliases.json in Resources */,
+				E81234560108 /* journey in Resources */,
 				E81234560090 /* earth_texture.jpg in Resources */,
 				E81234560091 /* natural_earth_texture.jpg in Resources */,
 				E81234560092 /* stylized_earth_texture.jpg in Resources */,
@@ -712,7 +716,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.12.0;
+				MARKETING_VERSION = 1.13.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.anmol.voyage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -745,7 +749,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.12.0;
+				MARKETING_VERSION = 1.13.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.anmol.voyage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

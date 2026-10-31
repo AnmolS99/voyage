@@ -13,8 +13,10 @@ themes doesn't move the scene.
 Everything it writes goes under `journey-art/<ISO>/` (gitignored): the photo
 (`source.jpg`), each attempt (`day-N.png`, `night-N-M.png` — night M made from
 day N) with the prompt that made it beside it (`.txt`), an `index.html` that
-shows every attempt as the banner in both themes, and `export/` for the picked
-pair. Attempts are numbered on from what's there, so nothing is overwritten.
+shows every attempt as the banner in both themes. Attempts are numbered on from
+what's there, so nothing is overwritten. `export` writes the picked pair to
+`shared/data/journey/<ISO>_day.webp` and `<ISO>_night.webp`, where both apps
+read them (iOS `CountryExploreView`, Android `CountryDetailSheet`).
 
 Usage:
   python3 scripts/journey_art.py day EG ~/Photos/giza.jpg [-n 3] [--hint "..."]
@@ -48,6 +50,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WORK = ROOT / "journey-art"
+APP_ART = ROOT / "shared" / "data" / "journey"
 STYLE_REFERENCE = WORK / "style_reference.webp"
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"
@@ -219,7 +222,7 @@ def export_banner(source: Path, out: Path) -> None:
                        check=True, capture_output=True, text=True).stdout))
     crop_w = min(width, round(height * BANNER_W / BANNER_H))
     crop_h = round(crop_w * BANNER_H / BANNER_W)
-    png = out.with_suffix(".png")
+    png = WORK / f"{out.stem}.tmp.png"
     # Two passes: sips applies -z before --cropToHeightWidth within one call.
     subprocess.run(["sips", "--cropToHeightWidth", str(crop_h), str(crop_w), str(source), "--out", str(png)],
                    check=True, capture_output=True)
@@ -237,10 +240,9 @@ def cmd_export(args) -> None:
     for path in (day, night):
         if not path.exists():
             die(f"no {path.relative_to(ROOT)}")
-    export = folder / "export"
-    export.mkdir(exist_ok=True)
-    export_banner(day, export / "day.webp")
-    export_banner(night, export / "night.webp")
+    APP_ART.mkdir(exist_ok=True)
+    export_banner(day, APP_ART / f"{args.iso}_day.webp")
+    export_banner(night, APP_ART / f"{args.iso}_night.webp")
 
 
 def write_preview(iso: str) -> None:

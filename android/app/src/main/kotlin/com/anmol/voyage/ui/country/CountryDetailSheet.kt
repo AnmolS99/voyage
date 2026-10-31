@@ -1,6 +1,8 @@
 package com.anmol.voyage.ui.country
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.LocationCity
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,57 +65,79 @@ fun CountryDetailSheet(
     // evaluated at the call site, so an experimental one would force every
     // caller to opt in too.
     val sheetState = rememberModalBottomSheetState()
+    val isDark = state.themeMode.isDark(isSystemInDarkTheme())
+    val art = rememberJourneyArt(detail.isoCode, isDark)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
+        // With art, the handle is drawn over it so the art reaches the sheet's top.
+        dragHandle = if (art == null) ({ BottomSheetDefaults.DragHandle() }) else null,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp)
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Header(detail)
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                VisitedChip(state = state, country = detail.name)
-                WishlistChip(state = state, country = detail.name)
+            if (art != null) {
+                Box {
+                    JourneyHeader(
+                        art = art,
+                        flag = detail.flag,
+                        countryName = detail.name,
+                        isDark = isDark,
+                    )
+                    BottomSheetDefaults.DragHandle(modifier = Modifier.align(Alignment.TopCenter))
+                }
             }
 
-            if (detail.cities.isNotEmpty()) {
-                ChecklistSection(
-                    title = stringResource(R.string.country_cities),
-                    icon = Icons.Rounded.LocationCity,
-                    items = detail.cities,
-                    isChecked = { state.isCityChecked(it, detail.name) },
-                    onToggle = { state.toggleCheckedCity(it, detail.name) },
-                    // iOS badges the capital in the cities list; the two lists are
-                    // built independently, so it is not always the first entry.
-                    badgedItem = detail.capital,
-                )
-            }
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                // With art, the name and flag sit on it, and the capital is badged in
+                // the cities list — as on iOS.
+                if (art == null) Header(detail)
 
-            if (detail.attractions.isNotEmpty()) {
-                ChecklistSection(
-                    title = stringResource(R.string.country_attractions),
-                    icon = Icons.Rounded.Star,
-                    items = detail.attractions,
-                    isChecked = { state.isAttractionChecked(it, detail.name) },
-                    onToggle = { state.toggleCheckedAttraction(it, detail.name) },
-                )
-            }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    VisitedChip(state = state, country = detail.name)
+                    WishlistChip(state = state, country = detail.name)
+                }
 
-            if (!detail.hasHighlights) {
-                Text(
-                    text = stringResource(R.string.country_no_highlights),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (detail.cities.isNotEmpty()) {
+                    ChecklistSection(
+                        title = stringResource(R.string.country_cities),
+                        icon = Icons.Rounded.LocationCity,
+                        items = detail.cities,
+                        isChecked = { state.isCityChecked(it, detail.name) },
+                        onToggle = { state.toggleCheckedCity(it, detail.name) },
+                        // iOS badges the capital in the cities list; the two lists are
+                        // built independently, so it is not always the first entry.
+                        badgedItem = detail.capital,
+                    )
+                }
+
+                if (detail.attractions.isNotEmpty()) {
+                    ChecklistSection(
+                        title = stringResource(R.string.country_attractions),
+                        icon = Icons.Rounded.Star,
+                        items = detail.attractions,
+                        isChecked = { state.isAttractionChecked(it, detail.name) },
+                        onToggle = { state.toggleCheckedAttraction(it, detail.name) },
+                    )
+                }
+
+                if (!detail.hasHighlights) {
+                    Text(
+                        text = stringResource(R.string.country_no_highlights),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
