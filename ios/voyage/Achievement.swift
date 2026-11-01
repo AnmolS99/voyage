@@ -181,10 +181,11 @@ enum AchievementCatalog {
             thresholds: continentalDrifterThresholds
         ))
 
-        // Continent achievements
+        // Continent achievements — UN states only, the pool each challenge
+        // region plays
         for continent in Continent.allCases where continent != .antarctica {
-            let countries = continent.countries
-            let visitedInContinent = ContinentData.visitedCountries(in: continent, from: visited)
+            let countries = continent.unCountries
+            let visitedInContinent = visited.intersection(countries)
             let visitedSorted = Array(visitedInContinent).sorted()
             let remainingSorted = Array(countries.subtracting(visitedInContinent)).sorted()
 

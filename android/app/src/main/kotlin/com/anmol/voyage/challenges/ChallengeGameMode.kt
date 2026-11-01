@@ -3,7 +3,6 @@ package com.anmol.voyage.challenges
 import com.anmol.voyage.data.Continent
 import com.anmol.voyage.data.ContinentIndex
 import com.anmol.voyage.data.LatLon
-import com.anmol.voyage.data.UnMembership
 import java.util.Locale
 
 /**
@@ -68,15 +67,15 @@ enum class ChallengeRegion(
     val emoji: String get() = continent?.medal ?: "🌍"
 
     /**
-     * UN states in this region, alphabetical — counted the way the app counts
-     * progress, so territories and Antarctica are never targets.
+     * UN states in this region, alphabetical — the same pool as the continent's
+     * Explorer medal, so territories and Antarctica are never targets.
      */
     fun countries(continents: ContinentIndex): List<String> {
-        val pool = continent?.let { continents.countries(of = it) }
+        val pool = continent?.let { continents.unCountries(of = it) }
             ?: Continent.entries
                 .filter { it != Continent.ANTARCTICA }
-                .flatMapTo(HashSet()) { continents.countries(of = it) }
-        return UnMembership.membersOf(pool).sorted()
+                .flatMapTo(HashSet()) { continents.unCountries(of = it) }
+        return pool.sorted()
     }
 
     companion object {

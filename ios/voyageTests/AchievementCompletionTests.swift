@@ -480,12 +480,12 @@ final class AchievementCompletionTests: XCTestCase {
             "Capital Collector": [25, 100, 195],
             "Wonders of the World": [2, 5, 8],
             "Continental Drifter": [2, 4, 7],
-            "Explorer of Africa": [10, 30, 55],
-            "Explorer of Asia": [10, 25, 50],
-            "Explorer of Europe": [10, 25, 45],
-            "Explorer of North America": [5, 15, 26],
-            "Explorer of South America": [3, 8, 14],
-            "Explorer of Oceania": [3, 8, 15],
+            "Explorer of Africa": [10, 30, 54],
+            "Explorer of Asia": [10, 25, 49],
+            "Explorer of Europe": [10, 25, 43],
+            "Explorer of North America": [5, 15, 23],
+            "Explorer of South America": [3, 8, 12],
+            "Explorer of Oceania": [3, 8, 14],
         ]
         let achievements = AchievementCatalog.achievements(visited: [], checkedCities: [:], checkedAttractions: [:])
         XCTAssertEqual(Set(achievements.map(\.name)), Set(expected.keys))
@@ -503,7 +503,7 @@ final class AchievementCompletionTests: XCTestCase {
     }
 
     func testExplorerTiersFollowTheirLimits() {
-        let oceania = Array(Continent.oceania.countries).sorted()
+        let oceania = Array(Continent.oceania.unCountries).sorted()
         func tier(visiting count: Int) -> MedalTier? {
             AchievementCatalog.achievements(
                 visited: Set(oceania.prefix(count)), checkedCities: [:], checkedAttractions: [:]
@@ -513,7 +513,28 @@ final class AchievementCompletionTests: XCTestCase {
         XCTAssertEqual(tier(visiting: 3), .bronze)
         XCTAssertEqual(tier(visiting: 7), .bronze)
         XCTAssertEqual(tier(visiting: 8), .silver)
-        XCTAssertEqual(tier(visiting: 14), .silver)
+        XCTAssertEqual(tier(visiting: 13), .silver)
         XCTAssertEqual(tier(visiting: oceania.count), .gold)
+    }
+
+    /// Greenland is in North America but is not a UN state, so neither the
+    /// medal nor the North America challenge counts it — as on Android.
+    func testExplorerCountsUNStatesOnly() {
+        let explorer = AchievementCatalog.achievements(
+            visited: ["Greenland"], checkedCities: [:], checkedAttractions: [:]
+        ).first { $0.name == "Explorer of North America" }
+        XCTAssertEqual(explorer?.current, 0)
+        XCTAssertEqual(explorer?.remainingCountries.contains("Greenland"), false)
+    }
+
+    /// Issue #119: Medals read 0/55 for Africa while Challenges listed 54.
+    func testExplorerCountsWhatItsChallengeRegionPlays() {
+        let achievements = AchievementCatalog.achievements(visited: [], checkedCities: [:], checkedAttractions: [:])
+        for region in ChallengeRegion.allCases {
+            guard let continent = region.continent else { continue }
+            let explorer = achievements.first { $0.name == "Explorer of \(continent.rawValue)" }
+            XCTAssertEqual(explorer?.remainingCountries, region.countries, continent.rawValue)
+        }
+        XCTAssertEqual(achievements.first { $0.name == "Explorer of Africa" }?.total, 54)
     }
 }

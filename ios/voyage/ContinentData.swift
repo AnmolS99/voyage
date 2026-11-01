@@ -25,6 +25,13 @@ enum Continent: String, CaseIterable {
         Set(ContinentData.countriesByContinent[self] ?? [])
     }
 
+    /// The UN states on this continent — what its Explorer medal and its
+    /// challenge region both count, so the two never disagree (Android
+    /// `ContinentIndex.unCountries`).
+    var unCountries: Set<String> {
+        countries.subtracting(GlobeState.nonUNTerritories)
+    }
+
     /// Initialize from raw string value (e.g., from GeoJSON)
     init?(rawContinent: String) {
         switch rawContinent {
