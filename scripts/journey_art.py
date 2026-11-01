@@ -35,8 +35,9 @@ Usage:
   --model  Gemini image model (default gemini-nano-banana-2.1;
            gemini-3-pro-image for the premium model)
 
-Needs GEMINI_API_KEY in the environment, and macOS `sips` plus `cwebp`;
-`reframe` also needs Pillow.
+Needs GEMINI_API_KEY in the environment and Pillow (`pip install pillow`),
+so it runs on macOS and Linux alike — a cloud session included. iPhone HEIC
+photos also need `pip install pillow-heif`.
 """
 
 from __future__ import annotations
@@ -47,14 +48,23 @@ import html
 import json
 import os
 import re
-import shutil
-import subprocess
+import io
 import sys
 import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+try:
+    from PIL import Image, ImageOps
+except ImportError:
+    sys.exit("journey_art: needs Pillow (pip install pillow)")
+try:
+    from pillow_heif import register_heif_opener  # iPhone photos are HEIC
+    register_heif_opener()
+except ImportError:
+    pass
 
 ROOT = Path(__file__).resolve().parent.parent
 WORK = ROOT / "journey-art"
@@ -187,13 +197,19 @@ def next_index(folder: Path, pattern: str) -> int:
     return max(taken, default=0) + 1
 
 
+def open_rgb(path: Path) -> Image.Image:
+    """The image upright (camera EXIF rotation applied) and in RGB, ready to save as JPEG."""
+    with Image.open(path) as image:
+        return ImageOps.exif_transpose(image).convert("RGB")
+
+
 def image_part(path: Path) -> dict:
     """An inline image, downscaled to MAX_UPLOAD_PX and re-encoded as JPEG."""
-    tmp = path.with_suffix(".upload.jpg")
-    subprocess.run(["sips", "-Z", str(MAX_UPLOAD_PX), "-s", "format", "jpeg", str(path), "--out", str(tmp)],
-                   check=True, capture_output=True)
-    data = base64.b64encode(tmp.read_bytes()).decode()
-    tmp.unlink()
+    image = open_rgb(path)
+    image.thumbnail((MAX_UPLOAD_PX, MAX_UPLOAD_PX), Image.LANCZOS)
+    buffer = io.BytesIO()
+    image.save(buffer, "JPEG", quality=90)
+    data = base64.b64encode(buffer.getvalue()).decode()
     return {"type": "image", "mime_type": "image/jpeg", "data": data}
 
 
@@ -246,7 +262,7 @@ def generate(model: str, prompt: str, image_parts: list[dict]) -> bytes:
 
 
 def run_batch(model: str, prompt: str, images: list[Path], outputs: list[Path]) -> None:
-    # Encoded once, before the parallel attempts: they would race on image_part's temp file.
+    # Encoded once, not per parallel attempt.
     image_parts = [image_part(p) for p in images]
 
     def one(out: Path) -> None:
@@ -271,8 +287,7 @@ def cmd_day(args) -> None:
     if args.photo:
         if not Path(args.photo).expanduser().is_file():
             die(f"no such photo: {args.photo}")
-        subprocess.run(["sips", "-s", "format", "jpeg", str(Path(args.photo).expanduser()), "--out", str(source)],
-                       check=True, capture_output=True)
+        open_rgb(Path(args.photo).expanduser()).save(source, "JPEG", quality=95)
     elif not source.exists():
         die(f"no photo yet for {args.iso}: pass one")
     first = next_index(folder, r"day-(\d+)\.png")
@@ -292,22 +307,11 @@ def cmd_night(args) -> None:
     write_preview(args.iso)
 
 
-def pixel_size(image: Path) -> tuple[int, int]:
-    width, height = (int(v) for v in re.findall(
-        r"pixel(?:Width|Height): (\d+)",
-        subprocess.run(["sips", "-g", "pixelWidth", "-g", "pixelHeight", str(image)],
-                       check=True, capture_output=True, text=True).stdout))
-    return width, height
-
-
 def shrink_to_bottom(source: Path, out: Path, scale: float) -> None:
     """The painting scaled by `scale`, centred along the bottom edge of a grey frame its original size."""
-    from PIL import Image  # only reframe needs it: sips can pad, but not anchor the painting to the bottom
-
-    with Image.open(source) as painting:
-        painting = painting.convert("RGB")
-        width, height = painting.size
-        small = painting.resize((round(width * scale), round(height * scale)), Image.LANCZOS)
+    painting = open_rgb(source)
+    width, height = painting.size
+    small = painting.resize((round(width * scale), round(height * scale)), Image.LANCZOS)
     frame = Image.new("RGB", (width, height), f"#{REFRAME_PAD_COLOR}")
     frame.paste(small, ((width - small.width) // 2, height - small.height))
     frame.save(out)
@@ -361,17 +365,14 @@ def cmd_edit(args) -> None:
 
 def export_banner(source: Path, out: Path) -> None:
     """Centre-crop to 13:8, scale to the banner at EXPORT_SCALE, encode WebP."""
-    width, height = pixel_size(source)
+    image = open_rgb(source)
+    width, height = image.size
     crop_w = min(width, round(height * BANNER_W / BANNER_H))
     crop_h = round(crop_w * BANNER_H / BANNER_W)
-    png = WORK / f"{out.stem}.tmp.png"
-    # Two passes: sips applies -z before --cropToHeightWidth within one call.
-    subprocess.run(["sips", "--cropToHeightWidth", str(crop_h), str(crop_w), str(source), "--out", str(png)],
-                   check=True, capture_output=True)
-    subprocess.run(["sips", "-z", str(BANNER_H * EXPORT_SCALE), str(BANNER_W * EXPORT_SCALE), str(png)],
-                   check=True, capture_output=True)
-    subprocess.run(["cwebp", "-quiet", "-q", "82", str(png), "-o", str(out)], check=True)
-    png.unlink()
+    left, top = (width - crop_w) // 2, (height - crop_h) // 2
+    banner = image.resize((BANNER_W * EXPORT_SCALE, BANNER_H * EXPORT_SCALE), Image.LANCZOS,
+                          box=(left, top, left + crop_w, top + crop_h))
+    banner.save(out, "WEBP", quality=82, method=4)
     print(f"  wrote {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB)")
 
 
@@ -465,8 +466,8 @@ def main() -> None:
     add("preview", lambda args: write_preview(args.iso))
 
     args = parser.parse_args()
-    if shutil.which("cwebp") is None and args.command == "export":
-        die("cwebp not found (brew install webp)")
+    if args.command == "export" and not Image.registered_extensions().get(".webp"):
+        die("this Pillow was built without WebP support")
     args.handler(args)
 
 
