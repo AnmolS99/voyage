@@ -59,6 +59,7 @@ private class RawProperties(
     val capital: String? = null,
     val capitalLat: Double? = null,
     val capitalLon: Double? = null,
+    val otherCapitals: List<Capital> = emptyList(),
     val renderAs: String? = null,
 )
 
@@ -89,6 +90,7 @@ private fun RawFeature.toCountry(): GeoJsonCountry? {
             isoCode = id,
             continent = properties.continent,
             capital = capital,
+            otherCapitals = properties.otherCapitals,
             polygons = emptyList(),
             holes = emptyList(),
             isPointCountry = true,
@@ -103,6 +105,7 @@ private fun RawFeature.toCountry(): GeoJsonCountry? {
                 isoCode = id,
                 continent = properties.continent,
                 capital = capital,
+                otherCapitals = properties.otherCapitals,
                 polygons = polygons,
                 holes = geometry.polygons.flatMap { it.drop(1) },
                 isPointCountry = properties.renderAs == "point",

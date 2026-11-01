@@ -76,8 +76,12 @@ struct ChallengeResultView: View {
 
             // Details
             VStack(spacing: 8) {
-                if let capital = country.capital {
-                    detailRow(icon: "building.columns.fill", label: "Capital", value: capital.name)
+                if let capitals = country.capitalsLine {
+                    detailRow(
+                        icon: "building.columns.fill",
+                        label: country.capitals.count > 1 ? "Capitals" : "Capital",
+                        value: capitals
+                    )
                 }
                 if let continent = country.continent {
                     detailRow(icon: "globe", label: "Continent", value: continent)
@@ -203,7 +207,7 @@ struct ChallengeResultView: View {
     private func isCorrect(_ guess: String) -> Bool {
         switch challenge.questionType {
         case .capital:
-            return country.capital?.name.caseInsensitiveCompare(guess) == .orderedSame
+            return country.capital(named: guess) != nil
         case .country, .flag:
             return country.name.caseInsensitiveCompare(guess) == .orderedSame
         }

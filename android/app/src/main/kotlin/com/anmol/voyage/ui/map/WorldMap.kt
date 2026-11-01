@@ -176,10 +176,11 @@ fun WorldMap(
             drawMicrostateDot(Offset(x, y), scene.styleFor(country.name, hasTexture), dotRadius)
         }
 
-        // The capital seal marks the selected country only, as on the globe.
+        // The capital seals mark the selected country only — each of its
+        // capitals — as on the globe.
         val selected = scene.selectedCountry?.takeIf { scene.showsCapital }
-        val capital = selected?.let { name -> countries.firstOrNull { it.name == name }?.capital }
-        if (capital != null) {
+        val capitals = selected?.let { name -> countries.firstOrNull { it.name == name }?.capitals }.orEmpty()
+        for (capital in capitals) {
             val (x, y) = projection.transform(
                 x = projection.viewX(capital.lon),
                 y = projection.viewY(capital.lat),

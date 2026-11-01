@@ -239,8 +239,8 @@ struct CountriesDock: View {
 
     @ViewBuilder
     private func capitalName(_ country: String) -> some View {
-        if let capital = globeState.capitalForCountry(country) {
-            Text(capital)
+        if let capitals = globeState.capitalsForCountry(country) {
+            Text(capitals)
                 .font(.voyageText(15))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)

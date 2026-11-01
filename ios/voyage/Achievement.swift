@@ -139,17 +139,21 @@ enum AchievementCatalog {
             thresholds: globetrotterThresholds
         ))
 
-        // Capital Collector achievement
-        let countriesWithCapitals = CountryDataCache.shared.countries.filter { country in
-            guard country.capital != nil else { return false }
-            return unCountries.contains(country.name)
+        // Capital Collector achievement: any one of a country's capitals counts
+        // (Sucre as well as La Paz), listed by the one checked
+        var visitedCapitals: [String] = []
+        var remainingCapitals: [String] = []
+        for country in CountryDataCache.shared.countries where unCountries.contains(country.name) {
+            guard let capital = country.capital else { continue }
+            let checked = checkedCities[country.name] ?? []
+            if let visited = country.capitalNames.first(where: checked.contains) {
+                visitedCapitals.append(visited)
+            } else {
+                remainingCapitals.append(capital.name)
+            }
         }
-        let visitedCapitals = countriesWithCapitals.filter { country in
-            (checkedCities[country.name] ?? []).contains(country.capital!.name)
-        }.map { $0.capital!.name }.sorted()
-        let remainingCapitals = countriesWithCapitals.filter { country in
-            !(checkedCities[country.name] ?? []).contains(country.capital!.name)
-        }.map { $0.capital!.name }.sorted()
+        visitedCapitals.sort()
+        remainingCapitals.sort()
 
         list.append(Achievement(
             name: "Capital Collector",

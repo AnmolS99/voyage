@@ -299,7 +299,7 @@ struct ChallengePlayView: View {
         guard let country = viewModel.answerCountry else { return false }
         switch viewModel.challenge?.questionType {
         case .capital:
-            return country.capital?.name.caseInsensitiveCompare(guess) == .orderedSame
+            return country.capital(named: guess) != nil
         case .country, .flag:
             return country.name.caseInsensitiveCompare(guess) == .orderedSame
         case nil:
@@ -310,21 +310,21 @@ struct ChallengePlayView: View {
     private func guessHint(for guess: String) -> (distance: String, bearing: Double)? {
         guard let answerCapital = viewModel.answerCountry?.capital else { return nil }
 
-        let guessedCountry: GeoJSONCountry?
+        let countries = CountryDataCache.shared.countries
+        let guessedCapital: Capital?
         switch viewModel.challenge?.questionType {
         case .country, .flag:
-            guessedCountry = CountryDataCache.shared.countries.first {
+            guessedCapital = countries.first {
                 $0.name.caseInsensitiveCompare(guess) == .orderedSame
-            }
+            }?.capital
         case .capital:
-            guessedCountry = CountryDataCache.shared.countries.first {
-                $0.capital?.name.caseInsensitiveCompare(guess) == .orderedSame
-            }
+            // Measured from the capital guessed, which may not be its country's main one
+            guessedCapital = countries.lazy.compactMap { $0.capital(named: guess) }.first
         case nil:
             return nil
         }
 
-        guard let guessedCapital = guessedCountry?.capital else { return nil }
+        guard let guessedCapital = guessedCapital else { return nil }
 
         let dist = haversineKm(
             lat1: guessedCapital.lat, lon1: guessedCapital.lon,

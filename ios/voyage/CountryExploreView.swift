@@ -86,15 +86,15 @@ struct CountryExploreView: View {
 
                     VStack(spacing: 24) {
                         // Without art, the plain header: name, capital and a flag card.
-                        // With it, the name and flag sit on the art, and the capital
-                        // is marked in Top Cities.
+                        // With it, the name and flag sit on the art, and the capitals
+                        // are marked in Top Cities.
                         if art == nil {
                             Text(countryName)
                                 .font(.voyageDisplay(32))
                                 .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
 
-                            if let capitalName = country?.capital?.name {
-                                Text(capitalName)
+                            if let capitals = country?.capitalsLine {
+                                Text(capitals)
                                     .font(.voyageText(18, weight: .medium))
                                     .foregroundColor(AppColors.textSecondary(isDarkMode: globeState.isDarkMode))
                             }
@@ -116,7 +116,7 @@ struct CountryExploreView: View {
                                 items: highlights.cities,
                                 checkedItems: globeState.checkedCitiesForCountry(countryName),
                                 isDarkMode: globeState.isDarkMode,
-                                capitalName: country?.capital?.name,
+                                capitalNames: country?.capitalNames ?? [],
                                 onToggle: { globeState.toggleCheckedCity($0, for: countryName) }
                             )
 
@@ -260,7 +260,8 @@ struct ChecklistSection: View {
     let items: [String]
     let checkedItems: Set<String>
     let isDarkMode: Bool
-    var capitalName: String? = nil
+    /// Badged in the list — every capital, for a country with several.
+    var capitalNames: [String] = []
     let onToggle: (String) -> Void
 
     var body: some View {
@@ -293,7 +294,7 @@ struct ChecklistSection: View {
                                 .font(.voyageText(16, weight: .medium))
                                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
-                            if item == capitalName {
+                            if capitalNames.contains(item) {
                                 Image(systemName: "building.columns.fill")
                                     .font(.system(size: 13))
                                     .foregroundColor(AppColors.buttonColor)

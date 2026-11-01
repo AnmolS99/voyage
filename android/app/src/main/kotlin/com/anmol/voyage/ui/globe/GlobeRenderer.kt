@@ -148,7 +148,7 @@ internal class GlobeRenderer {
 
     private val dots = mutableMapOf<String, Dot>()
 
-    /** The selected country's capital seal, rim to star, and the material sizing each. */
+    /** The selected country's capital seals, rim to star, and the material sizing each. */
     private val capitalSeal = mutableListOf<Pair<Renderable, MaterialInstance>>()
 
     /** A sector outline entity plus the bounding sphere the horizon test uses. */
@@ -473,23 +473,25 @@ internal class GlobeRenderer {
     }
 
     /**
-     * Marks the selected capital with [seal], or clears it when null.
+     * Marks the selected country's capitals with [seals], or clears them when
+     * empty.
      *
      * Rebuilt on selection rather than kept per country: unlike the dots, only
-     * one seal is ever on screen.
+     * one country's seals are ever on screen.
      */
-    fun setCapitalSeal(seal: CapitalSealMeshes?) {
+    fun setCapitalSeals(seals: List<CapitalSealMeshes>) {
         releaseCapitalSeal()
-        if (seal == null) return
 
-        for ((mesh, color) in listOf(
-            seal.rim to VoyagePalette.capitalMarkerOutline,
-            seal.disc to VoyagePalette.capitalMarker,
-            seal.star to VoyagePalette.capitalMarkerInset,
-        )) {
-            val instance = materials.outline.createInstance()
-            instance.setFill(GlobeFill(color, color, false))
-            capitalSeal += addMarkerRenderable(mesh, instance) to instance
+        for (seal in seals) {
+            for ((mesh, color) in listOf(
+                seal.rim to VoyagePalette.capitalMarkerOutline,
+                seal.disc to VoyagePalette.capitalMarker,
+                seal.star to VoyagePalette.capitalMarkerInset,
+            )) {
+                val instance = materials.outline.createInstance()
+                instance.setFill(GlobeFill(color, color, false))
+                capitalSeal += addMarkerRenderable(mesh, instance) to instance
+            }
         }
 
         markerScale = Float.NaN

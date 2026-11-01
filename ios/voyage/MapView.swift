@@ -248,15 +248,16 @@ struct MapView: View {
                     context.stroke(dotPath, with: borderShading, lineWidth: borderWidth)
                 }
 
-                // Draw capital dot for selected country
+                // Draw a seal at each capital of the selected country
                 if let selectedCountry = globeState.selectedCountry,
-                   let country = countries.first(where: { $0.name == selectedCountry }),
-                   let capital = country.capital {
-                    let center = fit.point(lat: capital.lat, lon: capital.lon).applying(transform)
+                   let country = countries.first(where: { $0.name == selectedCountry }) {
+                    for capital in country.capitals {
+                        let center = fit.point(lat: capital.lat, lon: capital.lon).applying(transform)
 
-                    // Star seal, drawn by the same routine as the globe's capital marker
-                    context.withCGContext { cgContext in
-                        CapitalMarker.draw(in: cgContext, center: center, radius: 6)
+                        // Star seal, drawn by the same routine as the globe's capital marker
+                        context.withCGContext { cgContext in
+                            CapitalMarker.draw(in: cgContext, center: center, radius: 6)
+                        }
                     }
                 }
             }

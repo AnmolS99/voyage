@@ -1,6 +1,7 @@
 package com.anmol.voyage.ui.challenges
 
 import android.content.res.Configuration
+import android.icu.text.ListFormatter
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -348,8 +349,15 @@ private fun FeedbackBanner(feedback: SweepFeedback) {
         is SweepFeedback.Correct -> stringResource(R.string.challenge_feedback_correct, feedback.answer)
         is SweepFeedback.CountryIsHere ->
             stringResource(R.string.challenge_feedback_country_here, feedback.country, feedback.flag)
-        is SweepFeedback.CapitalOf ->
-            stringResource(R.string.challenge_feedback_capital, feedback.country, feedback.capital)
+        is SweepFeedback.CapitalOf -> if (feedback.capitals.size > 1) {
+            stringResource(
+                R.string.challenge_feedback_capitals,
+                feedback.country,
+                ListFormatter.getInstance().format(feedback.capitals),
+            )
+        } else {
+            stringResource(R.string.challenge_feedback_capital, feedback.country, feedback.capitals.single())
+        }
         is SweepFeedback.FlagOf -> stringResource(R.string.challenge_feedback_flag, feedback.country, feedback.flag)
     }
     val color = if (feedback is SweepFeedback.Correct) VoyagePalette.challengeCorrect else VoyagePalette.challengeWrong
@@ -500,8 +508,8 @@ private fun SweepResultOverlay(session: ChallengeSession, onPlayAgain: () -> Uni
     val missed = game.missedCountries
     val missedWithCapital = stringResource(R.string.challenge_missed_with_capital)
     val missedSummary = missed.takeIf { it.isNotEmpty() }?.joinToString(", ") { country ->
-        val capital = (game as? NameCapitalGame)?.capital(of = country)
-        if (capital != null) missedWithCapital.format(country, capital) else country
+        val capitals = (game as? NameCapitalGame)?.capitals(of = country).orEmpty()
+        if (capitals.isNotEmpty()) missedWithCapital.format(country, capitals.joinToString(" / ")) else country
     }
 
     Box(

@@ -20,7 +20,7 @@ object CountriesFile {
     private const val MAGIC = 0x56594354 // "VYCT"
 
     /** Bump when the layout below changes. The app and its assets are always built together. */
-    private const val VERSION = 1
+    private const val VERSION = 2
 
     fun write(countries: List<GeoJsonCountry>, output: OutputStream) {
         BinaryWriter(output).run {
@@ -30,11 +30,9 @@ object CountriesFile {
                 string(country.name)
                 nullable(country.isoCode) { string(it) }
                 nullable(country.continent) { string(it) }
-                nullable(country.capital) { capital ->
-                    string(capital.name)
-                    double(capital.lat)
-                    double(capital.lon)
-                }
+                nullable(country.capital) { capital(it) }
+                int(country.otherCapitals.size)
+                country.otherCapitals.forEach { capital(it) }
                 rings(country.polygons)
                 rings(country.holes)
                 boolean(country.isPointCountry)
@@ -54,7 +52,8 @@ object CountriesFile {
                 name = string(),
                 isoCode = nullable { string() },
                 continent = nullable { string() },
-                capital = nullable { Capital(name = string(), lat = double(), lon = double()) },
+                capital = nullable { capital() },
+                otherCapitals = List(size()) { capital() },
                 polygons = rings(),
                 holes = rings(),
                 isPointCountry = boolean(),
@@ -64,6 +63,14 @@ object CountriesFile {
         end()
         countries
     }
+
+    private fun BinaryWriter.capital(capital: Capital) {
+        string(capital.name)
+        double(capital.lat)
+        double(capital.lon)
+    }
+
+    private fun BinaryReader.capital() = Capital(name = string(), lat = double(), lon = double())
 
     private fun BinaryWriter.rings(rings: List<Ring>) {
         int(rings.size)

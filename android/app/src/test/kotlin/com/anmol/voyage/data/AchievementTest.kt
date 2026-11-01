@@ -158,6 +158,16 @@ class AchievementTest {
     }
 
     @Test
+    fun `ticking any of a country's capitals earns it`() {
+        val earned = catalog(checkedCities = mapOf("Bolivia" to setOf("Sucre")))
+            .first { it.kind == AchievementKind.CapitalCollector }
+
+        assertEquals(1, earned.current)
+        assertEquals(listOf("Sucre"), earned.earned)
+        assertTrue("La Paz" !in earned.remaining)
+    }
+
+    @Test
     fun `ticking a city that is not the capital earns nothing`() {
         val earned = catalog(checkedCities = mapOf("France" to setOf("Nice", "Lyon")))
             .first { it.kind == AchievementKind.CapitalCollector }

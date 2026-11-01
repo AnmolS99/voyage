@@ -21,9 +21,10 @@ final class NameCapitalGameTests: XCTestCase {
     }
 
     private let capitals = [
-        "France": "Paris",
-        "Germany": "Berlin",
-        "Spain": "Madrid"
+        "France": ["Paris"],
+        "Germany": ["Berlin"],
+        "Spain": ["Madrid"],
+        "Bolivia": ["La Paz", "Sucre"]
     ]
 
     private func makeViewModel(countries: [String],
@@ -32,7 +33,7 @@ final class NameCapitalGameTests: XCTestCase {
             region: .europe,
             countries: countries,
             statsStore: store ?? makeStore(),
-            capitalLookup: { self.capitals[$0] }
+            capitalLookup: { self.capitals[$0] ?? [] }
         )
     }
 
@@ -44,7 +45,7 @@ final class NameCapitalGameTests: XCTestCase {
 
         // First target: correct
         XCTAssertEqual(viewModel.currentTarget, "France")
-        XCTAssertEqual(viewModel.currentAnswer, "Paris")
+        XCTAssertEqual(viewModel.currentAnswers, ["Paris"])
         guard case .correct = viewModel.submitGuess("Paris") else {
             return XCTFail("Expected correct outcome")
         }
@@ -138,6 +139,37 @@ final class NameCapitalGameTests: XCTestCase {
         XCTAssertEqual(store.trophyCount(.silver), 0)
     }
 
+    // MARK: - Several capitals
+
+    /// Issue #118: every capital of a country is a right answer, not just the
+    /// one it is best known by.
+    func testEveryCapitalOfACountryIsAccepted() {
+        for guess in ["La Paz", "Sucre", "  sucre "] {
+            let viewModel = makeViewModel(countries: ["Bolivia"])
+            XCTAssertEqual(viewModel.currentAnswers, ["La Paz", "Sucre"])
+            guard case .correct = viewModel.submitGuess(guess) else {
+                return XCTFail("Expected \(guess) to be accepted for Bolivia")
+            }
+        }
+    }
+
+    func testAcceptedAnswerIsTheCapitalNamed() {
+        let viewModel = makeViewModel(countries: ["Bolivia"])
+        XCTAssertEqual(viewModel.acceptedAnswer(for: "sucre"), "Sucre")
+        XCTAssertEqual(viewModel.acceptedAnswer(for: "La Paz"), "La Paz")
+        XCTAssertNil(viewModel.acceptedAnswer(for: "Santa Cruz"))
+        guard case .reveal = viewModel.submitGuess("Santa Cruz") else {
+            return XCTFail("Expected a wrong capital to be revealed")
+        }
+    }
+
+    /// The shipped data gives Bolivia both capitals, the main one first.
+    func testDataListsEveryCapital() {
+        let viewModel = NameCapitalGameViewModel(region: .southAmerica, countries: ["Bolivia"], statsStore: makeStore())
+        XCTAssertEqual(viewModel.capitals(of: "Bolivia"), ["La Paz", "Sucre"])
+        XCTAssertEqual(viewModel.capitals(of: "France"), ["Paris"])
+    }
+
     // MARK: - Data integrity
 
     /// Every playable country must have capital data, otherwise it would be
@@ -146,7 +178,7 @@ final class NameCapitalGameTests: XCTestCase {
         let countriesByName = Dictionary(
             uniqueKeysWithValues: CountryDataCache.shared.countries.map { ($0.name, $0) }
         )
-        for country in ChallengeRegion.world.countries {
+        for country in Set(ChallengeRegion.allCases.flatMap(\.countries)) {
             XCTAssertNotNil(
                 countriesByName[country]?.capital,
                 "\(country) has no capital data in world.geojson"

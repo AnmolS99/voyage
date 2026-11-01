@@ -1,6 +1,9 @@
 import Foundation
 import UIKit
 
+/// A capital city and its location.
+typealias Capital = (name: String, lat: Double, lon: Double)
+
 struct GeoJSONCountry {
     let name: String
     let polygons: [[[Double]]] // Array of outer rings, each ring is array of [lon, lat] coordinates (empty for point countries)
@@ -10,7 +13,31 @@ struct GeoJSONCountry {
     let isPointCountry: Bool
     let pointCoordinate: (lat: Double, lon: Double)? // For point countries (small islands, microstates)
     let flagCode: String?
-    let capital: (name: String, lat: Double, lon: Double)?
+    /// The capital the country is best known by (La Paz for Bolivia).
+    let capital: Capital?
+    /// The country's other official capitals (Sucre for Bolivia), in the
+    /// order `world.geojson` lists them. Empty for most countries.
+    let otherCapitals: [Capital]
+
+    /// Every capital, the main one first. Each is a right answer in Name the
+    /// Capital and marked on the globe and map.
+    var capitals: [Capital] {
+        (capital.map { [$0] } ?? []) + otherCapitals
+    }
+
+    var capitalNames: [String] {
+        capitals.map(\.name)
+    }
+
+    /// "La Paz, Sucre" — the capitals on one line, or nil when there are none.
+    var capitalsLine: String? {
+        capitals.isEmpty ? nil : capitalNames.joined(separator: ", ")
+    }
+
+    /// The capital of this country `name` names, ignoring case, or nil.
+    func capital(named name: String) -> Capital? {
+        capitals.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
+    }
 
     static func landColor() -> UIColor {
         return AppColors.landUI
@@ -45,11 +72,17 @@ class GeoJSONParser {
             let isPointCountry = renderAs == "point"
 
             // Parse capital data
-            var capital: (name: String, lat: Double, lon: Double)? = nil
+            var capital: Capital? = nil
             if let capitalName = properties["capital"] as? String,
                let capitalLat = properties["capitalLat"] as? Double,
                let capitalLon = properties["capitalLon"] as? Double {
                 capital = (name: capitalName, lat: capitalLat, lon: capitalLon)
+            }
+            let otherCapitals: [Capital] = (properties["otherCapitals"] as? [[String: Any]] ?? []).compactMap { other in
+                guard let name = other["name"] as? String,
+                      let lat = other["lat"] as? Double,
+                      let lon = other["lon"] as? Double else { return nil }
+                return (name: name, lat: lat, lon: lon)
             }
 
             if type == "Point" {
@@ -66,7 +99,8 @@ class GeoJSONParser {
                         isPointCountry: true,
                         pointCoordinate: (lat: lat, lon: lon),
                         flagCode: flagCode,
-                        capital: capital
+                        capital: capital,
+                        otherCapitals: otherCapitals
                     )
                     countries.append(country)
                 }
@@ -108,7 +142,8 @@ class GeoJSONParser {
                         isPointCountry: isPointCountry,
                         pointCoordinate: nil,
                         flagCode: flagCode,
-                        capital: capital
+                        capital: capital,
+                        otherCapitals: otherCapitals
                     )
                     countries.append(country)
                 }

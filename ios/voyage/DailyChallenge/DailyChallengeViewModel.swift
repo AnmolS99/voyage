@@ -68,7 +68,7 @@ final class DailyChallengeViewModel: ObservableObject {
         let isCorrect: Bool
         switch challenge?.questionType {
         case .capital:
-            isCorrect = country.capital?.name.caseInsensitiveCompare(guess) == .orderedSame
+            isCorrect = country.capital(named: guess) != nil
         case .country, .flag:
             isCorrect = country.name.caseInsensitiveCompare(guess) == .orderedSame
         case nil:
@@ -101,7 +101,7 @@ final class DailyChallengeViewModel: ObservableObject {
 
     private lazy var countryNameIndex = CountrySearchIndex<String>.countryNames()
     private lazy var capitalIndex = CountrySearchIndex<String>.plain(
-        Array(Set(CountryDataCache.shared.countries.compactMap { $0.capital?.name }))
+        Array(Set(CountryDataCache.shared.countries.flatMap(\.capitalNames)))
     )
 
     private func saveResult(completed: Bool) {

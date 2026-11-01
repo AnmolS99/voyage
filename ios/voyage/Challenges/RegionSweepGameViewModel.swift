@@ -17,7 +17,7 @@ enum SweepGuessOutcome {
 ///
 /// Subclasses translate their input (globe taps, typed capitals) into a
 /// right/wrong judgement and pass it to `resolveGuess(correct:)`; typed-answer
-/// games can use `submitGuess(_:)` directly by overriding `currentAnswer`.
+/// games can use `submitGuess(_:)` directly by overriding `currentAnswers`.
 class RegionSweepGameViewModel: ObservableObject {
     enum Phase {
         case playing
@@ -76,19 +76,24 @@ class RegionSweepGameViewModel: ObservableObject {
 
     // MARK: - Subclass interface
 
-    /// The answer expected for the current target. Defaults to the country's
-    /// own name (Name the Flag); Name the Capital overrides it.
-    var currentAnswer: String? { currentTarget }
+    /// The answers accepted for the current target, the main one first.
+    /// Defaults to the country's own name (Name the Flag); Name the Capital
+    /// overrides it with every capital the country has (La Paz and Sucre).
+    var currentAnswers: [String] { currentTarget.map { [$0] } ?? [] }
 
-    /// Scores one typed guess against `currentAnswer`, ignoring casing and
-    /// surrounding whitespace.
-    func submitGuess(_ guess: String) -> SweepGuessOutcome {
-        guard phase == .playing, let answer = currentAnswer else { return .ignored }
-
+    /// The accepted answer `guess` names, ignoring casing and surrounding
+    /// whitespace, or nil when it names none of them.
+    func acceptedAnswer(for guess: String) -> String? {
         let trimmed = guess.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return .ignored }
+        return currentAnswers.first { $0.caseInsensitiveCompare(trimmed) == .orderedSame }
+    }
 
-        return resolveGuess(correct: answer.caseInsensitiveCompare(trimmed) == .orderedSame)
+    /// Scores one typed guess against `currentAnswers`.
+    func submitGuess(_ guess: String) -> SweepGuessOutcome {
+        guard phase == .playing, !currentAnswers.isEmpty else { return .ignored }
+        guard !guess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return .ignored }
+
+        return resolveGuess(correct: acceptedAnswer(for: guess) != nil)
     }
 
     /// Scores one submitted guess against the current target. Subclasses call

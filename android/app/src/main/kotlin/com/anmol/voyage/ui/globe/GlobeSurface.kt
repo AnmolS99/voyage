@@ -75,7 +75,8 @@ internal class GlobeDotStyle(
  *   hard-lit with, as the flat map draws it. Null shades nothing.
  * @param dotStyles how each microstate's dot is currently painted. The dots
  *   themselves are meshes in the scene, uploaded with the rest of the geometry.
- * @param capital the selected country's capital, marked with a star.
+ * @param capitals the selected country's capitals, each marked with a star —
+ *   two for Bolivia, three for South Africa.
  * @param focus a place to fly the camera to, once, when it changes. On Home the
  *   selected country's center, so picking a country brings it into view; in a
  *   challenge, the region being played or the country being asked about.
@@ -105,7 +106,7 @@ internal fun GlobeSurface(
     onCountryTapped: (String?) -> Unit,
     modifier: Modifier = Modifier,
     dotStyles: List<GlobeDotStyle> = emptyList(),
-    capital: LatLon? = null,
+    capitals: List<LatLon> = emptyList(),
     selectedOutline: OutlineMesh? = null,
     selectedOutlineColor: GlobeFill? = null,
     focus: CameraFocus? = null,
@@ -151,10 +152,10 @@ internal fun GlobeSurface(
     val fills = countries.map { colorFor(it.name) }
     SideEffect { host.applyColors(countries, fills, dotStyles, sizes) }
 
-    // The seal is meshes, so it is rebuilt when the capital moves — not on every
-    // recomposition. Its size is a uniform and rides the per-frame size pass.
-    DisposableEffect(host, capital) {
-        host.setCapitalSeal(capital)
+    // The seals are meshes, so they are rebuilt when the capitals move — not on
+    // every recomposition. Their size is a uniform and rides the per-frame size pass.
+    DisposableEffect(host, capitals) {
+        host.setCapitalSeals(capitals)
         onDispose { }
     }
 
@@ -596,7 +597,7 @@ internal class GlobeSurfaceHost {
     }
 
     /**
-     * Builds the capital seal's three layers and hands them to the renderer: the
+     * Builds each capital seal's three layers and hands them to the renderer: the
      * ink rim as a full disc, the terracotta disc inside it, and the cream star.
      *
      * Proportions come from [CapitalMarker], the same ones the flat map paints,
@@ -605,23 +606,20 @@ internal class GlobeSurfaceHost {
      * all three to [GlobeCamera.capitalMarkerRadius] every frame, so a zoom never
      * rebuilds the meshes.
      */
-    fun setCapitalSeal(capital: LatLon?) {
+    fun setCapitalSeals(capitals: List<LatLon>) {
         if (destroyed) return
-        if (capital == null) {
-            renderer.setCapitalSeal(null)
-            return
-        }
-        val (lat, lon) = capital
         val starCorners = CapitalMarker.starVertices(
             outerRadius = CapitalMarker.STAR_TO_SEAL_RATIO,
             yUp = true,
         )
-        renderer.setCapitalSeal(
-            CapitalSealMeshes(
-                rim = MarkerMeshes.disc(lat, lon, SEAL_RIM_RADIUS),
-                disc = MarkerMeshes.disc(lat, lon, SEAL_DISC_RADIUS, 1f - CapitalMarker.RIM_TO_SEAL_RATIO),
-                star = MarkerMeshes.star(lat, lon, SEAL_STAR_RADIUS, starCorners),
-            ),
+        renderer.setCapitalSeals(
+            capitals.map { (lat, lon) ->
+                CapitalSealMeshes(
+                    rim = MarkerMeshes.disc(lat, lon, SEAL_RIM_RADIUS),
+                    disc = MarkerMeshes.disc(lat, lon, SEAL_DISC_RADIUS, 1f - CapitalMarker.RIM_TO_SEAL_RATIO),
+                    star = MarkerMeshes.star(lat, lon, SEAL_STAR_RADIUS, starCorners),
+                )
+            },
         )
     }
 

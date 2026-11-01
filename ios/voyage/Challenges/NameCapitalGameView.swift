@@ -45,12 +45,12 @@ struct NameCapitalGameView: View {
         globe.showsCapitalMarker = false
         _gameGlobe = StateObject(wrappedValue: globe)
 
-        capitalSuggestions = .plain(Array(Set(CountryDataCache.shared.countries.compactMap { $0.capital?.name })))
+        capitalSuggestions = .plain(Array(Set(CountryDataCache.shared.countries.flatMap(\.capitalNames))))
     }
 
     private enum Feedback: Equatable {
         case correct(capital: String)
-        case reveal(country: String, capital: String)
+        case reveal(country: String, capitals: [String])
     }
 
     var body: some View {
@@ -230,7 +230,9 @@ struct NameCapitalGameView: View {
     private func submit(_ guess: String) {
         // Captured before submitting: a correct guess advances the target
         let target = viewModel.currentTarget
-        let capital = viewModel.currentAnswer
+        let capitals = viewModel.currentAnswers
+        // The capital the player named, of a country that may have several
+        let named = viewModel.acceptedAnswer(for: guess)
 
         switch viewModel.submitGuess(guess) {
         case .correct:
@@ -239,14 +241,14 @@ struct NameCapitalGameView: View {
                 gameGlobe.deselectCountry(resumeAutoRotation: false)
                 gameGlobe.setCountryHighlight(AppColors.challengeCorrectUI, for: target)
             }
-            if let capital = capital {
-                showFeedback(.correct(capital: capital))
+            if let named = named {
+                showFeedback(.correct(capital: named))
             }
 
         case .reveal:
-            guard let target = target, let capital = capital else { return }
+            guard let target = target, !capitals.isEmpty else { return }
             UINotificationFeedbackGenerator().notificationOccurred(.error)
-            showFeedback(.reveal(country: target, capital: capital), duration: Self.revealDuration)
+            showFeedback(.reveal(country: target, capitals: capitals), duration: Self.revealDuration)
             gameGlobe.setCountryHighlight(AppColors.challengeWrongUI, for: target)
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.revealDuration) {
                 gameGlobe.deselectCountry(resumeAutoRotation: false)
@@ -342,8 +344,10 @@ struct NameCapitalGameView: View {
         case .correct(let capital):
             text = "Correct — \(capital)"
             color = AppColors.challengeCorrect
-        case .reveal(let country, let capital):
-            text = "The capital of \(country) is \(capital)"
+        case .reveal(let country, let capitals):
+            text = capitals.count > 1
+                ? "The capitals of \(country) are \(ListFormatter.localizedString(byJoining: capitals))"
+                : "The capital of \(country) is \(capitals.joined())"
             color = AppColors.challengeWrong
         }
 
@@ -353,10 +357,8 @@ struct NameCapitalGameView: View {
     private var missedSummary: String? {
         guard !viewModel.missedCountries.isEmpty else { return nil }
         return viewModel.missedCountries.map { country in
-            if let capital = viewModel.capital(of: country) {
-                return "\(country) — \(capital)"
-            }
-            return country
+            let capitals = viewModel.capitals(of: country)
+            return capitals.isEmpty ? country : "\(country) — \(capitals.joined(separator: " / "))"
         }.joined(separator: ", ")
     }
 }
