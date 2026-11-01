@@ -351,8 +351,8 @@ private fun SweepBanner(session: ChallengeSession) {
 private data object ConfirmHint
 
 /**
- * The pill after a guess. It has no close button, so it stays low-key, but a
- * tap or a downward swipe dismisses it, ending a running reveal at the same
+ * The pill after a guess. A small, dimmed × at its end hints that a tap
+ * anywhere on it (or a downward swipe) dismisses it, ending a running reveal at the same
  * moment (issue #121). iOS `SweepFeedbackBanner`.
  */
 @Composable
@@ -375,11 +375,9 @@ private fun FeedbackBanner(feedback: SweepFeedback, onDismiss: () -> Unit) {
         is SweepFeedback.FlagOf -> stringResource(R.string.challenge_feedback_flag, feedback.country, feedback.flag)
     }
     val color = if (feedback is SweepFeedback.Correct) VoyagePalette.challengeCorrect else VoyagePalette.challengeWrong
-    Text(
-        text = text,
-        color = Color.White,
-        style = MaterialTheme.typography.labelLarge,
-        textAlign = TextAlign.Center,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .graphicsLayer {
                 translationY = dragOffset
@@ -397,8 +395,23 @@ private fun FeedbackBanner(feedback: SweepFeedback, onDismiss: () -> Unit) {
                 onClick = onDismiss,
             )
             .background(color.copy(alpha = 0.95f), CircleShape)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-    )
+            .padding(start = 16.dp, end = 13.dp, top = 10.dp, bottom = 10.dp),
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        // Decorative: the whole pill is the button, labelled by onClickLabel.
+        Icon(
+            Icons.Rounded.Close,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.7f),
+            modifier = Modifier.size(12.dp),
+        )
+    }
 }
 
 /** How far down a swipe must travel to dismiss the feedback banner — iOS `SweepFeedbackBanner.dismissDistance`. */

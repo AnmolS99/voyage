@@ -158,8 +158,8 @@ struct SweepPromptCard: View {
 
 /// Capsule banner for correct/wrong/reveal feedback.
 ///
-/// It has no close button, so it stays low-key, but a tap or a downward swipe
-/// dismisses it. The game views end a running reveal at the same moment
+/// A small, dimmed × at its end hints that a tap anywhere on it (or a
+/// downward swipe) dismisses it. The game views end a running reveal at the same moment
 /// (issue #121), so a player who has read the answer moves on straight away.
 /// Android: `FeedbackBanner` in `ChallengeGameScreen.kt`.
 struct SweepFeedbackBanner: View {
@@ -180,32 +180,39 @@ struct SweepFeedbackBanner: View {
     @State private var dragOffset: CGFloat = 0
 
     var body: some View {
-        Text(text)
-            .font(.voyageText(14, weight: .semibold))
-            .foregroundColor(.white)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Capsule().fill(color.opacity(0.95)))
-            .contentShape(Capsule())
-            .offset(y: dragOffset)
-            .opacity(1 - min(dragOffset / 80, 0.6))
-            .onTapGesture(perform: onDismiss)
-            .gesture(
-                DragGesture(minimumDistance: 4)
-                    .onChanged { dragOffset = max(0, $0.translation.height) }
-                    .onEnded { value in
-                        if value.translation.height > Self.dismissDistance {
-                            onDismiss()
-                        } else {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
-                        }
+        HStack(spacing: 8) {
+            Text(text)
+                .font(.voyageText(14, weight: .semibold))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+            Image(systemName: "xmark")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(.white.opacity(0.7))
+                .accessibilityHidden(true)
+        }
+        .padding(.leading, 16)
+        .padding(.trailing, 13)
+        .padding(.vertical, 10)
+        .background(Capsule().fill(color.opacity(0.95)))
+        .contentShape(Capsule())
+        .offset(y: dragOffset)
+        .opacity(1 - min(dragOffset / 80, 0.6))
+        .onTapGesture(perform: onDismiss)
+        .gesture(
+            DragGesture(minimumDistance: 4)
+                .onChanged { dragOffset = max(0, $0.translation.height) }
+                .onEnded { value in
+                    if value.translation.height > Self.dismissDistance {
+                        onDismiss()
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
                     }
-            )
-            .accessibilityAddTraits(.isButton)
-            .accessibilityHint("Dismisses this message")
-            .accessibilityAction(named: "Dismiss", onDismiss)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+        )
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Dismisses this message")
+        .accessibilityAction(named: "Dismiss", onDismiss)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 
