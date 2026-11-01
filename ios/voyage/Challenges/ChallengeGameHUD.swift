@@ -157,17 +157,54 @@ struct SweepPromptCard: View {
 }
 
 /// Capsule banner for correct/wrong/reveal feedback.
+///
+/// It has no close button, so it stays low-key, but a tap or a downward swipe
+/// dismisses it. The game views end a running reveal at the same moment
+/// (issue #121), so a player who has read the answer moves on straight away.
+/// Android: `FeedbackBanner` in `ChallengeGameScreen.kt`.
 struct SweepFeedbackBanner: View {
     let text: String
     let color: Color
+    let onDismiss: () -> Void
+
+    /// How long a correct guess's banner stays up.
+    static let correctDuration: TimeInterval = 1.6
+    /// How long a revealed answer stays up. That is longer than the reveal
+    /// pause, so the answer is still readable after the sweep moves on. The
+    /// next guess replaces it sooner. Android `ChallengeSession.REVEAL_BANNER_MILLIS`.
+    static let revealDuration: TimeInterval = 6
+
+    /// How far down a swipe must travel to dismiss the banner.
+    private static let dismissDistance: CGFloat = 16
+
+    @State private var dragOffset: CGFloat = 0
 
     var body: some View {
         Text(text)
             .font(.voyageText(14, weight: .semibold))
             .foregroundColor(.white)
+            .multilineTextAlignment(.center)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .background(Capsule().fill(color.opacity(0.95)))
+            .contentShape(Capsule())
+            .offset(y: dragOffset)
+            .opacity(1 - min(dragOffset / 80, 0.6))
+            .onTapGesture(perform: onDismiss)
+            .gesture(
+                DragGesture(minimumDistance: 4)
+                    .onChanged { dragOffset = max(0, $0.translation.height) }
+                    .onEnded { value in
+                        if value.translation.height > Self.dismissDistance {
+                            onDismiss()
+                        } else {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
+                        }
+                    }
+            )
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint("Dismisses this message")
+            .accessibilityAction(named: "Dismiss", onDismiss)
             .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }

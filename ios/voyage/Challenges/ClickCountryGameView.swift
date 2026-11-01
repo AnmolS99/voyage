@@ -13,12 +13,16 @@ struct ClickCountryGameView: View {
     @StateObject private var gameGlobe: GlobeState
     @State private var feedback: Feedback?
     @State private var feedbackToken = 0
+    /// Bumped by each reveal and by whatever ends one, so a reveal's timer
+    /// only ends that reveal (not one started after it was dismissed early).
+    @State private var revealToken = 0
     @State private var showQuitConfirmation = false
     @State private var showRestartConfirmation = false
     @Environment(\.scenePhase) private var scenePhase
 
     private let isDarkMode: Bool
-    private static let revealDuration: TimeInterval = 2.2
+    /// How long the sweep pauses on a revealed country before moving on.
+    private static let revealPause: TimeInterval = 2.2
 
     init(region: ChallengeRegion, mainState: GlobeState, onDismiss: @escaping () -> Void) {
         self.region = region
@@ -120,6 +124,8 @@ struct ClickCountryGameView: View {
             // reveal the answer.
             UISelectionFeedbackGenerator().selectionChanged()
             gameGlobe.selectCountry(country, center: nil)
+            // Clear a lingering answer so the confirm hint can show
+            if feedback != nil { dismissFeedback() }
 
         case .correct:
             UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -130,20 +136,17 @@ struct ClickCountryGameView: View {
         case .reveal:
             guard let target = viewModel.currentTarget else { return }
             UINotificationFeedbackGenerator().notificationOccurred(.error)
-            showFeedback(.reveal(country: target), duration: Self.revealDuration)
+            showFeedback(.reveal(country: target), duration: SweepFeedbackBanner.revealDuration)
             gameGlobe.setCountryHighlight(AppColors.challengeWrongUI, for: target)
             gameGlobe.selectCountry(target, center: CountryHitTester.shared.center(of: target))
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.revealDuration) {
-                gameGlobe.deselectCountry(resumeAutoRotation: false)
-                viewModel.finishReveal()
-            }
+            scheduleRevealEnd()
 
         case .ignored:
             break
         }
     }
 
-    private func showFeedback(_ newFeedback: Feedback, duration: TimeInterval = 1.6) {
+    private func showFeedback(_ newFeedback: Feedback, duration: TimeInterval = SweepFeedbackBanner.correctDuration) {
         feedbackToken += 1
         let token = feedbackToken
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -158,8 +161,43 @@ struct ClickCountryGameView: View {
         }
     }
 
+    /// The banner was tapped or swiped away. If the sweep is still pausing on
+    /// a revealed answer, it moves on now: the player has read it.
+    private func dismissFeedback() {
+        feedbackToken += 1
+        withAnimation(.easeOut(duration: 0.25)) {
+            feedback = nil
+        }
+        endReveal()
+    }
+
+    /// Ends the reveal pause (its timer ran out, or the banner was dismissed)
+    /// and moves the sweep on. The banner itself stays until its own timer.
+    private func endReveal() {
+        revealToken += 1
+        guard viewModel.phase == .revealing else { return }
+        gameGlobe.deselectCountry(resumeAutoRotation: false)
+        viewModel.finishReveal()
+        // The last answer gives way to the result overlay
+        if viewModel.phase == .finished {
+            feedbackToken += 1
+            feedback = nil
+        }
+    }
+
+    /// Ends the reveal that has just started, `revealPause` from now, unless
+    /// something ends it sooner.
+    private func scheduleRevealEnd() {
+        revealToken += 1
+        let token = revealToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.revealPause) {
+            if revealToken == token { endReveal() }
+        }
+    }
+
     private func playAgain() {
         feedbackToken += 1
+        revealToken += 1
         feedback = nil
         gameGlobe.resetAllData()
         gameGlobe.isAutoRotating = false
@@ -214,6 +252,6 @@ struct ClickCountryGameView: View {
             color = AppColors.challengeWrong
         }
 
-        return SweepFeedbackBanner(text: text, color: color)
+        return SweepFeedbackBanner(text: text, color: color, onDismiss: dismissFeedback)
     }
 }

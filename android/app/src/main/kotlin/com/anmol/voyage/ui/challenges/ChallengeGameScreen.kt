@@ -11,7 +11,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +62,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -68,9 +73,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -324,7 +331,7 @@ private fun SweepBanner(session: ChallengeSession) {
         label = "sweepBanner",
     ) { banner ->
         when (banner) {
-            is SweepFeedback -> FeedbackBanner(banner)
+            is SweepFeedback -> FeedbackBanner(banner, onDismiss = session::dismissFeedback)
             // Neutral on purpose: naming the marked country would give the answer away.
             ConfirmHint -> HudPill {
                 Row(
@@ -343,8 +350,15 @@ private fun SweepBanner(session: ChallengeSession) {
 
 private data object ConfirmHint
 
+/**
+ * The pill after a guess. It has no close button, so it stays low-key, but a
+ * tap or a downward swipe dismisses it, ending a running reveal at the same
+ * moment (issue #121). iOS `SweepFeedbackBanner`.
+ */
 @Composable
-private fun FeedbackBanner(feedback: SweepFeedback) {
+private fun FeedbackBanner(feedback: SweepFeedback, onDismiss: () -> Unit) {
+    val dismissDistance = with(LocalDensity.current) { BANNER_DISMISS_DISTANCE.toPx() }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
     val text = when (feedback) {
         is SweepFeedback.Correct -> stringResource(R.string.challenge_feedback_correct, feedback.answer)
         is SweepFeedback.CountryIsHere ->
@@ -367,10 +381,28 @@ private fun FeedbackBanner(feedback: SweepFeedback) {
         style = MaterialTheme.typography.labelLarge,
         textAlign = TextAlign.Center,
         modifier = Modifier
+            .graphicsLayer {
+                translationY = dragOffset
+                alpha = 1f - (dragOffset / (5 * dismissDistance)).coerceAtMost(0.6f)
+            }
+            .draggable(
+                state = rememberDraggableState { delta -> dragOffset = (dragOffset + delta).coerceAtLeast(0f) },
+                orientation = Orientation.Vertical,
+                onDragStopped = { if (dragOffset > dismissDistance) onDismiss() else dragOffset = 0f },
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClickLabel = stringResource(R.string.challenge_feedback_dismiss),
+                onClick = onDismiss,
+            )
             .background(color.copy(alpha = 0.95f), CircleShape)
             .padding(horizontal = 16.dp, vertical = 10.dp),
     )
 }
+
+/** How far down a swipe must travel to dismiss the feedback banner — iOS `SweepFeedbackBanner.dismissDistance`. */
+private val BANNER_DISMISS_DISTANCE = 16.dp
 
 /**
  * The guess field, with its suggestions opening upward above it and the
