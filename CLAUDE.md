@@ -154,6 +154,12 @@ engine. Both renderers read a `WorldScene` (`ui/map/WorldScene.kt`) instead of
 `VoyageState`, and a game hands Home its own `ChallengeWorldScene`, the Android
 `GlobeState(inMemory: true)`. The game's green and red are a status in
 `CountryStyles`, so they obey the same selection rules as visited and wishlist.
+After a wrong guess the sweep pauses on the answer (2.2 s for Click the Country,
+2.6 s for the naming modes, with the clock running) but its banner stays up for
+6 s, or until the next guess, so it can still be read. A tap (the pill ends in a small ×) or a downward swipe
+dismisses any feedback banner and ends a running pause early. This is iOS
+`SweepFeedbackBanner` and Android `ChallengeSession` with `FeedbackBanner`, so
+retiming it is a two-platform change.
 
 ## Git Conventions
 

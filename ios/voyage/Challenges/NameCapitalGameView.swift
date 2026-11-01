@@ -15,6 +15,9 @@ struct NameCapitalGameView: View {
     @State private var searchText = ""
     @State private var feedback: Feedback?
     @State private var feedbackToken = 0
+    /// Bumped by each reveal and by whatever ends one, so a reveal's timer
+    /// only ends that reveal (not one started after it was dismissed early).
+    @State private var revealToken = 0
     @State private var showQuitConfirmation = false
     @State private var showRestartConfirmation = false
     /// Mirrors the search field's keyboard focus (pre-iOS 26 fallback bar);
@@ -29,7 +32,8 @@ struct NameCapitalGameView: View {
     /// Every capital in the dataset — the search field's suggestion pool, so
     /// the answer never stands out by being the only nearby suggestion.
     private let capitalSuggestions: CountrySearchIndex<String>
-    private static let revealDuration: TimeInterval = 2.6
+    /// How long the sweep pauses on a revealed capital before moving on.
+    private static let revealPause: TimeInterval = 2.6
 
     init(region: ChallengeRegion, mainState: GlobeState, onDismiss: @escaping () -> Void) {
         self.region = region
@@ -248,12 +252,9 @@ struct NameCapitalGameView: View {
         case .reveal:
             guard let target = target, !capitals.isEmpty else { return }
             UINotificationFeedbackGenerator().notificationOccurred(.error)
-            showFeedback(.reveal(country: target, capitals: capitals), duration: Self.revealDuration)
+            showFeedback(.reveal(country: target, capitals: capitals), duration: SweepFeedbackBanner.revealDuration)
             gameGlobe.setCountryHighlight(AppColors.challengeWrongUI, for: target)
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.revealDuration) {
-                gameGlobe.deselectCountry(resumeAutoRotation: false)
-                viewModel.finishReveal()
-            }
+            scheduleRevealEnd()
 
         case .marked, .ignored:
             break
@@ -276,7 +277,7 @@ struct NameCapitalGameView: View {
                                         to: nil, from: nil, for: nil)
     }
 
-    private func showFeedback(_ newFeedback: Feedback, duration: TimeInterval = 1.6) {
+    private func showFeedback(_ newFeedback: Feedback, duration: TimeInterval = SweepFeedbackBanner.correctDuration) {
         feedbackToken += 1
         let token = feedbackToken
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -291,8 +292,43 @@ struct NameCapitalGameView: View {
         }
     }
 
+    /// The banner was tapped or swiped away. If the sweep is still pausing on
+    /// a revealed answer, it moves on now: the player has read it.
+    private func dismissFeedback() {
+        feedbackToken += 1
+        withAnimation(.easeOut(duration: 0.25)) {
+            feedback = nil
+        }
+        endReveal()
+    }
+
+    /// Ends the reveal pause (its timer ran out, or the banner was dismissed)
+    /// and moves the sweep on. The banner itself stays until its own timer.
+    private func endReveal() {
+        revealToken += 1
+        guard viewModel.phase == .revealing else { return }
+        gameGlobe.deselectCountry(resumeAutoRotation: false)
+        viewModel.finishReveal()
+        // The last answer gives way to the result overlay
+        if viewModel.phase == .finished {
+            feedbackToken += 1
+            feedback = nil
+        }
+    }
+
+    /// Ends the reveal that has just started, `revealPause` from now, unless
+    /// something ends it sooner.
+    private func scheduleRevealEnd() {
+        revealToken += 1
+        let token = revealToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.revealPause) {
+            if revealToken == token { endReveal() }
+        }
+    }
+
     private func playAgain() {
         feedbackToken += 1
+        revealToken += 1
         feedback = nil
         searchText = ""
         gameGlobe.resetAllData()
@@ -351,7 +387,7 @@ struct NameCapitalGameView: View {
             color = AppColors.challengeWrong
         }
 
-        return SweepFeedbackBanner(text: text, color: color)
+        return SweepFeedbackBanner(text: text, color: color, onDismiss: dismissFeedback)
     }
 
     private var missedSummary: String? {

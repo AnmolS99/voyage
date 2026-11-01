@@ -95,6 +95,9 @@ class ChallengeSession(
     private var feedbackJob: Job? = null
     private var revealJob: Job? = null
 
+    /** What the running reveal does when it ends; null when none is running. */
+    private var revealEnd: (() -> Unit)? = null
+
     init {
         frameRegion()
     }
@@ -115,14 +118,18 @@ class ChallengeSession(
             // Only outline: flying to the tap would move the country out from
             // under the finger before the confirming tap. And the name is not
             // shown, or marking would give the answer away.
-            SweepGuessOutcome.Marked -> scene.select(country)
+            SweepGuessOutcome.Marked -> {
+                scene.select(country)
+                // A lingering answer gives way to the confirm hint.
+                clearFeedback()
+            }
             SweepGuessOutcome.Correct -> {
                 scene.deselect()
                 scene.highlight(country, VoyagePalette.challengeCorrect)
                 showFeedback(SweepFeedback.Correct(country))
             }
             SweepGuessOutcome.Reveal -> if (target != null) {
-                showFeedback(SweepFeedback.CountryIsHere(target, flagOf(target)), CLICK_REVEAL_MILLIS)
+                showFeedback(SweepFeedback.CountryIsHere(target, flagOf(target)), REVEAL_BANNER_MILLIS)
                 scene.highlight(target, VoyagePalette.challengeWrong)
                 scene.select(target, cache.hitTester.focus(target))
                 afterReveal(CLICK_REVEAL_MILLIS) { scene.deselect() }
@@ -150,7 +157,7 @@ class ChallengeSession(
             SweepGuessOutcome.Reveal -> {
                 scene.highlight(target, VoyagePalette.challengeWrong)
                 if (mode == ChallengeGameMode.NameCapital) {
-                    showFeedback(SweepFeedback.CapitalOf(target, answers), NAME_REVEAL_MILLIS)
+                    showFeedback(SweepFeedback.CapitalOf(target, answers), REVEAL_BANNER_MILLIS)
                     afterReveal(NAME_REVEAL_MILLIS) {
                         scene.deselect()
                         focusOnCurrentTarget(distance = null)
@@ -158,7 +165,7 @@ class ChallengeSession(
                 } else {
                     // The flag's country was never outlined — that would be the
                     // answer — so show where it is now, then pull back out.
-                    showFeedback(SweepFeedback.FlagOf(target, flagOf(target)), NAME_REVEAL_MILLIS)
+                    showFeedback(SweepFeedback.FlagOf(target, flagOf(target)), REVEAL_BANNER_MILLIS)
                     scene.select(target, cache.hitTester.focus(target))
                     afterReveal(NAME_REVEAL_MILLIS) {
                         scene.deselect()
@@ -174,11 +181,22 @@ class ChallengeSession(
     /** Starts the sweep over, with a fresh shuffle and a clean globe. */
     fun playAgain() {
         revealJob?.cancel()
+        revealEnd = null
         feedbackJob?.cancel()
         feedback = null
         scene.reset()
         game.restart()
         frameRegion()
+    }
+
+    /**
+     * The banner was tapped or swiped away. If the sweep is still pausing on a
+     * revealed answer, it moves on now: the player has read it. iOS
+     * `dismissFeedback` in each game view.
+     */
+    fun dismissFeedback() {
+        clearFeedback()
+        endReveal()
     }
 
     fun pause() = game.pause()
@@ -207,14 +225,35 @@ class ChallengeSession(
         cache.hitTester.center(target)?.let { scene.flyTo(it, distance) }
     }
 
-    /** Leaves a revealed answer up for [millis], then moves the sweep on. */
+    /**
+     * Pauses on a revealed answer for [millis], or until the banner is
+     * dismissed, then moves the sweep on. The banner itself stays up longer
+     * ([REVEAL_BANNER_MILLIS]), so the answer can still be read after that.
+     */
     private fun afterReveal(millis: Long, then: () -> Unit) {
         revealJob?.cancel()
+        revealEnd = then
         revealJob = viewModelScope.launch {
             delay(millis)
-            game.finishReveal()
-            then()
+            endReveal()
         }
+    }
+
+    /** Ends the reveal pause, if one is running. */
+    private fun endReveal() {
+        revealJob?.cancel()
+        revealJob = null
+        val then = revealEnd ?: return
+        revealEnd = null
+        game.finishReveal()
+        // The last answer gives way to the result.
+        if (game.phase == RegionSweepGame.Phase.Finished) clearFeedback()
+        then()
+    }
+
+    private fun clearFeedback() {
+        feedbackJob?.cancel()
+        feedback = null
     }
 
     private fun showFeedback(newFeedback: SweepFeedback, millis: Long = FEEDBACK_MILLIS) {
@@ -231,13 +270,21 @@ class ChallengeSession(
     }
 
     companion object {
-        /** iOS `showFeedback`'s default duration. */
+        /** iOS `SweepFeedbackBanner.correctDuration`. */
         private const val FEEDBACK_MILLIS = 1_600L
 
-        /** iOS `ClickCountryGameView.revealDuration`. */
+        /**
+         * How long a revealed answer's banner stays up, unless the next guess
+         * or a dismissal clears it first. It is longer than the reveal pause, so
+         * the answer can still be read after the sweep moves on (issue #121).
+         * iOS `SweepFeedbackBanner.revealDuration`.
+         */
+        private const val REVEAL_BANNER_MILLIS = 6_000L
+
+        /** iOS `ClickCountryGameView.revealPause`. */
         private const val CLICK_REVEAL_MILLIS = 2_200L
 
-        /** iOS `NameCapitalGameView.revealDuration`, and Name the Flag's. */
+        /** iOS `NameCapitalGameView.revealPause`, and Name the Flag's. */
         private const val NAME_REVEAL_MILLIS = 2_600L
 
         fun factory(
