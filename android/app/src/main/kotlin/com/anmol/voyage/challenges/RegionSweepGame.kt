@@ -28,7 +28,7 @@ enum class SweepGuessOutcome {
  *
  * Subclasses turn their input (a tap on the globe, a typed capital) into a
  * right/wrong judgement and hand it to [resolveGuess]; typed-answer games can
- * use [submitGuess] directly by overriding [currentAnswer].
+ * use [submitGuess] directly by overriding [currentAnswers].
  *
  * Observable fields are Compose state, like `VoyageState`: every reader is a
  * composable. The clock is not — [elapsedSeconds] is read on demand, so the
@@ -97,18 +97,26 @@ open class RegionSweepGame(
     // ---- Subclass interface ----
 
     /**
-     * The answer expected for the current target: the country's own name (Name
-     * the Flag) unless a subclass says otherwise.
+     * The answers accepted for the current target, the main one first: the
+     * country's own name (Name the Flag) unless a subclass says otherwise —
+     * Name the Capital takes every capital the country has (La Paz and Sucre).
      */
-    open val currentAnswer: String? get() = currentTarget
+    open val currentAnswers: List<String> get() = listOfNotNull(currentTarget)
 
-    /** Scores a typed guess against [currentAnswer], ignoring case and surrounding whitespace. */
-    fun submitGuess(guess: String): SweepGuessOutcome {
-        if (phase != Phase.Playing) return SweepGuessOutcome.Ignored
-        val answer = currentAnswer ?: return SweepGuessOutcome.Ignored
+    /**
+     * The accepted answer [guess] names, ignoring case and surrounding
+     * whitespace, or null when it names none of them.
+     */
+    fun acceptedAnswer(guess: String): String? {
         val trimmed = guess.trim()
-        if (trimmed.isEmpty()) return SweepGuessOutcome.Ignored
-        return resolveGuess(correct = answer.equals(trimmed, ignoreCase = true))
+        return currentAnswers.firstOrNull { it.equals(trimmed, ignoreCase = true) }
+    }
+
+    /** Scores a typed guess against [currentAnswers]. */
+    fun submitGuess(guess: String): SweepGuessOutcome {
+        if (phase != Phase.Playing || currentAnswers.isEmpty()) return SweepGuessOutcome.Ignored
+        if (guess.isBlank()) return SweepGuessOutcome.Ignored
+        return resolveGuess(correct = acceptedAnswer(guess) != null)
     }
 
     /** Scores one submitted guess against the current target. */
@@ -230,24 +238,28 @@ class ClickCountryGame(
 
 /**
  * Name the Capital — iOS `NameCapitalGameViewModel`: each country is shown and
- * the player types its capital. A country without capital data could never be
- * answered, so it is dropped from the pool.
+ * the player types its capital. A country with several capitals (Bolivia: La
+ * Paz and Sucre) takes any of them. A country without capital data could never
+ * be answered, so it is dropped from the pool.
+ *
+ * @param capitalsOf every capital of a country, the main one first — empty when
+ *   it has none.
  */
 class NameCapitalGame(
     region: ChallengeRegion,
     recorder: ChallengeStatsRecorder,
     pool: () -> List<String>,
-    private val capitalOf: (String) -> String?,
+    private val capitalsOf: (String) -> List<String>,
     nanoTime: () -> Long = System::nanoTime,
 ) : RegionSweepGame(
     ChallengeGameMode.NameCapital,
     region,
     recorder,
-    { pool().filter { capitalOf(it) != null } },
+    { pool().filter { capitalsOf(it).isNotEmpty() } },
     nanoTime,
 ) {
 
-    override val currentAnswer: String? get() = currentTarget?.let(capitalOf)
+    override val currentAnswers: List<String> get() = currentTarget?.let(capitalsOf).orEmpty()
 
-    fun capital(of: String): String? = capitalOf(of)
+    fun capitals(of: String): List<String> = capitalsOf(of)
 }

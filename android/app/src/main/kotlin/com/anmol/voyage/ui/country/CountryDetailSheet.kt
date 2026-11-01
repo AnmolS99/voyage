@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
 import com.anmol.voyage.data.CountryDetail
+import com.anmol.voyage.data.capitalsLine
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.DisplayCapitalsCentre
 import com.anmol.voyage.ui.theme.LocalVoyageFonts
@@ -113,7 +114,7 @@ fun CountryDetailSheet(
                 modifier = Modifier.padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                // With art, the name and flag sit on it, and the capital is badged in
+                // With art, the name and flag sit on it, and the capitals are badged in
                 // the cities list — as on iOS.
                 if (art == null) Header(detail)
 
@@ -129,9 +130,9 @@ fun CountryDetailSheet(
                         items = detail.cities,
                         isChecked = { state.isCityChecked(it, detail.name) },
                         onToggle = { state.toggleCheckedCity(it, detail.name) },
-                        // iOS badges the capital in the cities list; the two lists are
-                        // built independently, so it is not always the first entry.
-                        badgedItem = detail.capital,
+                        // iOS badges the capitals in the cities list; the two lists are
+                        // built independently, so they are not always the first entries.
+                        badgedItems = detail.capitals,
                     )
                 }
 
@@ -181,10 +182,10 @@ private fun Header(detail: CountryDetail) {
     }
 }
 
-/** "Paris · Europe", or whichever half exists. */
+/** "Paris · Europe" ("La Paz, Sucre · South America"), or whichever half exists. */
 @Composable
 private fun subtitleOf(detail: CountryDetail): String? {
-    val capital = detail.capital
+    val capital = capitalsLine(detail.capitals)
     val continent = detail.continent
     return when {
         capital != null && continent != null ->
@@ -206,7 +207,7 @@ private fun ChecklistSection(
     items: List<String>,
     isChecked: (String) -> Boolean,
     onToggle: (String) -> Unit,
-    badgedItem: String? = null,
+    badgedItems: List<String> = emptyList(),
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // The icon centres on the title's capitals, not its line box, and the
@@ -262,7 +263,7 @@ private fun ChecklistSection(
                     ChecklistRow(
                         item = item,
                         checked = isChecked(item),
-                        isBadged = item == badgedItem,
+                        isBadged = item in badgedItems,
                         onToggle = { onToggle(item) },
                     )
                     if (index < items.lastIndex) {

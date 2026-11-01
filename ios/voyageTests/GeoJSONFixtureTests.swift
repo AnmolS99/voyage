@@ -27,6 +27,7 @@ final class GeoJSONFixtureTests: XCTestCase {
         let name: String
         let continent: String?
         let capital: ExpectedCapital?
+        let otherCapitals: [ExpectedCapital]
         let isPointCountry: Bool
         let point: ExpectedPoint?
         let polygonPointCounts: [Int]
@@ -80,6 +81,16 @@ final class GeoJSONFixtureTests: XCTestCase {
             XCTAssertEqual(got.capital?.name, capital.name, want.name)
             XCTAssertEqual(got.capital?.lat ?? .nan, capital.lat, accuracy: Self.tolerance, want.name)
             XCTAssertEqual(got.capital?.lon ?? .nan, capital.lon, accuracy: Self.tolerance, want.name)
+        }
+    }
+
+    func testOtherCapitalsMatchFixture() {
+        for (want, got) in pairs {
+            XCTAssertEqual(got.otherCapitals.map(\.name), want.otherCapitals.map(\.name), want.name)
+            for (gotCapital, wantCapital) in zip(got.otherCapitals, want.otherCapitals) {
+                XCTAssertEqual(gotCapital.lat, wantCapital.lat, accuracy: Self.tolerance, want.name)
+                XCTAssertEqual(gotCapital.lon, wantCapital.lon, accuracy: Self.tolerance, want.name)
+            }
         }
     }
 

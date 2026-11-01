@@ -34,6 +34,7 @@ data class ExpectedCountry(
     val name: String,
     val continent: String?,
     val capital: ExpectedCapital?,
+    val otherCapitals: List<ExpectedCapital>,
     val isPointCountry: Boolean,
     val point: ExpectedPoint?,
     val polygonPointCounts: List<Int>,

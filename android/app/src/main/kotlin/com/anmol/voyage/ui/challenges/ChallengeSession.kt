@@ -34,8 +34,11 @@ sealed interface SweepFeedback {
     /** Click the Country, wrong: "[country] [flag] is here". */
     data class CountryIsHere(val country: String, val flag: String) : SweepFeedback
 
-    /** Name the Capital, wrong: "The capital of [country] is [capital]". */
-    data class CapitalOf(val country: String, val capital: String) : SweepFeedback
+    /**
+     * Name the Capital, wrong: "The capital of [country] is [capitals]", or
+     * "The capitals of … are …" for a country with several.
+     */
+    data class CapitalOf(val country: String, val capitals: List<String>) : SweepFeedback
 
     /** Name the Flag, wrong: "This flag is [country] [flag]". */
     data class FlagOf(val country: String, val flag: String) : SweepFeedback
@@ -64,7 +67,7 @@ class ChallengeSession(
 
     val game: RegionSweepGame = when (mode) {
         ChallengeGameMode.ClickCountry -> ClickCountryGame(region, recorder, pool)
-        ChallengeGameMode.NameCapital -> NameCapitalGame(region, recorder, pool, ::capitalOf)
+        ChallengeGameMode.NameCapital -> NameCapitalGame(region, recorder, pool, ::capitalsOf)
         ChallengeGameMode.NameFlag -> RegionSweepGame(mode, region, recorder, pool)
     }
 
@@ -78,7 +81,7 @@ class ChallengeSession(
     val suggestions: CountrySearchIndex<String>? = when (mode) {
         ChallengeGameMode.ClickCountry -> null
         ChallengeGameMode.NameCapital ->
-            CountrySearchIndex(cache.countries.mapNotNull { it.capital?.name }.distinct(), name = { it })
+            CountrySearchIndex(cache.countries.flatMap { it.capitalNames }.distinct(), name = { it })
         ChallengeGameMode.NameFlag -> CountrySearchIndex.ofCountryNames(cache)
     }
 
@@ -98,7 +101,8 @@ class ChallengeSession(
 
     fun flagOf(country: String): String = FlagEmoji.of(cache.countryNamed(country)?.isoCode)
 
-    fun capitalOf(country: String): String? = cache.countryNamed(country)?.capital?.name
+    /** Every capital of [country], the main one first. */
+    fun capitalsOf(country: String): List<String> = cache.countryNamed(country)?.capitalNames.orEmpty()
 
     // ---- Input ----
 
@@ -132,19 +136,21 @@ class ChallengeSession(
     fun submit(guess: String) {
         // Captured first: a right answer moves the sweep on.
         val target = game.currentTarget ?: return
-        val answer = game.currentAnswer ?: return
+        val answers = game.currentAnswers
+        // The answer the player named — one of several, for a country with more than one capital.
+        val named = game.acceptedAnswer(guess)
         val outcome = game.submitGuess(guess)
         when (outcome) {
             SweepGuessOutcome.Correct -> {
                 scene.deselect()
                 scene.highlight(target, VoyagePalette.challengeCorrect)
-                showFeedback(SweepFeedback.Correct(answer))
+                showFeedback(SweepFeedback.Correct(named ?: answers.first()))
                 if (mode == ChallengeGameMode.NameCapital) focusOnCurrentTarget(distance = null)
             }
             SweepGuessOutcome.Reveal -> {
                 scene.highlight(target, VoyagePalette.challengeWrong)
                 if (mode == ChallengeGameMode.NameCapital) {
-                    showFeedback(SweepFeedback.CapitalOf(target, answer), NAME_REVEAL_MILLIS)
+                    showFeedback(SweepFeedback.CapitalOf(target, answers), NAME_REVEAL_MILLIS)
                     afterReveal(NAME_REVEAL_MILLIS) {
                         scene.deselect()
                         focusOnCurrentTarget(distance = null)

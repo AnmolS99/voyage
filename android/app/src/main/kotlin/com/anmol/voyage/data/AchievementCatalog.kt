@@ -65,20 +65,28 @@ object AchievementCatalog {
         thresholds = GLOBETROTTER,
     )
 
-    /** The capital of every UN state that has one, ticked off in its city list. */
+    /**
+     * The capital of every UN state that has one, ticked off in its city list.
+     * Any one of a country's capitals counts (Sucre as well as La Paz), listed by
+     * the one ticked.
+     */
     private fun capitalCollector(
         cache: CountryDataCache,
         unCountries: Set<String>,
         checkedCities: Map<String, Set<String>>,
     ): Achievement {
-        val withCapitals = cache.countries.filter { it.capital != null && it.name in unCountries }
-        val (checked, unchecked) = withCapitals.partition { country ->
-            country.capital!!.name in checkedCities[country.name].orEmpty()
+        val earned = mutableListOf<String>()
+        val remaining = mutableListOf<String>()
+        for (country in cache.countries) {
+            val capital = country.capital?.takeIf { country.name in unCountries } ?: continue
+            val checked = checkedCities[country.name].orEmpty()
+            val ticked = country.capitalNames.firstOrNull { it in checked }
+            if (ticked != null) earned += ticked else remaining += capital.name
         }
         return Achievement(
             kind = AchievementKind.CapitalCollector,
-            earned = checked.map { it.capital!!.name }.sorted(),
-            remaining = unchecked.map { it.capital!!.name }.sorted(),
+            earned = earned.sorted(),
+            remaining = remaining.sorted(),
             thresholds = CAPITAL_COLLECTOR,
         )
     }

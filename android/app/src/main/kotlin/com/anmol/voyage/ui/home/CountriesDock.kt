@@ -103,6 +103,7 @@ import com.anmol.voyage.R
 import com.anmol.voyage.data.FlagEmoji
 import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.data.VisitProgress
+import com.anmol.voyage.data.capitalsLine
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.FlagText
 import com.anmol.voyage.ui.map.StatusButtonColors
@@ -630,7 +631,7 @@ private fun CountryHeader(
             // filled slot would center it rather than keep it by the flag.
             NameAndCapital(
                 name = name,
-                capital = shownInfo?.capital?.name,
+                capital = shownInfo?.let { capitalsLine(it.capitalNames) },
                 modifier = Modifier
                     .weight(1f, fill = false)
                     .alignBy(DisplayCapitalsCentre),

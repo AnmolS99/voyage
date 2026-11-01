@@ -146,6 +146,7 @@
     <string name="challenge_feedback_correct">Correct — %1$s</string>
     <string name="challenge_feedback_country_here">%1$s %2$s is here</string>
     <string name="challenge_feedback_capital">The capital of %1$s is %2$s</string>
+    <string name="challenge_feedback_capitals">The capitals of %1$s are %2$s</string>
     <string name="challenge_feedback_flag">This flag is %1$s %2$s</string>
     <string name="challenge_quit">End game</string>
     <string name="challenge_restart">Restart</string>

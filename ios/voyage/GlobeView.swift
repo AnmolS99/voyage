@@ -188,7 +188,8 @@ struct GlobeView: UIViewRepresentable {
         private var lastAutoRotatingState: Bool = true
         private var hasAnimatedToCountry: Bool = false
         private var lastAnimatedCountry: String?
-        private var capitalStarNode: SCNNode?
+        /// One seal per capital of the selected country (Bolivia has two).
+        private var capitalStarNodes: [SCNNode] = []
         private var doubleTapDragStartY: CGFloat = 0
         private var doubleTapDragStartDistance: Float = 0
         private var lastGlobeStyle: GlobeStyle?
@@ -245,7 +246,9 @@ struct GlobeView: UIViewRepresentable {
             // selection changes and has to pick up the current zoom scale.
             currentZoomScale = scale
             let markerScale = Self.capitalMarkerScale(zoomScale: scale)
-            capitalStarNode?.scale = SCNVector3(markerScale, markerScale, markerScale)
+            for node in capitalStarNodes {
+                node.scale = SCNVector3(markerScale, markerScale, markerScale)
+            }
 
             guard abs(scale - currentOutlineScale) > 0.005 else { return }
             currentOutlineScale = scale
@@ -752,17 +755,25 @@ struct GlobeView: UIViewRepresentable {
         func updateCapitalStar() {
             guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
 
-            // Remove existing star
-            capitalStarNode?.removeFromParentNode()
-            capitalStarNode = nil
+            // Remove existing stars
+            capitalStarNodes.forEach { $0.removeFromParentNode() }
+            capitalStarNodes = []
 
             guard globeState.showsCapitalMarker else { return }
 
-            // If a country is selected, show star at its capital
+            // If a country is selected, show a star at each of its capitals
             guard let selectedCountry = globeState.selectedCountry,
-                  let country = cachedCountries.first(where: { $0.name == selectedCountry }),
-                  let capital = country.capital else { return }
+                  let country = cachedCountries.first(where: { $0.name == selectedCountry }) else { return }
 
+            for capital in country.capitals {
+                let holder = createCapitalHolder(at: capital)
+                globeNode.addChildNode(holder)
+                capitalStarNodes.append(holder)
+            }
+        }
+
+        /// The star seal at `capital`, laid on the globe and sized for the current zoom.
+        private func createCapitalHolder(at capital: Capital) -> SCNNode {
             // Convert lat/lon to 3D position on sphere (radius slightly above surface)
             // Must match PolygonTriangulator.latLonToSphere coordinate system
             let radius = GlobeLayer.capitalStar  // Just above borders and dots
@@ -791,9 +802,7 @@ struct GlobeView: UIViewRepresentable {
             let east = simd_normalize(simd_cross(simd_float3(0, 1, 0), normal))
             let north = simd_cross(normal, east)
             holder.simdOrientation = simd_quatf(simd_float3x3(east, north, normal))
-
-            globeNode.addChildNode(holder)
-            capitalStarNode = holder
+            return holder
         }
 
         func createStarNode() -> SCNNode {

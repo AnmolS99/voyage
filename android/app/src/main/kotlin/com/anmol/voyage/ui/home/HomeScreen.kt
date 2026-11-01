@@ -373,11 +373,12 @@ private fun BoxScope.GlobeBody(
         autoRotating = scene.isAutoRotating,
         onInteraction = scene::onInteraction,
         dotStyles = dotStyles,
-        capital = selectedName
+        capitals = selectedName
             ?.takeIf { scene.showsCapital }
             ?.let { name -> data.countries.firstOrNull { it.name == name } }
-            ?.capital
-            ?.let { LatLon(lat = it.lat, lon = it.lon) },
+            ?.capitals
+            ?.map { LatLon(lat = it.lat, lon = it.lon) }
+            .orEmpty(),
         selectedOutline = selectedOutline,
         // A texture only ever changes fills, so it does not come into the border.
         selectedOutlineColor = selectedName?.let { scene.styleFor(it, hasTexture = true).border.toGlobeFill() },

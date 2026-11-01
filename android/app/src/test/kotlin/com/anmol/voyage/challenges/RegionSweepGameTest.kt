@@ -22,13 +22,18 @@ class RegionSweepGameTest {
 
     private val recorder = VoyageState(InMemoryStateStore(), CoroutineScope(Dispatchers.Unconfined))
 
-    private val capitals = mapOf("France" to "Paris", "Germany" to "Berlin", "Spain" to "Madrid")
+    private val capitals = mapOf(
+        "France" to listOf("Paris"),
+        "Germany" to listOf("Berlin"),
+        "Spain" to listOf("Madrid"),
+        "Bolivia" to listOf("La Paz", "Sucre"),
+    )
 
     private fun clickGame(region: ChallengeRegion, vararg countries: String) =
         ClickCountryGame(region, recorder, pool = { countries.toList() })
 
     private fun capitalGame(vararg countries: String) =
-        NameCapitalGame(ChallengeRegion.Europe, recorder, pool = { countries.toList() }, capitalOf = capitals::get)
+        NameCapitalGame(ChallengeRegion.Europe, recorder, pool = { countries.toList() }, capitalsOf = { capitals[it].orEmpty() })
 
     private fun flagGame(vararg countries: String) =
         RegionSweepGame(ChallengeGameMode.NameFlag, ChallengeRegion.Europe, recorder, pool = { countries.toList() })
@@ -159,7 +164,7 @@ class RegionSweepGameTest {
         val game = capitalGame("France", "Germany", "Spain")
 
         assertEquals("France", game.currentTarget)
-        assertEquals("Paris", game.currentAnswer)
+        assertEquals(listOf("Paris"), game.currentAnswers)
         assertEquals(SweepGuessOutcome.Correct, game.submitGuess("Paris"))
 
         assertEquals("Germany", game.currentTarget)
@@ -196,6 +201,25 @@ class RegionSweepGameTest {
         assertEquals(0, game.answeredCount)
     }
 
+    /** Issue #118: every capital of a country is a right answer. */
+    @Test
+    fun `every capital of a country is accepted`() {
+        for (guess in listOf("La Paz", "Sucre", "  sucre ")) {
+            val game = capitalGame("Bolivia")
+            assertEquals(listOf("La Paz", "Sucre"), game.currentAnswers)
+            assertEquals(guess, SweepGuessOutcome.Correct, game.submitGuess(guess))
+        }
+    }
+
+    @Test
+    fun `the accepted answer is the capital named`() {
+        val game = capitalGame("Bolivia")
+        assertEquals("Sucre", game.acceptedAnswer("sucre"))
+        assertEquals("La Paz", game.acceptedAnswer("La Paz"))
+        assertNull(game.acceptedAnswer("Santa Cruz"))
+        assertEquals(SweepGuessOutcome.Reveal, game.submitGuess("Santa Cruz"))
+    }
+
     @Test
     fun `countries without capital data are left out`() {
         val game = capitalGame("France", "Atlantis")
@@ -219,7 +243,7 @@ class RegionSweepGameTest {
     fun `name the flag scores a full sweep`() {
         val game = flagGame("France", "Germany", "Spain")
 
-        assertEquals("France", game.currentAnswer)
+        assertEquals(listOf("France"), game.currentAnswers)
         assertEquals(SweepGuessOutcome.Correct, game.submitGuess("France"))
         assertEquals(SweepGuessOutcome.Reveal, game.submitGuess("Austria"))
         game.finishReveal()

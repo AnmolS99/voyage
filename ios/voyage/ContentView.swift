@@ -342,8 +342,8 @@ class GlobeState: ObservableObject {
             if let flagCode = country.flagCode {
                 countryFlagCodes[country.name] = flagCode
             }
-            if let capital = country.capital {
-                countryCapitals[country.name] = capital.name
+            if let capitals = country.capitalsLine {
+                countryCapitals[country.name] = capitals
             }
         }
     }
@@ -615,7 +615,8 @@ class GlobeState: ObservableObject {
         return "🌍" // Generic globe emoji as fallback
     }
 
-    func capitalForCountry(_ name: String) -> String? {
+    /// "La Paz, Sucre" — every capital of the country, the main one first.
+    func capitalsForCountry(_ name: String) -> String? {
         countryCapitals[name]
     }
 

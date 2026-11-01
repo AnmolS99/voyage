@@ -50,6 +50,7 @@ import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountrySearchIndex
 import com.anmol.voyage.data.FlagEmoji
 import com.anmol.voyage.data.GeoJsonCountry
+import com.anmol.voyage.data.capitalsLine
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
 
@@ -167,7 +168,7 @@ private fun CountryRow(
     val flag = remember(country) { FlagEmoji.of(country) }
     // The alias that found the country explains the match better than its capital.
     val supporting = matchedAlias?.let { matchedAliasLabel(it) }
-        ?: country.capital?.name
+        ?: capitalsLine(country.capitalNames)
     val wishlisted = state.isInWishlist(country.name)
     ListItem(
         headlineContent = { Text(country.name) },

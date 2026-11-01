@@ -49,6 +49,17 @@ class GeoJsonParserTest {
     }
 
     @Test
+    fun `other capitals match the fixture`() {
+        expected.countries.zip(countries) { want, got ->
+            assertEquals(
+                want.name,
+                want.otherCapitals.map { Capital(it.name, it.lat, it.lon) },
+                got.otherCapitals,
+            )
+        }
+    }
+
+    @Test
     fun `point countries carry their coordinate and no geometry`() {
         expected.countries.zip(countries) { want, got ->
             val point = want.point

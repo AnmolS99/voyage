@@ -40,6 +40,7 @@ class CountriesFileTest {
             assertEquals(want.name, want.isoCode, got.isoCode)
             assertEquals(want.name, want.continent, got.continent)
             assertEquals(want.name, want.capital, got.capital)
+            assertEquals(want.name, want.otherCapitals, got.otherCapitals)
             assertEquals(want.name, want.isPointCountry, got.isPointCountry)
             assertEquals(want.name, want.pointCoordinate, got.pointCoordinate)
         }

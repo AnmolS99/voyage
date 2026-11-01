@@ -399,6 +399,18 @@ final class AchievementCompletionTests: XCTestCase {
             "GeoJSON countries should match ContinentData: \(mismatches)")
     }
 
+    /// Any of a country's capitals counts toward Capital Collector — Sucre as
+    /// well as La Paz — as on Android (`AchievementTest`).
+    func testCapitalCollectorCountsAnyOfACountrysCapitals() {
+        let collector = AchievementCatalog.achievements(
+            visited: [],
+            checkedCities: ["Bolivia": ["Sucre"]],
+            checkedAttractions: [:]
+        ).first { $0.name == "Capital Collector" }
+        XCTAssertEqual(collector?.visitedCountries, ["Sucre"])
+        XCTAssertEqual(collector?.remainingCountries.contains("La Paz"), false)
+    }
+
     // MARK: - Unlock Celebration
 
     func testCatalogBuildsTheTenAchievementsInOrder() {

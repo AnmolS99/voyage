@@ -81,6 +81,10 @@ def country_of(feature: dict) -> dict | None:
         "name": name,
         "continent": properties.get("continent"),
         "capital": capital,
+        "otherCapitals": [
+            {"name": other["name"], "lat": other["lat"], "lon": other["lon"]}
+            for other in properties.get("otherCapitals") or []
+        ],
     }
 
     if geometry["type"] == "Point":

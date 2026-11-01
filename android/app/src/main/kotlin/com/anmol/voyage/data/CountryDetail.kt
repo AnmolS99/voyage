@@ -15,14 +15,20 @@ data class CountryDetail(
     val name: String,
     val isoCode: String?,
     val flag: String,
-    /** Capital city name, absent for the few features that have none (Antarctica). */
-    val capital: String?,
+    /**
+     * Every capital, the main one first (La Paz, then Sucre). Empty for the few
+     * features that have none (Antarctica).
+     */
+    val capitals: List<String>,
     val continent: String?,
     val cities: List<String>,
     val attractions: List<String>,
 ) {
 
     val hasHighlights: Boolean get() = cities.isNotEmpty() || attractions.isNotEmpty()
+
+    /** The capital the country is best known by. */
+    val capital: String? get() = capitals.firstOrNull()
 
     companion object {
 
@@ -36,7 +42,7 @@ data class CountryDetail(
                 name = country.name,
                 isoCode = country.isoCode,
                 flag = FlagEmoji.of(country),
-                capital = country.capital?.name,
+                capitals = country.capitalNames,
                 continent = country.continent,
                 cities = highlights?.cities.orEmpty(),
                 attractions = highlights?.attractions.orEmpty(),
