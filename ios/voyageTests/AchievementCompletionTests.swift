@@ -212,6 +212,20 @@ final class AchievementCompletionTests: XCTestCase {
         }
     }
 
+    func testEveryCapitalIsInItsCountrysTopCities() {
+        // Capital Collector is earned in the cities checklist, so every capital —
+        // Sucre and Bloemfontein too — has to be there, spelled the same, or it
+        // could never be checked off. `CountryDetailTest` on Android.
+        let highlights = CountryHighlightsParser.loadHighlights()
+        for country in GeoJSONParser.loadCountries() {
+            let cities = country.flagCode.flatMap { highlights[$0]?.cities } ?? []
+            for capital in country.capitalNames {
+                XCTAssertTrue(cities.contains(capital),
+                    "\(capital) missing from \(country.name)'s cities in country_highlights.json")
+            }
+        }
+    }
+
     // MARK: - Continental Drifter Achievement Tests
 
     private func makeDrifterAchievement(visited: Set<String>) -> Achievement {

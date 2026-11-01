@@ -75,13 +75,16 @@ class CountryDetailTest {
 
     @Test
     fun `every capital is spelled the same in both shared files`() {
-        // The cities checklist badges the capital by matching its name, so the two
-        // files have to agree on the spelling — they are edited separately, and a
-        // mismatch would silently drop the badge rather than break anything loudly.
+        // The cities checklist badges the capitals by matching their names, and
+        // Capital Collector is earned there, so every capital — Sucre and
+        // Bloemfontein too — has to be in it, spelled the same. The files are
+        // edited separately, and a mismatch would silently drop the badge and the
+        // checkbox rather than break anything loudly. iOS:
+        // `testEveryCapitalIsInItsCountrysTopCities`.
         val mismatched = cache.countries
             .map { CountryDetail.of(cache, it) }
-            .filter { it.capital != null && it.capital !in it.cities }
-            .map { "${it.name}: ${it.capital} not in ${it.cities}" }
+            .flatMap { detail -> (detail.capitals - detail.cities.toSet()).map { detail to it } }
+            .map { (detail, capital) -> "${detail.name}: $capital not in ${detail.cities}" }
         assertEquals(emptyList<String>(), mismatched)
     }
 }
