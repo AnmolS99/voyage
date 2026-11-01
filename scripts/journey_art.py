@@ -4,9 +4,9 @@
 The country sheet's header is a 390 x 240 pt banner (13:8). This script asks a
 Gemini image model to repaint a photo the user supplies in the look of an
 expert painter's gouache-and-oil landscape — visible brushwork, slightly
-imperfect edges, with the mood and palette of `journey-art/style_reference.webp`
-(a luminous gradient sky and hazy depth) — once for the day (light mode) and
-once for the night (dark mode). The night version is made *from a chosen day
+imperfect edges, with the mood and palette of Norway's day art
+(`shared/data/journey/NO_day.webp`: a luminous gradient sky and hazy depth) —
+once for the day (light mode) and once for the night (dark mode). The night version is made *from a chosen day
 version*, not from the photo, so both share one composition and switching
 themes doesn't move the scene.
 
@@ -69,7 +69,9 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 WORK = ROOT / "journey-art"
 APP_ART = ROOT / "shared" / "data" / "journey"
-STYLE_REFERENCE = WORK / "style_reference.webp"
+# Norway's own day art, so the reference ships with the repo and new countries
+# match the set already painted.
+STYLE_REFERENCE = APP_ART / "NO_day.webp"
 PLACES = APP_ART / "places.json"
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"
