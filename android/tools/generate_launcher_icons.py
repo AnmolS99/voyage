@@ -9,6 +9,11 @@ a 1024x1024 globe on a solid orange field. Android needs:
     Screen API icon.
   * `mipmap-*/ic_launcher_monochrome.png` — the themed-icon layer: land masses
     and the globe's rim as an alpha mask the system tints.
+  * `mipmap-*/ic_launcher_dark_foreground.png` — the dark icon
+    (`voyage_icon_dark.png`, rendered from `shared/store/logo_dark.svg`) whole,
+    stars and night sky included, scaled so its globe matches the light one.
+    Its sky is `@color/voyage_page_bg_dark`, the dark icon's background layer,
+    so the square's edge never shows. It shares the monochrome layer.
 
 The orange background comes from `@color/voyage_orange`, so it is not baked into
 the foreground layer. minSdk is 26, so every device supports adaptive icons and
@@ -24,7 +29,9 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SOURCE = REPO_ROOT / "ios/voyage/Assets.xcassets/AppIcon.appiconset/voyage_icon.png"
+ICON_DIR = REPO_ROOT / "ios/voyage/Assets.xcassets/AppIcon.appiconset"
+SOURCE = ICON_DIR / "voyage_icon.png"
+DARK_SOURCE = ICON_DIR / "voyage_icon_dark.png"
 RES_DIR = REPO_ROOT / "android/app/src/main/res"
 
 # Adaptive icon layers are 108dp, of which a 72dp circle is visible after
@@ -32,6 +39,8 @@ RES_DIR = REPO_ROOT / "android/app/src/main/res"
 # globe-to-icon proportion as the iOS artwork.
 LAYER_SIZES = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}
 GLOBE_FRACTION = 0.53
+# The dark artwork's globe spans 80% of it (r=40 in the SVG's 100-unit viewBox).
+DARK_GLOBE_SPAN = 0.8
 
 
 def globe_cutout(source: Image.Image) -> Image.Image:
@@ -104,9 +113,9 @@ def monochrome_mask(globe: Image.Image) -> Image.Image:
     return layer
 
 
-def write_layer(image: Image.Image, name: str) -> None:
+def write_layer(image: Image.Image, name: str, fraction: float = GLOBE_FRACTION) -> None:
     for density, layer in LAYER_SIZES.items():
-        diameter = int(round(layer * GLOBE_FRACTION))
+        diameter = int(round(layer * fraction))
         canvas = Image.new("RGBA", (layer, layer), (0, 0, 0, 0))
         scaled = image.resize((diameter, diameter), Image.LANCZOS)
         offset = (layer - diameter) // 2
@@ -121,6 +130,11 @@ def main() -> None:
     globe = globe_cutout(Image.open(SOURCE))
     write_layer(globe, "ic_launcher_foreground")
     write_layer(monochrome_mask(globe), "ic_launcher_monochrome")
+    write_layer(
+        Image.open(DARK_SOURCE).convert("RGBA"),
+        "ic_launcher_dark_foreground",
+        GLOBE_FRACTION / DARK_GLOBE_SPAN,
+    )
 
 
 if __name__ == "__main__":

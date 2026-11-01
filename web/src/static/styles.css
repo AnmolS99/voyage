@@ -63,7 +63,7 @@ a:hover { color: var(--accent); }
 
 .site-header, .site-footer { width: 100%; max-width: 1120px; margin: 0 auto; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
 .brand { display: flex; align-items: center; gap: 10px; font: 600 24px var(--display); text-decoration: none; }
-.brand img { border-radius: 8px; }
+.brand img { display: block; border-radius: 8px; }
 .site-header nav a { font-weight: 500; text-decoration: none; }
 .site-footer { justify-content: center; color: var(--text-secondary); font-size: 14px; border-top: 1px solid var(--track); margin-top: 64px; }
 

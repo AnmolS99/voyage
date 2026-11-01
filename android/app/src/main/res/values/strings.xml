@@ -95,7 +95,7 @@
     <string name="settings_appearance">Appearance</string>
     <string name="settings_globe_style">Globe style</string>
     <string name="settings_map_style">Map style</string>
-    <string name="settings_appearance_footer">Choose texture styles for the globe and map views, and whether they shade mountains and valleys.</string>
+    <string name="settings_appearance_footer">Choose the app icon, texture styles for the globe and map views, and whether they shade mountains and valleys.</string>
     <string name="settings_terrain">Terrain</string>
     <string name="style_stylized">Stylized</string>
     <string name="style_natural">Natural</string>
@@ -104,6 +104,7 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="settings_app_icon">App icon</string>
     <string name="settings_data">Data</string>
     <string name="settings_reset">Reset all data</string>
     <string name="settings_reset_footer">This will clear all visited countries, wishlist and challenge statistics.</string>

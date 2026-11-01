@@ -5,6 +5,20 @@ struct SettingsView: View {
     @ObservedObject var globeState: GlobeState
     @State private var showingResetConfirmation = false
     @StateObject private var tipJarManager = TipJarManager()
+    /// The icon on the Home Screen. iOS remembers it, so it is read back from
+    /// the system rather than kept in `GlobeState`.
+    @State private var appIcon = ThemeMode.currentAppIcon
+
+    private func setAppIcon(_ mode: ThemeMode) {
+        appIcon = mode
+        Task {
+            do {
+                try await UIApplication.shared.setAlternateIconName(mode.alternateIconName)
+            } catch {
+                appIcon = .currentAppIcon
+            }
+        }
+    }
 
     /// "1.10.2 (123)": the marketing version and the build number, which CI sets
     /// to the TestFlight run number, so testers can say exactly which build they have.
@@ -56,6 +70,30 @@ struct SettingsView: View {
                     }
                     .padding(.vertical, 4)
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+
+                    if UIApplication.shared.supportsAlternateIcons {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Image(systemName: "app")
+                                    .foregroundColor(AppColors.buttonColor)
+
+                                Text("App Icon")
+                            }
+
+                            Picker("App Icon", selection: Binding(
+                                get: { appIcon },
+                                set: { setAppIcon($0) }
+                            )) {
+                                ForEach(ThemeMode.allCases, id: \.self) { mode in
+                                    Text(mode.displayName).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                        }
+                        .padding(.vertical, 4)
+                        .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+                    }
 
                     HStack {
                         Image(systemName: "globe.americas")
@@ -109,7 +147,7 @@ struct SettingsView: View {
                     Text("Appearance")
                         .font(.voyageText(17, weight: .semibold))
                 } footer: {
-                    Text("Choose the app's theme, the texture styles for the globe and map views, and whether they shade terrain.")
+                    Text("Choose the app's theme and icon, the texture styles for the globe and map views, and whether they shade terrain.")
                         .font(.voyageText(13))
                 }
 
@@ -235,6 +273,25 @@ struct SettingsView: View {
                 Text(thankYouMessage)
             }
         }
+    }
+}
+
+/// The app icon picker reuses the theme's three choices: `.system` is the
+/// primary `AppIcon`, whose dark appearance iOS shows when Home Screen icons
+/// are set to Dark, and light and dark are alternate icons that hold one
+/// artwork in every appearance (`ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`).
+extension ThemeMode {
+    /// `nil` is the primary icon.
+    var alternateIconName: String? {
+        switch self {
+        case .system: return nil
+        case .light: return "AppIcon-Light"
+        case .dark: return "AppIcon-Dark"
+        }
+    }
+
+    @MainActor static var currentAppIcon: ThemeMode {
+        allCases.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .system
     }
 }
 

@@ -13,7 +13,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyageTheme
 
-class MainActivity : ComponentActivity() {
+class VoyageActivity : ComponentActivity() {
 
     private val voyageState: VoyageState by lazy {
         ViewModelProvider(this, VoyageState.Factory).get(VoyageState::class.java)
