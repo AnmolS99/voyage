@@ -80,16 +80,14 @@ struct SettingsView: View {
                                 Text("App Icon")
                             }
 
-                            Picker("App Icon", selection: Binding(
-                                get: { appIcon },
-                                set: { setAppIcon($0) }
-                            )) {
+                            HStack(spacing: 0) {
                                 ForEach(ThemeMode.allCases, id: \.self) { mode in
-                                    Text(mode.displayName).tag(mode)
+                                    AppIconOption(mode: mode, isSelected: appIcon == mode) {
+                                        setAppIcon(mode)
+                                    }
+                                    .frame(maxWidth: .infinity)
                                 }
                             }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
 
                             Text("“System” follows your Home Screen icon setting.")
                                 .font(.voyageText(13))
@@ -293,6 +291,58 @@ extension ThemeMode {
 
     @MainActor static var currentAppIcon: ThemeMode {
         allCases.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .system
+    }
+}
+
+/// One choice in the App Icon picker: a preview of the icon with its name
+/// below, ringed in the app's orange when chosen. System shows the light icon
+/// and the dark one split down the middle, like the theme's half-filled circle.
+private struct AppIconOption: View {
+    let mode: ThemeMode
+    let isSelected: Bool
+    let action: () -> Void
+
+    private static let size: CGFloat = 60
+    /// The Home Screen's icon corner radius at this size.
+    private static let shape = RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                preview
+                    .frame(width: Self.size, height: Self.size)
+                    .clipShape(Self.shape)
+                    .padding(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Self.size * 0.225 + 4, style: .continuous)
+                            .stroke(AppColors.buttonColor, lineWidth: 2)
+                            .opacity(isSelected ? 1 : 0)
+                    )
+
+                Text(mode.displayName)
+                    .font(.voyageText(13, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .primary : .secondary)
+            }
+        }
+        // Borderless, so a tap on one option doesn't fire the whole list row
+        .buttonStyle(.borderless)
+        .accessibilityLabel(mode.displayName)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    @ViewBuilder private var preview: some View {
+        switch mode {
+        case .light:
+            Image("AppIconPreviewLight").resizable()
+        case .dark:
+            Image("AppIconPreviewDark").resizable()
+        case .system:
+            Image("AppIconPreviewLight").resizable()
+                .overlay(
+                    Image("AppIconPreviewDark").resizable()
+                        .mask(HStack(spacing: 0) { Color.clear; Color.black })
+                )
+        }
     }
 }
 

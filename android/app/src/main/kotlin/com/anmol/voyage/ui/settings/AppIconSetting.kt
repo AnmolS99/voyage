@@ -3,21 +3,29 @@ package com.anmol.voyage.ui.settings
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import androidx.annotation.ColorRes
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,9 +34,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.anmol.voyage.R
@@ -48,9 +62,15 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * only waits as [pending] until [VoyageActivity] stops, and [applyPending]
  * swaps the aliases once voyage is out of sight.
  */
-internal enum class LauncherIcon(private val aliasName: String, @StringRes val labelRes: Int) {
-    Light("MainActivity", R.string.theme_light),
-    Dark("DarkIconActivity", R.string.theme_dark);
+internal enum class LauncherIcon(
+    private val aliasName: String,
+    @StringRes val labelRes: Int,
+    /** The adaptive icon's layers, as `mipmap-anydpi-v26/ic_launcher*.xml` stacks them. */
+    @ColorRes val background: Int,
+    @DrawableRes val foreground: Int,
+) {
+    Light("MainActivity", R.string.theme_light, R.color.voyage_orange, R.mipmap.ic_launcher_foreground),
+    Dark("DarkIconActivity", R.string.theme_dark, R.color.voyage_page_bg_dark, R.mipmap.ic_launcher_dark_foreground);
 
     fun component(context: Context) =
         ComponentName(context, "${VoyageActivity::class.java.`package`!!.name}.$aliasName")
@@ -105,15 +125,18 @@ internal enum class LauncherIcon(private val aliasName: String, @StringRes val l
     }
 }
 
-/** Light or dark launcher icon, as a segmented button row like the theme's. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Light or dark launcher icon, as a row of icon previews like iOS's. A preview
+ * is the adaptive icon's own layers, its background color under its foreground,
+ * cut to a circle as the default launcher shows it.
+ */
 @Composable
 internal fun AppIconSetting() {
     val context = LocalContext.current
     var selected by remember { mutableStateOf(LauncherIcon.current(context)) }
     var isPending by remember { mutableStateOf(LauncherIcon.pending(context) != null) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Rounded.Apps,
@@ -123,20 +146,18 @@ internal fun AppIconSetting() {
             Spacer(Modifier.width(12.dp))
             Text(stringResource(R.string.settings_app_icon), style = MaterialTheme.typography.bodyLarge)
         }
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            LauncherIcon.entries.forEachIndexed { index, icon ->
-                SegmentedButton(
-                    selected = icon == selected,
+        Row(modifier = Modifier.fillMaxWidth().selectableGroup()) {
+            LauncherIcon.entries.forEach { icon ->
+                LauncherIconOption(
+                    icon = icon,
+                    isSelected = icon == selected,
                     onClick = {
                         LauncherIcon.select(context, icon)
                         selected = icon
                         isPending = LauncherIcon.pending(context) != null
                     },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = LauncherIcon.entries.size),
-                    modifier = Modifier.testTag(appIconOptionTag(icon)),
-                ) {
-                    Text(stringResource(icon.labelRes), maxLines = 1)
-                }
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
         if (isPending) {
@@ -149,5 +170,47 @@ internal fun AppIconSetting() {
     }
 }
 
-/** Test tag for one icon's segment in the app icon picker. */
+/** One icon's preview with its name below, ringed in the app's orange when chosen. */
+@Composable
+private fun LauncherIconOption(
+    icon: LauncherIcon,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
+            .testTag(appIconOptionTag(icon)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .border(2.dp, if (isSelected) VoyagePalette.buttonColor else Color.Transparent, CircleShape)
+                .padding(4.dp)
+                .size(PREVIEW_SIZE)
+                .clip(CircleShape)
+                .background(colorResource(icon.background)),
+            contentAlignment = Alignment.Center,
+        ) {
+            // The layer is 108 dp, of which the launcher shows the middle 72.
+            Image(
+                painter = painterResource(icon.foreground),
+                contentDescription = null,
+                modifier = Modifier.requiredSize(PREVIEW_SIZE * 1.5f),
+            )
+        }
+        Text(
+            text = stringResource(icon.labelRes),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private val PREVIEW_SIZE = 56.dp
+
+/** Test tag for one icon's option in the app icon picker. */
 internal fun appIconOptionTag(icon: LauncherIcon) = "settings_app_icon:${icon.name}"
