@@ -166,15 +166,16 @@ the cross-platform ones is a two-platform change.
   counts them.
 - **Ten medals, counting the same things as iOS's** (`AchievementTest`,
   `AchievementCompletionTests`). Globetrotter and Capital Collector run over the
-  195 UN states, not all 207 features; the explorer medals do count territories;
+  195 UN states, not all 207 features; so do the explorer medals, each counting
+  exactly the pool its continent's challenge region plays (`unCountries`);
   Continental Drifter needs all seven continents and counts each once; the eight
   wonders must each name an attraction `country_highlights.json` still lists.
 - **The same medal limits as iOS's** (`AchievementTest`,
   `AchievementCompletionTests`): bronze / silver / gold are 25 / 100 / 195 for
   Globetrotter and Capital Collector, 2 / 5 / 8 for Wonders, 2 / 4 / 7 for
-  Continental Drifter, and for the explorers Africa 10 / 30 / 55, Asia
-  10 / 25 / 50, Europe 10 / 25 / 45, North America 5 / 15 / 26, South America
-  3 / 8 / 14, Oceania 3 / 8 / 15. Gold is exactly completion.
+  Continental Drifter, and for the explorers Africa 10 / 30 / 54, Asia
+  10 / 25 / 49, Europe 10 / 25 / 43, North America 5 / 15 / 23, South America
+  3 / 8 / 12, Oceania 3 / 8 / 14. Gold is exactly completion.
 
 ## Phase 9 — Daily Challenge
 

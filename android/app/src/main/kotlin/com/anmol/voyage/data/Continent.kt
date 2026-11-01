@@ -46,6 +46,12 @@ class ContinentIndex(countries: List<GeoJsonCountry>) {
 
     fun countries(of: Continent): Set<String> = countryNames.getValue(of)
 
+    /**
+     * The UN states on [of] — what its Explorer medal and its challenge region
+     * both count, so the two never disagree (iOS `Continent.unCountries`).
+     */
+    fun unCountries(of: Continent): Set<String> = UnMembership.membersOf(countries(of = of))
+
     fun continentOf(country: String): Continent? = continentByCountry[country]
 
     fun visitedCountries(continent: Continent, visited: Set<String>): Set<String> =

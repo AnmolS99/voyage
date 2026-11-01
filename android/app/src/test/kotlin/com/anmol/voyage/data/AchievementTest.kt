@@ -1,5 +1,6 @@
 package com.anmol.voyage.data
 
+import com.anmol.voyage.challenges.ChallengeRegion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -27,6 +28,9 @@ class AchievementTest {
         catalog(visited = visited).first { it.kind == kind }
 
     private fun countriesOf(continent: Continent) = cache.continents.countries(of = continent)
+
+    /** What an explorer medal counts: the continent's UN states. */
+    private fun unCountriesOf(continent: Continent) = cache.continents.unCountries(of = continent)
 
     // ---- The catalog ----
 
@@ -266,7 +270,7 @@ class AchievementTest {
     @Test
     fun `an explorer medal is earned by visiting its whole continent`() {
         Continent.entries.filterNot { it == Continent.ANTARCTICA }.forEach { continent ->
-            val countries = countriesOf(continent)
+            val countries = unCountriesOf(continent)
             val explorer = achievement(AchievementKind.Explorer(continent), visited = countries)
 
             assertTrue("${continent.displayName} should be complete", explorer.isCompleted)
@@ -277,8 +281,8 @@ class AchievementTest {
 
     @Test
     fun `an explorer medal counts only its own continent's countries`() {
-        val europe = countriesOf(Continent.EUROPE).take(2)
-        val asia = countriesOf(Continent.ASIA).take(3)
+        val europe = unCountriesOf(Continent.EUROPE).take(2)
+        val asia = unCountriesOf(Continent.ASIA).take(3)
         val visited = (europe + asia).toSet()
 
         assertEquals(2, achievement(AchievementKind.Explorer(Continent.EUROPE), visited).current)
@@ -290,21 +294,33 @@ class AchievementTest {
     }
 
     @Test
-    fun `explorer medals count territories, unlike Globetrotter`() {
-        // Greenland is not a UN state but it is very much in North America —
-        // iOS's continent achievements make the same distinction.
+    fun `explorer medals count UN states only, like Globetrotter`() {
+        // Greenland is in North America but is not a UN state, so neither the
+        // medal nor the North America challenge counts it — as on iOS.
         val explorer = achievement(
             AchievementKind.Explorer(Continent.NORTH_AMERICA),
             visited = setOf("Greenland"),
         )
 
-        assertEquals(1, explorer.current)
-        assertEquals(listOf("Greenland"), explorer.earned)
+        assertEquals(0, explorer.current)
+        assertFalse("Greenland" in explorer.remaining)
+    }
+
+    @Test
+    fun `an explorer medal counts what its challenge region plays`() {
+        // Issue #119: Medals read 0/55 for Africa while Challenges listed 54.
+        ChallengeRegion.entries.forEach { region ->
+            val continent = region.continent ?: return@forEach
+            val explorer = achievement(AchievementKind.Explorer(continent))
+
+            assertEquals(region.countries(cache.continents), explorer.remaining)
+        }
+        assertEquals(54, achievement(AchievementKind.Explorer(Continent.AFRICA)).total)
     }
 
     @Test
     fun `earned and remaining items are sorted`() {
-        val visited = countriesOf(Continent.EUROPE).take(5).toSet()
+        val visited = unCountriesOf(Continent.EUROPE).take(5).toSet()
         val explorer = achievement(AchievementKind.Explorer(Continent.EUROPE), visited)
 
         assertEquals(explorer.earned.sorted(), explorer.earned)
@@ -321,12 +337,12 @@ class AchievementTest {
             AchievementKind.CapitalCollector to listOf(25, 100, 195),
             AchievementKind.Wonders to listOf(2, 5, 8),
             AchievementKind.ContinentalDrifter to listOf(2, 4, 7),
-            AchievementKind.Explorer(Continent.AFRICA) to listOf(10, 30, 55),
-            AchievementKind.Explorer(Continent.ASIA) to listOf(10, 25, 50),
-            AchievementKind.Explorer(Continent.EUROPE) to listOf(10, 25, 45),
-            AchievementKind.Explorer(Continent.NORTH_AMERICA) to listOf(5, 15, 26),
-            AchievementKind.Explorer(Continent.SOUTH_AMERICA) to listOf(3, 8, 14),
-            AchievementKind.Explorer(Continent.OCEANIA) to listOf(3, 8, 15),
+            AchievementKind.Explorer(Continent.AFRICA) to listOf(10, 30, 54),
+            AchievementKind.Explorer(Continent.ASIA) to listOf(10, 25, 49),
+            AchievementKind.Explorer(Continent.EUROPE) to listOf(10, 25, 43),
+            AchievementKind.Explorer(Continent.NORTH_AMERICA) to listOf(5, 15, 23),
+            AchievementKind.Explorer(Continent.SOUTH_AMERICA) to listOf(3, 8, 12),
+            AchievementKind.Explorer(Continent.OCEANIA) to listOf(3, 8, 14),
         )
         val achievements = catalog()
         assertEquals(expected.keys, achievements.map { it.kind }.toSet())
@@ -346,7 +362,7 @@ class AchievementTest {
 
     @Test
     fun `an explorer medal climbs through its limits`() {
-        val oceania = countriesOf(Continent.OCEANIA).sorted()
+        val oceania = unCountriesOf(Continent.OCEANIA).sorted()
         fun tier(visiting: Int) =
             achievement(AchievementKind.Explorer(Continent.OCEANIA), oceania.take(visiting).toSet()).tier
 
@@ -354,7 +370,7 @@ class AchievementTest {
         assertEquals(MedalTier.Bronze, tier(3))
         assertEquals(MedalTier.Bronze, tier(7))
         assertEquals(MedalTier.Silver, tier(8))
-        assertEquals(MedalTier.Silver, tier(14))
+        assertEquals(MedalTier.Silver, tier(13))
         assertEquals(MedalTier.Gold, tier(oceania.size))
     }
 

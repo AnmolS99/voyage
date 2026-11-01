@@ -98,13 +98,13 @@ object AchievementCatalog {
         thresholds = CONTINENTAL_DRIFTER,
     )
 
-    /** Every country on one continent, territories included. */
+    /** Every UN state on one continent — the pool its challenge region plays. */
     private fun explorer(
         cache: CountryDataCache,
         continent: Continent,
         visited: Set<String>,
     ): Achievement {
-        val countries = cache.continents.countries(of = continent)
+        val countries = cache.continents.unCountries(of = continent)
         return Achievement(
             kind = AchievementKind.Explorer(continent),
             earned = (countries intersect visited).sorted(),
