@@ -146,7 +146,7 @@ final class NameCapitalGameTests: XCTestCase {
         let countriesByName = Dictionary(
             uniqueKeysWithValues: CountryDataCache.shared.countries.map { ($0.name, $0) }
         )
-        for country in ChallengeRegion.world.countries {
+        for country in Set(ChallengeRegion.allCases.flatMap(\.countries)) {
             XCTAssertNotNil(
                 countriesByName[country]?.capital,
                 "\(country) has no capital data in world.geojson"

@@ -68,14 +68,15 @@ enum class ChallengeRegion(
     val emoji: String get() = continent?.medal ?: "🌍"
 
     /**
-     * UN states in this region, alphabetical — counted the way the app counts
-     * progress, so territories and Antarctica are never targets.
+     * The countries in play, alphabetical — counted as the medals count them. A
+     * continent is its explorer medal's pool, territories included; the world is
+     * Globetrotter's 195 UN states, so Antarctica is never a target.
      */
     fun countries(continents: ContinentIndex): List<String> {
-        val pool = continent?.let { continents.countries(of = it) }
-            ?: Continent.entries
-                .filter { it != Continent.ANTARCTICA }
-                .flatMapTo(HashSet()) { continents.countries(of = it) }
+        continent?.let { return continents.countries(of = it).sorted() }
+        val pool = Continent.entries
+            .filter { it != Continent.ANTARCTICA }
+            .flatMapTo(HashSet()) { continents.countries(of = it) }
         return UnMembership.membersOf(pool).sorted()
     }
 

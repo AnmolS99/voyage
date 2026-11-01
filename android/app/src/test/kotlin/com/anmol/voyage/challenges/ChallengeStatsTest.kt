@@ -1,5 +1,7 @@
 package com.anmol.voyage.challenges
 
+import com.anmol.voyage.data.AchievementCatalog
+import com.anmol.voyage.data.AchievementKind
 import com.anmol.voyage.data.SharedFiles
 import com.anmol.voyage.data.UnMembership
 import com.anmol.voyage.state.InMemoryStateStore
@@ -114,24 +116,29 @@ class ChallengeStatsTest {
     }
 
     @Test
-    fun `region pools count countries the way progress does`() {
+    fun `region pools count countries the way the medals do`() {
         val world = ChallengeRegion.World.countries(cache.continents).toSet()
 
         assertEquals("the world sweep is the 195 UN states", 195, world.size)
         UnMembership.nonMemberTerritories.forEach { territory ->
             assertFalse("$territory should not be a target", territory in world)
         }
+        val explorers = AchievementCatalog.of(cache, emptySet(), emptyMap(), emptyMap())
+            .associate { it.kind to it.remaining.toSet() }
         ChallengeRegion.entries.filter { it != ChallengeRegion.World }.forEach { region ->
-            val pool = region.countries(cache.continents).toSet()
-            assertTrue("${region.name} should not be empty", pool.isNotEmpty())
-            assertTrue("${region.name} should be part of the world", world.containsAll(pool))
+            val explorer = explorers.getValue(AchievementKind.Explorer(region.continent!!))
+            assertEquals(
+                "${region.name} should play its explorer medal's countries",
+                explorer,
+                region.countries(cache.continents).toSet(),
+            )
         }
     }
 
     @Test
     fun `every country in play has a capital`() {
         // Otherwise Name the Capital would drop it without a word.
-        ChallengeRegion.World.countries(cache.continents).forEach { country ->
+        ChallengeRegion.entries.flatMap { it.countries(cache.continents) }.toSet().forEach { country ->
             assertNotNull("$country has no capital in world.geojson", cache.countryNamed(country)?.capital)
         }
     }

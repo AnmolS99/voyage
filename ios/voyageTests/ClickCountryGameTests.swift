@@ -259,20 +259,22 @@ final class ClickCountryGameTests: XCTestCase {
 
     // MARK: - Region pools
 
-    func testRegionPoolsMatchAppProgressCounting() {
+    func testRegionPoolsMatchTheMedals() {
         let world = Set(ChallengeRegion.world.countries)
 
-        XCTAssertFalse(world.isEmpty)
-        // Excluded territories never appear as targets
+        XCTAssertEqual(world.count, 195, "the world sweep is the 195 UN states")
         for territory in GlobeState.nonUNTerritories {
-            XCTAssertFalse(world.contains(territory), "\(territory) should not be a game target")
+            XCTAssertFalse(world.contains(territory), "\(territory) should not be a world target")
         }
 
-        // Every continent pool is disjoint slicing of the world pool
+        // Each continent plays its explorer medal's countries, territories included
+        let medals = AchievementCatalog.achievements(visited: [], checkedCities: [:], checkedAttractions: [:])
         for region in ChallengeRegion.allCases where region != .world {
-            let pool = Set(region.countries)
-            XCTAssertFalse(pool.isEmpty, "\(region.displayName) pool should not be empty")
-            XCTAssertTrue(pool.isSubset(of: world), "\(region.displayName) pool should be part of the world pool")
+            let explorer = medals.first { $0.name == "Explorer of \(region.displayName)" }
+            XCTAssertEqual(
+                Set(region.countries), Set(explorer?.remainingCountries ?? []),
+                "\(region.displayName) should play its explorer medal's countries"
+            )
         }
     }
 }

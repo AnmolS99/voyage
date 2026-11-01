@@ -162,8 +162,9 @@ the cross-platform ones is a two-platform change.
   `NameFlagGameTests`). One guess per country, two taps to confirm a click, a
   typed answer compared ignoring case and surrounding whitespace, only finished
   sweeps recorded, a best is more correct *then* faster, and a trophy is earned by
-  a region's first flawless sweep. Pools are the 195 UN states, as progress
-  counts them.
+  a region's first flawless sweep. Pools count what the medals count: the world
+  is Globetrotter's 195 UN states, and each continent is its explorer medal's
+  countries, territories included.
 - **Ten medals, counting the same things as iOS's** (`AchievementTest`,
   `AchievementCompletionTests`). Globetrotter and Capital Collector run over the
   195 UN states, not all 207 features; the explorer medals do count territories;

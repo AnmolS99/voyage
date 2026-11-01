@@ -98,18 +98,18 @@ enum ChallengeRegion: String, CaseIterable, Identifiable {
         continent?.medal ?? "🌍"
     }
 
-    /// UN countries in this region, matching how the app counts progress
-    /// (non-UN territories and Antarctica are excluded).
+    /// The countries in play, counted as the medals count them. A continent is
+    /// its explorer medal's pool, territories included; the world is
+    /// Globetrotter's 195 UN states, so Antarctica is never a target.
     var countries: [String] {
-        let pool: Set<String>
         if let continent = continent {
-            pool = continent.countries
-        } else {
-            pool = Continent.allCases
-                .filter { $0 != .antarctica }
-                .reduce(into: Set<String>()) { $0.formUnion($1.countries) }
+            return continent.countries.sorted()
         }
-        return pool.subtracting(GlobeState.nonUNTerritories).sorted()
+        return Continent.allCases
+            .filter { $0 != .antarctica }
+            .reduce(into: Set<String>()) { $0.formUnion($1.countries) }
+            .subtracting(GlobeState.nonUNTerritories)
+            .sorted()
     }
 
     /// Trophy tier a flawless sweep of this region awards.
