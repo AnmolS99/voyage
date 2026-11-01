@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import com.anmol.voyage.R
 import com.anmol.voyage.VoyageActivity
 import com.anmol.voyage.ui.theme.VoyagePalette
@@ -42,6 +43,10 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * Each icon is an `activity-alias` of [VoyageActivity] in the manifest, and
  * exactly one is enabled. The package manager remembers which, so that is the
  * source of truth and nothing is saved in `VoyageState`.
+ *
+ * Disabling the alias the app was opened from closes its screen, so a choice
+ * only waits as [pending] until [VoyageActivity] stops, and [applyPending]
+ * swaps the aliases once voyage is out of sight.
  */
 internal enum class LauncherIcon(private val aliasName: String, @StringRes val labelRes: Int) {
     Light("MainActivity", R.string.theme_light),
@@ -51,13 +56,38 @@ internal enum class LauncherIcon(private val aliasName: String, @StringRes val l
         ComponentName(context, "${VoyageActivity::class.java.`package`!!.name}.$aliasName")
 
     companion object {
-        fun current(context: Context): LauncherIcon =
+        private const val PREFS = "launcher_icon"
+        private const val PENDING_KEY = "pending"
+
+        private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+        /** The icon the launcher shows now. */
+        private fun enabled(context: Context): LauncherIcon =
             if (context.packageManager.getComponentEnabledSetting(Dark.component(context)) ==
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
             ) Dark else Light
 
-        /** Enables [icon]'s alias before disabling the other, so there is always a launcher entry. */
+        /** A choice not yet on the launcher, or null when there is none. */
+        fun pending(context: Context): LauncherIcon? =
+            prefs(context).getString(PENDING_KEY, null)?.let { name -> entries.find { it.name == name } }
+
+        /** The icon chosen last: the pending one if any, else the one on the launcher. */
+        fun current(context: Context): LauncherIcon = pending(context) ?: enabled(context)
+
+        /** Records [icon] to be applied when voyage leaves the screen. */
         fun select(context: Context, icon: LauncherIcon) {
+            prefs(context).edit {
+                if (icon == enabled(context)) remove(PENDING_KEY) else putString(PENDING_KEY, icon.name)
+            }
+        }
+
+        /**
+         * Puts the pending icon on the launcher, enabling its alias before
+         * disabling the other so there is always a launcher entry.
+         */
+        fun applyPending(context: Context) {
+            val icon = pending(context) ?: return
+            prefs(context).edit { remove(PENDING_KEY) }
             val packageManager = context.packageManager
             packageManager.setComponentEnabledSetting(
                 icon.component(context),
@@ -81,6 +111,7 @@ internal enum class LauncherIcon(private val aliasName: String, @StringRes val l
 internal fun AppIconSetting() {
     val context = LocalContext.current
     var selected by remember { mutableStateOf(LauncherIcon.current(context)) }
+    var isPending by remember { mutableStateOf(LauncherIcon.pending(context) != null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -99,6 +130,7 @@ internal fun AppIconSetting() {
                     onClick = {
                         LauncherIcon.select(context, icon)
                         selected = icon
+                        isPending = LauncherIcon.pending(context) != null
                     },
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = LauncherIcon.entries.size),
                     modifier = Modifier.testTag(appIconOptionTag(icon)),
@@ -106,6 +138,13 @@ internal fun AppIconSetting() {
                     Text(stringResource(icon.labelRes), maxLines = 1)
                 }
             }
+        }
+        if (isPending) {
+            Text(
+                text = stringResource(R.string.settings_app_icon_pending),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
