@@ -132,7 +132,9 @@ rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
 cpSync(join(SRC, "static"), DIST, { recursive: true });
 cpSync(join(REPO, "shared/data/fonts"), join(DIST, "fonts"), { recursive: true });
-cpSync(join(REPO, "ios/voyage/Assets.xcassets/AppIcon.appiconset/voyage_icon.png"), join(DIST, "icon.png"));
+const ICONS = join(REPO, "ios/voyage/Assets.xcassets/AppIcon.appiconset");
+cpSync(join(ICONS, "voyage_icon.png"), join(DIST, "icon.png"));
+cpSync(join(ICONS, "voyage_icon_dark.png"), join(DIST, "icon-dark.png"));
 
 page("index.html", {
   title: "voyage — track the countries you've visited",

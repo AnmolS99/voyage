@@ -19,15 +19,37 @@
         tools:targetApi="33">
 
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
+            android:name=".VoyageActivity"
+            android:exported="false"
             android:theme="@style/Theme.Voyage.Starting"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- The launcher entries: one per app icon, exactly one enabled at a
+             time (ui/settings/AppIconSetting.kt). The light one keeps the
+             .MainActivity name the launcher entry has always had, so icons
+             already on a home screen survive the update. -->
+        <activity-alias
+            android:name=".MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:targetActivity=".VoyageActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+        <activity-alias
+            android:name=".DarkIconActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_dark"
+            android:targetActivity=".VoyageActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
     </application>
 
 </manifest>

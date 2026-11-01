@@ -11,9 +11,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.settings.LauncherIcon
 import com.anmol.voyage.ui.theme.VoyageTheme
 
-class MainActivity : ComponentActivity() {
+class VoyageActivity : ComponentActivity() {
 
     private val voyageState: VoyageState by lazy {
         ViewModelProvider(this, VoyageState.Factory).get(VoyageState::class.java)
@@ -52,6 +53,14 @@ class MainActivity : ComponentActivity() {
                 VoyageApp(state = voyageState)
             }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Swapping the launcher alias closes the screen it opened, so a new
+        // app icon waits until voyage is out of sight. Not on rotation, which
+        // stops the activity only to recreate it.
+        if (!isChangingConfigurations) LauncherIcon.applyPending(this)
     }
 
     private companion object {

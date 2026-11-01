@@ -5,6 +5,20 @@ struct SettingsView: View {
     @ObservedObject var globeState: GlobeState
     @State private var showingResetConfirmation = false
     @StateObject private var tipJarManager = TipJarManager()
+    /// The icon on the Home Screen. iOS remembers it, so it is read back from
+    /// the system rather than kept in `GlobeState`.
+    @State private var appIcon = ThemeMode.currentAppIcon
+
+    private func setAppIcon(_ mode: ThemeMode) {
+        appIcon = mode
+        Task {
+            do {
+                try await UIApplication.shared.setAlternateIconName(mode.alternateIconName)
+            } catch {
+                appIcon = .currentAppIcon
+            }
+        }
+    }
 
     /// "1.10.2 (123)": the marketing version and the build number, which CI sets
     /// to the TestFlight run number, so testers can say exactly which build they have.
@@ -57,6 +71,32 @@ struct SettingsView: View {
                     .padding(.vertical, 4)
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
 
+                    if UIApplication.shared.supportsAlternateIcons {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Image(systemName: "app")
+                                    .foregroundColor(AppColors.buttonColor)
+
+                                Text("App Icon")
+                            }
+
+                            HStack(spacing: 0) {
+                                ForEach(ThemeMode.allCases, id: \.self) { mode in
+                                    AppIconOption(mode: mode, isSelected: appIcon == mode) {
+                                        setAppIcon(mode)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                            }
+
+                            Text("“System” follows your Home Screen icon setting.")
+                                .font(.voyageText(13))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                        .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+                    }
+
                     HStack {
                         Image(systemName: "globe.americas")
                             .foregroundColor(AppColors.buttonColor)
@@ -108,9 +148,6 @@ struct SettingsView: View {
                 } header: {
                     Text("Appearance")
                         .font(.voyageText(17, weight: .semibold))
-                } footer: {
-                    Text("Choose the app's theme, the texture styles for the globe and map views, and whether they shade terrain.")
-                        .font(.voyageText(13))
                 }
 
                 Section {
@@ -234,6 +271,77 @@ struct SettingsView: View {
             } message: {
                 Text(thankYouMessage)
             }
+        }
+    }
+}
+
+/// The app icon picker reuses the theme's three choices: `.system` is the
+/// primary `AppIcon`, whose dark appearance iOS shows when Home Screen icons
+/// are set to Dark, and light and dark are alternate icons that hold one
+/// artwork in every appearance (`ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`).
+extension ThemeMode {
+    /// `nil` is the primary icon.
+    var alternateIconName: String? {
+        switch self {
+        case .system: return nil
+        case .light: return "AppIcon-Light"
+        case .dark: return "AppIcon-Dark"
+        }
+    }
+
+    @MainActor static var currentAppIcon: ThemeMode {
+        allCases.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .system
+    }
+}
+
+/// One choice in the App Icon picker: a preview of the icon with its name
+/// below, ringed in the app's orange when chosen. System shows the light icon
+/// and the dark one split down the middle, like the theme's half-filled circle.
+private struct AppIconOption: View {
+    let mode: ThemeMode
+    let isSelected: Bool
+    let action: () -> Void
+
+    private static let size: CGFloat = 60
+    /// The Home Screen's icon corner radius at this size.
+    private static let shape = RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                preview
+                    .frame(width: Self.size, height: Self.size)
+                    .clipShape(Self.shape)
+                    .padding(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Self.size * 0.225 + 4, style: .continuous)
+                            .stroke(AppColors.buttonColor, lineWidth: 2)
+                            .opacity(isSelected ? 1 : 0)
+                    )
+
+                Text(mode.displayName)
+                    .font(.voyageText(13, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .primary : .secondary)
+            }
+        }
+        // Borderless, so a tap on one option doesn't fire the whole list row
+        .buttonStyle(.borderless)
+        .accessibilityLabel(mode.displayName)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    @ViewBuilder private var preview: some View {
+        switch mode {
+        case .light:
+            Image("AppIconPreviewLight").resizable()
+        case .dark:
+            Image("AppIconPreviewDark").resizable()
+        case .system:
+            Image("AppIconPreviewLight").resizable()
+                .overlay(
+                    Image("AppIconPreviewDark").resizable()
+                        .mask(HStack(spacing: 0) { Color.clear; Color.black })
+                )
         }
     }
 }

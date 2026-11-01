@@ -135,7 +135,7 @@ android/
 │       ├── main/
 │       │   ├── kotlin/com/anmol/voyage/
 │       │   │   ├── VoyageApplication.kt     # installs + prewarms the country data
-│       │   │   ├── MainActivity.kt          # splash + edge-to-edge + Compose entry
+│       │   │   ├── VoyageActivity.kt        # splash + edge-to-edge + Compose entry
 │       │   │   ├── VoyageApp.kt             # NavigationBar shell + NavHost, with Home layered under it
 │       │   │   ├── challenges/              # challenge games: modes, regions, the sweep engine, stats
 │       │   │   ├── data/                    # models, GeoJSON parser, cache, hit testing
@@ -216,7 +216,7 @@ android/
 ## App state and persistence
 
 `state/VoyageState.kt` is the single source of truth — the Android `GlobeState`.
-It is an activity-scoped `ViewModel`, created once in `MainActivity` and handed
+It is an activity-scoped `ViewModel`, created once in `VoyageActivity` and handed
 to every screen; mutate it through its methods (`addVisit`, `toggleCheckedCity`,
 `setThemeMode`, …) rather than keeping copies in a screen.
 
@@ -244,7 +244,7 @@ it. When the shape changes: bump the version, teach `migrated()` the new step,
 and add a case to `PersistedStateTest`. Fields are all defaulted and unknown
 ones are ignored, so documents written by older *and* newer builds still read.
 
-`MainActivity` holds the splash screen until `VoyageState.isLoaded` — the saved
+`VoyageActivity` holds the splash screen until `VoyageState.isLoaded` — the saved
 theme decides the color scheme, and drawing before it lands flashes the wrong
 one.
 

@@ -101,6 +101,7 @@ fun SettingsScreen(state: VoyageState, modifier: Modifier = Modifier) {
             footer = R.string.settings_appearance_footer,
         ) {
             ThemeSetting(selected = state.themeMode, onSelect = state::setThemeMode)
+            AppIconSetting()
             StyleSetting(
                 icon = Icons.Rounded.Public,
                 label = R.string.settings_globe_style,
