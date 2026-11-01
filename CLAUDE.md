@@ -514,14 +514,13 @@ line up.
 
 Attempts go under the gitignored `journey-art/<ISO>/`: the photo, every attempt
 with the prompt that made it, and an `index.html` that previews each one as the
-banner in both themes. `day` also needs a style reference at
-`journey-art/style_reference.webp`, which is not in the repo (it's a third-party
-print, used only for mood and palette); get it from the maintainer. Needs
+banner in both themes. `day` takes its mood and palette from Norway's day art
+(`shared/data/journey/NO_day.webp`), so new countries match the set. Needs
 `GEMINI_API_KEY` on a **paid** tier, since the free tier allows no image
 generation, and Pillow (`pillow-heif` too for iPhone HEIC photos). It shells
 out to nothing, so it runs on Linux as well — in a cloud session, set
-`GEMINI_API_KEY` in the environment's variables, attach the photo and the style
-reference, and review attempts as images rather than through `index.html`.
+`GEMINI_API_KEY` in the environment's variables, attach the photo, and review
+attempts as images rather than through `index.html`.
 Change the look in the script's shared `STYLE` prompt, not per
 country; country-specific direction goes in `--hint`. The banner's shape, the
 title's place and the fade are the same on both platforms, so changing one is a
