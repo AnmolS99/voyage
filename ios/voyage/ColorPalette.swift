@@ -206,6 +206,13 @@ enum AppColors {
     static let medalGoldInk = Color(red: 0.55, green: 0.38, blue: 0.05)
     static let medalGoldAccent = Color(medalGoldEdgeUI)
 
+    // MARK: - Journey Art
+
+    /// The place button over the Journey art: a faint dark glass that reads on
+    /// both the day and the night painting without drawing the eye.
+    static let journeyChipBackground = Color.black.opacity(0.32)
+    static let journeyChipContent = Color.white.opacity(0.92)
+
     // MARK: - Helper Functions
 
 

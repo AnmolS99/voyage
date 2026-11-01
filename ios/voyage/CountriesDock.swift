@@ -203,6 +203,7 @@ struct CountriesDock: View {
                         // ("Democratic Republic of the Congo") shrink
                         // rather than truncate
                         .minimumScaleFactor(0.5)
+                        .centredOnDisplayCapitals()
                     capitalName(country)
                 }
             }
@@ -405,6 +406,16 @@ private struct NameAndCapitalLayout: Layout {
         }
     }
 
+    /// The flag beside the layout lines up with the name's capitals, wherever
+    /// the name sits in it.
+    func explicitAlignment(of guide: VerticalAlignment, in bounds: CGRect, proposal: ProposedViewSize,
+                           subviews: Subviews, cache: inout ()) -> CGFloat? {
+        guard guide == .center, let name = subviews.first else { return nil }
+        let width = max(bounds.width, proposal.width ?? bounds.width)
+        let frame = frames(in: width, subviews)[0]
+        return bounds.minY + frame.minY + name.dimensions(in: ProposedViewSize(frame.size))[VerticalAlignment.center]
+    }
+
     /// Frames for [name, capital?] relative to the layout's origin.
     private func frames(in width: CGFloat, _ subviews: Subviews) -> [CGRect] {
         guard let name = subviews.first else { return [] }
@@ -417,11 +428,14 @@ private struct NameAndCapitalLayout: Layout {
         let capitalIdeal = capital.sizeThatFits(.unspecified)
 
         if nameIdeal.width + spacing + capitalIdeal.width <= width + 0.5 {
-            // One line, baselines roughly aligned by centering vertically
-            let height = max(nameIdeal.height, capitalIdeal.height)
+            // One line, on a shared baseline: the two fonts' line boxes differ,
+            // so centring the boxes would leave the capital sitting low.
+            let nameBaseline = name.dimensions(in: .unspecified)[.firstTextBaseline]
+            let capitalBaseline = capital.dimensions(in: .unspecified)[.firstTextBaseline]
+            let baseline = max(nameBaseline, capitalBaseline)
             return [
-                CGRect(x: 0, y: (height - nameIdeal.height) / 2, width: nameIdeal.width, height: nameIdeal.height),
-                CGRect(x: nameIdeal.width + spacing, y: (height - capitalIdeal.height) / 2,
+                CGRect(x: 0, y: baseline - nameBaseline, width: nameIdeal.width, height: nameIdeal.height),
+                CGRect(x: nameIdeal.width + spacing, y: baseline - capitalBaseline,
                        width: capitalIdeal.width, height: capitalIdeal.height),
             ]
         }

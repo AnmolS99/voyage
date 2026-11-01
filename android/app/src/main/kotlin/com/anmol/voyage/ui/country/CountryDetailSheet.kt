@@ -5,10 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
@@ -42,8 +47,10 @@ import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
 import com.anmol.voyage.data.CountryDetail
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.theme.DisplayCapitalsCentre
 import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.displayCapitalsCentre
 
 /**
  * Country details: flag, name, capital and continent, the visited/wishlist
@@ -67,11 +74,17 @@ fun CountryDetailSheet(
     val sheetState = rememberModalBottomSheetState()
     val isDark = state.themeMode.isDark(isSystemInDarkTheme())
     val art = rememberJourneyArt(detail.isoCode, isDark)
+    val place = rememberJourneyPlace(detail.isoCode)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = modifier,
+        // Fully open, the sheet stops below the status bar with the globe showing
+        // above it, as iOS's sheet does, instead of running to the screen's top
+        // and padding its own content down with a bare band. The content keeps
+        // only the side insets: the column below pads for the navigation bar.
+        modifier = modifier.statusBarsPadding(),
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) },
         // With art, the handle is drawn over it so the art reaches the sheet's top.
         dragHandle = if (art == null) ({ BottomSheetDefaults.DragHandle() }) else null,
     ) {
@@ -89,6 +102,7 @@ fun CountryDetailSheet(
                         art = art,
                         flag = detail.flag,
                         countryName = detail.name,
+                        place = place,
                         isDark = isDark,
                     )
                     BottomSheetDefaults.DragHandle(modifier = Modifier.align(Alignment.TopCenter))
@@ -195,23 +209,30 @@ private fun ChecklistSection(
     badgedItem: String? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // The icon centres on the title's capitals, not its line box, and the
+        // count sits on the title's baseline — as on iOS.
+        val titleSize = MaterialTheme.typography.titleMedium.fontSize
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier
+                    .size(20.dp)
+                    .alignBy { it.measuredHeight / 2 },
             )
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontFamily = LocalVoyageFonts.current.display,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .alignBy(DisplayCapitalsCentre)
+                    .displayCapitalsCentre(titleSize),
             )
             Text(
                 text = stringResource(
@@ -221,6 +242,11 @@ private fun ChecklistSection(
                 ),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
+                // The title's capitals' centre, measured from this text's own
+                // baseline, puts the two on one baseline.
+                modifier = Modifier
+                    .alignBy(DisplayCapitalsCentre)
+                    .displayCapitalsCentre(titleSize),
             )
         }
 

@@ -35,6 +35,19 @@ enum JourneyArt {
         cache[name] = image
         return image
     }
+
+    /// What each painting shows, keyed by ISO code (`journey/places.json`,
+    /// written by `journey_art.py export`).
+    private static let places: [String: String] = {
+        guard let url = Bundle.main.url(forResource: "places", withExtension: "json", subdirectory: "journey"),
+              let data = try? Data(contentsOf: url),
+              let places = try? JSONDecoder().decode([String: String].self, from: data) else { return [:] }
+        return places
+    }()
+
+    static func place(for countryCode: String) -> String? {
+        places[countryCode]
+    }
 }
 
 struct CountryExploreView: View {
@@ -66,6 +79,7 @@ struct CountryExploreView: View {
                             image: art,
                             flag: globeState.flagForCountry(countryName),
                             countryName: countryName,
+                            place: country?.flagCode.flatMap(JourneyArt.place(for:)),
                             isDarkMode: globeState.isDarkMode
                         )
                     }
@@ -142,6 +156,7 @@ struct JourneyHeader: View {
     let image: UIImage
     let flag: String
     let countryName: String
+    let place: String?
     let isDarkMode: Bool
 
     var body: some View {
@@ -173,12 +188,56 @@ struct JourneyHeader: View {
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
+                        .centredOnDisplayCapitals()
                 }
                 .padding(.leading, 20)
                 .padding(.trailing, 96) // clear of the Done button
                 .padding(.top, 14)
+                .accessibilityElement(children: .combine)
             }
-            .accessibilityElement(children: .combine)
+            .overlay(alignment: .bottomTrailing) {
+                if let place {
+                    JourneyPlaceButton(place: place)
+                        .padding(.trailing, 12)
+                        .padding(.bottom, 24) // above the fade
+                }
+            }
+    }
+}
+
+/// A small pin over the Journey art that opens into the name of the place the
+/// painting shows, and closes again on a second tap. Kept faint so the art
+/// stays the subject.
+struct JourneyPlaceButton: View {
+    let place: String
+    @State private var isOpen = false
+
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { isOpen.toggle() }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "mappin")
+                    .font(.system(size: 11, weight: .semibold))
+                if isOpen {
+                    Text(place)
+                        .font(.voyageText(12, weight: .medium))
+                        .lineLimit(1)
+                        .transition(.opacity)
+                }
+            }
+            .foregroundColor(AppColors.journeyChipContent)
+            .frame(minWidth: 26, minHeight: 26)
+            .padding(.horizontal, isOpen ? 10 : 0)
+            .background(Capsule().fill(AppColors.journeyChipBackground))
+            // The name fades out where it stood while the pill shrinks around
+            // it; without the clip it hangs outside the pill mid-animation.
+            .clipShape(Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("About this place")
+        .accessibilityValue(place)
     }
 }
 
@@ -213,6 +272,7 @@ struct ChecklistSection: View {
                 Text(title)
                     .font(.voyageDisplay(20))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .centredOnDisplayCapitals()
             }
 
             VStack(spacing: 0) {

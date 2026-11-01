@@ -23,6 +23,21 @@ final class voyageTests: XCTestCase {
         XCTAssertEqual(ThemeMode.dark.toggled(systemIsDark: true), .light)
     }
 
+    // Every bundled Journey painting names the place it shows, as on Android
+    // (`JourneyArtTest`), so the pin over the art is never missing or empty
+    func testJourneyArtNamesItsPlace() throws {
+        let folder = try XCTUnwrap(Bundle(for: GlobeState.self).url(forResource: "journey", withExtension: nil))
+        let files = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+        let painted = Set(files.filter { $0.hasSuffix("_day.webp") }.map { String($0.prefix(2)) })
+        XCTAssertFalse(painted.isEmpty)
+        for code in painted {
+            XCTAssertTrue(files.contains("\(code)_night.webp"), "\(code) has no night painting")
+            XCTAssertNotNil(JourneyArt.image(for: code, isDarkMode: true), "\(code)'s night painting doesn't load")
+            let place = JourneyArt.place(for: code)
+            XCTAssertFalse(place?.isEmpty ?? true, "\(code) names no place in journey/places.json")
+        }
+    }
+
     // Test that globe.scn contains all countries from source data (map and globe consistency)
     func testGlobeAndMapCountryConsistency() {
         // Get expected countries from source data (used by map)
