@@ -90,6 +90,10 @@ struct SettingsView: View {
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
+
+                            Text("“System” follows your Home Screen icon setting.")
+                                .font(.voyageText(13))
+                                .foregroundColor(.secondary)
                         }
                         .padding(.vertical, 4)
                         .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
@@ -146,9 +150,6 @@ struct SettingsView: View {
                 } header: {
                     Text("Appearance")
                         .font(.voyageText(17, weight: .semibold))
-                } footer: {
-                    Text("Choose the app's theme and icon, the texture styles for the globe and map views, and whether they shade terrain.")
-                        .font(.voyageText(13))
                 }
 
                 Section {
