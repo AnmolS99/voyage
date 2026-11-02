@@ -13,8 +13,10 @@ import com.anmol.voyage.challenges.ChallengeRegion
 import com.anmol.voyage.challenges.ChallengeStatsRecorder
 import com.anmol.voyage.challenges.ClickCountryGame
 import com.anmol.voyage.challenges.NameCapitalGame
+import com.anmol.voyage.challenges.NameFlagGame
 import com.anmol.voyage.challenges.RegionSweepGame
 import com.anmol.voyage.challenges.SweepGuessOutcome
+import com.anmol.voyage.data.CountryAlias
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountrySearchIndex
 import com.anmol.voyage.data.FlagEmoji
@@ -68,7 +70,7 @@ class ChallengeSession(
     val game: RegionSweepGame = when (mode) {
         ChallengeGameMode.ClickCountry -> ClickCountryGame(region, recorder, pool)
         ChallengeGameMode.NameCapital -> NameCapitalGame(region, recorder, pool, ::capitalsOf)
-        ChallengeGameMode.NameFlag -> RegionSweepGame(mode, region, recorder, pool)
+        ChallengeGameMode.NameFlag -> NameFlagGame(region, recorder, pool, ::aliasesOf)
     }
 
     /**
@@ -103,6 +105,10 @@ class ChallengeSession(
     }
 
     fun flagOf(country: String): String = FlagEmoji.of(cache.countryNamed(country)?.isoCode)
+
+    /** Every alias of [country] — Name the Flag picks out its other names. */
+    private fun aliasesOf(country: String): List<CountryAlias> =
+        cache.countryNamed(country)?.let(cache::aliases).orEmpty()
 
     /** Every capital of [country], the main one first. */
     fun capitalsOf(country: String): List<String> = cache.countryNamed(country)?.capitalNames.orEmpty()

@@ -76,6 +76,7 @@
 		E81234560065 /* ClickCountryGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550065 /* ClickCountryGameTests.swift */; };
 		E81234560071 /* RegionSweepGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550071 /* RegionSweepGameViewModel.swift */; };
 		E81234560067 /* NameCapitalGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550067 /* NameCapitalGameViewModel.swift */; };
+		E812345600A1 /* NameFlagGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E812345500A1 /* NameFlagGameViewModel.swift */; };
 		E81234560068 /* NameCapitalGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550068 /* NameCapitalGameView.swift */; };
 		E81234560069 /* ChallengeGameHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550069 /* ChallengeGameHUD.swift */; };
 		E81234560070 /* NameCapitalGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550070 /* NameCapitalGameTests.swift */; };
@@ -171,6 +172,7 @@
 		E81234550065 /* ClickCountryGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCountryGameTests.swift; sourceTree = "<group>"; };
 		E81234550071 /* RegionSweepGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionSweepGameViewModel.swift; sourceTree = "<group>"; };
 		E81234550067 /* NameCapitalGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameViewModel.swift; sourceTree = "<group>"; };
+		E812345500A1 /* NameFlagGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameFlagGameViewModel.swift; sourceTree = "<group>"; };
 		E81234550068 /* NameCapitalGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameView.swift; sourceTree = "<group>"; };
 		E81234550069 /* ChallengeGameHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGameHUD.swift; sourceTree = "<group>"; };
 		E81234550070 /* NameCapitalGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameCapitalGameTests.swift; sourceTree = "<group>"; };
@@ -337,6 +339,7 @@
 				E81234550062 /* ClickCountryGameViewModel.swift */,
 				E81234550063 /* ClickCountryGameView.swift */,
 				E81234550067 /* NameCapitalGameViewModel.swift */,
+				E812345500A1 /* NameFlagGameViewModel.swift */,
 				E81234550068 /* NameCapitalGameView.swift */,
 				E81234550073 /* NameFlagGameView.swift */,
 				E81234550064 /* ChallengesView.swift */,
@@ -524,6 +527,7 @@
 				E81234560062 /* ClickCountryGameViewModel.swift in Sources */,
 				E81234560063 /* ClickCountryGameView.swift in Sources */,
 				E81234560067 /* NameCapitalGameViewModel.swift in Sources */,
+				E812345600A1 /* NameFlagGameViewModel.swift in Sources */,
 				E81234560068 /* NameCapitalGameView.swift in Sources */,
 				E81234560073 /* NameFlagGameView.swift in Sources */,
 				E81234560064 /* ChallengesView.swift in Sources */,

@@ -20,16 +20,30 @@ final class NameFlagGameTests: XCTestCase {
         ChallengeStatsStore(userDefaults: userDefaults)
     }
 
-    /// Name the Flag needs no view model of its own — the shared sweep engine
-    /// checks the country's own name.
+    /// Shaped like `country_aliases.json`: other names, former names, parts.
+    private let aliases: [String: [CountryAlias]] = [
+        "United Kingdom": [
+            CountryAlias(text: "UK", kind: .name),
+            CountryAlias(text: "Great Britain", kind: .name),
+            CountryAlias(text: "England", kind: .part),
+        ],
+        "Myanmar": [CountryAlias(text: "Burma", kind: .formerName)],
+        "Türkiye": [CountryAlias(text: "Turkey", kind: .formerName)],
+        "United States": [CountryAlias(text: "USA", kind: .name), CountryAlias(text: "Hawaii", kind: .part)],
+    ]
+
     private func makeViewModel(countries: [String],
-                               store: ChallengeStatsStore? = nil) -> RegionSweepGameViewModel {
-        RegionSweepGameViewModel(
-            mode: .nameFlag,
+                               store: ChallengeStatsStore? = nil) -> NameFlagGameViewModel {
+        NameFlagGameViewModel(
             region: .europe,
             countries: countries,
-            statsStore: store ?? makeStore()
+            statsStore: store ?? makeStore(),
+            aliasLookup: { [aliases] in aliases[$0] ?? [] }
         )
+    }
+
+    private func outcome(_ guess: String, for country: String) -> SweepGuessOutcome {
+        makeViewModel(countries: [country]).submitGuess(guess)
     }
 
     // MARK: - Game flow
@@ -85,6 +99,41 @@ final class NameFlagGameTests: XCTestCase {
         guard case .correct = viewModel.submitGuess("  fRaNcE ") else {
             return XCTFail("Expected case- and whitespace-insensitive match")
         }
+    }
+
+    // MARK: - Other names
+
+    func testTypedAliasNamesTheCountry() {
+        XCTAssertEqual(outcome("UK", for: "United Kingdom"), .correct)
+        XCTAssertEqual(outcome(" great britain ", for: "United Kingdom"), .correct)
+        XCTAssertEqual(outcome("usa", for: "United States"), .correct)
+    }
+
+    func testFormerNameNamesTheCountry() {
+        XCTAssertEqual(outcome("Burma", for: "Myanmar"), .correct)
+    }
+
+    func testTypedNameIsFoldedTheWaySearchFoldsIt() {
+        XCTAssertEqual(outcome("turkiye", for: "Türkiye"), .correct)
+    }
+
+    func testAliasAnswersWithTheCountrysOwnName() {
+        let viewModel = makeViewModel(countries: ["United Kingdom"])
+        XCTAssertEqual(viewModel.acceptedAnswer(for: "uk"), "United Kingdom")
+    }
+
+    func testPartOfACountryOrItsCodeIsNotANameForIt() {
+        XCTAssertEqual(outcome("England", for: "United Kingdom"), .reveal)
+        XCTAssertEqual(outcome("Hawaii", for: "United States"), .reveal)
+        XCTAssertEqual(outcome("GB", for: "United Kingdom"), .reveal)
+    }
+
+    func testPartialNameDoesNotCountEvenAsTheTopSuggestion() {
+        XCTAssertEqual(outcome("Ni", for: "Niger"), .reveal)
+    }
+
+    func testAnotherCountrysAliasDoesNotCount() {
+        XCTAssertEqual(outcome("UK", for: "United States"), .reveal)
     }
 
     func testEmptyGuessIsIgnored() {

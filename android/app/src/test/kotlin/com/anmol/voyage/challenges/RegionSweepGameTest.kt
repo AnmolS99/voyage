@@ -1,5 +1,7 @@
 package com.anmol.voyage.challenges
 
+import com.anmol.voyage.data.CountryAlias
+import com.anmol.voyage.data.CountryAlias.Kind
 import com.anmol.voyage.state.InMemoryStateStore
 import com.anmol.voyage.state.VoyageState
 import kotlinx.coroutines.CoroutineScope
@@ -35,8 +37,21 @@ class RegionSweepGameTest {
     private fun capitalGame(vararg countries: String) =
         NameCapitalGame(ChallengeRegion.Europe, recorder, pool = { countries.toList() }, capitalsOf = { capitals[it].orEmpty() })
 
+    /** Shaped like `country_aliases.json`: other names, former names, parts. */
+    private val aliases = mapOf(
+        "United Kingdom" to listOf(
+            CountryAlias("UK", Kind.NAME),
+            CountryAlias("Great Britain", Kind.NAME),
+            CountryAlias("England", Kind.PART),
+        ),
+        "Myanmar" to listOf(CountryAlias("Burma", Kind.FORMER_NAME)),
+        "Türkiye" to listOf(CountryAlias("Turkey", Kind.FORMER_NAME)),
+        "United States" to listOf(CountryAlias("USA", Kind.NAME), CountryAlias("Hawaii", Kind.PART)),
+        "Niger" to emptyList(),
+    )
+
     private fun flagGame(vararg countries: String) =
-        RegionSweepGame(ChallengeGameMode.NameFlag, ChallengeRegion.Europe, recorder, pool = { countries.toList() })
+        NameFlagGame(ChallengeRegion.Europe, recorder, pool = { countries.toList() }, aliasesOf = { aliases[it].orEmpty() })
 
     /** A full Click the Country guess: a tap that marks, then one that confirms. */
     private fun ClickCountryGame.guess(country: String): SweepGuessOutcome {
@@ -259,6 +274,46 @@ class RegionSweepGameTest {
     @Test
     fun `a typed country name ignores case and surrounding whitespace`() {
         assertEquals(SweepGuessOutcome.Correct, flagGame("France").submitGuess(" fRaNcE  "))
+    }
+
+    @Test
+    fun `a typed alias names the country`() {
+        assertEquals(SweepGuessOutcome.Correct, flagGame("United Kingdom").submitGuess("UK"))
+        assertEquals(SweepGuessOutcome.Correct, flagGame("United Kingdom").submitGuess(" great britain "))
+        assertEquals(SweepGuessOutcome.Correct, flagGame("United States").submitGuess("usa"))
+    }
+
+    @Test
+    fun `a former name names the country`() {
+        assertEquals(SweepGuessOutcome.Correct, flagGame("Myanmar").submitGuess("Burma"))
+    }
+
+    @Test
+    fun `a typed name is folded the way search folds it`() {
+        assertEquals(SweepGuessOutcome.Correct, flagGame("Türkiye").submitGuess("turkiye"))
+    }
+
+    @Test
+    fun `an alias answers with the country's own name`() {
+        val game = flagGame("United Kingdom")
+        assertEquals("United Kingdom", game.acceptedAnswer("uk"))
+    }
+
+    @Test
+    fun `a part of a country or its code is not a name for it`() {
+        assertEquals(SweepGuessOutcome.Reveal, flagGame("United Kingdom").submitGuess("England"))
+        assertEquals(SweepGuessOutcome.Reveal, flagGame("United States").submitGuess("Hawaii"))
+        assertEquals(SweepGuessOutcome.Reveal, flagGame("United Kingdom").submitGuess("GB"))
+    }
+
+    @Test
+    fun `a partial name does not count, even when it is the top suggestion`() {
+        assertEquals(SweepGuessOutcome.Reveal, flagGame("Niger").submitGuess("Ni"))
+    }
+
+    @Test
+    fun `another country's alias does not count`() {
+        assertEquals(SweepGuessOutcome.Reveal, flagGame("United States").submitGuess("UK"))
     }
 
     // ---- The clock ----

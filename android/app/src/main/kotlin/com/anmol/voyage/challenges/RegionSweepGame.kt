@@ -4,6 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.anmol.voyage.data.CountryAlias
+import com.anmol.voyage.data.CountrySearchIndex
 
 /** What one player input did in a region sweep. */
 enum class SweepGuessOutcome {
@@ -107,7 +109,7 @@ open class RegionSweepGame(
      * The accepted answer [guess] names, ignoring case and surrounding
      * whitespace, or null when it names none of them.
      */
-    fun acceptedAnswer(guess: String): String? {
+    open fun acceptedAnswer(guess: String): String? {
         val trimmed = guess.trim()
         return currentAnswers.firstOrNull { it.equals(trimmed, ignoreCase = true) }
     }
@@ -262,4 +264,41 @@ class NameCapitalGame(
     override val currentAnswers: List<String> get() = currentTarget?.let(capitalsOf).orEmpty()
 
     fun capitals(of: String): List<String> = capitalsOf(of)
+}
+
+/**
+ * Name the Flag — iOS `NameFlagGameViewModel`: each country's flag is shown and
+ * the player names the country. A typed guess counts when it is the country's
+ * name or another name for it — "UK", "Great Britain", "Burma" — compared the
+ * way search compares them, so "turkiye" names Türkiye. A part of a country
+ * ("England", "Hawaii") or its ISO code is not a name for it and does not count.
+ *
+ * Only exact names count, never the top suggestion: search ranks prefixes, and
+ * "Ni" must not score Niger.
+ *
+ * @param aliasesOf every alias of a country, as `CountryDataCache.aliases` gives them.
+ */
+class NameFlagGame(
+    region: ChallengeRegion,
+    recorder: ChallengeStatsRecorder,
+    pool: () -> List<String>,
+    private val aliasesOf: (String) -> List<CountryAlias>,
+    nanoTime: () -> Long = System::nanoTime,
+) : RegionSweepGame(ChallengeGameMode.NameFlag, region, recorder, pool, nanoTime) {
+
+    /**
+     * The country's name when [guess] is its name or one of its other names,
+     * else null — the banner names the country, not the alias typed.
+     */
+    override fun acceptedAnswer(guess: String): String? {
+        val target = currentTarget ?: return null
+        val typed = CountrySearchIndex.normalize(guess.trim())
+        if (typed.isEmpty()) return null
+        val names = listOf(target) + aliasesOf(target).filter { it.kind in NAME_KINDS }.map { it.text }
+        return target.takeIf { names.any { CountrySearchIndex.normalize(it) == typed } }
+    }
+
+    private companion object {
+        val NAME_KINDS = setOf(CountryAlias.Kind.NAME, CountryAlias.Kind.FORMER_NAME)
+    }
 }

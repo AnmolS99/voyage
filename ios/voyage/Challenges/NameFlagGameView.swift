@@ -16,7 +16,7 @@ struct NameFlagGameView: View {
     let region: ChallengeRegion
     let onDismiss: () -> Void
 
-    @StateObject private var viewModel: RegionSweepGameViewModel
+    @StateObject private var viewModel: NameFlagGameViewModel
     @StateObject private var gameGlobe: GlobeState
     @State private var searchText = ""
     @State private var feedback: Feedback?
@@ -45,7 +45,7 @@ struct NameFlagGameView: View {
         self.region = region
         self.onDismiss = onDismiss
         self.isDarkMode = mainState.isDarkMode
-        _viewModel = StateObject(wrappedValue: RegionSweepGameViewModel(mode: .nameFlag, region: region))
+        _viewModel = StateObject(wrappedValue: NameFlagGameViewModel(region: region))
 
         let globe = GlobeState(inMemory: true)
         globe.globeStyle = mainState.globeStyle
