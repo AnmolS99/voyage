@@ -498,7 +498,9 @@ third stays open sky edge to edge — a long name like "United Kingdom" runs
 three-quarters across, and the Done button sits top-right — so the scene starts
 a third of the way down and the night moon sits low above the skyline, right of
 centre. Every prompt shares that rule (`SKY_BAND`) and the instruction to keep
-every vehicle, person and animal (`KEEP_EVERYTHING`); change them there.
+every vehicle, person and animal (`KEEP_EVERYTHING`), and every night shares one
+moon (`MOON`, modelled on Hungary's: a thin pale crescent in clear sky, apart
+from the landmark); change them there.
 
 ```bash
 python3 scripts/journey_art.py day JP ~/Photos/fuji.jpg -n 3   # day attempts from the photo

@@ -136,6 +136,18 @@ Light: bright, warm golden-hour daylight with a soft pastel sky.
 
 {COMPOSITION}"""
 
+# The moon every night painting shares, modelled on Hungary's
+# (`shared/data/journey/HU_night.webp`): a crisp sliver in clear sky, apart from
+# the landmark. Attempts that set it beside a spire or tinted it gold read as
+# part of the building and were turned down.
+MOON = """\
+The moon is a thin, crisp crescent — small, pale silver-white with a faint \
+soft halo, never golden, full or half — set LOW in clear open sky: just above \
+the skyline, right of centre, about a third of the way down the image, never \
+in the top third. Give it room: it never overlaps, touches or sits right \
+beside the landmark, a spire, tower or tree — it floats in empty sky off to \
+the side, a quiet accent rather than a focal point."""
+
 NIGHT_PROMPT = f"""\
 Turn this illustration into the same scene at night. Keep the composition, \
 every shape and the painting style exactly; change only the light: a deep \
@@ -144,9 +156,7 @@ warm glowing windows, lamps and lanterns where they would naturally be, and \
 lit headlights on any vehicles. Calm and dreamy, not dark and muddy — the \
 landmark must stay clearly readable.
 
-The moon is a soft crescent, small, LOW in the sky: just above the skyline, \
-right of centre, about a third of the way down the image — never in the top \
-third.
+{MOON}
 
 {KEEP_EVERYTHING}
 
