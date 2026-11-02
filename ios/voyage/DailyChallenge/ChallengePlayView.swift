@@ -143,7 +143,8 @@ struct ChallengePlayView: View {
                     .padding(.bottom, 12)
                 }
                 .bottomBarGuessSearch(text: $searchText, focused: $isSearchFocused) { guess in
-                    viewModel.submitGuess(guess)
+                    // Enter submits the dropdown's top row
+                    viewModel.submitGuess(viewModel.suggestions.guessToSubmit(for: guess))
                 }
                 .onAppear {
                     // Auto-focus the guess field so the user can start typing

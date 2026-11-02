@@ -13,7 +13,8 @@ extension CountrySearchIndex {
 extension CountrySearchIndex where Item == String {
     /// What pressing Enter in a game's guess field submits: the top row of the
     /// dropdown for `query` — "norw" submits Norway — or the typed text itself
-    /// when nothing matches. Android's `GuessEntry` does the same.
+    /// when nothing matches. Used by the challenge games and the Daily
+    /// Challenge; Android's `GuessEntry` does the same.
     func guessToSubmit(for query: String) -> String {
         suggestions(for: query).first?.item ?? query
     }
