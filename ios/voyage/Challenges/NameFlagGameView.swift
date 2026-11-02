@@ -88,7 +88,8 @@ struct NameFlagGameView: View {
                                     Image(systemName: "arrow.counterclockwise")
                                 }
                             },
-                            onSubmit: { submit($0) }
+                            // Enter submits the dropdown's top row
+                            onSubmit: { submit(countrySuggestions.guessToSubmit(for: $0)) }
                         )
                 }
             } else {
