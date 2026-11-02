@@ -21,7 +21,7 @@ the place the painting shows in `places.json` beside them — the apps show it
 behind a small pin on the art.
 
 Usage:
-  python3 scripts/journey_art.py day EG ~/Photos/giza.jpg [-n 3] [--hint "..."]
+  python3 scripts/journey_art.py day EG ~/Photos/giza.jpg [-n 3] [--hint "..."] [--shrink 0.66]
   python3 scripts/journey_art.py night EG 2 [-n 2] [--hint "..."]
   python3 scripts/journey_art.py export EG 2 1 --place "Pyramids of Giza"  # day-2 + night-2-1
   python3 scripts/journey_art.py edit EG day-2 "add a felucca on the Nile" [-n 2]  # small change, same picture
@@ -31,6 +31,9 @@ Usage:
   -n       attempts to make in parallel (default 2)
   --hint   extra direction for this country ("keep the three pyramids", ...)
   --scale  reframe: how much of the frame the painting keeps (default 0.78)
+  --shrink day: paint from the photo shrunk to this fraction of a 16:9 grey
+           canvas, along its bottom — for a photo whose landmark sits near
+           the top edge, which the prompt alone does not move down
   --place  what the painting shows (export; needed the first time)
   --model  Gemini image model (default gemini-nano-banana-2.1;
            gemini-3-pro-image for the premium model)
@@ -109,8 +112,12 @@ The top third of the image, edge to edge, is open, calm sky: a country's flag \
 and name are laid across it from the left edge to about three-quarters of the \
 way across, and a round button sits in its top-right corner. Nothing reaches \
 into that band — no peak, tower, spire, roof, gable, tree canopy, moon or other \
-eye-catching shape; the tallest point of the scene starts about a third of the \
-way down. Keep the band soft and low in contrast so text reads over it."""
+eye-catching shape. This is a hard rule, not a preference: the tallest point of \
+the scene (the tip of the highest spire, tower, peak or tree) sits BELOW 40% of \
+the image height, measured from the top, so the top third stays clear with a \
+margin. If the landmark would reach higher, pull the view back so the whole \
+scene sits lower and smaller — never crop the landmark to make room. Keep the \
+band soft and low in contrast so text reads over it."""
 
 COMPOSITION = f"""\
 Composition: a wide 16:9 landscape whose centre 13:8 crop must work on its own. \
@@ -180,6 +187,14 @@ the same brushwork so it looks as if it was always there; change nothing else.
 Change: {{change}}"""
 
 REFRAME_PAD_COLOR = "808080"
+
+SHRINK_CANVAS = (1920, 1080)
+
+SHRUNK_PHOTO = """\
+The photo has been shrunk and set at the bottom of a flat grey frame; the grey \
+is empty canvas, not part of the scene. Paint the grey above as open sky and \
+carry the scenery on naturally at the sides. Keep the scene at exactly the \
+size and position it has in the frame — do not enlarge it or move it up."""
 
 REFRAME_PROMPT = f"""\
 This painting has been shrunk and set at the bottom of the frame; the flat grey \
@@ -304,7 +319,12 @@ def cmd_day(args) -> None:
         die(f"no photo yet for {args.iso}: pass one")
     first = next_index(folder, r"day-(\d+)\.png")
     outputs = [folder / f"day-{i}.png" for i in range(first, first + args.n)]
-    run_batch(args.model, with_hint(DAY_PROMPT, args.hint), [source, STYLE_REFERENCE], outputs)
+    prompt, photo = DAY_PROMPT, source
+    if args.shrink:
+        photo = folder / "source-shrunk.jpg"
+        shrink_onto_canvas(source, photo, args.shrink)
+        prompt = f"{DAY_PROMPT}\n\n{SHRUNK_PHOTO}"
+    run_batch(args.model, with_hint(prompt, args.hint), [photo, STYLE_REFERENCE], outputs)
     write_preview(args.iso)
 
 
@@ -317,6 +337,18 @@ def cmd_night(args) -> None:
     outputs = [folder / f"night-{args.day}-{i}.png" for i in range(first, first + args.n)]
     run_batch(args.model, with_hint(NIGHT_PROMPT, args.hint), [day], outputs)
     write_preview(args.iso)
+
+
+def shrink_onto_canvas(source: Path, out: Path, scale: float) -> None:
+    """The photo, `scale` of a 16:9 grey canvas's width, centred along its bottom edge."""
+    photo = open_rgb(source)
+    width, height = SHRINK_CANVAS
+    small = photo.resize(
+        (round(width * scale), round(width * scale * photo.height / photo.width)), Image.LANCZOS
+    )
+    canvas = Image.new("RGB", (width, height), f"#{REFRAME_PAD_COLOR}")
+    canvas.paste(small, ((width - small.width) // 2, max(0, height - small.height)))
+    canvas.save(out, "JPEG", quality=95)
 
 
 def shrink_to_bottom(source: Path, out: Path, scale: float) -> None:
@@ -455,6 +487,7 @@ def main() -> None:
         command = add(name, handler)
         if name == "day":
             command.add_argument("photo", nargs="?", help="the photo; reuses source.jpg when omitted")
+            command.add_argument("--shrink", type=float, help="paint from the photo shrunk onto a taller canvas, e.g. 0.66")
         else:
             command.add_argument("day", type=int, help="which day-N to make the night from")
         command.add_argument("-n", type=int, default=2)
