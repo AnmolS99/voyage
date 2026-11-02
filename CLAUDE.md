@@ -509,7 +509,10 @@ python3 scripts/journey_art.py export JP 4 3 --place "Chureito Pagoda and Mount 
 python3 scripts/journey_art.py reframe NO 2 4                  # pair lower in the frame, more sky above
 ```
 
-If the title covers the landmark, `reframe` shrinks the picked pair to the
+The model tends to keep a photo's framing over the prompt's sky rule, so for a
+photo whose landmark sits near its top edge pass `day --shrink 0.66`: it paints
+from the photo set small along the bottom of a grey 16:9 canvas, leaving the
+top third to sky from the start. If the title covers the landmark, `reframe` shrinks the picked pair to the
 bottom of the frame (`--scale`, default 0.78) and has Gemini paint only the
 new sky around it, so the painting stays as picked and day and night still
 line up.
