@@ -166,6 +166,16 @@ final class NameFlagGameTests: XCTestCase {
         XCTAssertEqual(suggestions(capitals, for: "Osl"), ["Oslo"])
     }
 
+    func testEnterSubmitsTheTopSuggestion() {
+        let countries = CountrySearchIndex<String>.countryNames()
+        XCTAssertEqual(countries.guessToSubmit(for: "norw"), "Norway")
+        XCTAssertEqual(countries.guessToSubmit(for: "uk"), "United Kingdom")
+    }
+
+    func testEnterSubmitsTheTypedTextWhenNothingMatches() {
+        XCTAssertEqual(CountrySearchIndex<String>.plain(["Oslo"]).guessToSubmit(for: "Atlantis"), "Atlantis")
+    }
+
     func testCountryNameSuggestionsMatchAliases() {
         let matches = CountrySearchIndex<String>.countryNames().suggestions(for: "uk")
         XCTAssertEqual(matches.first?.item, "United Kingdom")

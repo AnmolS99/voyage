@@ -82,7 +82,8 @@ struct NameCapitalGameView: View {
                                     Image(systemName: "arrow.counterclockwise")
                                 }
                             },
-                            onSubmit: { submit($0) }
+                            // Enter submits the dropdown's top row
+                            onSubmit: { submit(capitalSuggestions.guessToSubmit(for: $0)) }
                         )
                 }
             } else {

@@ -509,10 +509,11 @@ private fun GuessEntry(session: ChallengeSession, onRestart: () -> Unit, modifie
                     autoCorrectEnabled = false,
                     imeAction = ImeAction.Done,
                 ),
-                // The keyboard's own button submits whatever was typed, as
-                // iOS's search field does, and keeps the keyboard up for the
-                // next country.
-                keyboardActions = KeyboardActions(onDone = { submit(query) }),
+                // The keyboard's own button submits the dropdown's top row —
+                // "norw" submits Norway — or the typed text when nothing
+                // matches, as iOS's search field does, and keeps the keyboard
+                // up for the next country.
+                keyboardActions = KeyboardActions(onDone = { submit(matches.firstOrNull()?.item ?: query) }),
             )
             RestartButton(onClick = onRestart)
         }
