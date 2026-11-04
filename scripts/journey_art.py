@@ -21,7 +21,7 @@ the place the painting shows in `places.json` beside them — the apps show it
 behind a small pin on the art.
 
 Usage:
-  python3 scripts/journey_art.py day EG ~/Photos/giza.jpg [-n 3] [--hint "..."] [--shrink 0.66]
+  python3 scripts/journey_art.py day EG ~/Photos/giza.jpg [-n 2] [--hint "..."] [--shrink 0.66]
   python3 scripts/journey_art.py night EG 2 [-n 2] [--hint "..."]
   python3 scripts/journey_art.py export EG 2 1 --place "Pyramids of Giza"  # day-2 + night-2-1
   python3 scripts/journey_art.py edit EG day-2 "add a felucca on the Nile" [-n 2]  # small change, same picture

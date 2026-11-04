@@ -503,7 +503,7 @@ moon (`MOON`, modelled on Hungary's: silver, low and right of centre in clear
 sky, apart from the landmark); change them there.
 
 ```bash
-python3 scripts/journey_art.py day JP ~/Photos/fuji.jpg -n 3   # day attempts from the photo
+python3 scripts/journey_art.py day JP ~/Photos/fuji.jpg -n 2   # day attempts from the photo
 python3 scripts/journey_art.py night JP 4                      # nights from day-4
 python3 scripts/journey_art.py export JP 4 3 --place "Chureito Pagoda and Mount Fuji"  # → shared/data/journey/
 python3 scripts/journey_art.py reframe NO 2 4                  # pair lower in the frame, more sky above
