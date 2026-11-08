@@ -494,9 +494,9 @@ The art is made from a real photo by `scripts/journey_art.py`, which has a Gemin
 image model repaint the photo as an expert painter's gouache/oil landscape:
 visible brushwork, deliberately not anime. The night version is generated from
 the chosen day version, not the photo, so both share one composition. The top
-third stays open sky edge to edge — a long name like "United Kingdom" runs
+quarter stays open sky edge to edge — a long name like "United Kingdom" runs
 three-quarters across, and the Done button sits top-right — so the scene starts
-a third of the way down and the night moon sits low above the skyline, right of
+a quarter of the way down and the night moon sits low above the skyline, right of
 centre. Every prompt shares that rule (`SKY_BAND`) and the instruction to keep
 every vehicle, person and animal (`KEEP_EVERYTHING`), and every night shares one
 moon (`MOON`, modelled on Hungary's: silver, low and right of centre in clear
@@ -512,7 +512,7 @@ python3 scripts/journey_art.py reframe NO 2 4                  # pair lower in t
 The model tends to keep a photo's framing over the prompt's sky rule, so for a
 photo whose landmark sits near its top edge pass `day --shrink 0.66`: it paints
 from the photo set small along the bottom of a grey 16:9 canvas, leaving the
-top third to sky from the start. If the title covers the landmark, `reframe` shrinks the picked pair to the
+top quarter to sky from the start. If the title covers the landmark, `reframe` shrinks the picked pair to the
 bottom of the frame (`--scale`, default 0.78) and has Gemini paint only the
 new sky around it, so the painting stays as picked and day and night still
 line up.

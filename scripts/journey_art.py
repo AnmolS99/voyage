@@ -106,15 +106,15 @@ watermark, no frame, no people in close-up."""
 # and name run from the left edge to about 3/4 across (a long name like "United
 # Kingdom" reaches that far) and the sheet's Done button sits top-right. Every
 # country so far had to be reframed or edited until its landmark, trees or moon
-# started about a third of the way down.
+# started below the top quarter.
 SKY_BAND = """\
-The top third of the image, edge to edge, is open, calm sky: a country's flag \
+The top quarter of the image, edge to edge, is open, calm sky: a country's flag \
 and name are laid across it from the left edge to about three-quarters of the \
 way across, and a round button sits in its top-right corner. Nothing reaches \
 into that band — no peak, tower, spire, roof, gable, tree canopy, moon or other \
 eye-catching shape. This is a hard rule, not a preference: the tallest point of \
-the scene (the tip of the highest spire, tower, peak or tree) sits BELOW 40% of \
-the image height, measured from the top, so the top third stays clear with a \
+the scene (the tip of the highest spire, tower, peak or tree) sits BELOW 30% of \
+the image height, measured from the top, so the top quarter stays clear with a \
 margin. If the landmark would reach higher, pull the view back so the whole \
 scene sits lower and smaller — never crop the landmark to make room. Keep the \
 band soft and low in contrast so text reads over it."""
@@ -151,7 +151,7 @@ MOON = """\
 The moon is small and silver — pale silver-white with a faint soft halo, \
 never golden or orange — set LOW in clear open sky: just above the skyline, \
 right of centre, about a third of the way down the image, never in the top \
-third. Give it room: it never overlaps, touches or sits right beside the \
+quarter. Give it room: it never overlaps, touches or sits right beside the \
 landmark, a spire, tower or tree — it floats in empty sky off to the side, a \
 quiet accent rather than a focal point."""
 
