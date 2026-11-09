@@ -4,6 +4,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
@@ -24,12 +26,15 @@ import org.junit.Test
 
 /**
  * The Settings tab driven as a user would: the theme's segments, the texture
- * pickers through their menus, the reset behind its dialog, and the privacy
- * policy link.
+ * pickers' thumbnails and their full-screen preview, the reset behind its
+ * dialog, and the privacy policy link.
  *
- * The two menus list the same styles, so every item is found by a tag scoped to
- * its picker — the thing most likely to go wrong here is picking from the map's
- * menu and changing the globe.
+ * The two pickers show the same styles, so every thumbnail is found by a tag
+ * scoped to its picker — the thing most likely to go wrong here is tapping the
+ * map's and changing the globe.
+ *
+ * The preview's globe turns by itself until touched, so Compose is never idle
+ * while it is open: those tests drive the clock by hand.
  */
 class SettingsScreenTest {
 
@@ -48,15 +53,23 @@ class SettingsScreenTest {
         composeTestRule.waitUntil { state.isLoaded }
     }
 
-    private fun open(pickerTag: String) {
-        composeTestRule.onNodeWithTag(pickerTag).performClick()
+    private fun choose(pickerTag: String, style: GlobeStyle) {
+        composeTestRule.onNodeWithTag(styleOptionTag(pickerTag, style)).performScrollTo().performClick()
         composeTestRule.waitForIdle()
     }
 
-    private fun choose(pickerTag: String, style: GlobeStyle) {
-        open(pickerTag)
-        composeTestRule.onNodeWithTag(styleOptionTag(pickerTag, style)).performClick()
-        composeTestRule.waitForIdle()
+    /** Opens [pickerTag]'s preview and stops the clock, which its spin never lets idle. */
+    private fun openPreview(pickerTag: String) {
+        composeTestRule.onNodeWithTag(previewButtonTag(pickerTag)).performScrollTo()
+        composeTestRule.mainClock.autoAdvance = false
+        composeTestRule.onNodeWithTag(previewButtonTag(pickerTag)).performClick()
+        composeTestRule.mainClock.advanceTimeBy(PREVIEW_SETTLE_MS)
+        composeTestRule.onNodeWithTag(STYLE_PREVIEW_TAG).assertIsDisplayed()
+    }
+
+    private fun tapInPreview(tag: String) {
+        composeTestRule.onNodeWithTag(tag).performClick()
+        composeTestRule.mainClock.advanceTimeBy(PREVIEW_SETTLE_MS)
     }
 
     @Test
@@ -92,22 +105,23 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun eachFieldShowsItsCurrentStyle() {
+    fun eachPickerMarksItsCurrentStyle() {
         showSettings()
         composeTestRule.runOnIdle { state.setMapStyle(GlobeStyle.Stylized) }
 
-        composeTestRule.onNodeWithTag(GLOBE_STYLE_TAG).assertTextContains(label(GlobeStyle.Realistic))
-        composeTestRule.onNodeWithTag(MAP_STYLE_TAG).assertTextContains(label(GlobeStyle.Stylized))
+        composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, GlobeStyle.Realistic)).assertIsSelected()
+        composeTestRule.onNodeWithTag(styleOptionTag(MAP_STYLE_TAG, GlobeStyle.Stylized)).assertIsSelected()
+        composeTestRule.onNodeWithTag(styleOptionTag(MAP_STYLE_TAG, GlobeStyle.Realistic)).assertIsNotSelected()
     }
 
     @Test
-    fun theMenuListsEveryStyleAndMarksTheCurrentOne() {
+    fun everyStyleHasAThumbnailAndTheCurrentOneIsMarked() {
         showSettings()
 
-        open(GLOBE_STYLE_TAG)
-
         for (style in GlobeStyle.entries) {
-            composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, style)).assertIsDisplayed()
+            composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, style))
+                .assertIsDisplayed()
+                .assertTextContains(label(style))
         }
         composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, GlobeStyle.Realistic)).assertIsSelected()
         composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, GlobeStyle.Natural)).assertIsNotSelected()
@@ -161,12 +175,34 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun choosingAStyleClosesTheMenu() {
+    fun thePreviewOpensOnTheCurrentStyleAndUsesAnother() {
         showSettings()
+        openPreview(GLOBE_STYLE_TAG)
 
-        choose(GLOBE_STYLE_TAG, GlobeStyle.Stylized)
+        // Already the globe's style: nothing to use.
+        composeTestRule.onNodeWithTag(previewStyleTag(GlobeStyle.Realistic)).assertIsSelected()
+        composeTestRule.onNodeWithTag(STYLE_PREVIEW_USE_TAG).assertIsNotEnabled()
 
-        composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, GlobeStyle.Natural)).assertDoesNotExist()
+        tapInPreview(previewStyleTag(GlobeStyle.Natural))
+        composeTestRule.onNodeWithTag(STYLE_PREVIEW_USE_TAG).assertIsEnabled()
+        tapInPreview(STYLE_PREVIEW_USE_TAG)
+
+        composeTestRule.onNodeWithTag(STYLE_PREVIEW_TAG).assertDoesNotExist()
+        assertEquals(GlobeStyle.Natural, state.globeStyle)
+        assertEquals(GlobeStyle.Realistic, state.mapStyle)
+    }
+
+    @Test
+    fun closingThePreviewChangesNothing() {
+        showSettings()
+        openPreview(MAP_STYLE_TAG)
+
+        tapInPreview(previewStyleTag(GlobeStyle.Stylized))
+        tapInPreview(STYLE_PREVIEW_CLOSE_TAG)
+
+        composeTestRule.onNodeWithTag(STYLE_PREVIEW_TAG).assertDoesNotExist()
+        assertEquals(GlobeStyle.Realistic, state.mapStyle)
+        assertEquals(GlobeStyle.Realistic, state.globeStyle)
     }
 
     @Test
@@ -184,5 +220,10 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithTag(PRIVACY_POLICY_TAG).performScrollTo().performClick()
 
         assertEquals(listOf(PRIVACY_POLICY_URL), opened)
+    }
+
+    private companion object {
+        /** Longer than the preview's springs take to open or close. */
+        const val PREVIEW_SETTLE_MS = 2_000L
     }
 }

@@ -100,10 +100,9 @@ class GlobeEngineLifetimeTest {
 
         // Home is still composed, still full-screen and still holding a surface
         // while this screen is up. Layered over it — as this screen was first
-        // written — its `AndroidView` takes this tap and the menu never opens,
-        // because Compose stops at the first sibling it hits, handler or not.
-        composeTestRule.onNodeWithTag(GLOBE_STYLE_TAG).performClick()
-        composeTestRule.waitForIdle()
+        // written — its `AndroidView` takes this tap and the style never
+        // changes, because Compose stops at the first sibling it hits, handler
+        // or not.
         composeTestRule.onNodeWithTag(styleOptionTag(GLOBE_STYLE_TAG, GlobeStyle.Natural))
             .assertIsDisplayed()
             .performClick()

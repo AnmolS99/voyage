@@ -161,6 +161,17 @@ dismisses any feedback banner and ends a running pause early. This is iOS
 `SweepFeedbackBanner` and Android `ChallengeSession` with `FeedbackBanner`, so
 retiming it is a two-platform change.
 
+Settings' texture pickers show each style as a small globe (or, for the map,
+a small map) — iOS `StylePicker.swift`, Android `ui/settings/StylePicker.kt` —
+and Preview opens the chosen one full screen at Home's default size, grown out
+of its thumbnail and flown back into it (`StylePreview` on each). Android runs
+no second Filament engine for it: thumbnails and preview ray-cast Home's camera
+in `SphereProjection` (AGSL from API 33, `TurntableLookup` below), pinned to
+`GlobeCamera.latLonAt` by `SphereProjectionTest`. iOS renders Home's ocean
+sphere, lights and relief in SceneKit (`PreviewGlobeScene`) and snapshots it for
+the thumbnails. The shared view (`PREVIEW_CAMERA` / `PreviewCamera`: 20°N 15°E at
+distance 4), the sizes and the gestures are a two-platform change.
+
 ## Git Conventions
 
 Use conventional commits and conventional branch naming.
@@ -266,6 +277,7 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 | `CountryHitTester.swift`    | Shared tap-to-country lookup (globe + map)        |
 | `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights   |
 | `MapView.swift`             | 2D flat map view alternative                      |
+| `StylePicker.swift`         | Settings' texture thumbnails + full-screen style preview |
 | `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
 | `Typography.swift`          | `Font.voyageDisplay` / `.voyageText` (see Typography below) |
 | `Achievement.swift` / `ContinentData.swift` | Achievement progress model + continent groupings |

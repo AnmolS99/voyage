@@ -31,6 +31,7 @@
 		E81234560010 /* world.geojson in Resources */ = {isa = PBXBuildFile; fileRef = E81234550010 /* world.geojson */; };
 		E81234560011 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550011 /* MapView.swift */; };
 		E81234560014 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550014 /* SettingsView.swift */; };
+		E8123456A0F1 /* StylePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8123455A0F1 /* StylePicker.swift */; };
 		E81234560018 /* GlobeCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550018 /* GlobeCache.swift */; };
 		E81234560046 /* GlobeInertia.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550051 /* GlobeInertia.swift */; };
 		E81234560019 /* globe.scn in Resources */ = {isa = PBXBuildFile; fileRef = E81234550019 /* globe.scn */; };
@@ -126,6 +127,7 @@
 		E81234550010 /* world.geojson */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = world.geojson; path = "../../shared/data/world.geojson"; sourceTree = "<group>"; };
 		E81234550011 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		E81234550014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		E8123455A0F1 /* StylePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StylePicker.swift; sourceTree = "<group>"; };
 		E81234550016 /* voyage.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = voyage.entitlements; sourceTree = "<group>"; };
 		E81234550018 /* GlobeCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeCache.swift; sourceTree = "<group>"; };
 		E81234550051 /* GlobeInertia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeInertia.swift; sourceTree = "<group>"; };
@@ -228,6 +230,7 @@
 				E81234550032 /* HomeView.swift */,
 				E81234550104 /* CountriesDock.swift */,
 				E81234550014 /* SettingsView.swift */,
+				E8123455A0F1 /* StylePicker.swift */,
 				E81234550031 /* CountryListView.swift */,
 				E81234550106 /* CountrySearchIndex.swift */,
 				E81234550034 /* CountryExploreView.swift */,
@@ -483,6 +486,7 @@
 				E81234560001 /* voyageApp.swift in Sources */,
 				E81234560002 /* ContentView.swift in Sources */,
 				E81234560014 /* SettingsView.swift in Sources */,
+				E8123456A0F1 /* StylePicker.swift in Sources */,
 				E81234560003 /* GlobeView.swift in Sources */,
 				E81234560011 /* MapView.swift in Sources */,
 				E81234560004 /* GlobeScene.swift in Sources */,

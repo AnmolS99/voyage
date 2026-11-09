@@ -100,6 +100,13 @@
     <string name="style_stylized">Stylized</string>
     <string name="style_natural">Natural</string>
     <string name="style_realistic">Realistic</string>
+    <!-- The texture pickers' button that opens the chosen style full screen. -->
+    <string name="style_preview">Preview</string>
+    <!-- The full-screen preview's button that chooses the style on screen, e.g. "Use Natural". -->
+    <string name="style_preview_use">Use %1$s</string>
+    <!-- The same button when the style on screen is already the chosen one. -->
+    <string name="style_preview_current">Current style</string>
+    <string name="style_preview_close">Close preview</string>
     <string name="settings_theme">Theme</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>

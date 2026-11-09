@@ -97,39 +97,11 @@ struct SettingsView: View {
                         .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
                     }
 
-                    HStack {
-                        Image(systemName: "globe.americas")
-                            .foregroundColor(AppColors.buttonColor)
+                    StylePicker(surface: .globe, systemImage: "globe.americas", globeState: globeState)
+                        .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
 
-                        Text("Globe Style")
-
-                        Spacer()
-
-                        Picker("", selection: $globeState.globeStyle) {
-                            ForEach(GlobeStyle.allCases, id: \.self) { style in
-                                Text(style.displayName).tag(style)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                    }
-                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
-
-                    HStack {
-                        Image(systemName: "map")
-                            .foregroundColor(AppColors.buttonColor)
-
-                        Text("Map Style")
-
-                        Spacer()
-
-                        Picker("", selection: $globeState.mapStyle) {
-                            ForEach(GlobeStyle.allCases, id: \.self) { style in
-                                Text(style.displayName).tag(style)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                    }
-                    .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
+                    StylePicker(surface: .map, systemImage: "map", globeState: globeState)
+                        .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
 
                     // One switch for the globe and the map: shading one and not the
                     // other would break their consistency
@@ -236,12 +208,6 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, 16)
                 }
-            }
-            .onChange(of: globeState.globeStyle) { _, newStyle in
-                globeState.setGlobeStyle(newStyle)
-            }
-            .onChange(of: globeState.mapStyle) { _, newStyle in
-                globeState.setMapStyle(newStyle)
             }
             .scrollContentBackground(.hidden)
             .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
