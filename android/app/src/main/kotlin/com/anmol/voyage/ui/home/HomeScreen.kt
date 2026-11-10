@@ -370,6 +370,9 @@ private fun BoxScope.GlobeBody(
         host = host,
         visible = visible,
         focus = scene.cameraFocus,
+        // The user's own request, not the scene's: a challenge borrows this
+        // globe, but its navigation is hidden, so nothing re-selects Home mid-game.
+        homeRequest = state.homeRequest,
         autoRotating = scene.isAutoRotating,
         onInteraction = scene::onInteraction,
         dotStyles = dotStyles,

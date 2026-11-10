@@ -80,6 +80,8 @@ internal class GlobeDotStyle(
  * @param focus a place to fly the camera to, once, when it changes. On Home the
  *   selected country's center, so picking a country brings it into view; in a
  *   challenge, the region being played or the country being asked about.
+ * @param homeRequest bumped to turn the globe back to where it opened —
+ *   Home's tab re-selected. See [GlobeSurfaceHost.returnHome].
  * @param autoRotating whether the globe turns on its own — true until something
  *   is selected or the globe is dragged.
  * @param onInteraction a drag or a zoom started, which ends the idle spin. A tap
@@ -110,6 +112,7 @@ internal fun GlobeSurface(
     selectedOutline: OutlineMesh? = null,
     selectedOutlineColor: GlobeFill? = null,
     focus: CameraFocus? = null,
+    homeRequest: Int = 0,
     autoRotating: Boolean = false,
     onInteraction: () -> Unit = {},
     onCameraChange: (GlobeCamera) -> Unit = {},
@@ -176,6 +179,13 @@ internal fun GlobeSurface(
                 ?: focus.distance
             host.flyTo(focus.target, distance)
         }
+        onDispose { }
+    }
+
+    // Home re-selected: back to where the globe opened. Kept apart from the
+    // focus above, which on Home is the selection that re-selecting Home clears.
+    DisposableEffect(host, homeRequest) {
+        host.returnHome(homeRequest)
         onDispose { }
     }
 
@@ -317,7 +327,7 @@ internal class GlobeSurfaceHost {
      * briefly drawn by a Compose overlay that had to, and that is exactly why
      * they trailed the globe while dragging. They are meshes in the scene now.
      */
-    private var camera = GlobeCamera()
+    private var camera = GlobeCamera.HOME
 
     /** The spin left over from the last flick, stepped once per frame. */
     private val inertia = GlobeInertia()
@@ -439,6 +449,36 @@ internal class GlobeSurfaceHost {
             latitude = target.lat,
             longitude = target.lon,
             distance = distance ?: camera.distance,
+        )
+    }
+
+    /**
+     * The last [returnHome] request this globe has seen, or null before the
+     * first. The first is only recorded: a globe composed after Home was
+     * re-selected (a rotation, a trip to the map) has nothing to go back from.
+     */
+    private var seenHomeRequest: Int? = null
+
+    /**
+     * Turns the globe back to [GlobeCamera.HOME] — where it opened — when
+     * [request] is one it has not seen, over [GlobeFlight.RETURN_HOME_SECONDS].
+     *
+     * Only the flight is started here. The idle spin resumes by itself: the
+     * state turns `autoRotating` back on with the request, and [advance] lets a
+     * flight outrank it, so the spin takes over the frame the flight lands —
+     * unless a touch ends the flight first, which ends the spin with it.
+     */
+    fun returnHome(request: Int) {
+        val seen = seenHomeRequest
+        seenHomeRequest = request
+        if (seen == null || seen == request) return
+        inertia.reset()
+        flight = GlobeFlight(
+            camera,
+            latitude = GlobeCamera.HOME.latitude,
+            longitude = GlobeCamera.HOME.longitude,
+            distance = GlobeCamera.HOME.distance,
+            duration = GlobeFlight.RETURN_HOME_SECONDS,
         )
     }
 

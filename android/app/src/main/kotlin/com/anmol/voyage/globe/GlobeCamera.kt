@@ -230,6 +230,12 @@ data class GlobeCamera(
 
     companion object {
         /**
+         * Where the camera starts: the pose the globe has when the app opens and
+         * the idle spin begins, and the one re-selecting Home turns it back to.
+         */
+        val HOME = GlobeCamera()
+
+        /**
          * A camera at a place, with every limit already applied: latitude
          * clamped short of the pole, longitude wrapped into ±180°, distance
          * clamped to the zoom range.

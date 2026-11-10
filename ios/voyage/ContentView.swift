@@ -10,8 +10,24 @@ struct ContentView: View {
 
     private static let badgeDateKey = "dailyBadgeNextDate"
 
+    /// The tab selection, seeing re-selections too: tapping the tab you are
+    /// already on sets the same value again, which `onChange` never reports.
+    /// Home's root is the globe as it opened, so re-selecting Home turns it back
+    /// there — on the globe only; the map has no launch pose to return to.
+    private var tabSelection: Binding<Int> {
+        Binding(
+            get: { selectedTab },
+            set: { tab in
+                if tab == 0 && selectedTab == 0 && globeState.viewMode == .globe {
+                    globeState.returnHome()
+                }
+                selectedTab = tab
+            }
+        )
+    }
+
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: tabSelection) {
             HomeView(globeState: globeState)
                 .tabItem {
                     Label("Home", systemImage: "globe")
@@ -585,6 +601,27 @@ class GlobeState: ObservableObject {
     func flyTo(_ target: CameraTarget) {
         isAutoRotating = false
         pendingCameraTarget = target
+    }
+
+    /// Bumped each time Home's tab is re-selected while the globe is showing;
+    /// the globe answers each new value by turning back to where it opened.
+    /// Not persisted. Android `VoyageState.homeRequest`.
+    @Published private(set) var homeRequest = 0
+
+    /// How long the globe takes to turn back home — longer than a selection's
+    /// 0.8 s flight, since it can be half a turn and a full zoom out away.
+    /// Android `GlobeFlight.RETURN_HOME_SECONDS`.
+    static let returnHomeDuration: TimeInterval = 1.2
+
+    /// Sends the globe home: deselects, so the country's card closes, and asks
+    /// the globe to fly back to its launch pose. The spin stays off for the
+    /// flight — an `SCNAction` and an animated transaction would fight over the
+    /// same rotation — and the globe turns it back on when it lands, unless a
+    /// drag or a selection has taken over by then. Android `VoyageState.returnHome`.
+    func returnHome() {
+        deselectCountry(resumeAutoRotation: false)
+        isAutoRotating = false
+        homeRequest += 1
     }
 
     func resetSelection() {

@@ -2,6 +2,7 @@ package com.anmol.voyage.state
 
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -153,6 +154,27 @@ class VoyageState(
      */
     fun stopAutoRotation() {
         isAutoRotating = false
+    }
+
+    /**
+     * Bumped each time Home's tab is re-selected while the globe is showing, to
+     * turn the globe back to where it opened — see [returnHome]. Not persisted.
+     */
+    var homeRequest by mutableIntStateOf(0)
+        private set
+
+    /**
+     * Sends the globe home: deselects, so the country's card closes, and asks
+     * the globe to fly back to its launch pose, where the idle spin carries on.
+     *
+     * The spin is turned back on here rather than when the flight lands,
+     * because the globe lets a flight outrank it — and a drag during the flight
+     * turns it off again through [stopAutoRotation], as any drag does.
+     * iOS `GlobeState.returnHome`.
+     */
+    fun returnHome() {
+        clearSelection()
+        homeRequest++
     }
 
     // ---- Visited ----
