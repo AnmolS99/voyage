@@ -117,6 +117,26 @@ class GlobeFlightTest {
     }
 
     @Test
+    fun `returning home lands where the globe opens, in its own time`() {
+        val flight = GlobeFlight(
+            GlobeCamera.at(latitude = -30.0, longitude = 150.0, distance = 1.6f),
+            latitude = GlobeCamera.HOME.latitude,
+            longitude = GlobeCamera.HOME.longitude,
+            distance = GlobeCamera.HOME.distance,
+            duration = GlobeFlight.RETURN_HOME_SECONDS,
+        )
+
+        flight.step(GlobeFlight.DURATION_SECONDS)
+        assertFalse("a selection's flight time is not enough", flight.isFinished)
+
+        val landed = flight.step(GlobeFlight.RETURN_HOME_SECONDS)
+        assertTrue(flight.isFinished)
+        assertEquals(GlobeCamera.HOME.latitude, landed.latitude, 1e-9)
+        assertEquals(GlobeCamera.HOME.longitude, landed.longitude, 1e-9)
+        assertEquals(GlobeCamera.HOME.distance, landed.distance, 1e-5f)
+    }
+
+    @Test
     fun `the timing curve is Core Animation's ease in ease out`() {
         assertEquals(0.0, EaseInEaseOut.of(0f), 0.0)
         assertEquals(1.0, EaseInEaseOut.of(1f), 0.0)

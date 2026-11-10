@@ -299,6 +299,28 @@ final class voyageTests: XCTestCase {
     /// driven from a unit test. Both read these constants and hold no literals
     /// of their own, so pinning the constants pins the behavior; Android's
     /// instrumented `zoomStaysWithinTheDistanceClamps` covers the gesture end.
+    // Re-selecting Home deselects and asks the globe back to its launch pose,
+    // where the idle spin resumes once it lands (GlobeView.Coordinator).
+    func testReturningHomeDeselectsAndRequestsTheLaunchPose() {
+        let state = GlobeState(inMemory: true)
+        state.selectCountry("Norway", center: (lat: 61, lon: 8))
+        let before = state.homeRequest
+
+        state.returnHome()
+
+        XCTAssertNil(state.selectedCountry)
+        XCTAssertNil(state.targetCountryCenter)
+        XCTAssertFalse(state.isAutoRotating, "the spin waits for the flight to land")
+        XCTAssertEqual(state.homeRequest, before + 1)
+        state.returnHome()
+        XCTAssertEqual(state.homeRequest, before + 2, "each return is a new request")
+
+        XCTAssertEqual(GlobeScene.homeLongitude, 15, accuracy: 1e-4,
+                       "The globe opens facing Europe/Africa, ~15°E")
+        XCTAssertEqual(GlobeState.returnHomeDuration, 1.2, accuracy: 0,
+                       "Android's GlobeFlight.RETURN_HOME_SECONDS is the same")
+    }
+
     func testZoomRangeMatchesAndroid() {
         XCTAssertEqual(GlobeState.maxCameraDistance, 6.0, accuracy: 0,
                        "Zoom-out limit changed; Android clamps to the same value")

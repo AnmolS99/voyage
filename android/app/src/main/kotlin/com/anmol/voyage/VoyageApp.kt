@@ -48,6 +48,7 @@ import com.anmol.voyage.navigation.challengesToRegionsExit
 import com.anmol.voyage.navigation.owning
 import com.anmol.voyage.navigation.regionsToChallengesEnter
 import com.anmol.voyage.navigation.regionsToChallengesExit
+import com.anmol.voyage.state.ViewMode
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.achievements.AchievementUnlockCelebration
 import com.anmol.voyage.ui.achievements.AchievementsScreen
@@ -103,6 +104,10 @@ fun VoyageApp(state: VoyageState, modifier: Modifier = Modifier) {
         if (currentTab == destination) {
             // Re-selecting a tab returns it to its root, as a tab bar does on iOS.
             navController.popBackStack(destination.route, inclusive = false)
+            // Home's root is the globe as it opened: turned back and spinning.
+            if (destination == VoyageDestination.Home && state.viewMode == ViewMode.Globe) {
+                state.returnHome()
+            }
         } else {
             navController.navigate(destination.route) {
                 // Tab switching keeps a single-entry back stack: back from any

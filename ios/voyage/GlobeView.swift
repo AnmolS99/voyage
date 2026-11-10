@@ -52,6 +52,7 @@ struct GlobeView: UIViewRepresentable {
         context.coordinator.updateAutoRotation()
         context.coordinator.centerOnSelectedCountry()
         context.coordinator.applyPendingCameraTarget()
+        context.coordinator.returnHomeIfRequested()
     }
 
     func makeCoordinator() -> Coordinator {
@@ -183,7 +184,7 @@ struct GlobeView: UIViewRepresentable {
 
         private var lastPanLocation: CGPoint = .zero
         private var currentRotationX: Float = 0
-        private var currentRotationY: Float = -.pi / 2 - .pi / 12
+        private var currentRotationY: Float = GlobeScene.homeRotationY
         private var currentScale: Float = 1.0
         private var lastAutoRotatingState: Bool = true
         private var hasAnimatedToCountry: Bool = false
@@ -204,9 +205,18 @@ struct GlobeView: UIViewRepresentable {
         var pendingDragY: Float = 0
         var lastRenderTime: TimeInterval = 0
 
+        /// The last `GlobeState.homeRequest` this globe answered. Starts at the
+        /// state's current value, so a globe built after a request has nothing
+        /// to fly back from.
+        private var lastHomeRequest: Int
+        /// Bumped by every flight and every touch that takes the globe, so a
+        /// flight's completion only runs if nothing has superseded it.
+        private var flightGeneration = 0
+
         init(globeState: GlobeState, onCountryTapped: ((String) -> Void)? = nil) {
             self.globeState = globeState
             self.onCountryTapped = onCountryTapped
+            self.lastHomeRequest = globeState.homeRequest
             super.init()
             // Cache countries data once
             self.cachedCountries = CountryDataCache.shared.countries
@@ -324,9 +334,38 @@ struct GlobeView: UIViewRepresentable {
             }
         }
 
+        /// Turns the globe back to its launch pose when Home's tab is re-selected
+        /// (`GlobeState.returnHome`), then lets the idle spin carry on from there —
+        /// exactly as it does when the app opens. Android `GlobeSurfaceHost.returnHome`.
+        func returnHomeIfRequested() {
+            guard globeState.homeRequest != lastHomeRequest else { return }
+            lastHomeRequest = globeState.homeRequest
+            // Re-selecting the country just left flies to it again.
+            hasAnimatedToCountry = false
+
+            // A flick still coasting would fight the flight for the rotation.
+            stopInertia()
+            sceneView?.rendersContinuously = false
+
+            flyTo(lat: 0,
+                  lon: GlobeScene.homeLongitude,
+                  distance: GlobeScene.homeCameraDistance,
+                  duration: GlobeState.returnHomeDuration) { [weak self] in
+                guard let self, self.globeState.selectedCountry == nil else { return }
+                self.globeState.isAutoRotating = true
+            }
+        }
+
         /// Animates the globe rotation and camera so the given lat/lon is centered
         /// at the given camera distance (nil keeps the current distance).
-        func flyTo(lat: Double, lon: Double, distance: Float?) {
+        ///
+        /// `completion` runs on the main thread once the flight lands, and only if
+        /// no later flight or touch has taken the globe in the meantime.
+        func flyTo(lat: Double,
+                   lon: Double,
+                   distance: Float?,
+                   duration: TimeInterval = 0.8,
+                   completion: (() -> Void)? = nil) {
             guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
                   let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
 
@@ -355,9 +394,20 @@ struct GlobeView: UIViewRepresentable {
                 targetRotationY += twoPi
             }
 
+            flightGeneration += 1
+            let generation = flightGeneration
+
             SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.8
+            SCNTransaction.animationDuration = duration
             SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            if let completion {
+                SCNTransaction.completionBlock = {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self, self.flightGeneration == generation else { return }
+                        completion()
+                    }
+                }
+            }
 
             // Rotate globe to center the location horizontally
             currentRotationY = targetRotationY
@@ -406,6 +456,7 @@ struct GlobeView: UIViewRepresentable {
                 globeNode.eulerAngles.y = currentActualRotationY
                 globeNode.removeAction(forKey: "autoRotation")
                 globeState.isAutoRotating = false
+                flightGeneration += 1  // a flight under the finger no longer resumes the spin
                 sceneView?.rendersContinuously = true
 
             case .changed:
@@ -447,6 +498,7 @@ struct GlobeView: UIViewRepresentable {
                 globeNode.eulerAngles.y = currentActualRotationY
                 globeNode.removeAction(forKey: "autoRotation")
                 globeState.isAutoRotating = false
+                flightGeneration += 1  // a flight under the finger no longer resumes the spin
             }
 
             if gesture.state == .changed {
@@ -490,6 +542,7 @@ struct GlobeView: UIViewRepresentable {
                 globeNode.eulerAngles.y = currentActualRotationY
                 globeNode.removeAction(forKey: "autoRotation")
                 globeState.isAutoRotating = false
+                flightGeneration += 1  // a flight under the finger no longer resumes the spin
 
             case .changed:
                 let deltaY = location.y - doubleTapDragStartY

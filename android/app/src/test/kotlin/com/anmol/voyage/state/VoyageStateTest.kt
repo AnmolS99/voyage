@@ -298,6 +298,24 @@ class VoyageStateTest {
     }
 
     @Test
+    fun `returning home deselects and starts the spin again`() {
+        val store = InMemoryStateStore()
+        val state = stateOver(store)
+        state.selectCountry("Norway", LatLon(lat = 61.0, lon = 8.0))
+        val before = state.homeRequest
+
+        state.returnHome()
+
+        assertNull(state.selectedCountry)
+        assertNull(state.selectedCountryCenter)
+        assertTrue(state.isAutoRotating)
+        assertEquals("each return is a new request", before + 1, state.homeRequest)
+        state.returnHome()
+        assertEquals(before + 2, state.homeRequest)
+        assertEquals(0, store.saveCount)
+    }
+
+    @Test
     fun `auto-rotation is never written to the store`() {
         val store = InMemoryStateStore()
         val state = stateOver(store)

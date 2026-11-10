@@ -70,7 +70,11 @@ iOS point are the same physical size. The idle spin an untouched globe
 does — one turn a minute, ended by a drag or a selection and resumed only by
 deselecting — is `VoyageState.isAutoRotating` driving
 `GlobeCamera.autoRotated`, where iOS runs an `SCNAction` off
-`GlobeState.isAutoRotating`. Selecting a country flies the camera to it via
+`GlobeState.isAutoRotating`. Re-selecting the Home tab on the globe sends it
+home: it deselects and flies back to the launch pose over 1.2 s
+(`GlobeFlight.RETURN_HOME_SECONDS`, iOS `GlobeState.returnHomeDuration`),
+where the idle spin carries on — `returnHome` and `homeRequest` on each
+platform's state. Selecting a country flies the camera to it via
 `globe/GlobeFlight.kt`, a port of `GlobeView.Coordinator.flyTo` down to its
 easing curve. How far back that flight settles is fitted to the country: `CountryFocus` (the smallest cap around its main landmass, in each platform's `CountryHitTester`) and `distanceToFit` (iOS `GlobeState`, Android `GlobeCamera`) size it to the view's narrower axis, so Luxembourg fills the screen and Russia fits in it — same algorithm, margin and clamps on both, pinned by `CountryFocusTests` and `CountryHitTesterTest`/`GlobeCameraTest`. Both platforms integrate one step per rendered frame — on Android a
 flight, a coasting flick and the idle spin are three cases of one `advance()`

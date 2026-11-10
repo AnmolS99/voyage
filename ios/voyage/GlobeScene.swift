@@ -5,6 +5,21 @@ import simd
 
 class GlobeScene {
 
+    // MARK: - Launch pose
+
+    /// The globe's starting turn: facing Europe/Africa (~15°E longitude). Where
+    /// the idle spin begins, and where re-selecting Home turns the globe back to
+    /// (`GlobeView.Coordinator.returnHomeIfRequested`).
+    static let homeRotationY: Float = -.pi / 2 - .pi / 12
+
+    /// The camera's starting distance, looking at the equator.
+    static let homeCameraDistance: Float = 4.0
+
+    /// The longitude `homeRotationY` faces, in the terms `flyTo` takes.
+    static var homeLongitude: Double {
+        -Double(homeRotationY) * 180 / .pi - 90
+    }
+
     // MARK: - Border outline materials
 
     /// Material for border outlines: width is applied by the geometry shader modifier
@@ -34,8 +49,7 @@ class GlobeScene {
             // Rebuild the countryNodes and originalColors dictionaries from cached nodes
             rebuildCoordinatorData(from: bundledGlobe, coordinator: coordinator)
 
-            // Start facing Europe/Africa (~15°E longitude)
-            bundledGlobe.eulerAngles.y = -.pi / 2 - .pi / 12
+            bundledGlobe.eulerAngles.y = homeRotationY
 
             // Add rotation animation (not saved in bundle)
             let rotation = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 60))
@@ -56,7 +70,7 @@ class GlobeScene {
         // closest zoom) so deep zoom doesn't clip the surface.
         cameraNode.camera?.zNear = 0.01
         cameraNode.camera?.zFar = 100
-        cameraNode.position = SCNVector3(0, 0, 4)
+        cameraNode.position = SCNVector3(0, 0, homeCameraDistance)
         scene.rootNode.addChildNode(cameraNode)
 
         // Main light (sun-like). A child of the camera, so it keeps shining from the
@@ -107,8 +121,7 @@ class GlobeScene {
         // Add countries from GeoJSON
         addCountriesFromGeoJSON(to: globeNode, coordinator: coordinator)
 
-        // Start facing Europe/Africa (~15°E longitude)
-        globeNode.eulerAngles.y = -.pi / 2 - .pi / 12
+        globeNode.eulerAngles.y = homeRotationY
 
         // Add subtle rotation animation
         let rotation = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 60))

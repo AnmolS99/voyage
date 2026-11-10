@@ -25,6 +25,8 @@ internal class GlobeFlight(
     latitude: Double,
     longitude: Double,
     distance: Float = SELECTION_DISTANCE,
+    /** How long the flight takes: [DURATION_SECONDS] unless a caller says otherwise. */
+    private val duration: Float = DURATION_SECONDS,
 ) {
 
     /** Where the flight ends, already clamped to the camera's limits. */
@@ -42,7 +44,7 @@ internal class GlobeFlight(
     private var elapsed = 0f
 
     val isFinished: Boolean
-        get() = elapsed >= DURATION_SECONDS
+        get() = elapsed >= duration
 
     /**
      * Advances the flight by [dt] seconds and returns where the camera now is.
@@ -63,8 +65,8 @@ internal class GlobeFlight(
      * the clamp.
      */
     fun step(dt: Float): GlobeCamera {
-        elapsed = (elapsed + dt).coerceAtMost(DURATION_SECONDS)
-        val fraction = EaseInEaseOut.of(elapsed / DURATION_SECONDS)
+        elapsed = (elapsed + dt).coerceAtMost(duration)
+        val fraction = EaseInEaseOut.of(elapsed / duration)
 
         val fromRadians = from.latitude * PI / 180.0
         val toRadians = destination.latitude * PI / 180.0
@@ -83,6 +85,13 @@ internal class GlobeFlight(
     companion object {
         /** iOS `SCNTransaction.animationDuration` in `flyTo`. */
         const val DURATION_SECONDS = 0.8f
+
+        /**
+         * How long the globe takes to turn back to [GlobeCamera.HOME] when Home
+         * is re-selected — longer than a selection's flight, since it can be
+         * half a turn and a full zoom out away. iOS `GlobeState.returnHomeDuration`.
+         */
+        const val RETURN_HOME_SECONDS = 1.2f
 
         /**
          * Where a flight settles when given a place but no zoom to frame it at.
