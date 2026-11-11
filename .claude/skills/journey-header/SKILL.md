@@ -22,8 +22,10 @@ skill is the loop around it.
 
 **The hard rule: the top third of the image is open sky.** The flag and
 country name sit there, from the left edge to about three-quarters across, with
-the Done button top-right. Nothing — spire, minaret, peak, tree, moon — may
-cross it. Check every attempt against it before the user sees it.
+the Done button top-right. No part of the scene — spire, minaret, peak, tree —
+may cross it. Check every attempt against it before the user sees it. The moon
+is the exception: it's fine in the top third, so mention it but don't redo a
+night for it.
 
 ## Before starting
 
@@ -82,7 +84,7 @@ python3 .claude/skills/journey-header/scripts/sheet.py AF night-2-1 night-2-2
 ```
 
 Send the sheet and ask which night. Nights drift from their day, so point out:
-- a moon in the top third, or touching the landmark;
+- a moon touching the landmark (one in the top third is fine, just say so);
 - snow on peaks, or towers and buildings that weren't there;
 - a zoomed or shifted frame.
 
@@ -151,6 +153,15 @@ Then tell the user the country is in, with the commit.
   down instead: `python3 scripts/journey_art.py reframe AF 2 [1] --scale 0.8`
   shrinks the day (and its night, if given) to the bottom and paints new sky
   above it, so the pair still lines up.
+- **The user wants the moon lower or gone:** a moon in the top third is
+  acceptable, so only redo a night when the user asks. Where the horizon sits
+  right under the line (wide landscapes, aerial views) there is no sky below
+  it for the moon, so make the nights again with `--hint "... leave the moon
+  out of the picture entirely and show only its light ..."` (Mongolia,
+  Kazakhstan).
+- **Night lighting that's wrong for the place** (a pavilion lit from inside
+  that is floodlit from outside, a daytime shadow kept at night): describe
+  how it is really lit at night in the `night` hint.
 - **A small fix** (remove a sign, drop scaffolding):
   `python3 scripts/journey_art.py edit AF day-2 "remove the scaffolding on the left"`.
 - **Gemini blocks the request** (`image_safety`): drop whatever in the hint or

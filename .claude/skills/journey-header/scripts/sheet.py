@@ -2,8 +2,8 @@
 """Stack Journey art attempts into one review sheet, marking where the title goes.
 
 Each attempt is drawn as the app's banner sees it, with a red line at a third
-of its height: nothing (spire, peak, tree, moon) may cross that line, since
-the flag and country name sit above it. Grey bars dim the sides the export's
+of its height: nothing (spire, peak, tree) may cross that line, since the
+flag and country name sit above it. A moon may. Grey bars dim the sides the export's
 centre 13:8 crop trims away, so whatever is under them doesn't matter.
 
 Usage:
