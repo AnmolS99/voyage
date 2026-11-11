@@ -113,9 +113,8 @@ and name are laid across it from the left edge to about three-quarters of the \
 way across, and a round button sits in its top-right corner. Nothing reaches \
 into that band — no peak, tower, spire, roof, gable, tree canopy, moon or other \
 eye-catching shape. This is a hard rule, not a preference: the tallest point of \
-the scene (the tip of the highest spire, tower, peak or tree) sits BELOW 40% of \
-the image height, measured from the top, so the top third stays clear with a \
-margin. If the landmark would reach higher, pull the view back so the whole \
+the scene (the tip of the highest spire, tower, peak or tree) sits at or just \
+below a third of the image height, measured from the top, never above it. If the landmark would reach higher, pull the view back so the whole \
 scene sits lower and smaller — never crop the landmark to make room. Keep the \
 band soft and low in contrast so text reads over it."""
 
