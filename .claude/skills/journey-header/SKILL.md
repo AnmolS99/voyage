@@ -161,7 +161,10 @@ Then tell the user the country is in, with the commit.
   Kazakhstan).
 - **Night lighting that's wrong for the place** (a pavilion lit from inside
   that is floodlit from outside, a daytime shadow kept at night): describe
-  how it is really lit at night in the `night` hint.
+  how it is really lit at night in the `night` hint. When the user sends a
+  night photo, pass it with `--reference PATH`: Gemini then copies its
+  lighting, down to lit patterns a hint can't describe (Kuwait Towers'
+  glowing disc tiles).
 - **A small fix** (remove a sign, drop scaffolding):
   `python3 scripts/journey_art.py edit AF day-2 "remove the scaffolding on the left"`.
 - **Gemini blocks the request** (`image_safety`): drop whatever in the hint or
