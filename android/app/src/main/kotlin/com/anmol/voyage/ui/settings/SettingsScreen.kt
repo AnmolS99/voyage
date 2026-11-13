@@ -220,7 +220,10 @@ private fun SettingsSection(
     }
 }
 
-/** System, light or dark, as a segmented button row. */
+/**
+ * System, light, dark or daylight, as a segmented button row. Daylight says
+ * what it does underneath while it is chosen, as on iOS.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ThemeSetting(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
@@ -241,10 +244,19 @@ private fun ThemeSetting(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
                     onClick = { onSelect(mode) },
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size),
                     modifier = Modifier.testTag(themeOptionTag(mode)),
+                    // No checkmark: four labels need the width.
+                    icon = {},
                 ) {
                     Text(stringResource(mode.labelRes), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
+        }
+        if (selected == ThemeMode.Daylight) {
+            Text(
+                stringResource(R.string.theme_daylight_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -380,6 +392,7 @@ internal val ThemeMode.labelRes: Int
         ThemeMode.System -> R.string.theme_system
         ThemeMode.Light -> R.string.theme_light
         ThemeMode.Dark -> R.string.theme_dark
+        ThemeMode.Daylight -> R.string.theme_daylight
     }
 
 /** Test tags for the two pickers' fields. */

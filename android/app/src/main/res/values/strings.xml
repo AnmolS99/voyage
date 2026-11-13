@@ -104,6 +104,8 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="theme_daylight">Daylight</string>
+    <string name="theme_daylight_note">Light by day and dark by night, by the sun where your time zone is.</string>
     <string name="settings_app_icon">App icon</string>
     <string name="settings_app_icon_pending">The icon changes when you leave voyage.</string>
     <string name="settings_data">Data</string>

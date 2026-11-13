@@ -6,13 +6,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.settings.LauncherIcon
 import com.anmol.voyage.ui.theme.VoyageTheme
+import com.anmol.voyage.ui.theme.isDarkNow
 
 class VoyageActivity : ComponentActivity() {
 
@@ -33,7 +33,7 @@ class VoyageActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val darkTheme = voyageState.themeMode.isDark(isSystemInDarkTheme())
+            val darkTheme = voyageState.themeMode.isDarkNow()
             // The user's choice can disagree with the system's, and the system
             // bar icons follow the app, not the system.
             LaunchedEffect(darkTheme) {

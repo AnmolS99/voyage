@@ -3,6 +3,7 @@ package com.anmol.voyage.data
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
+import com.anmol.voyage.state.Daylight
 import java.io.InputStream
 import kotlin.concurrent.thread
 
@@ -49,6 +50,11 @@ class CountryDataCache(
         CountryAliasesParser.parse(openAsset(COUNTRY_ALIASES))
     }
 
+    /** Where each time zone's city is, for the Daylight theme — see [Daylight]. */
+    val timeZoneLocations: Map<String, List<Double>> by lazy {
+        Daylight.parseLocations(openAsset(TIME_ZONE_LOCATIONS))
+    }
+
     /** Countries grouped by continent. */
     val continents: ContinentIndex by lazy { ContinentIndex(countries) }
 
@@ -76,6 +82,7 @@ class CountryDataCache(
     companion object {
         const val COUNTRY_HIGHLIGHTS = "country_highlights.json"
         const val COUNTRY_ALIASES = "country_aliases.json"
+        const val TIME_ZONE_LOCATIONS = "timezone_locations.json"
 
         @Volatile
         private var instance: CountryDataCache? = null

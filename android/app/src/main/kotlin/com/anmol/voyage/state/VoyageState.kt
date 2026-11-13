@@ -254,8 +254,13 @@ class VoyageState(
 
     fun setThemeMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }
 
-    /** Flips light/dark from whatever is on screen — see [ThemeMode.toggled]. */
-    fun toggleDarkMode(systemInDarkTheme: Boolean) = setThemeMode(themeMode.toggled(systemInDarkTheme))
+    /**
+     * The Home screen's sun/moon button: the opposite of what is on screen, as
+     * an explicit choice. Like iOS's `toggleDarkMode()` it lands on
+     * [ThemeMode.Light] or [ThemeMode.Dark], so following the system or the sun
+     * is only chosen again from Settings.
+     */
+    fun toggleDarkMode(isDark: Boolean) = setThemeMode(if (isDark) ThemeMode.Light else ThemeMode.Dark)
 
     // ---- Challenges ----
 

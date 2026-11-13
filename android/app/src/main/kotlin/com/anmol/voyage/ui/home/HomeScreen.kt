@@ -1,7 +1,6 @@
 package com.anmol.voyage.ui.home
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -73,6 +72,7 @@ import com.anmol.voyage.ui.map.WorldScene
 import com.anmol.voyage.ui.map.buildCountryPaths
 import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.isDarkNow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -204,8 +204,7 @@ fun HomeScreen(
         // A challenge is always played on the globe, as on iOS, whatever view
         // Home was left in.
         val isGlobe = challengeScene != null || state.viewMode == ViewMode.Globe
-        val systemInDarkTheme = isSystemInDarkTheme()
-        val isDark = state.themeMode.isDark(systemInDarkTheme)
+        val isDark = state.themeMode.isDarkNow()
 
         // Behind the globe only, as on iOS; the map paints its own ocean.
         if (isGlobe && visible) GlobeBackdrop(isDark = isDark)
@@ -262,7 +261,7 @@ fun HomeScreen(
                     )
                 }
                 // iOS's sun/moon button: shows where a tap goes, not where you are.
-                FilledTonalIconButton(onClick = { state.toggleDarkMode(systemInDarkTheme) }) {
+                FilledTonalIconButton(onClick = { state.toggleDarkMode(isDark) }) {
                     Icon(
                         imageVector = if (isDark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
                         contentDescription = stringResource(

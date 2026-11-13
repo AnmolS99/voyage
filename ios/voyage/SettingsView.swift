@@ -67,6 +67,12 @@ struct SettingsView: View {
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
+
+                        if globeState.themeMode == .daylight {
+                            Text("Light by day and dark by night, by the sun where your time zone is.")
+                                .font(.voyageText(13))
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .padding(.vertical, 4)
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
@@ -81,7 +87,7 @@ struct SettingsView: View {
                             }
 
                             HStack(spacing: 0) {
-                                ForEach(ThemeMode.allCases, id: \.self) { mode in
+                                ForEach(ThemeMode.appIcons, id: \.self) { mode in
                                     AppIconOption(mode: mode, isSelected: appIcon == mode) {
                                         setAppIcon(mode)
                                     }
@@ -275,22 +281,25 @@ struct SettingsView: View {
     }
 }
 
-/// The app icon picker reuses the theme's three choices: `.system` is the
+/// The app icon picker reuses three of the theme's choices — an icon has no
+/// daylight option — as `appIcons`: `.system` is the
 /// primary `AppIcon`, whose dark appearance iOS shows when Home Screen icons
 /// are set to Dark, and light and dark are alternate icons that hold one
 /// artwork in every appearance (`ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`).
 extension ThemeMode {
+    static let appIcons: [ThemeMode] = [.system, .light, .dark]
+
     /// `nil` is the primary icon.
     var alternateIconName: String? {
         switch self {
-        case .system: return nil
+        case .system, .daylight: return nil
         case .light: return "AppIcon-Light"
         case .dark: return "AppIcon-Dark"
         }
     }
 
     @MainActor static var currentAppIcon: ThemeMode {
-        allCases.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .system
+        appIcons.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .system
     }
 }
 
@@ -336,7 +345,7 @@ private struct AppIconOption: View {
             Image("AppIconPreviewLight").resizable()
         case .dark:
             Image("AppIconPreviewDark").resizable()
-        case .system:
+        case .system, .daylight:
             Image("AppIconPreviewLight").resizable()
                 .overlay(
                     Image("AppIconPreviewDark").resizable()

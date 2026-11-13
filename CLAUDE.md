@@ -21,7 +21,7 @@ voyage/
 │   ├── fixtures/   # expected_countries.json — parser contract for BOTH apps
 │   └── supabase/   # schemas/, migrations/, seed.sql
 ├── web/        # Marketing site + /privacy (rendered from PRIVACY.md), Cloudflare Workers — see web/README.md
-├── scripts/    # update_geometry.sh, merge_geometry.py, generate_country_fixture.py, journey_art.py
+├── scripts/    # update_geometry.sh, merge_geometry.py, generate_country_fixture.py, generate_timezone_locations.py, journey_art.py
 ├── journey-art/ # gitignored workspace for Journey Art (photos, attempts, exports)
 └── docs/       # ANDROID_PLAN.md, ANDROID_DEVELOPMENT.md
 ```
@@ -247,7 +247,7 @@ cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig
 - **GeoJSON** for country boundary data
 - **Supabase** for daily challenge backend
 
-The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: system/light/dark, as on Android). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
+The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: system/light/dark/daylight, as on Android — see [Theme](#theme)). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
 
 ### Data persistence
 
@@ -388,6 +388,31 @@ Schema and migrations live in `shared/supabase/schemas/` and `shared/supabase/mi
 
 All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`AppColors`) and `android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt` (`VoyagePalette`) — and referenced throughout; don't hardcode hex/RGB values elsewhere. The two files hold the same values, and `ColorPaletteTest` on Android pins the table above, so palette changes ship to both platforms together.
 
+## Theme
+
+Settings → Theme has four choices on both platforms (`ThemeMode`, same cases and
+raw values): **System** (the default), **Light**, **Dark**, and **Daylight**,
+which is light while the sun is up and dark while it is down, whatever the
+system is set to. Home's sun/moon button always lands on Light or Dark.
+
+Daylight asks for no location. "Here" is the reference city of the device's
+time zone — `shared/data/timezone_locations.json`, zone ID → `[lat, lon]` — so
+it is right to within the zone's width (everyone on `Europe/Oslo` gets Oslo's
+sun) and follows the user when they travel. `Daylight.isNight` on each platform
+(`ios/voyage/Daylight.swift`, Android `state/Daylight.kt`) works out the sun's
+height there from the Astronomical Almanac's low-precision formulas and calls it
+night below −0.833°; asking for the height rather than sunrise and sunset times
+means polar night and the midnight sun need no special case. A zone with no
+city (`UTC`, `GMT+2`) is dark from 19:00 to 07:00 on its own clock. Both apps
+ask again once a minute (iOS `GlobeState.refreshDaylight` off a timer in
+`ContentView`, Android `ThemeMode.isDarkNow`), which is what flips the theme at
+sunrise and sunset. `DaylightTests` and `DaylightTest` pin the same cases, so a
+change to the rule is a two-platform change. The iOS App Icon picker reuses
+`ThemeMode` but offers only `ThemeMode.appIcons` — an icon has no Daylight.
+
+Regenerate the table from the IANA time zone database (`zone.tab`, plus older
+zone names from `tzdata.zi`) with `python3 scripts/generate_timezone_locations.py`.
+
 ## Typography
 
 Two bundled typefaces (SIL OFL), shared by both apps from `shared/data/fonts/`:
@@ -409,6 +434,7 @@ the Google Fonts variable fonts; iOS lists them in `Info.plist` `UIAppFonts`.
   `capital` is the capital a country is best known by; countries with several official capitals list the rest in `otherCapitals` (`[{name, lat, lon}]` — Sucre for Bolivia, Cape Town and Bloemfontein for South Africa). Both apps treat every capital alike: each is a right answer in Name the Capital and the Daily Challenge, gets a seal on the globe and map, is badged in Top Cities and counts toward Capital Collector — so adding one is a data-only change.
 - `shared/data/country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
 - `shared/data/country_aliases.json` - Other names each country is searched by, keyed by ISO code and grouped by what they are to it, so a match is worded right: `names` (UK, UAE, Deutschland — "Also known as"), `formerly` (Burma, Swaziland — "Formerly") and `includes` (England, Hawaii — "Includes"); the ISO code shows as "Country code". Both apps' `CountrySearchIndex` match it, with the ISO code, in the same five ranking tiers — pinned by `CountrySearchIndexTest` (Android) and `CountrySearchIndexTests` (iOS), which also check that no alias names another country or belongs to two — so a matching or ranking change is a two-platform change. iOS bundles it in place, like the highlights.
+- `shared/data/timezone_locations.json` - Latitude and longitude of each time zone's reference city, keyed by zone ID, for the Daylight theme (see [Theme](#theme)). iOS bundles it in place, like the highlights.
 - `shared/fixtures/expected_countries.json` - Parser contract asserted by both platforms. See [Shared Country Fixture](#shared-country-fixture).
 - `shared/data/fonts/` - The bundled typefaces and their OFL licences (see [Typography](#typography)). Android reads them as assets, iOS bundles them in place.
 - `shared/data/textures/` - The three equirectangular Earth textures, one per `GlobeStyle` (`earth_texture.jpg` realistic, `natural_earth_texture.jpg`, `stylized_earth_texture.jpg`). iOS bundles them from here, not from its asset catalog; Android decodes them at most 4096 px wide.

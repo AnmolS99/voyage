@@ -8,6 +8,10 @@ struct ContentView: View {
     @State private var showDailyToast = false
     @Environment(\.colorScheme) private var colorScheme
 
+    /// Once a minute, for the Daylight theme. A property, not built in `body`,
+    /// where every redraw would start the minute again.
+    private let daylightTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+
     private static let badgeDateKey = "dailyBadgeNextDate"
 
     /// The tab selection, seeing re-selections too: tapping the tab you are
@@ -59,9 +63,12 @@ struct ContentView: View {
                 }
                 .tag(4)
         }
-        .preferredColorScheme(globeState.themeMode.colorScheme)
+        .preferredColorScheme(globeState.colorScheme)
         .onChange(of: colorScheme, initial: true) { _, scheme in
             globeState.systemAppearanceChanged(isDark: scheme == .dark)
+        }
+        .onReceive(daylightTimer) { _ in
+            globeState.refreshDaylight()
         }
         .overlay { AchievementUnlockCelebration(globeState: globeState) }
         .overlay(alignment: .bottom) {
@@ -149,40 +156,31 @@ enum GlobeStyle: String, CaseIterable {
 /// `.system` follows the device's appearance and is the default; `.light` and
 /// `.dark` are what the old `isDarkMode` boolean stored, and are what Home's
 /// sun/moon button picks — "follow the system" is only chosen again from Settings.
+/// `.daylight` follows the sun instead: light by day and dark by night, whatever
+/// the system is set to — see `Daylight`.
 enum ThemeMode: String, CaseIterable {
     case system
     case light
     case dark
+    case daylight
 
     var displayName: String {
         switch self {
         case .system: return "System"
         case .light: return "Light"
         case .dark: return "Dark"
+        case .daylight: return "Daylight"
         }
     }
 
-    /// Whether to use the dark scheme, given what the system is currently set to.
-    func isDark(systemIsDark: Bool) -> Bool {
+    /// Whether to use the dark scheme, given what the system is currently set to
+    /// and whether the sun is down.
+    func isDark(systemIsDark: Bool, isNight: Bool) -> Bool {
         switch self {
         case .system: return systemIsDark
         case .light: return false
         case .dark: return true
-        }
-    }
-
-    /// The mode Home's sun/moon button switches to: the opposite of what is on
-    /// screen, as an explicit choice.
-    func toggled(systemIsDark: Bool) -> ThemeMode {
-        isDark(systemIsDark: systemIsDark) ? .light : .dark
-    }
-
-    /// For `.preferredColorScheme`: nil leaves the window on the system's appearance.
-    var colorScheme: ColorScheme? {
-        switch self {
-        case .system: return nil
-        case .light: return .light
-        case .dark: return .dark
+        case .daylight: return isNight
         }
     }
 }
@@ -482,9 +480,21 @@ class GlobeState: ObservableObject {
         saveData()
     }
 
-    /// Flips what is on screen as an explicit choice (Home's sun/moon button).
+    /// Home's sun/moon button: the opposite of what is on screen, as an explicit
+    /// choice, so following the system or the sun is only chosen again from Settings.
     func toggleDarkMode() {
-        setThemeMode(themeMode.toggled(systemIsDark: systemIsDark))
+        setThemeMode(isDarkMode ? .light : .dark)
+    }
+
+    /// For `.preferredColorScheme`: nil leaves the window on the system's appearance.
+    var colorScheme: ColorScheme? {
+        themeMode == .system ? nil : (isDarkMode ? .dark : .light)
+    }
+
+    /// Asks the sun again. `ContentView` calls this once a minute, which is what
+    /// turns the Daylight theme over at sunrise and sunset.
+    func refreshDaylight() {
+        if themeMode == .daylight { resolveDarkMode() }
     }
 
     /// Reports the system appearance, as seen by a view whose color scheme is not
@@ -497,7 +507,7 @@ class GlobeState: ObservableObject {
     }
 
     private func resolveDarkMode() {
-        let dark = themeMode.isDark(systemIsDark: systemIsDark)
+        let dark = themeMode.isDark(systemIsDark: systemIsDark, isNight: themeMode == .daylight && Daylight.isNight())
         if isDarkMode != dark { isDarkMode = dark }
     }
 

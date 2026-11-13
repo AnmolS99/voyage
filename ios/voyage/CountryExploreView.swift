@@ -146,7 +146,7 @@ struct CountryExploreView: View {
                 }
             }
         }
-        .preferredColorScheme(globeState.themeMode.colorScheme)
+        .preferredColorScheme(globeState.colorScheme)
     }
 }
 

@@ -46,9 +46,10 @@ enum class GlobeStyle(val textureAsset: String) {
 /**
  * Appearance preference.
  *
- * A three-state enum with "follow the system" as the default. iOS's `ThemeMode`
- * has the same cases, raw values and toggle rule; its older `isDarkMode`
- * boolean migrates to [Light] or [Dark].
+ * "Follow the system" is the default. [Daylight] follows the sun instead: light
+ * by day and dark by night, whatever the system is set to — see
+ * [com.anmol.voyage.state.Daylight]. iOS's `ThemeMode` has the same cases and
+ * raw values; its older `isDarkMode` boolean migrates to [Light] or [Dark].
  */
 @Serializable
 enum class ThemeMode {
@@ -59,21 +60,19 @@ enum class ThemeMode {
     Light,
 
     @SerialName("dark")
-    Dark;
+    Dark,
 
-    /** Whether to use the dark scheme, given what the system is currently set to. */
-    fun isDark(systemInDarkTheme: Boolean): Boolean = when (this) {
+    @SerialName("daylight")
+    Daylight;
+
+    /**
+     * Whether to use the dark scheme, given what the system is currently set to
+     * and whether the sun is down.
+     */
+    fun isDark(systemInDarkTheme: Boolean, isNight: Boolean): Boolean = when (this) {
         System -> systemInDarkTheme
         Light -> false
         Dark -> true
+        Daylight -> isNight
     }
-
-    /**
-     * The mode the Home screen's sun/moon button switches to: the opposite of
-     * what is on screen, as an explicit choice. Like iOS's `toggleDarkMode()`,
-     * it flips what the user sees — so from [System] it lands on [Light] or
-     * [Dark], and "follow the system" is only chosen again from Settings.
-     */
-    fun toggled(systemInDarkTheme: Boolean): ThemeMode =
-        if (isDark(systemInDarkTheme)) Light else Dark
 }
