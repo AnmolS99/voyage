@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Contrast
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Public
@@ -36,9 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,7 +53,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anmol.voyage.BuildConfig
 import com.anmol.voyage.R
@@ -217,47 +212,6 @@ private fun SettingsSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp),
         )
-    }
-}
-
-/**
- * System, light, dark or daylight, as a segmented button row. Daylight says
- * what it does underneath while it is chosen, as on iOS.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ThemeSetting(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Rounded.Contrast,
-                contentDescription = null,
-                tint = VoyagePalette.buttonColor,
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.bodyLarge)
-        }
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            ThemeMode.entries.forEachIndexed { index, mode ->
-                SegmentedButton(
-                    selected = mode == selected,
-                    onClick = { onSelect(mode) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size),
-                    modifier = Modifier.testTag(themeOptionTag(mode)),
-                    // No checkmark: four labels need the width.
-                    icon = {},
-                ) {
-                    Text(stringResource(mode.labelRes), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-        if (selected == ThemeMode.Daylight) {
-            Text(
-                stringResource(R.string.theme_daylight_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 

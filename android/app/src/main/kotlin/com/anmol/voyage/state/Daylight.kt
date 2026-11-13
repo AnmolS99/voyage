@@ -2,6 +2,7 @@ package com.anmol.voyage.state
 
 import java.io.InputStream
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import kotlin.math.asin
 import kotlin.math.atan2
@@ -30,6 +31,32 @@ object Daylight {
         val location = locations[zone.id] ?: return now.atZone(zone).hour !in 7..18
         return isNight(now, latitude = location[0], longitude = location[1])
     }
+
+    /** When the theme turns light and dark today; null where the sun does not rise or set. */
+    data class SunTimes(val sunrise: LocalTime?, val sunset: LocalTime?)
+
+    /**
+     * Today's sunrise and sunset on the zone's clock, found by asking [isNight]
+     * for each minute of the day — so they are exactly when the theme flips.
+     */
+    fun sunTimes(now: Instant, zone: ZoneId, locations: Map<String, List<Double>>): SunTimes {
+        val midnight = now.atZone(zone).toLocalDate().atStartOfDay(zone)
+        var sunrise: LocalTime? = null
+        var sunset: LocalTime? = null
+        var wasNight = isNight(midnight.toInstant(), zone, locations)
+        for (minute in 1L until 24 * 60) {
+            val time = midnight.plusMinutes(minute)
+            val night = isNight(time.toInstant(), zone, locations)
+            if (night && !wasNight && sunset == null) sunset = time.toLocalTime()
+            if (!night && wasNight && sunrise == null) sunrise = time.toLocalTime()
+            wasNight = night
+        }
+        return SunTimes(sunrise, sunset)
+    }
+
+    /** The zone's city as its ID names it — "Oslo" for `Europe/Oslo` — or null if it has none. */
+    fun cityName(zone: ZoneId, locations: Map<String, List<Double>>): String? =
+        if (zone.id in locations) zone.id.substringAfterLast('/').replace('_', ' ') else null
 
     /**
      * Whether the sun is below the horizon, from the Astronomical Almanac's

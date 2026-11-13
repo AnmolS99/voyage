@@ -57,21 +57,16 @@ struct SettingsView: View {
                             Text("Theme")
                         }
 
-                        Picker("Theme", selection: Binding(
-                            get: { globeState.themeMode },
-                            set: { globeState.setThemeMode($0) }
-                        )) {
+                        HStack(spacing: 8) {
                             ForEach(ThemeMode.allCases, id: \.self) { mode in
-                                Text(mode.displayName).tag(mode)
+                                ThemeOption(mode: mode, isSelected: globeState.themeMode == mode) {
+                                    globeState.setThemeMode(mode)
+                                }
                             }
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
 
                         if globeState.themeMode == .daylight {
-                            Text("Light by day and dark by night, by the sun where your time zone is.")
-                                .font(.voyageText(13))
-                                .foregroundColor(.secondary)
+                            DaylightTimes()
                         }
                     }
                     .padding(.vertical, 4)
@@ -278,6 +273,140 @@ struct SettingsView: View {
                 Text(thankYouMessage)
             }
         }
+    }
+}
+
+/// One choice in the Theme picker: a small preview of the app in that theme with
+/// its name below, ringed in the app's orange when chosen — Android's
+/// `ThemeOption`. System and Daylight are half light and half dark; Daylight
+/// swaps the preview's text for a sun and a moon.
+private struct ThemeOption: View {
+    let mode: ThemeMode
+    let isSelected: Bool
+    let action: () -> Void
+
+    private static let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                preview
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .clipShape(Self.shape)
+                    .overlay(Self.shape.stroke(Color.primary.opacity(0.12), lineWidth: 1))
+                    .padding(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(AppColors.buttonColor, lineWidth: 2)
+                            .opacity(isSelected ? 1 : 0)
+                    )
+
+                Text(mode.displayName)
+                    .font(.voyageText(13, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .primary : .secondary)
+                    .lineLimit(1)
+            }
+        }
+        // Borderless, so a tap on one option doesn't fire the whole list row
+        .buttonStyle(.borderless)
+        .accessibilityLabel(mode.displayName)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    @ViewBuilder private var preview: some View {
+        switch mode {
+        case .light:
+            ThemeSwatch(isDark: false, showsSun: false)
+        case .dark:
+            ThemeSwatch(isDark: true, showsSun: false)
+        case .system, .daylight:
+            ThemeSwatch(isDark: false, showsSun: mode == .daylight)
+                .overlay(ThemeSwatch(isDark: true, showsSun: mode == .daylight).clipShape(LowerRightHalf()))
+        }
+    }
+}
+
+/// The app in miniature in one theme: a card on the page with two lines of text
+/// and an accent dot — or, for Daylight, a sun on the light one and a moon on
+/// the dark one.
+private struct ThemeSwatch: View {
+    let isDark: Bool
+    let showsSun: Bool
+
+    var body: some View {
+        ZStack {
+            if showsSun {
+                Image(systemName: isDark ? "moon.fill" : "sun.max.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.buttonColor)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isDark ? .bottomTrailing : .topLeading)
+            } else {
+                VStack(alignment: .leading, spacing: 3) {
+                    Capsule().frame(width: 22, height: 3)
+                    Capsule().frame(width: 14, height: 3)
+                }
+                .foregroundColor(AppColors.textMuted(isDarkMode: isDark))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                Circle()
+                    .fill(AppColors.buttonColor)
+                    .frame(width: 8, height: 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            }
+        }
+        .padding(6)
+        .background(AppColors.cardBackground(isDarkMode: isDark), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+        .padding(6)
+        .background(AppColors.pageBackground(isDarkMode: isDark))
+    }
+}
+
+/// The half of a preview below its diagonal, where a split one shows dark.
+private struct LowerRightHalf: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// When Daylight turns light and dark today, and whose sun it follows — the
+/// device's time zone and its city are all the app knows of where the user is.
+private struct DaylightTimes: View {
+    private let times = Daylight.sunTimes()
+    private let city = Daylight.cityName()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 20) {
+                sunTime("sun.max.fill", "Light from", times.sunrise)
+                sunTime("moon.fill", "Dark from", times.sunset)
+            }
+
+            Text(city.map { "Follows the sun in \($0), your time zone’s city." }
+                 ?? "Follows the clock, as your time zone has no city.")
+                .font(.voyageText(13))
+                .foregroundColor(.secondary)
+        }
+        .padding(.top, 2)
+    }
+
+    /// A sun or moon and a time; read out as "Light from 08:10".
+    private func sunTime(_ symbol: String, _ label: String, _ time: Date?) -> some View {
+        let text = time?.formatted(date: .omitted, time: .shortened) ?? "–"
+        return HStack(spacing: 6) {
+            Image(systemName: symbol)
+                .font(.system(size: 14))
+                .foregroundColor(AppColors.buttonColor)
+            Text(text)
+                .font(.voyageText(16))
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label) \(text)")
     }
 }
 

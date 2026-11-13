@@ -38,7 +38,7 @@ private val WarmTintLight = VoyagePalette.buttonColor.copy(alpha = 0.20f)
 private val WarmTintDark = VoyagePalette.buttonColor.copy(alpha = 0.28f)
     .compositeOver(VoyagePalette.cardDark)
 
-private val VoyageLightColorScheme = lightColorScheme(
+internal val VoyageLightColorScheme = lightColorScheme(
     primary = VoyagePalette.buttonColor,
     onPrimary = Color.White,
     primaryContainer = WarmTintLight,
@@ -69,7 +69,7 @@ private val VoyageLightColorScheme = lightColorScheme(
     onError = Color.White,
 )
 
-private val VoyageDarkColorScheme = darkColorScheme(
+internal val VoyageDarkColorScheme = darkColorScheme(
     primary = VoyagePalette.buttonColor,
     onPrimary = Color.White,
     primaryContainer = WarmTintDark,

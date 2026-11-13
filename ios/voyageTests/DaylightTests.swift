@@ -27,6 +27,29 @@ final class DaylightTests: XCTestCase {
         XCTAssertFalse(isNight("2026-06-21T23:00:00Z", "Arctic/Longyearbyen"))
     }
 
+    func testSunriseAndSunsetAreTheMinutesTheThemeFlips() {
+        let formatter = ISO8601DateFormatter()
+        let noon = formatter.date(from: "2026-12-21T12:00:00Z")!
+
+        let oslo = Daylight.sunTimes(on: noon, in: TimeZone(identifier: "Europe/Oslo")!)
+        XCTAssertEqual(oslo.sunrise, formatter.date(from: "2026-12-21T08:19:00Z")) // 09:19 in Oslo
+        XCTAssertEqual(oslo.sunset, formatter.date(from: "2026-12-21T14:12:00Z")) // 15:12 in Oslo
+
+        let polarNight = Daylight.sunTimes(on: noon, in: TimeZone(identifier: "Arctic/Longyearbyen")!)
+        XCTAssertNil(polarNight.sunrise)
+        XCTAssertNil(polarNight.sunset)
+
+        let noCity = Daylight.sunTimes(on: formatter.date(from: "2026-01-01T12:00:00Z")!, in: TimeZone(identifier: "UTC")!)
+        XCTAssertEqual(noCity.sunrise, formatter.date(from: "2026-01-01T07:00:00Z"))
+        XCTAssertEqual(noCity.sunset, formatter.date(from: "2026-01-01T19:00:00Z"))
+    }
+
+    func testAZonesCityIsNamedByItsIdentifier() {
+        XCTAssertEqual(Daylight.cityName(of: TimeZone(identifier: "Europe/Oslo")!), "Oslo")
+        XCTAssertEqual(Daylight.cityName(of: TimeZone(identifier: "America/New_York")!), "New York")
+        XCTAssertNil(Daylight.cityName(of: TimeZone(identifier: "UTC")!))
+    }
+
     func testAZonesOlderNameFindsTheSameCity() {
         XCTAssertFalse(Daylight.locations.isEmpty, "timezone_locations.json is bundled")
         XCTAssertEqual(Daylight.locations["Asia/Kolkata"], Daylight.locations["Asia/Calcutta"])

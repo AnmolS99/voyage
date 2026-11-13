@@ -27,6 +27,34 @@ enum Daylight {
         return isNight(at: now, latitude: location[0], longitude: location[1])
     }
 
+    /// Today's sunrise and sunset on the zone's clock, found by asking `isNight`
+    /// for each minute of the day — so they are exactly when the theme flips.
+    /// Nil where the sun does not rise or set today.
+    static func sunTimes(on day: Date = Date(), in timeZone: TimeZone = .current) -> (sunrise: Date?, sunset: Date?) {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let midnight = calendar.startOfDay(for: day)
+        var sunrise: Date?
+        var sunset: Date?
+        var wasNight = isNight(at: midnight, in: timeZone)
+        for minute in 1..<(24 * 60) {
+            let time = midnight.addingTimeInterval(Double(minute) * 60)
+            let night = isNight(at: time, in: timeZone)
+            if night && !wasNight && sunset == nil { sunset = time }
+            if !night && wasNight && sunrise == nil { sunrise = time }
+            wasNight = night
+        }
+        return (sunrise, sunset)
+    }
+
+    /// The zone's city as its identifier names it — "Oslo" for `Europe/Oslo` —
+    /// or nil if it has none.
+    static func cityName(of timeZone: TimeZone = .current) -> String? {
+        guard locations[timeZone.identifier] != nil,
+              let city = timeZone.identifier.split(separator: "/").last else { return nil }
+        return city.replacingOccurrences(of: "_", with: " ")
+    }
+
     /// Whether the sun is below the horizon, from the Astronomical Almanac's
     /// low-precision formulas (good to a minute or two of sunrise). Asking for
     /// the sun's height rather than for sunrise and sunset times keeps polar

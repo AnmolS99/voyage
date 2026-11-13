@@ -406,7 +406,14 @@ means polar night and the midnight sun need no special case. A zone with no
 city (`UTC`, `GMT+2`) is dark from 19:00 to 07:00 on its own clock. Both apps
 ask again once a minute (iOS `GlobeState.refreshDaylight` off a timer in
 `ContentView`, Android `ThemeMode.isDarkNow`), which is what flips the theme at
-sunrise and sunset. `DaylightTests` and `DaylightTest` pin the same cases, so a
+sunrise and sunset. The picker is a row of small previews of the app, one per
+mode (`ThemeOption` on each: iOS in `SettingsView.swift`, Android
+`ui/settings/ThemeSetting.kt`) — System and Daylight split light and dark along
+the diagonal, Daylight with a sun and a moon. While Daylight is chosen it shows
+when the theme turns light and dark today and whose sun that is, e.g. "Follows
+the sun in Oslo, your time zone's city." Those times are `Daylight.sunTimes`,
+which asks `isNight` for each minute of the day so they are exactly when the
+theme flips, and the city is the zone ID's last part (`Daylight.cityName`). `DaylightTests` and `DaylightTest` pin the same cases, so a
 change to the rule is a two-platform change. The iOS App Icon picker reuses
 `ThemeMode` but offers only `ThemeMode.appIcons` — an icon has no Daylight.
 

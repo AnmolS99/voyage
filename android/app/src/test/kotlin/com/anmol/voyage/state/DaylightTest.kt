@@ -2,6 +2,7 @@ package com.anmol.voyage.state
 
 import com.anmol.voyage.data.SharedFiles
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -34,6 +35,25 @@ class DaylightTest {
     fun `polar night and the midnight sun last all day`() {
         assertEquals(true, isNight("2026-12-21T11:00:00Z", "Arctic/Longyearbyen"))
         assertEquals(false, isNight("2026-06-21T23:00:00Z", "Arctic/Longyearbyen"))
+    }
+
+    @Test
+    fun `sunrise and sunset are the minutes the theme flips`() {
+        val oslo = Daylight.sunTimes(Instant.parse("2026-12-21T12:00:00Z"), ZoneId.of("Europe/Oslo"), locations)
+        assertEquals(Daylight.SunTimes(LocalTime.of(9, 19), LocalTime.of(15, 12)), oslo)
+
+        val polarNight = Daylight.sunTimes(Instant.parse("2026-12-21T12:00:00Z"), ZoneId.of("Arctic/Longyearbyen"), locations)
+        assertEquals(Daylight.SunTimes(null, null), polarNight)
+
+        val noCity = Daylight.sunTimes(Instant.parse("2026-01-01T12:00:00Z"), ZoneId.of("UTC"), locations)
+        assertEquals(Daylight.SunTimes(LocalTime.of(7, 0), LocalTime.of(19, 0)), noCity)
+    }
+
+    @Test
+    fun `a zone's city is named by its ID`() {
+        assertEquals("Oslo", Daylight.cityName(ZoneId.of("Europe/Oslo"), locations))
+        assertEquals("New York", Daylight.cityName(ZoneId.of("America/New_York"), locations))
+        assertEquals(null, Daylight.cityName(ZoneId.of("UTC"), locations))
     }
 
     @Test

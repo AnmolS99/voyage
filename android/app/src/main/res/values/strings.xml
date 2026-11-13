@@ -105,7 +105,11 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_daylight">Daylight</string>
-    <string name="theme_daylight_note">Light by day and dark by night, by the sun where your time zone is.</string>
+    <string name="theme_daylight_city">Follows the sun in %1$s, your time zone\'s city.</string>
+    <string name="theme_daylight_clock">Follows the clock, as your time zone has no city.</string>
+    <string name="theme_daylight_light_from">Light from %1$s</string>
+    <string name="theme_daylight_dark_from">Dark from %1$s</string>
+    <string name="theme_daylight_no_time">–</string>
     <string name="settings_app_icon">App icon</string>
     <string name="settings_app_icon_pending">The icon changes when you leave voyage.</string>
     <string name="settings_data">Data</string>
