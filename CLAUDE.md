@@ -566,7 +566,10 @@ attempts as images rather than through `index.html`.
 Change the look in the script's shared `STYLE` prompt, not per
 country; country-specific direction goes in `--hint`. The banner's shape, the
 title's place and the fade are the same on both platforms, so changing one is a
-two-platform change.
+two-platform change. The `journey-header` skill runs the whole loop for a
+country — two days, the user's pick, two nights, the pick, export, commit and
+the batch PR's table — and checks each attempt against the top third with its
+`scripts/sheet.py`.
 
 ## Globe Cache Generation
 

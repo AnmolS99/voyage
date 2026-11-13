@@ -22,7 +22,7 @@ behind a small pin on the art.
 
 Usage:
   python3 scripts/journey_art.py day EG ~/Photos/giza.jpg [-n 2] [--hint "..."] [--shrink 0.66]
-  python3 scripts/journey_art.py night EG 2 [-n 2] [--hint "..."]
+  python3 scripts/journey_art.py night EG 2 [-n 2] [--hint "..."] [--reference ~/Photos/giza-night.jpg]
   python3 scripts/journey_art.py export EG 2 1 --place "Pyramids of Giza"  # day-2 + night-2-1
   python3 scripts/journey_art.py edit EG day-2 "add a felucca on the Nile" [-n 2]  # small change, same picture
   python3 scripts/journey_art.py reframe EG 2 [1] [--scale 0.8]  # day-2 (+ night-2-1), lower in the frame
@@ -34,6 +34,8 @@ Usage:
   --shrink day: paint from the photo shrunk to this fraction of a 16:9 grey
            canvas, along its bottom — for a photo whose landmark sits near
            the top edge, which the prompt alone does not move down
+  --reference night: a real night photo of the place, to light it as that
+           photo does (floodlights, colours, lit patterns) beyond what a hint says
   --place  what the painting shows (export; needed the first time)
   --model  Gemini image model (default gemini-nano-banana-2.1;
            gemini-3-pro-image for the premium model)
@@ -113,9 +115,8 @@ and name are laid across it from the left edge to about three-quarters of the \
 way across, and a round button sits in its top-right corner. Nothing reaches \
 into that band — no peak, tower, spire, roof, gable, tree canopy, moon or other \
 eye-catching shape. This is a hard rule, not a preference: the tallest point of \
-the scene (the tip of the highest spire, tower, peak or tree) sits BELOW 40% of \
-the image height, measured from the top, so the top third stays clear with a \
-margin. If the landmark would reach higher, pull the view back so the whole \
+the scene (the tip of the highest spire, tower, peak or tree) sits at or just \
+below a third of the image height, measured from the top, never above it. If the landmark would reach higher, pull the view back so the whole \
 scene sits lower and smaller — never crop the landmark to make room. Keep the \
 band soft and low in contrast so text reads over it."""
 
@@ -170,6 +171,13 @@ landmark must stay clearly readable.
 {SKY_BAND}
 
 {STYLE}"""
+
+NIGHT_REFERENCE = """\
+The SECOND image is a real photo of this place at night, a lighting reference \
+only: light the landmark and the buildings exactly as they are lit there — the \
+same floodlights, colours, glowing surfaces and lit patterns on every structure \
+— while keeping the first image's composition, framing, shapes and painting \
+style. Ignore its framing, its sky and any text or marks on it."""
 
 
 EDIT_PROMPT = f"""\
@@ -335,7 +343,13 @@ def cmd_night(args) -> None:
         die(f"no {day.relative_to(ROOT)}")
     first = next_index(folder, rf"night-{args.day}-(\d+)\.png")
     outputs = [folder / f"night-{args.day}-{i}.png" for i in range(first, first + args.n)]
-    run_batch(args.model, with_hint(NIGHT_PROMPT, args.hint), [day], outputs)
+    prompt, images = NIGHT_PROMPT, [day]
+    if args.reference:
+        reference = Path(args.reference).expanduser()
+        if not reference.is_file():
+            die(f"no such photo: {args.reference}")
+        prompt, images = f"{NIGHT_PROMPT}\n\n{NIGHT_REFERENCE}", [day, reference]
+    run_batch(args.model, with_hint(prompt, args.hint), images, outputs)
     write_preview(args.iso)
 
 
@@ -490,6 +504,7 @@ def main() -> None:
             command.add_argument("--shrink", type=float, help="paint from the photo shrunk onto a taller canvas, e.g. 0.66")
         else:
             command.add_argument("day", type=int, help="which day-N to make the night from")
+            command.add_argument("--reference", help="a real night photo of the place to take the lighting from")
         command.add_argument("-n", type=int, default=2)
         command.add_argument("--hint")
         command.add_argument("--model", default=DEFAULT_MODEL)
