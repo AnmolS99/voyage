@@ -11,27 +11,22 @@ class PreferencesTest {
 
     @Test
     fun `following the system means following the system`() {
-        assertTrue(ThemeMode.System.isDark(systemInDarkTheme = true))
-        assertFalse(ThemeMode.System.isDark(systemInDarkTheme = false))
-    }
-
-    @Test
-    fun `an explicit choice overrides the system`() {
-        assertTrue(ThemeMode.Dark.isDark(systemInDarkTheme = false))
-        assertFalse(ThemeMode.Light.isDark(systemInDarkTheme = true))
-    }
-
-    @Test
-    fun `toggling flips what is on screen to an explicit choice`() {
-        for (system in listOf(true, false)) {
-            for (mode in ThemeMode.entries) {
-                val toggled = mode.toggled(systemInDarkTheme = system)
-                assertTrue(toggled != ThemeMode.System)
-                assertEquals(!mode.isDark(system), toggled.isDark(system))
-            }
+        for (isNight in listOf(true, false)) {
+            assertTrue(ThemeMode.System.isDark(systemInDarkTheme = true, isNight = isNight))
+            assertFalse(ThemeMode.System.isDark(systemInDarkTheme = false, isNight = isNight))
         }
-        assertEquals(ThemeMode.Light, ThemeMode.System.toggled(systemInDarkTheme = true))
-        assertEquals(ThemeMode.Dark, ThemeMode.System.toggled(systemInDarkTheme = false))
+    }
+
+    @Test
+    fun `an explicit choice overrides the system and the sun`() {
+        assertTrue(ThemeMode.Dark.isDark(systemInDarkTheme = false, isNight = false))
+        assertFalse(ThemeMode.Light.isDark(systemInDarkTheme = true, isNight = true))
+    }
+
+    @Test
+    fun `daylight follows the sun, not the system`() {
+        assertTrue(ThemeMode.Daylight.isDark(systemInDarkTheme = false, isNight = true))
+        assertFalse(ThemeMode.Daylight.isDark(systemInDarkTheme = true, isNight = false))
     }
 
     @Test

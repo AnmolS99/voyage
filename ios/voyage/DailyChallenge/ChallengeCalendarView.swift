@@ -65,7 +65,7 @@ struct ChallengeCalendarView: View {
         .task {
             await loadAvailableDates()
         }
-        .preferredColorScheme(globeState.themeMode.colorScheme)
+        .preferredColorScheme(globeState.colorScheme)
     }
 
     // MARK: - Month Navigation

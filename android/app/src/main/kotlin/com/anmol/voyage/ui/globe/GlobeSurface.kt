@@ -11,9 +11,9 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEvent
@@ -26,6 +26,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
+import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
 import com.anmol.voyage.globe.GlobeCamera
@@ -36,11 +37,13 @@ import com.anmol.voyage.globe.MicrostateDot
 import com.anmol.voyage.globe.NamedCountryMesh
 import com.anmol.voyage.globe.OutlineMesh
 import com.anmol.voyage.globe.SphereMesh
+import com.anmol.voyage.state.Daylight
 import com.anmol.voyage.ui.map.CameraFocus
 import com.anmol.voyage.ui.map.CapitalMarker
 import com.anmol.voyage.ui.map.MarkerSizes
 import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.google.android.filament.android.UiHelper
+import java.time.ZoneId
 import kotlin.math.exp
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -80,7 +83,7 @@ internal class GlobeDotStyle(
  * @param focus a place to fly the camera to, once, when it changes. On Home the
  *   selected country's center, so picking a country brings it into view; in a
  *   challenge, the region being played or the country being asked about.
- * @param homeRequest bumped to turn the globe back to where it opened —
+ * @param homeRequest bumped to turn the globe to where the user is —
  *   Home's tab re-selected. See [GlobeSurfaceHost.returnHome].
  * @param autoRotating whether the globe turns on its own — true until something
  *   is selected or the globe is dragged.
@@ -460,8 +463,10 @@ internal class GlobeSurfaceHost {
     private var seenHomeRequest: Int? = null
 
     /**
-     * Turns the globe back to [GlobeCamera.HOME] — where it opened — when
-     * [request] is one it has not seen, over [GlobeFlight.RETURN_HOME_SECONDS].
+     * Turns the globe to where the user is — their time zone's city
+     * ([Daylight.location]), or where it opened if the zone has none — at
+     * [GlobeCamera.HOME]'s distance, when [request] is one it has not seen, over
+     * [GlobeFlight.RETURN_HOME_SECONDS].
      *
      * Only the flight is started here. The idle spin resumes by itself: the
      * state turns `autoRotating` back on with the request, and [advance] lets a
@@ -473,10 +478,11 @@ internal class GlobeSurfaceHost {
         seenHomeRequest = request
         if (seen == null || seen == request) return
         inertia.reset()
+        val home = Daylight.location(ZoneId.systemDefault(), CountryDataCache.shared.timeZoneLocations)
         flight = GlobeFlight(
             camera,
-            latitude = GlobeCamera.HOME.latitude,
-            longitude = GlobeCamera.HOME.longitude,
+            latitude = home?.lat ?: GlobeCamera.HOME.latitude,
+            longitude = home?.lon ?: GlobeCamera.HOME.longitude,
             distance = GlobeCamera.HOME.distance,
             duration = GlobeFlight.RETURN_HOME_SECONDS,
         )

@@ -42,7 +42,7 @@ data class PersistedState(
      * document from before the setting existed reads back with it on.
      */
     val showsTerrain: Boolean = true,
-    val themeMode: ThemeMode = ThemeMode.System,
+    val themeMode: ThemeMode = ThemeMode.Daylight,
     /**
      * Challenge statistics, keyed `mode|region` as iOS `ChallengeStatsStore`
      * keys them. iOS keeps these in a separate UserDefaults key; here they ride

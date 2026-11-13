@@ -5,22 +5,18 @@ import simd
 
 final class voyageTests: XCTestCase {
 
-    // ThemeMode mirrors Android's ThemeMode: same cases, same toggle rule
-    func testThemeModeResolvesAgainstSystem() {
-        XCTAssertTrue(ThemeMode.system.isDark(systemIsDark: true))
-        XCTAssertFalse(ThemeMode.system.isDark(systemIsDark: false))
-        XCTAssertFalse(ThemeMode.light.isDark(systemIsDark: true))
-        XCTAssertTrue(ThemeMode.dark.isDark(systemIsDark: false))
-        XCTAssertNil(ThemeMode.system.colorScheme)
-        XCTAssertEqual(ThemeMode.allCases.map(\.rawValue), ["system", "light", "dark"])
-    }
-
-    // The sun/moon button flips what is on screen and never lands on .system
-    func testThemeModeToggleIsExplicitOppositeOfScreen() {
-        XCTAssertEqual(ThemeMode.system.toggled(systemIsDark: true), .light)
-        XCTAssertEqual(ThemeMode.system.toggled(systemIsDark: false), .dark)
-        XCTAssertEqual(ThemeMode.light.toggled(systemIsDark: false), .dark)
-        XCTAssertEqual(ThemeMode.dark.toggled(systemIsDark: true), .light)
+    // ThemeMode mirrors Android's ThemeMode: same cases, same rule
+    func testThemeModeResolvesAgainstSystemAndSun() {
+        for isNight in [true, false] {
+            XCTAssertTrue(ThemeMode.system.isDark(systemIsDark: true, isNight: isNight))
+            XCTAssertFalse(ThemeMode.system.isDark(systemIsDark: false, isNight: isNight))
+        }
+        XCTAssertFalse(ThemeMode.light.isDark(systemIsDark: true, isNight: true))
+        XCTAssertTrue(ThemeMode.dark.isDark(systemIsDark: false, isNight: false))
+        XCTAssertTrue(ThemeMode.daylight.isDark(systemIsDark: false, isNight: true))
+        XCTAssertFalse(ThemeMode.daylight.isDark(systemIsDark: true, isNight: false))
+        XCTAssertEqual(ThemeMode.allCases.map(\.rawValue), ["daylight", "system", "light", "dark"])
+        XCTAssertEqual(ThemeMode.appIcons, [.system, .light, .dark])
     }
 
     // Every bundled Journey painting names the place it shows, as on Android

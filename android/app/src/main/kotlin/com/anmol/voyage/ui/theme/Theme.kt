@@ -10,10 +10,20 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
+import com.anmol.voyage.data.CountryDataCache
+import com.anmol.voyage.state.Daylight
+import com.anmol.voyage.state.ThemeMode
+import java.time.Instant
+import java.time.ZoneId
+import kotlinx.coroutines.delay
 
 /**
  * Material 3 scheme built from Voyage's own palette. Only *chrome* colors live
@@ -28,7 +38,7 @@ private val WarmTintLight = VoyagePalette.buttonColor.copy(alpha = 0.20f)
 private val WarmTintDark = VoyagePalette.buttonColor.copy(alpha = 0.28f)
     .compositeOver(VoyagePalette.cardDark)
 
-private val VoyageLightColorScheme = lightColorScheme(
+internal val VoyageLightColorScheme = lightColorScheme(
     primary = VoyagePalette.buttonColor,
     onPrimary = Color.White,
     primaryContainer = WarmTintLight,
@@ -94,7 +104,7 @@ private val VoyageDarkColorScheme = darkColorScheme(
  * App theme.
  *
  * @param darkTheme follows the system by default; the activity passes the
- *   user's system/light/dark preference (`VoyageState.themeMode`) instead.
+ *   user's theme preference (`VoyageState.themeMode`, resolved by [isDarkNow]) instead.
  * @param dynamicColor opts into Material You wallpaper colors (Android 12+) for
  *   chrome only. Off by default so the app's warm identity — shared with iOS —
  *   is what users see out of the box.
@@ -124,4 +134,26 @@ fun VoyageTheme(
             content = content,
         )
     }
+}
+
+/**
+ * Whether the app is dark right now under this mode.
+ *
+ * [ThemeMode.Daylight] asks [Daylight] again at the top of every minute — on
+ * the minute, so every caller flips in the same frame.
+ */
+@Composable
+fun ThemeMode.isDarkNow(): Boolean {
+    val systemInDarkTheme = isSystemInDarkTheme()
+    if (this != ThemeMode.Daylight) return isDark(systemInDarkTheme, isNight = false)
+
+    fun isNightNow() = Daylight.isNight(Instant.now(), ZoneId.systemDefault(), CountryDataCache.shared.timeZoneLocations)
+    var isNight by remember { mutableStateOf(isNightNow()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000 - System.currentTimeMillis() % 60_000)
+            isNight = isNightNow()
+        }
+    }
+    return isNight
 }

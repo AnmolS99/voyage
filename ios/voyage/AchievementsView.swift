@@ -74,7 +74,7 @@ struct AchievementsView: View {
                 .zIndex(1)
             }
         }
-        .preferredColorScheme(globeState.themeMode.colorScheme)
+        .preferredColorScheme(globeState.colorScheme)
     }
 
     /// "7 of 10 Achievements Unlocked", then how many are held at each medal.

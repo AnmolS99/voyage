@@ -8,6 +8,10 @@ struct ContentView: View {
     @State private var showDailyToast = false
     @Environment(\.colorScheme) private var colorScheme
 
+    /// Once a minute, for the Daylight theme. A property, not built in `body`,
+    /// where every redraw would start the minute again.
+    private let daylightTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+
     private static let badgeDateKey = "dailyBadgeNextDate"
 
     /// The tab selection, seeing re-selections too: tapping the tab you are
@@ -59,9 +63,12 @@ struct ContentView: View {
                 }
                 .tag(4)
         }
-        .preferredColorScheme(globeState.themeMode.colorScheme)
+        .preferredColorScheme(globeState.colorScheme)
         .onChange(of: colorScheme, initial: true) { _, scheme in
             globeState.systemAppearanceChanged(isDark: scheme == .dark)
+        }
+        .onReceive(daylightTimer) { _ in
+            globeState.refreshDaylight()
         }
         .overlay { AchievementUnlockCelebration(globeState: globeState) }
         .overlay(alignment: .bottom) {
@@ -144,12 +151,15 @@ enum GlobeStyle: String, CaseIterable {
     }
 }
 
-/// Appearance preference, matching Android's `ThemeMode`.
+/// Appearance preference, matching Android's `ThemeMode`, in the order Settings
+/// offers them.
 ///
-/// `.system` follows the device's appearance and is the default; `.light` and
-/// `.dark` are what the old `isDarkMode` boolean stored, and are what Home's
-/// sun/moon button picks — "follow the system" is only chosen again from Settings.
+/// `.daylight` is the default and follows the sun: light by day and dark by
+/// night, whatever the system is set to — see `Daylight`. `.system` follows the
+/// device's appearance; `.light` and `.dark` are what the old `isDarkMode`
+/// boolean stored. The theme is chosen in Settings only.
 enum ThemeMode: String, CaseIterable {
+    case daylight
     case system
     case light
     case dark
@@ -159,30 +169,18 @@ enum ThemeMode: String, CaseIterable {
         case .system: return "System"
         case .light: return "Light"
         case .dark: return "Dark"
+        case .daylight: return "Daylight"
         }
     }
 
-    /// Whether to use the dark scheme, given what the system is currently set to.
-    func isDark(systemIsDark: Bool) -> Bool {
+    /// Whether to use the dark scheme, given what the system is currently set to
+    /// and whether the sun is down.
+    func isDark(systemIsDark: Bool, isNight: Bool) -> Bool {
         switch self {
         case .system: return systemIsDark
         case .light: return false
         case .dark: return true
-        }
-    }
-
-    /// The mode Home's sun/moon button switches to: the opposite of what is on
-    /// screen, as an explicit choice.
-    func toggled(systemIsDark: Bool) -> ThemeMode {
-        isDark(systemIsDark: systemIsDark) ? .light : .dark
-    }
-
-    /// For `.preferredColorScheme`: nil leaves the window on the system's appearance.
-    var colorScheme: ColorScheme? {
-        switch self {
-        case .system: return nil
-        case .light: return .light
-        case .dark: return .dark
+        case .daylight: return isNight
         }
     }
 }
@@ -261,7 +259,7 @@ class GlobeState: ObservableObject {
     /// system's. Persistent instances derive it; in-memory ones (challenge games)
     /// copy it from the main state.
     @Published var isDarkMode: Bool = false
-    @Published private(set) var themeMode: ThemeMode = .system
+    @Published private(set) var themeMode: ThemeMode = .daylight
     /// Last known system appearance; only meaningful while `themeMode` is `.system`.
     private var systemIsDark = GlobeState.currentSystemIsDark()
     @Published var isAutoRotating: Bool = true
@@ -482,9 +480,15 @@ class GlobeState: ObservableObject {
         saveData()
     }
 
-    /// Flips what is on screen as an explicit choice (Home's sun/moon button).
-    func toggleDarkMode() {
-        setThemeMode(themeMode.toggled(systemIsDark: systemIsDark))
+    /// For `.preferredColorScheme`: nil leaves the window on the system's appearance.
+    var colorScheme: ColorScheme? {
+        themeMode == .system ? nil : (isDarkMode ? .dark : .light)
+    }
+
+    /// Asks the sun again. `ContentView` calls this once a minute, which is what
+    /// turns the Daylight theme over at sunrise and sunset.
+    func refreshDaylight() {
+        if themeMode == .daylight { resolveDarkMode() }
     }
 
     /// Reports the system appearance, as seen by a view whose color scheme is not
@@ -497,7 +501,7 @@ class GlobeState: ObservableObject {
     }
 
     private func resolveDarkMode() {
-        let dark = themeMode.isDark(systemIsDark: systemIsDark)
+        let dark = themeMode.isDark(systemIsDark: systemIsDark, isNight: themeMode == .daylight && Daylight.isNight())
         if isDarkMode != dark { isDarkMode = dark }
     }
 
@@ -604,7 +608,7 @@ class GlobeState: ObservableObject {
     }
 
     /// Bumped each time Home's tab is re-selected while the globe is showing;
-    /// the globe answers each new value by turning back to where it opened.
+    /// the globe answers each new value by turning to where the user is.
     /// Not persisted. Android `VoyageState.homeRequest`.
     @Published private(set) var homeRequest = 0
 
@@ -614,7 +618,8 @@ class GlobeState: ObservableObject {
     static let returnHomeDuration: TimeInterval = 1.2
 
     /// Sends the globe home: deselects, so the country's card closes, and asks
-    /// the globe to fly back to its launch pose. The spin stays off for the
+    /// the globe to fly to the user's time zone's city (`Daylight.location`), or
+    /// its launch pose if the zone has none. The spin stays off for the
     /// flight — an `SCNAction` and an animated transaction would fight over the
     /// same rotation — and the globe turns it back on when it lands, unless a
     /// drag or a selection has taken over by then. Android `VoyageState.returnHome`.

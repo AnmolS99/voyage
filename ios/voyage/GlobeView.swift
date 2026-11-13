@@ -334,9 +334,11 @@ struct GlobeView: UIViewRepresentable {
             }
         }
 
-        /// Turns the globe back to its launch pose when Home's tab is re-selected
-        /// (`GlobeState.returnHome`), then lets the idle spin carry on from there —
-        /// exactly as it does when the app opens. Android `GlobeSurfaceHost.returnHome`.
+        /// Turns the globe to where the user is — their time zone's city
+        /// (`Daylight.location`), or the launch pose if the zone has none — at the
+        /// launch distance when Home's tab is re-selected (`GlobeState.returnHome`),
+        /// then lets the idle spin carry on from there.
+        /// Android `GlobeSurfaceHost.returnHome`.
         func returnHomeIfRequested() {
             guard globeState.homeRequest != lastHomeRequest else { return }
             lastHomeRequest = globeState.homeRequest
@@ -347,8 +349,9 @@ struct GlobeView: UIViewRepresentable {
             stopInertia()
             sceneView?.rendersContinuously = false
 
-            flyTo(lat: 0,
-                  lon: GlobeScene.homeLongitude,
+            let home = Daylight.location()
+            flyTo(lat: home?.latitude ?? 0,
+                  lon: home?.longitude ?? GlobeScene.homeLongitude,
                   distance: GlobeScene.homeCameraDistance,
                   duration: GlobeState.returnHomeDuration) { [weak self] in
                 guard let self, self.globeState.selectedCountry == nil else { return }

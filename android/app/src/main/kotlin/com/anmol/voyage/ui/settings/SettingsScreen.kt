@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Contrast
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Public
@@ -36,9 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,7 +53,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anmol.voyage.BuildConfig
 import com.anmol.voyage.R
@@ -73,9 +68,8 @@ import com.anmol.voyage.ui.theme.voyageCardElevation
  * The Settings tab — iOS's `SettingsView`, less its tip jar: Appearance, Data,
  * a link to the privacy policy and the version.
  *
- * Appearance starts with the theme, as on iOS. Home's sun/moon button flips
- * light and dark on both, but only an explicit choice here can hand the
- * decision back to the system — see [ThemeMode.toggled].
+ * Appearance starts with the theme, as on iOS; it is the only place the theme
+ * is chosen.
  *
  * The texture pickers are exposed dropdown menus, Material's counterpart to
  * iOS's menu picker, so the list can grow as textures are added without the
@@ -220,35 +214,6 @@ private fun SettingsSection(
     }
 }
 
-/** System, light or dark, as a segmented button row. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ThemeSetting(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Rounded.Contrast,
-                contentDescription = null,
-                tint = VoyagePalette.buttonColor,
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.bodyLarge)
-        }
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            ThemeMode.entries.forEachIndexed { index, mode ->
-                SegmentedButton(
-                    selected = mode == selected,
-                    onClick = { onSelect(mode) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size),
-                    modifier = Modifier.testTag(themeOptionTag(mode)),
-                ) {
-                    Text(stringResource(mode.labelRes), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-    }
-}
-
 /**
  * The Terrain switch. The whole row toggles, not just the thumb, and reads as
  * one switch to TalkBack.
@@ -380,6 +345,7 @@ internal val ThemeMode.labelRes: Int
         ThemeMode.System -> R.string.theme_system
         ThemeMode.Light -> R.string.theme_light
         ThemeMode.Dark -> R.string.theme_dark
+        ThemeMode.Daylight -> R.string.theme_daylight
     }
 
 /** Test tags for the two pickers' fields. */

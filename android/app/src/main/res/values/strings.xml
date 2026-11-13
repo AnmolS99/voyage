@@ -15,8 +15,6 @@
     <string name="map_search_countries">Search countries</string>
     <string name="home_show_map">Show flat map</string>
     <string name="home_show_globe">Show globe</string>
-    <string name="home_dark_mode">Switch to dark mode</string>
-    <string name="home_light_mode">Switch to light mode</string>
     <string name="home_globe_description">Globe</string>
     <string name="home_map_description">World map</string>
     <string name="home_add_country">Add country</string>
@@ -104,6 +102,14 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="theme_daylight">Daylight</string>
+    <string name="theme_system_summary">Matches your device\'s appearance.</string>
+    <string name="theme_light_summary">Always light.</string>
+    <string name="theme_dark_summary">Always dark, with stars behind the globe.</string>
+    <string name="theme_daylight_summary">Light from %1$s and dark from %2$s, following %3$s.</string>
+    <string name="theme_daylight_follows">Follows %1$s.</string>
+    <string name="theme_daylight_sun_in">the sun in %1$s</string>
+    <string name="theme_daylight_clock">the clock</string>
     <string name="settings_app_icon">App icon</string>
     <string name="settings_app_icon_pending">The icon changes when you leave voyage.</string>
     <string name="settings_data">Data</string>

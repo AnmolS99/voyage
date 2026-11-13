@@ -1,6 +1,5 @@
 package com.anmol.voyage.ui.country
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +51,7 @@ import com.anmol.voyage.ui.theme.DisplayCapitalsCentre
 import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
 import com.anmol.voyage.ui.theme.displayCapitalsCentre
+import com.anmol.voyage.ui.theme.isDarkNow
 
 /**
  * Country details: flag, name, capital and continent, the visited/wishlist
@@ -73,7 +73,7 @@ fun CountryDetailSheet(
     // evaluated at the call site, so an experimental one would force every
     // caller to opt in too.
     val sheetState = rememberModalBottomSheetState()
-    val isDark = state.themeMode.isDark(isSystemInDarkTheme())
+    val isDark = state.themeMode.isDarkNow()
     val art = rememberJourneyArt(detail.isoCode, isDark)
     val place = rememberJourneyPlace(detail.isoCode)
 

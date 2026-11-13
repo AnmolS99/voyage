@@ -57,16 +57,17 @@ struct SettingsView: View {
                             Text("Theme")
                         }
 
-                        Picker("Theme", selection: Binding(
-                            get: { globeState.themeMode },
-                            set: { globeState.setThemeMode($0) }
-                        )) {
+                        HStack(spacing: 8) {
                             ForEach(ThemeMode.allCases, id: \.self) { mode in
-                                Text(mode.displayName).tag(mode)
+                                ThemeOption(mode: mode, isSelected: globeState.themeMode == mode) {
+                                    globeState.setThemeMode(mode)
+                                }
                             }
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
+
+                        Text(globeState.themeMode.summary)
+                            .font(.voyageText(13))
+                            .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 4)
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
@@ -81,7 +82,7 @@ struct SettingsView: View {
                             }
 
                             HStack(spacing: 0) {
-                                ForEach(ThemeMode.allCases, id: \.self) { mode in
+                                ForEach(ThemeMode.appIcons, id: \.self) { mode in
                                     AppIconOption(mode: mode, isSelected: appIcon == mode) {
                                         setAppIcon(mode)
                                     }
@@ -275,22 +276,178 @@ struct SettingsView: View {
     }
 }
 
-/// The app icon picker reuses the theme's three choices: `.system` is the
+/// One choice in the Theme picker: Home in miniature in that theme with its name
+/// below, ringed in the app's orange when chosen — Android's `ThemeOption`.
+private struct ThemeOption: View {
+    let mode: ThemeMode
+    let isSelected: Bool
+    let action: () -> Void
+
+    private static let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ThemePreview(mode: mode)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .clipShape(Self.shape)
+                    .overlay(Self.shape.stroke(Color.primary.opacity(0.12), lineWidth: 1))
+                    .padding(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(AppColors.buttonColor, lineWidth: 2)
+                            .opacity(isSelected ? 1 : 0)
+                    )
+
+                Text(mode.displayName)
+                    .font(.voyageText(13, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .primary : .secondary)
+                    .lineLimit(1)
+            }
+        }
+        // Borderless, so a tap on one option doesn't fire the whole list row
+        .buttonStyle(.borderless)
+        .accessibilityLabel(mode.displayName)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// Home in miniature: the globe rising into the day's warm sky or the night's
+/// starry one — Android's `ThemePreview`, same proportions. System and Daylight
+/// are day on the left and night on the right, so the globe carries a
+/// terminator; Daylight adds the sun and the moon it follows.
+private struct ThemePreview: View {
+    let mode: ThemeMode
+
+    /// Stars, as fractions of the preview.
+    private static let stars: [CGPoint] = [
+        CGPoint(x: 0.08, y: 0.22), CGPoint(x: 0.20, y: 0.50), CGPoint(x: 0.32, y: 0.14),
+        CGPoint(x: 0.45, y: 0.36), CGPoint(x: 0.58, y: 0.16), CGPoint(x: 0.66, y: 0.44),
+        CGPoint(x: 0.90, y: 0.14), CGPoint(x: 0.93, y: 0.52),
+    ]
+    /// Land as the app icon shows it — Africa under Europe and Asia — as
+    /// outlines in fractions of the globe's bounding square.
+    private static let land: [[CGPoint]] = [
+        // Europe and Asia, from Iberia round Scandinavia to India and back by Arabia
+        [
+            CGPoint(x: 0.34, y: 0.17), CGPoint(x: 0.35, y: 0.14), CGPoint(x: 0.39, y: 0.135), CGPoint(x: 0.39, y: 0.115),
+            CGPoint(x: 0.43, y: 0.10), CGPoint(x: 0.455, y: 0.065), CGPoint(x: 0.45, y: 0.045), CGPoint(x: 0.48, y: -0.01),
+            CGPoint(x: 0.52, y: -0.02), CGPoint(x: 0.56, y: 0.01), CGPoint(x: 0.60, y: -0.01), CGPoint(x: 0.68, y: -0.04),
+            CGPoint(x: 0.98, y: 0.12), CGPoint(x: 1.07, y: 0.31), CGPoint(x: 0.98, y: 0.30), CGPoint(x: 0.95, y: 0.39),
+            CGPoint(x: 0.87, y: 0.31), CGPoint(x: 0.82, y: 0.28), CGPoint(x: 0.79, y: 0.29), CGPoint(x: 0.76, y: 0.315),
+            CGPoint(x: 0.725, y: 0.33), CGPoint(x: 0.70, y: 0.325), CGPoint(x: 0.64, y: 0.26), CGPoint(x: 0.60, y: 0.24),
+            CGPoint(x: 0.61, y: 0.19), CGPoint(x: 0.56, y: 0.175), CGPoint(x: 0.545, y: 0.155), CGPoint(x: 0.53, y: 0.175),
+            CGPoint(x: 0.51, y: 0.155), CGPoint(x: 0.47, y: 0.13), CGPoint(x: 0.50, y: 0.16), CGPoint(x: 0.485, y: 0.17),
+            CGPoint(x: 0.45, y: 0.13), CGPoint(x: 0.41, y: 0.14), CGPoint(x: 0.39, y: 0.165), CGPoint(x: 0.36, y: 0.18),
+        ],
+        [CGPoint(x: 0.375, y: 0.095), CGPoint(x: 0.405, y: 0.09), CGPoint(x: 0.40, y: 0.05), CGPoint(x: 0.375, y: 0.06)], // Britain
+        [CGPoint(x: 0.30, y: 0.22), CGPoint(x: 0.46, y: 0.20), CGPoint(x: 0.58, y: 0.22), CGPoint(x: 0.66, y: 0.34), CGPoint(x: 0.74, y: 0.36), CGPoint(x: 0.64, y: 0.44), CGPoint(x: 0.62, y: 0.56), CGPoint(x: 0.56, y: 0.66), CGPoint(x: 0.50, y: 0.66), CGPoint(x: 0.46, y: 0.52), CGPoint(x: 0.44, y: 0.42), CGPoint(x: 0.34, y: 0.42), CGPoint(x: 0.26, y: 0.36), CGPoint(x: 0.24, y: 0.28)], // Africa
+        [CGPoint(x: 0.04, y: 0.40), CGPoint(x: 0.14, y: 0.44), CGPoint(x: 0.16, y: 0.56), CGPoint(x: 0.06, y: 0.60)], // South America's shoulder
+    ]
+
+    var body: some View {
+        Canvas { context, size in
+            let full = CGRect(origin: .zero, size: size)
+            let rightHalf = full.divided(atDistance: size.width / 2, from: .minXEdge).remainder
+            if mode != .dark { draw(isDark: false, in: full, of: size, context: context) }
+            if mode != .light { draw(isDark: true, in: mode == .dark ? full : rightHalf, of: size, context: context) }
+        }
+    }
+
+    /// The whole scene in one theme, clipped to `region` of it.
+    private func draw(isDark: Bool, in region: CGRect, of size: CGSize, context: GraphicsContext) {
+        var context = context
+        context.clip(to: Path(region))
+
+        if isDark {
+            context.fill(Path(region), with: .color(.black))
+            for star in Self.stars {
+                let center = CGPoint(x: star.x * size.width, y: star.y * size.height)
+                context.fill(Path(ellipseIn: CGRect(center: center, radius: 0.7)), with: .color(.white.opacity(0.8)))
+            }
+        } else {
+            context.fill(Path(region), with: .linearGradient(
+                Gradient(colors: [AppColors.backgroundLightTop, AppColors.backgroundLightBottom]),
+                startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)
+            ))
+        }
+
+        if mode == .daylight {
+            let radius = size.height * 0.11
+            let center = CGPoint(x: size.width * (isDark ? 0.78 : 0.22), y: size.height * 0.3)
+            context.fill(Path(ellipseIn: CGRect(center: center, radius: radius)),
+                         with: .color(isDark ? Color(AppColors.capitalMarkerInsetUI) : AppColors.buttonColor))
+            if isDark {
+                // The sky again, offset, leaves a crescent
+                let bite = CGPoint(x: center.x + radius * 0.5, y: center.y - radius * 0.3)
+                context.fill(Path(ellipseIn: CGRect(center: bite, radius: radius)), with: .color(.black))
+            }
+        }
+
+        let globe = CGRect(center: CGPoint(x: size.width / 2, y: size.height * 0.42 + size.width * 0.38), radius: size.width * 0.38)
+        context.fill(Path(ellipseIn: globe), with: .color(isDark ? AppColors.oceanDark : AppColors.ocean))
+        if isDark {
+            // A rim of daylight, so the dark ocean stands off the black sky
+            context.stroke(Path(ellipseIn: globe), with: .color(AppColors.ocean), lineWidth: 1.5)
+        }
+        context.clip(to: Path(ellipseIn: globe))
+        var land = Path()
+        for outline in Self.land {
+            land.addLines(outline.map { CGPoint(x: globe.minX + $0.x * globe.width, y: globe.minY + $0.y * globe.height) })
+            land.closeSubpath()
+        }
+        context.fill(land, with: .color(AppColors.land))
+        // Stroked too, with round joins, to soften the corners
+        context.stroke(land, with: .color(AppColors.land), style: StrokeStyle(lineWidth: 0.75, lineJoin: .round))
+    }
+}
+
+private extension CGRect {
+    /// The square around a circle.
+    init(center: CGPoint, radius: CGFloat) {
+        self.init(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
+    }
+}
+
+extension ThemeMode {
+    /// What the theme does, under the picker. Daylight says when it turns over
+    /// today and whose sun that is — the device's time zone and its city are all
+    /// the app knows of where the user is.
+    var summary: String {
+        switch self {
+        case .system: return "Matches your device’s appearance."
+        case .light: return "Always light."
+        case .dark: return "Always dark, with stars behind the globe."
+        case .daylight:
+            let times = Daylight.sunTimes()
+            let place = Daylight.cityName().map { "the sun in \($0)" } ?? "the clock"
+            guard let sunrise = times.sunrise, let sunset = times.sunset else { return "Follows \(place)." }
+            func clock(_ time: Date) -> String { time.formatted(date: .omitted, time: .shortened) }
+            return "Light from \(clock(sunrise)) and dark from \(clock(sunset)), following \(place)."
+        }
+    }
+}
+
+/// The app icon picker reuses three of the theme's choices — an icon has no
+/// daylight option — as `appIcons`: `.system` is the
 /// primary `AppIcon`, whose dark appearance iOS shows when Home Screen icons
 /// are set to Dark, and light and dark are alternate icons that hold one
 /// artwork in every appearance (`ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`).
 extension ThemeMode {
+    static let appIcons: [ThemeMode] = [.system, .light, .dark]
+
     /// `nil` is the primary icon.
     var alternateIconName: String? {
         switch self {
-        case .system: return nil
+        case .system, .daylight: return nil
         case .light: return "AppIcon-Light"
         case .dark: return "AppIcon-Dark"
         }
     }
 
     @MainActor static var currentAppIcon: ThemeMode {
-        allCases.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .system
+        appIcons.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .system
     }
 }
 
@@ -336,7 +493,7 @@ private struct AppIconOption: View {
             Image("AppIconPreviewLight").resizable()
         case .dark:
             Image("AppIconPreviewDark").resizable()
-        case .system:
+        case .system, .daylight:
             Image("AppIconPreviewLight").resizable()
                 .overlay(
                     Image("AppIconPreviewDark").resizable()
