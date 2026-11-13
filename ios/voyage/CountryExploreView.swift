@@ -198,7 +198,7 @@ struct JourneyHeader: View {
             .overlay(alignment: .bottomTrailing) {
                 if let place {
                     JourneyPlaceButton(place: place)
-                        .padding(.trailing, 12)
+                        .padding(.horizontal, 12) // clear of both edges when the name is long
                         .padding(.bottom, 24) // above the fade
                 }
             }
@@ -220,9 +220,8 @@ struct JourneyPlaceButton: View {
                 Image(systemName: "mappin")
                     .font(.system(size: 11, weight: .semibold))
                 if isOpen {
-                    Text(place)
+                    BackAndForthText(text: place)
                         .font(.voyageText(12, weight: .medium))
-                        .lineLimit(1)
                         .transition(.opacity)
                 }
             }
@@ -238,6 +237,58 @@ struct JourneyPlaceButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel("About this place")
         .accessibilityValue(place)
+    }
+}
+
+/// A line of text that, when too long for the room it has, scrolls to its end
+/// and back again, pausing at each, so all of it can be read — "The Bahrain
+/// World Trade Center and Financial Harbour, Manama" in the Journey place pill.
+/// Android `BackAndForthText`, same pace and pauses.
+struct BackAndForthText: View {
+    let text: String
+
+    /// Scrolling pace, in points per second.
+    static let speed: CGFloat = 30
+    /// The pause at each end, in seconds.
+    static let pause: Double = 1.5
+
+    @State private var fullWidth: CGFloat = 0
+    @State private var visibleWidth: CGFloat = 0
+    @State private var offset: CGFloat = 0
+
+    private var overflow: CGFloat { max(0, (fullWidth - visibleWidth).rounded()) }
+
+    var body: some View {
+        // The truncating copy only sizes the window; the full-length copy is
+        // what shows through it.
+        Text(text)
+            .lineLimit(1)
+            .hidden()
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { visibleWidth = $0 }
+            .overlay(alignment: .leading) {
+                Text(text)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { fullWidth = $0 }
+                    .offset(x: offset)
+            }
+            .clipped()
+            .task(id: overflow) {
+                offset = 0
+                guard overflow > 0 else { return }
+                let travel = Double(overflow / Self.speed)
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(Self.pause))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.linear(duration: travel)) { offset = -overflow }
+                    try? await Task.sleep(for: .seconds(travel + Self.pause))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.linear(duration: travel)) { offset = 0 }
+                    try? await Task.sleep(for: .seconds(travel))
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(text)
     }
 }
 

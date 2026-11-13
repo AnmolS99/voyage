@@ -4,7 +4,10 @@ import android.content.res.AssetManager
 import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.expandHorizontally
@@ -30,7 +33,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -38,17 +43,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
@@ -58,6 +67,8 @@ import com.anmol.voyage.ui.theme.VoyagePalette
 import com.anmol.voyage.ui.theme.displayCapitalsCentre
 import java.io.IOException
 import java.io.InputStream
+import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
@@ -203,8 +214,8 @@ internal fun JourneyHeader(
                 place = place,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    // Above the fade.
-                    .padding(end = 12.dp, bottom = 24.dp),
+                    // Above the fade, and clear of both edges when the name is long.
+                    .padding(start = 12.dp, end = 12.dp, bottom = 24.dp),
             )
         }
     }
@@ -247,20 +258,63 @@ private fun JourneyPlaceButton(place: String, modifier: Modifier = Modifier) {
             enter = fadeIn(placeSpring()) + expandHorizontally(placeSpring(), expandFrom = Alignment.Start),
             exit = fadeOut(placeSpring()) + shrinkHorizontally(placeSpring(), shrinkTowards = Alignment.Start),
         ) {
-            Text(
-                text = place,
-                fontFamily = LocalVoyageFonts.current.text,
-                fontWeight = FontWeight.Medium,
-                fontSize = 12.sp,
-                color = VoyagePalette.journeyChipContent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                // The gap to the pin, inside the text so it shrinks away with it.
-                modifier = Modifier.padding(start = 5.dp),
-            )
+            // The gap to the pin, inside the text so it shrinks away with it.
+            BackAndForthText(text = place, modifier = Modifier.padding(start = 5.dp))
         }
     }
 }
+
+/**
+ * The place's name on one line. A name too long for the pill — "The Bahrain
+ * World Trade Center and Financial Harbour, Manama" — scrolls to its end and
+ * back again, pausing at each, so all of it can be read — iOS
+ * `BackAndForthText`, same pace and pauses.
+ */
+@Composable
+private fun BackAndForthText(text: String, modifier: Modifier = Modifier) {
+    var overflow by remember { mutableIntStateOf(0) }
+    val offset = remember { Animatable(0f) }
+    val density = LocalDensity.current.density
+    LaunchedEffect(overflow) {
+        offset.snapTo(0f)
+        if (overflow <= 0) return@LaunchedEffect
+        val travel = tween<Float>(
+            durationMillis = (overflow / density / PLACE_SCROLL_DP_PER_SECOND * 1000).roundToInt(),
+            easing = LinearEasing,
+        )
+        while (true) {
+            delay(PLACE_SCROLL_PAUSE_MILLIS)
+            offset.animateTo(overflow.toFloat(), travel)
+            delay(PLACE_SCROLL_PAUSE_MILLIS)
+            offset.animateTo(0f, travel)
+        }
+    }
+    Text(
+        text = text,
+        fontFamily = LocalVoyageFonts.current.text,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        color = VoyagePalette.journeyChipContent,
+        maxLines = 1,
+        softWrap = false,
+        modifier = modifier
+            .clipToBounds()
+            .layout { measurable, constraints ->
+                // Measured at full length, then shown through a window no wider
+                // than there is room for.
+                val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))
+                val width = placeable.width.coerceIn(constraints.minWidth, constraints.maxWidth)
+                (placeable.width - width).coerceAtLeast(0).let { if (it != overflow) overflow = it }
+                layout(width, placeable.height) {
+                    placeable.place(-offset.value.roundToInt(), 0)
+                }
+            },
+    )
+}
+
+/** The place name's scrolling pace and its pause at each end — iOS `BackAndForthText`. */
+private const val PLACE_SCROLL_DP_PER_SECOND = 30f
+private const val PLACE_SCROLL_PAUSE_MILLIS = 1_500L
 
 /**
  * The pin's spring: iOS `JourneyPlaceButton`'s pace, without its slight bounce.
