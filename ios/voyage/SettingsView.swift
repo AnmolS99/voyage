@@ -326,12 +326,23 @@ private struct ThemePreview: View {
         CGPoint(x: 0.45, y: 0.36), CGPoint(x: 0.58, y: 0.16), CGPoint(x: 0.66, y: 0.44),
         CGPoint(x: 0.90, y: 0.14), CGPoint(x: 0.93, y: 0.52),
     ]
-    /// Land as the app icon shows it — Africa under Europe — as outlines in
-    /// fractions of the globe's bounding square.
+    /// Land as the app icon shows it — Africa under Europe and Asia — as
+    /// outlines in fractions of the globe's bounding square.
     private static let land: [[CGPoint]] = [
-        [CGPoint(x: 0.40, y: 0.06), CGPoint(x: 0.52, y: 0.03), CGPoint(x: 0.62, y: 0.07), CGPoint(x: 0.60, y: 0.13), CGPoint(x: 0.50, y: 0.15), CGPoint(x: 0.44, y: 0.17), CGPoint(x: 0.36, y: 0.14)], // Europe
+        // Europe and Asia, from Iberia round Scandinavia to India and back by Arabia
+        [
+            CGPoint(x: 0.34, y: 0.17), CGPoint(x: 0.35, y: 0.14), CGPoint(x: 0.39, y: 0.135), CGPoint(x: 0.39, y: 0.115),
+            CGPoint(x: 0.43, y: 0.10), CGPoint(x: 0.455, y: 0.065), CGPoint(x: 0.45, y: 0.045), CGPoint(x: 0.48, y: -0.01),
+            CGPoint(x: 0.52, y: -0.02), CGPoint(x: 0.56, y: 0.01), CGPoint(x: 0.60, y: -0.01), CGPoint(x: 0.68, y: -0.04),
+            CGPoint(x: 0.98, y: 0.12), CGPoint(x: 1.07, y: 0.31), CGPoint(x: 0.98, y: 0.30), CGPoint(x: 0.95, y: 0.39),
+            CGPoint(x: 0.87, y: 0.31), CGPoint(x: 0.82, y: 0.28), CGPoint(x: 0.79, y: 0.29), CGPoint(x: 0.76, y: 0.315),
+            CGPoint(x: 0.725, y: 0.33), CGPoint(x: 0.70, y: 0.325), CGPoint(x: 0.64, y: 0.26), CGPoint(x: 0.60, y: 0.24),
+            CGPoint(x: 0.61, y: 0.19), CGPoint(x: 0.56, y: 0.175), CGPoint(x: 0.545, y: 0.155), CGPoint(x: 0.53, y: 0.175),
+            CGPoint(x: 0.51, y: 0.155), CGPoint(x: 0.47, y: 0.13), CGPoint(x: 0.50, y: 0.16), CGPoint(x: 0.485, y: 0.17),
+            CGPoint(x: 0.45, y: 0.13), CGPoint(x: 0.41, y: 0.14), CGPoint(x: 0.39, y: 0.165), CGPoint(x: 0.36, y: 0.18),
+        ],
+        [CGPoint(x: 0.375, y: 0.095), CGPoint(x: 0.405, y: 0.09), CGPoint(x: 0.40, y: 0.05), CGPoint(x: 0.375, y: 0.06)], // Britain
         [CGPoint(x: 0.30, y: 0.22), CGPoint(x: 0.46, y: 0.20), CGPoint(x: 0.58, y: 0.22), CGPoint(x: 0.66, y: 0.34), CGPoint(x: 0.74, y: 0.36), CGPoint(x: 0.64, y: 0.44), CGPoint(x: 0.62, y: 0.56), CGPoint(x: 0.56, y: 0.66), CGPoint(x: 0.50, y: 0.66), CGPoint(x: 0.46, y: 0.52), CGPoint(x: 0.44, y: 0.42), CGPoint(x: 0.34, y: 0.42), CGPoint(x: 0.26, y: 0.36), CGPoint(x: 0.24, y: 0.28)], // Africa
-        [CGPoint(x: 0.66, y: 0.22), CGPoint(x: 0.78, y: 0.24), CGPoint(x: 0.80, y: 0.33), CGPoint(x: 0.72, y: 0.30)], // Arabia
         [CGPoint(x: 0.04, y: 0.40), CGPoint(x: 0.14, y: 0.44), CGPoint(x: 0.16, y: 0.56), CGPoint(x: 0.06, y: 0.60)], // South America's shoulder
     ]
 
@@ -388,7 +399,7 @@ private struct ThemePreview: View {
         }
         context.fill(land, with: .color(AppColors.land))
         // Stroked too, with round joins, to soften the corners
-        context.stroke(land, with: .color(AppColors.land), style: StrokeStyle(lineWidth: 1, lineJoin: .round))
+        context.stroke(land, with: .color(AppColors.land), style: StrokeStyle(lineWidth: 0.75, lineJoin: .round))
     }
 }
 

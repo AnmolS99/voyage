@@ -169,7 +169,7 @@ private fun DrawScope.drawScene(isDark: Boolean, showsSun: Boolean) {
     clipPath(Path().apply { addOval(globe) }) {
         drawPath(land, VoyagePalette.land)
         // Stroked too, with round joins, to soften the corners
-        drawPath(land, VoyagePalette.land, style = Stroke(1.dp.toPx(), join = StrokeJoin.Round))
+        drawPath(land, VoyagePalette.land, style = Stroke(0.75.dp.toPx(), join = StrokeJoin.Round))
     }
 }
 
@@ -180,13 +180,24 @@ private val Stars = listOf(
 )
 
 /**
- * Land as the app icon shows it — Africa under Europe — as outlines in
- * fractions of the globe's bounding square.
+ * Land as the app icon shows it — Africa under Europe and Asia — as outlines
+ * in fractions of the globe's bounding square.
  */
 private val Land = listOf(
-    listOf(Offset(0.40f, 0.06f), Offset(0.52f, 0.03f), Offset(0.62f, 0.07f), Offset(0.60f, 0.13f), Offset(0.50f, 0.15f), Offset(0.44f, 0.17f), Offset(0.36f, 0.14f)), // Europe
+    // Europe and Asia, from Iberia round Scandinavia to India and back by Arabia
+    listOf(
+        Offset(0.34f, 0.17f), Offset(0.35f, 0.14f), Offset(0.39f, 0.135f), Offset(0.39f, 0.115f),
+        Offset(0.43f, 0.10f), Offset(0.455f, 0.065f), Offset(0.45f, 0.045f), Offset(0.48f, -0.01f),
+        Offset(0.52f, -0.02f), Offset(0.56f, 0.01f), Offset(0.60f, -0.01f), Offset(0.68f, -0.04f),
+        Offset(0.98f, 0.12f), Offset(1.07f, 0.31f), Offset(0.98f, 0.30f), Offset(0.95f, 0.39f),
+        Offset(0.87f, 0.31f), Offset(0.82f, 0.28f), Offset(0.79f, 0.29f), Offset(0.76f, 0.315f),
+        Offset(0.725f, 0.33f), Offset(0.70f, 0.325f), Offset(0.64f, 0.26f), Offset(0.60f, 0.24f),
+        Offset(0.61f, 0.19f), Offset(0.56f, 0.175f), Offset(0.545f, 0.155f), Offset(0.53f, 0.175f),
+        Offset(0.51f, 0.155f), Offset(0.47f, 0.13f), Offset(0.50f, 0.16f), Offset(0.485f, 0.17f),
+        Offset(0.45f, 0.13f), Offset(0.41f, 0.14f), Offset(0.39f, 0.165f), Offset(0.36f, 0.18f),
+    ),
+    listOf(Offset(0.375f, 0.095f), Offset(0.405f, 0.09f), Offset(0.40f, 0.05f), Offset(0.375f, 0.06f)), // Britain
     listOf(Offset(0.30f, 0.22f), Offset(0.46f, 0.20f), Offset(0.58f, 0.22f), Offset(0.66f, 0.34f), Offset(0.74f, 0.36f), Offset(0.64f, 0.44f), Offset(0.62f, 0.56f), Offset(0.56f, 0.66f), Offset(0.50f, 0.66f), Offset(0.46f, 0.52f), Offset(0.44f, 0.42f), Offset(0.34f, 0.42f), Offset(0.26f, 0.36f), Offset(0.24f, 0.28f)), // Africa
-    listOf(Offset(0.66f, 0.22f), Offset(0.78f, 0.24f), Offset(0.80f, 0.33f), Offset(0.72f, 0.30f)), // Arabia
     listOf(Offset(0.04f, 0.40f), Offset(0.14f, 0.44f), Offset(0.16f, 0.56f), Offset(0.06f, 0.60f)), // South America's shoulder
 )
 
