@@ -157,8 +157,7 @@ enum GlobeStyle: String, CaseIterable {
 /// `.daylight` is the default and follows the sun: light by day and dark by
 /// night, whatever the system is set to — see `Daylight`. `.system` follows the
 /// device's appearance; `.light` and `.dark` are what the old `isDarkMode`
-/// boolean stored, and are what Home's sun/moon button picks — following the sun
-/// or the system is only chosen again from Settings.
+/// boolean stored. The theme is chosen in Settings only.
 enum ThemeMode: String, CaseIterable {
     case daylight
     case system
@@ -479,12 +478,6 @@ class GlobeState: ObservableObject {
         }
         resolveDarkMode()
         saveData()
-    }
-
-    /// Home's sun/moon button: the opposite of what is on screen, as an explicit
-    /// choice, so following the system or the sun is only chosen again from Settings.
-    func toggleDarkMode() {
-        setThemeMode(isDarkMode ? .light : .dark)
     }
 
     /// For `.preferredColorScheme`: nil leaves the window on the system's appearance.

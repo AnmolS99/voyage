@@ -393,8 +393,8 @@ All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`A
 Settings → Theme has four choices on both platforms (`ThemeMode`, same cases and
 raw values, in this order): **Daylight** (the default for a new install), which
 is light while the sun is up and dark while it is down, whatever the system is
-set to, then **System**, **Light** and **Dark**. Home's sun/moon button always
-lands on Light or Dark.
+set to, then **System**, **Light** and **Dark**. Settings is the only place the
+theme is chosen: Home has no light/dark button on either platform.
 
 Daylight asks for no location. "Here" is the reference city of the device's
 time zone — `shared/data/timezone_locations.json`, zone ID → `[lat, lon]` — so

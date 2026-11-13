@@ -111,25 +111,6 @@ struct HomeView: View {
             }
 
             Spacer()
-
-            if #available(iOS 26, *) {
-                GlassEffectContainer {
-                    Button(action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                            globeState.toggleDarkMode()
-                        }
-                    }) {
-                        Image(systemName: themeToggleSymbol)
-                            .font(.system(size: 17, weight: .medium))
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.circle)
-                    .accessibilityLabel(globeState.isDarkMode ? "Light mode" : "Dark mode")
-                }
-            } else {
-                legacyThemeToggle
-            }
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)
@@ -151,24 +132,5 @@ struct HomeView: View {
                 .background(Circle().fill(AppColors.buttonColor))
                 .shadow(color: AppColors.buttonColor.opacity(0.4), radius: 8, y: 4)
         }
-    }
-
-    private var legacyThemeToggle: some View {
-        Button(action: {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                globeState.toggleDarkMode()
-            }
-        }) {
-            Image(systemName: themeToggleSymbol)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.white)
-                .frame(width: 44, height: 44)
-                .background(Circle().fill(AppColors.buttonColor))
-                .shadow(color: AppColors.buttonColor.opacity(0.4), radius: 8, y: 4)
-        }
-    }
-
-    private var themeToggleSymbol: String {
-        globeState.isDarkMode ? "sun.max" : "moon"
     }
 }

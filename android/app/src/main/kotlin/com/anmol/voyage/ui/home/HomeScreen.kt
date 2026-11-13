@@ -1,7 +1,6 @@
 package com.anmol.voyage.ui.home
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material3.CircularProgressIndicator
@@ -237,9 +234,8 @@ fun HomeScreen(
         }
 
         if (showsChrome) {
-            // iOS's header: the map toggle in one top corner, the theme in the
-            // other. Search moved into the dock's +; TalkBack still reaches it
-            // as the world's own action.
+            // iOS's header: the map toggle in the top corner. Search moved into
+            // the dock's +; TalkBack still reaches it as the world's own action.
             Row(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -247,7 +243,6 @@ fun HomeScreen(
                     // Home draws under the status bar; its buttons must not.
                     .windowInsetsPadding(WindowInsets.statusBars)
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 FilledTonalIconButton(
                     onClick = { state.toggleViewMode() },
@@ -257,15 +252,6 @@ fun HomeScreen(
                         imageVector = if (isGlobe) Icons.Rounded.Map else Icons.Rounded.Public,
                         contentDescription = stringResource(
                             if (isGlobe) R.string.home_show_map else R.string.home_show_globe,
-                        ),
-                    )
-                }
-                // iOS's sun/moon button: shows where a tap goes, not where you are.
-                FilledTonalIconButton(onClick = { state.toggleDarkMode(isDark) }) {
-                    Icon(
-                        imageVector = if (isDark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                        contentDescription = stringResource(
-                            if (isDark) R.string.home_light_mode else R.string.home_dark_mode,
                         ),
                     )
                 }

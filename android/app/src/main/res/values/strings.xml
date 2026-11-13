@@ -15,8 +15,6 @@
     <string name="map_search_countries">Search countries</string>
     <string name="home_show_map">Show flat map</string>
     <string name="home_show_globe">Show globe</string>
-    <string name="home_dark_mode">Switch to dark mode</string>
-    <string name="home_light_mode">Switch to light mode</string>
     <string name="home_globe_description">Globe</string>
     <string name="home_map_description">World map</string>
     <string name="home_add_country">Add country</string>
