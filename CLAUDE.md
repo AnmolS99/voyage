@@ -247,7 +247,7 @@ cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig
 - **GeoJSON** for country boundary data
 - **Supabase** for daily challenge backend
 
-The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: system/light/dark/daylight, as on Android — see [Theme](#theme)). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
+The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: daylight/system/light/dark, as on Android — see [Theme](#theme)). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
 
 ### Data persistence
 
@@ -391,9 +391,10 @@ All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`A
 ## Theme
 
 Settings → Theme has four choices on both platforms (`ThemeMode`, same cases and
-raw values): **System** (the default), **Light**, **Dark**, and **Daylight**,
-which is light while the sun is up and dark while it is down, whatever the
-system is set to. Home's sun/moon button always lands on Light or Dark.
+raw values, in this order): **Daylight** (the default for a new install), which
+is light while the sun is up and dark while it is down, whatever the system is
+set to, then **System**, **Light** and **Dark**. Home's sun/moon button always
+lands on Light or Dark.
 
 Daylight asks for no location. "Here" is the reference city of the device's
 time zone — `shared/data/timezone_locations.json`, zone ID → `[lat, lon]` — so
@@ -406,12 +407,15 @@ means polar night and the midnight sun need no special case. A zone with no
 city (`UTC`, `GMT+2`) is dark from 19:00 to 07:00 on its own clock. Both apps
 ask again once a minute (iOS `GlobeState.refreshDaylight` off a timer in
 `ContentView`, Android `ThemeMode.isDarkNow`), which is what flips the theme at
-sunrise and sunset. The picker is a row of small previews of the app, one per
-mode (`ThemeOption` on each: iOS in `SettingsView.swift`, Android
-`ui/settings/ThemeSetting.kt`) — System and Daylight split light and dark along
-the diagonal, Daylight with a sun and a moon. While Daylight is chosen it shows
-when the theme turns light and dark today and whose sun that is, e.g. "Follows
-the sun in Oslo, your time zone's city." Those times are `Daylight.sunTimes`,
+sunrise and sunset. The picker is a row of Home in miniature, one per mode
+(`ThemeOption` and `ThemePreview` on each: iOS in `SettingsView.swift`, Android
+`ui/settings/ThemeSetting.kt`, same proportions): the globe rising into the
+day's warm sky or the night's starry one. System and Daylight are day on the
+left and night on the right, Daylight with the sun and the moon. One line under
+the row says what the chosen theme does (`ThemeMode.summary` on each); for
+Daylight that is when the theme turns light and dark today and whose sun that
+is, e.g. "Light from 08:10 and dark from 15:40, following the sun in Oslo."
+Those times are `Daylight.sunTimes`,
 which asks `isNight` for each minute of the day so they are exactly when the
 theme flips, and the city is the zone ID's last part (`Daylight.cityName`). `DaylightTests` and `DaylightTest` pin the same cases, so a
 change to the rule is a two-platform change. The iOS App Icon picker reuses

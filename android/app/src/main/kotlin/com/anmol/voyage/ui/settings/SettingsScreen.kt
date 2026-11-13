@@ -70,7 +70,7 @@ import com.anmol.voyage.ui.theme.voyageCardElevation
  *
  * Appearance starts with the theme, as on iOS. Home's sun/moon button flips
  * light and dark on both, but only an explicit choice here can hand the
- * decision back to the system — see [ThemeMode.toggled].
+ * decision back to the sun or the system — see [VoyageState.toggleDarkMode].
  *
  * The texture pickers are exposed dropdown menus, Material's counterpart to
  * iOS's menu picker, so the list can grow as textures are added without the

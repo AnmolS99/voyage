@@ -65,9 +65,9 @@ struct SettingsView: View {
                             }
                         }
 
-                        if globeState.themeMode == .daylight {
-                            DaylightTimes()
-                        }
+                        Text(globeState.themeMode.summary)
+                            .font(.voyageText(13))
+                            .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 4)
                     .listRowBackground(AppColors.cardBackground(isDarkMode: globeState.isDarkMode))
@@ -276,10 +276,8 @@ struct SettingsView: View {
     }
 }
 
-/// One choice in the Theme picker: a small preview of the app in that theme with
-/// its name below, ringed in the app's orange when chosen — Android's
-/// `ThemeOption`. System and Daylight are half light and half dark; Daylight
-/// swaps the preview's text for a sun and a moon.
+/// One choice in the Theme picker: Home in miniature in that theme with its name
+/// below, ringed in the app's orange when chosen — Android's `ThemeOption`.
 private struct ThemeOption: View {
     let mode: ThemeMode
     let isSelected: Bool
@@ -290,9 +288,9 @@ private struct ThemeOption: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
-                preview
+                ThemePreview(mode: mode)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: 52)
                     .clipShape(Self.shape)
                     .overlay(Self.shape.stroke(Color.primary.opacity(0.12), lineWidth: 1))
                     .padding(4)
@@ -313,100 +311,110 @@ private struct ThemeOption: View {
         .accessibilityLabel(mode.displayName)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
-
-    @ViewBuilder private var preview: some View {
-        switch mode {
-        case .light:
-            ThemeSwatch(isDark: false, showsSun: false)
-        case .dark:
-            ThemeSwatch(isDark: true, showsSun: false)
-        case .system, .daylight:
-            ThemeSwatch(isDark: false, showsSun: mode == .daylight)
-                .overlay(ThemeSwatch(isDark: true, showsSun: mode == .daylight).clipShape(LowerRightHalf()))
-        }
-    }
 }
 
-/// The app in miniature in one theme: a card on the page with two lines of text
-/// and an accent dot — or, for Daylight, a sun on the light one and a moon on
-/// the dark one.
-private struct ThemeSwatch: View {
-    let isDark: Bool
-    let showsSun: Bool
+/// Home in miniature: the globe rising into the day's warm sky or the night's
+/// starry one — Android's `ThemePreview`, same proportions. System and Daylight
+/// are day on the left and night on the right, so the globe carries a
+/// terminator; Daylight adds the sun and the moon it follows.
+private struct ThemePreview: View {
+    let mode: ThemeMode
+
+    /// Stars, as fractions of the preview.
+    private static let stars: [CGPoint] = [
+        CGPoint(x: 0.08, y: 0.22), CGPoint(x: 0.20, y: 0.50), CGPoint(x: 0.32, y: 0.14),
+        CGPoint(x: 0.45, y: 0.36), CGPoint(x: 0.58, y: 0.16), CGPoint(x: 0.66, y: 0.44),
+        CGPoint(x: 0.90, y: 0.14), CGPoint(x: 0.93, y: 0.52),
+    ]
+    /// Land as the app icon shows it — Africa under Europe — as outlines in
+    /// fractions of the globe's bounding square.
+    private static let land: [[CGPoint]] = [
+        [CGPoint(x: 0.40, y: 0.06), CGPoint(x: 0.52, y: 0.03), CGPoint(x: 0.62, y: 0.07), CGPoint(x: 0.60, y: 0.13), CGPoint(x: 0.50, y: 0.15), CGPoint(x: 0.44, y: 0.17), CGPoint(x: 0.36, y: 0.14)], // Europe
+        [CGPoint(x: 0.30, y: 0.22), CGPoint(x: 0.46, y: 0.20), CGPoint(x: 0.58, y: 0.22), CGPoint(x: 0.66, y: 0.34), CGPoint(x: 0.74, y: 0.36), CGPoint(x: 0.64, y: 0.44), CGPoint(x: 0.62, y: 0.56), CGPoint(x: 0.56, y: 0.66), CGPoint(x: 0.50, y: 0.66), CGPoint(x: 0.46, y: 0.52), CGPoint(x: 0.44, y: 0.42), CGPoint(x: 0.34, y: 0.42), CGPoint(x: 0.26, y: 0.36), CGPoint(x: 0.24, y: 0.28)], // Africa
+        [CGPoint(x: 0.66, y: 0.22), CGPoint(x: 0.78, y: 0.24), CGPoint(x: 0.80, y: 0.33), CGPoint(x: 0.72, y: 0.30)], // Arabia
+        [CGPoint(x: 0.04, y: 0.40), CGPoint(x: 0.14, y: 0.44), CGPoint(x: 0.16, y: 0.56), CGPoint(x: 0.06, y: 0.60)], // South America's shoulder
+    ]
 
     var body: some View {
-        ZStack {
-            if showsSun {
-                Image(systemName: isDark ? "moon.fill" : "sun.max.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(AppColors.buttonColor)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isDark ? .bottomTrailing : .topLeading)
-            } else {
-                VStack(alignment: .leading, spacing: 3) {
-                    Capsule().frame(width: 22, height: 3)
-                    Capsule().frame(width: 14, height: 3)
-                }
-                .foregroundColor(AppColors.textMuted(isDarkMode: isDark))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        Canvas { context, size in
+            let full = CGRect(origin: .zero, size: size)
+            let rightHalf = full.divided(atDistance: size.width / 2, from: .minXEdge).remainder
+            if mode != .dark { draw(isDark: false, in: full, of: size, context: context) }
+            if mode != .light { draw(isDark: true, in: mode == .dark ? full : rightHalf, of: size, context: context) }
+        }
+    }
 
-                Circle()
-                    .fill(AppColors.buttonColor)
-                    .frame(width: 8, height: 8)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+    /// The whole scene in one theme, clipped to `region` of it.
+    private func draw(isDark: Bool, in region: CGRect, of size: CGSize, context: GraphicsContext) {
+        var context = context
+        context.clip(to: Path(region))
+
+        if isDark {
+            context.fill(Path(region), with: .color(.black))
+            for star in Self.stars {
+                let center = CGPoint(x: star.x * size.width, y: star.y * size.height)
+                context.fill(Path(ellipseIn: CGRect(center: center, radius: 0.7)), with: .color(.white.opacity(0.8)))
+            }
+        } else {
+            context.fill(Path(region), with: .linearGradient(
+                Gradient(colors: [AppColors.backgroundLightTop, AppColors.backgroundLightBottom]),
+                startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)
+            ))
+        }
+
+        if mode == .daylight {
+            let radius = size.height * 0.11
+            let center = CGPoint(x: size.width * (isDark ? 0.78 : 0.22), y: size.height * 0.3)
+            context.fill(Path(ellipseIn: CGRect(center: center, radius: radius)),
+                         with: .color(isDark ? Color(AppColors.capitalMarkerInsetUI) : AppColors.buttonColor))
+            if isDark {
+                // The sky again, offset, leaves a crescent
+                let bite = CGPoint(x: center.x + radius * 0.5, y: center.y - radius * 0.3)
+                context.fill(Path(ellipseIn: CGRect(center: bite, radius: radius)), with: .color(.black))
             }
         }
-        .padding(6)
-        .background(AppColors.cardBackground(isDarkMode: isDark), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
-        .padding(6)
-        .background(AppColors.pageBackground(isDarkMode: isDark))
+
+        let globe = CGRect(center: CGPoint(x: size.width / 2, y: size.height * 0.42 + size.width * 0.38), radius: size.width * 0.38)
+        context.fill(Path(ellipseIn: globe), with: .color(isDark ? AppColors.oceanDark : AppColors.ocean))
+        if isDark {
+            // A rim of daylight, so the dark ocean stands off the black sky
+            context.stroke(Path(ellipseIn: globe), with: .color(AppColors.ocean), lineWidth: 1.5)
+        }
+        context.clip(to: Path(ellipseIn: globe))
+        var land = Path()
+        for outline in Self.land {
+            land.addLines(outline.map { CGPoint(x: globe.minX + $0.x * globe.width, y: globe.minY + $0.y * globe.height) })
+            land.closeSubpath()
+        }
+        context.fill(land, with: .color(AppColors.land))
+        // Stroked too, with round joins, to soften the corners
+        context.stroke(land, with: .color(AppColors.land), style: StrokeStyle(lineWidth: 1, lineJoin: .round))
     }
 }
 
-/// The half of a preview below its diagonal, where a split one shows dark.
-private struct LowerRightHalf: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
+private extension CGRect {
+    /// The square around a circle.
+    init(center: CGPoint, radius: CGFloat) {
+        self.init(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
     }
 }
 
-/// When Daylight turns light and dark today, and whose sun it follows — the
-/// device's time zone and its city are all the app knows of where the user is.
-private struct DaylightTimes: View {
-    private let times = Daylight.sunTimes()
-    private let city = Daylight.cityName()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 20) {
-                sunTime("sun.max.fill", "Light from", times.sunrise)
-                sunTime("moon.fill", "Dark from", times.sunset)
-            }
-
-            Text(city.map { "Follows the sun in \($0), your time zone’s city." }
-                 ?? "Follows the clock, as your time zone has no city.")
-                .font(.voyageText(13))
-                .foregroundColor(.secondary)
+extension ThemeMode {
+    /// What the theme does, under the picker. Daylight says when it turns over
+    /// today and whose sun that is — the device's time zone and its city are all
+    /// the app knows of where the user is.
+    var summary: String {
+        switch self {
+        case .system: return "Matches your device’s appearance."
+        case .light: return "Always light."
+        case .dark: return "Always dark, with stars behind the globe."
+        case .daylight:
+            let times = Daylight.sunTimes()
+            let place = Daylight.cityName().map { "the sun in \($0)" } ?? "the clock"
+            guard let sunrise = times.sunrise, let sunset = times.sunset else { return "Follows \(place)." }
+            func clock(_ time: Date) -> String { time.formatted(date: .omitted, time: .shortened) }
+            return "Light from \(clock(sunrise)) and dark from \(clock(sunset)), following \(place)."
         }
-        .padding(.top, 2)
-    }
-
-    /// A sun or moon and a time; read out as "Light from 08:10".
-    private func sunTime(_ symbol: String, _ label: String, _ time: Date?) -> some View {
-        let text = time?.formatted(date: .omitted, time: .shortened) ?? "–"
-        return HStack(spacing: 6) {
-            Image(systemName: symbol)
-                .font(.system(size: 14))
-                .foregroundColor(AppColors.buttonColor)
-            Text(text)
-                .font(.voyageText(16))
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(label) \(text)")
     }
 }
 

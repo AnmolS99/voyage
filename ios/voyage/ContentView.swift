@@ -151,18 +151,19 @@ enum GlobeStyle: String, CaseIterable {
     }
 }
 
-/// Appearance preference, matching Android's `ThemeMode`.
+/// Appearance preference, matching Android's `ThemeMode`, in the order Settings
+/// offers them.
 ///
-/// `.system` follows the device's appearance and is the default; `.light` and
-/// `.dark` are what the old `isDarkMode` boolean stored, and are what Home's
-/// sun/moon button picks — "follow the system" is only chosen again from Settings.
-/// `.daylight` follows the sun instead: light by day and dark by night, whatever
-/// the system is set to — see `Daylight`.
+/// `.daylight` is the default and follows the sun: light by day and dark by
+/// night, whatever the system is set to — see `Daylight`. `.system` follows the
+/// device's appearance; `.light` and `.dark` are what the old `isDarkMode`
+/// boolean stored, and are what Home's sun/moon button picks — following the sun
+/// or the system is only chosen again from Settings.
 enum ThemeMode: String, CaseIterable {
+    case daylight
     case system
     case light
     case dark
-    case daylight
 
     var displayName: String {
         switch self {
@@ -259,7 +260,7 @@ class GlobeState: ObservableObject {
     /// system's. Persistent instances derive it; in-memory ones (challenge games)
     /// copy it from the main state.
     @Published var isDarkMode: Bool = false
-    @Published private(set) var themeMode: ThemeMode = .system
+    @Published private(set) var themeMode: ThemeMode = .daylight
     /// Last known system appearance; only meaningful while `themeMode` is `.system`.
     private var systemIsDark = GlobeState.currentSystemIsDark()
     @Published var isAutoRotating: Bool = true

@@ -46,7 +46,7 @@ class PersistedStateTest {
     fun `defaults are written out, so a first save is a complete document`() {
         val encoded = PersistedStateCodec.encode(PersistedState())
         assertTrue(encoded, """"version":${PersistedState.CURRENT_VERSION}""" in encoded)
-        assertTrue(encoded, """"themeMode":"system"""" in encoded)
+        assertTrue(encoded, """"themeMode":"daylight"""" in encoded)
     }
 
     @Test

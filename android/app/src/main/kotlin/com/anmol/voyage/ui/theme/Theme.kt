@@ -69,7 +69,7 @@ internal val VoyageLightColorScheme = lightColorScheme(
     onError = Color.White,
 )
 
-internal val VoyageDarkColorScheme = darkColorScheme(
+private val VoyageDarkColorScheme = darkColorScheme(
     primary = VoyagePalette.buttonColor,
     onPrimary = Color.White,
     primaryContainer = WarmTintDark,

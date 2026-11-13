@@ -15,7 +15,7 @@ final class voyageTests: XCTestCase {
         XCTAssertTrue(ThemeMode.dark.isDark(systemIsDark: false, isNight: false))
         XCTAssertTrue(ThemeMode.daylight.isDark(systemIsDark: false, isNight: true))
         XCTAssertFalse(ThemeMode.daylight.isDark(systemIsDark: true, isNight: false))
-        XCTAssertEqual(ThemeMode.allCases.map(\.rawValue), ["system", "light", "dark", "daylight"])
+        XCTAssertEqual(ThemeMode.allCases.map(\.rawValue), ["daylight", "system", "light", "dark"])
         XCTAssertEqual(ThemeMode.appIcons, [.system, .light, .dark])
     }
 

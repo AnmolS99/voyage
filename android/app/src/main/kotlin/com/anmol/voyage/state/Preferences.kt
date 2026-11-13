@@ -46,13 +46,16 @@ enum class GlobeStyle(val textureAsset: String) {
 /**
  * Appearance preference.
  *
- * "Follow the system" is the default. [Daylight] follows the sun instead: light
- * by day and dark by night, whatever the system is set to — see
- * [com.anmol.voyage.state.Daylight]. iOS's `ThemeMode` has the same cases and
- * raw values; its older `isDarkMode` boolean migrates to [Light] or [Dark].
+ * In the order Settings offers them. [Daylight] is the default and follows the
+ * sun: light by day and dark by night, whatever the system is set to — see
+ * [com.anmol.voyage.state.Daylight]. iOS's `ThemeMode` has the same cases, order
+ * and raw values; its older `isDarkMode` boolean migrates to [Light] or [Dark].
  */
 @Serializable
 enum class ThemeMode {
+    @SerialName("daylight")
+    Daylight,
+
     @SerialName("system")
     System,
 
@@ -60,10 +63,7 @@ enum class ThemeMode {
     Light,
 
     @SerialName("dark")
-    Dark,
-
-    @SerialName("daylight")
-    Daylight;
+    Dark;
 
     /**
      * Whether to use the dark scheme, given what the system is currently set to

@@ -117,12 +117,12 @@ class SettingsScreenTest {
     fun choosingAThemeSetsItAndMarksItSelected() {
         showSettings()
 
-        composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.System)).assertIsSelected()
+        composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.Daylight)).assertIsSelected()
         composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.Dark)).performClick()
 
         assertEquals(ThemeMode.Dark, state.themeMode)
         composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.Dark)).assertIsSelected()
-        composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.System)).assertIsNotSelected()
+        composeTestRule.onNodeWithTag(themeOptionTag(ThemeMode.Daylight)).assertIsNotSelected()
     }
 
     @Test
