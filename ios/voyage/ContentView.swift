@@ -608,7 +608,7 @@ class GlobeState: ObservableObject {
     }
 
     /// Bumped each time Home's tab is re-selected while the globe is showing;
-    /// the globe answers each new value by turning back to where it opened.
+    /// the globe answers each new value by turning to where the user is.
     /// Not persisted. Android `VoyageState.homeRequest`.
     @Published private(set) var homeRequest = 0
 
@@ -618,7 +618,8 @@ class GlobeState: ObservableObject {
     static let returnHomeDuration: TimeInterval = 1.2
 
     /// Sends the globe home: deselects, so the country's card closes, and asks
-    /// the globe to fly back to its launch pose. The spin stays off for the
+    /// the globe to fly to the user's time zone's city (`Daylight.location`), or
+    /// its launch pose if the zone has none. The spin stays off for the
     /// flight — an `SCNAction` and an animated transaction would fight over the
     /// same rotation — and the globe turns it back on when it lands, unless a
     /// drag or a selection has taken over by then. Android `VoyageState.returnHome`.

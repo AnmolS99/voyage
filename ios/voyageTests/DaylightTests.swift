@@ -22,6 +22,14 @@ final class DaylightTests: XCTestCase {
         XCTAssertTrue(isNight("2026-03-20T03:00:00Z", "America/Los_Angeles"))
     }
 
+    // Where re-selecting Home turns the globe to
+    func testAZonesCityIsWhereTheUserIsTakenToBe() throws {
+        let oslo = try XCTUnwrap(Daylight.location(of: TimeZone(identifier: "Europe/Oslo")!))
+        XCTAssertEqual(oslo.latitude, 59.9, accuracy: 0.1)
+        XCTAssertEqual(oslo.longitude, 10.75, accuracy: 0.1)
+        XCTAssertNil(Daylight.location(of: TimeZone(identifier: "UTC")!))
+    }
+
     func testPolarNightAndTheMidnightSunLastAllDay() {
         XCTAssertTrue(isNight("2026-12-21T11:00:00Z", "Arctic/Longyearbyen"))
         XCTAssertFalse(isNight("2026-06-21T23:00:00Z", "Arctic/Longyearbyen"))

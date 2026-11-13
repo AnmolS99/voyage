@@ -158,14 +158,15 @@ class VoyageState(
 
     /**
      * Bumped each time Home's tab is re-selected while the globe is showing, to
-     * turn the globe back to where it opened — see [returnHome]. Not persisted.
+     * turn the globe to where the user is — see [returnHome]. Not persisted.
      */
     var homeRequest by mutableIntStateOf(0)
         private set
 
     /**
      * Sends the globe home: deselects, so the country's card closes, and asks
-     * the globe to fly back to its launch pose, where the idle spin carries on.
+     * the globe to fly to the user's time zone's city ([Daylight.location]), or
+     * its launch pose if the zone has none, where the idle spin carries on.
      *
      * The spin is turned back on here rather than when the flight lands,
      * because the globe lets a flight outrank it — and a drag during the flight

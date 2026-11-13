@@ -17,14 +17,22 @@ enum Daylight {
         return locations
     }()
 
-    /// A zone with no city (`UTC`, `GMT+2`) falls back to 07:00–19:00 on its clock.
+    /// Where the zone's city is, or nil if it has none (`UTC`, `GMT+2`). Also
+    /// where re-selecting Home turns the globe to — the best guess at where the
+    /// user is.
+    static func location(of timeZone: TimeZone = .current) -> (latitude: Double, longitude: Double)? {
+        guard let location = locations[timeZone.identifier], location.count == 2 else { return nil }
+        return (location[0], location[1])
+    }
+
+    /// A zone with no city falls back to 07:00–19:00 on its clock.
     static func isNight(at now: Date = Date(), in timeZone: TimeZone = .current) -> Bool {
-        guard let location = locations[timeZone.identifier], location.count == 2 else {
+        guard let location = location(of: timeZone) else {
             var calendar = Calendar(identifier: .gregorian)
             calendar.timeZone = timeZone
             return !(7...18).contains(calendar.component(.hour, from: now))
         }
-        return isNight(at: now, latitude: location[0], longitude: location[1])
+        return isNight(at: now, latitude: location.latitude, longitude: location.longitude)
     }
 
     /// Today's sunrise and sunset on the zone's clock, found by asking `isNight`
@@ -50,7 +58,7 @@ enum Daylight {
     /// The zone's city as its identifier names it — "Oslo" for `Europe/Oslo` —
     /// or nil if it has none.
     static func cityName(of timeZone: TimeZone = .current) -> String? {
-        guard locations[timeZone.identifier] != nil,
+        guard location(of: timeZone) != nil,
               let city = timeZone.identifier.split(separator: "/").last else { return nil }
         return city.replacingOccurrences(of: "_", with: " ")
     }

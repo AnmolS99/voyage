@@ -32,6 +32,15 @@ class DaylightTest {
     }
 
     @Test
+    fun `a zone's city is where the user is taken to be`() {
+        // Where re-selecting Home turns the globe to
+        val oslo = Daylight.location(ZoneId.of("Europe/Oslo"), locations)!!
+        assertEquals(59.9, oslo.lat, 0.1)
+        assertEquals(10.75, oslo.lon, 0.1)
+        assertEquals(null, Daylight.location(ZoneId.of("UTC"), locations))
+    }
+
+    @Test
     fun `polar night and the midnight sun last all day`() {
         assertEquals(true, isNight("2026-12-21T11:00:00Z", "Arctic/Longyearbyen"))
         assertEquals(false, isNight("2026-06-21T23:00:00Z", "Arctic/Longyearbyen"))

@@ -1,5 +1,6 @@
 package com.anmol.voyage.state
 
+import com.anmol.voyage.data.LatLon
 import java.io.InputStream
 import java.time.Instant
 import java.time.LocalTime
@@ -26,10 +27,18 @@ object Daylight {
     fun parseLocations(input: InputStream): Map<String, List<Double>> =
         input.use { Json.decodeFromStream<Map<String, List<Double>>>(it) }
 
-    /** A zone with no city (`UTC`, `GMT+2`) falls back to 07:00–19:00 on its clock. */
+    /**
+     * Where the zone's city is, or null if it has none (`UTC`, `GMT+2`). Also
+     * where re-selecting Home turns the globe to — the best guess at where the
+     * user is.
+     */
+    fun location(zone: ZoneId, locations: Map<String, List<Double>>): LatLon? =
+        locations[zone.id]?.let { LatLon(lat = it[0], lon = it[1]) }
+
+    /** A zone with no city falls back to 07:00–19:00 on its clock. */
     fun isNight(now: Instant, zone: ZoneId, locations: Map<String, List<Double>>): Boolean {
-        val location = locations[zone.id] ?: return now.atZone(zone).hour !in 7..18
-        return isNight(now, latitude = location[0], longitude = location[1])
+        val location = location(zone, locations) ?: return now.atZone(zone).hour !in 7..18
+        return isNight(now, latitude = location.lat, longitude = location.lon)
     }
 
     /** When the theme turns light and dark today; null where the sun does not rise or set. */
@@ -56,7 +65,7 @@ object Daylight {
 
     /** The zone's city as its ID names it — "Oslo" for `Europe/Oslo` — or null if it has none. */
     fun cityName(zone: ZoneId, locations: Map<String, List<Double>>): String? =
-        if (zone.id in locations) zone.id.substringAfterLast('/').replace('_', ' ') else null
+        if (location(zone, locations) != null) zone.id.substringAfterLast('/').replace('_', ' ') else null
 
     /**
      * Whether the sun is below the horizon, from the Astronomical Almanac's

@@ -71,7 +71,10 @@ does — one turn a minute, ended by a drag or a selection and resumed only by
 deselecting — is `VoyageState.isAutoRotating` driving
 `GlobeCamera.autoRotated`, where iOS runs an `SCNAction` off
 `GlobeState.isAutoRotating`. Re-selecting the Home tab on the globe sends it
-home: it deselects and flies back to the launch pose over 1.2 s
+home: it deselects and flies, at the launch distance, to where the user is
+taken to be — their time zone's city, `Daylight.location` on each, which asks
+for no location (see [Theme](#theme)); a zone with no city gets the launch
+pose — over 1.2 s
 (`GlobeFlight.RETURN_HOME_SECONDS`, iOS `GlobeState.returnHomeDuration`),
 where the idle spin carries on — `returnHome` and `homeRequest` on each
 platform's state. Selecting a country flies the camera to it via
