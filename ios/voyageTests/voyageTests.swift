@@ -527,6 +527,63 @@ final class CountryFocusTests: XCTestCase {
     }
 }
 
+/// The Daily Challenge silhouette (issue #155): projected around the country's own
+/// center, so countries across the antimeridian stay whole and northern ones keep
+/// their shape. Width ÷ height of each outline; the old raw longitude-by-latitude
+/// plot drew Russia at 8.9, the US at 6.8, New Zealand at 15 and Fiji at 54.
+final class CountrySilhouetteTests: XCTestCase {
+
+    private func aspect(_ name: String) throws -> Double {
+        let country = try XCTUnwrap(CountryDataCache.shared.countries.first { $0.name == name })
+        let silhouette = try XCTUnwrap(CountrySilhouette(country))
+        return silhouette.bounds.width / silhouette.bounds.height
+    }
+
+    func testCountriesAcrossTheAntimeridianStayWhole() throws {
+        XCTAssertEqual(try aspect("Russia"), 1.602, accuracy: 0.01)
+        XCTAssertEqual(try aspect("United States of America"), 1.129, accuracy: 0.01)
+        XCTAssertEqual(try aspect("New Zealand"), 0.707, accuracy: 0.01)
+        XCTAssertEqual(try aspect("Fiji"), 1.462, accuracy: 0.01)
+    }
+
+    // Raw degrees drew Norway at 1.9 and Iceland at 3.5.
+    func testHighLatitudesAreNotStretched() throws {
+        XCTAssertEqual(try aspect("Norway"), 0.581, accuracy: 0.01)
+        XCTAssertEqual(try aspect("Iceland"), 1.452, accuracy: 0.01)
+    }
+
+    func testDistantIslandsAreLeftOutAndNearOnesKept() throws {
+        let us = try XCTUnwrap(CountryHitTester.shared.focus(of: "United States of America"))
+        let alaska = Ring(geoJSON: [[-150, 61], [-149, 61], [-149, 62]])
+        let hawaii = Ring(geoJSON: [[-155.5, 19.5], [-155, 19.5], [-155, 20]])
+        let withHawaii = try XCTUnwrap(CountrySilhouette(rings: [alaska, hawaii], focus: us))
+        let alaskaOnly = try XCTUnwrap(CountrySilhouette(rings: [alaska], focus: us))
+        XCTAssertEqual(withHawaii.bounds, alaskaOnly.bounds)
+
+        let focus = CountryFocus(lat: 0, lon: 0, radiusDegrees: 1)
+        let near = Ring(geoJSON: [[2.5, 0], [3.5, 0], [3.5, 1]])  // 2.5° out: within the 2° margin
+        let far = Ring(geoJSON: [[3.5, 0], [4.5, 0], [4.5, 1]])  // 3.5° out: beyond it
+        XCTAssertNotNil(CountrySilhouette(rings: [near], focus: focus))
+        XCTAssertNil(CountrySilhouette(rings: [far], focus: focus))
+    }
+
+    func testFittedPathIsCenteredInsideThePadding() throws {
+        let country = try XCTUnwrap(CountryDataCache.shared.countries.first { $0.name == "Russia" })
+        let silhouette = try XCTUnwrap(CountrySilhouette(country))
+        let fitted = silhouette.fitted(in: CGSize(width: 300, height: 300), padding: 20).boundingRect
+        // Wider than tall, so it spans the width and is centered vertically.
+        XCTAssertEqual(fitted.minX, 20, accuracy: 0.5)
+        XCTAssertEqual(fitted.maxX, 280, accuracy: 0.5)
+        XCTAssertEqual(fitted.midY, 150, accuracy: 0.5)
+        XCTAssertEqual(fitted.height, 260 / 1.602, accuracy: 2)
+    }
+
+    func testPointCountriesHaveNoSilhouette() throws {
+        let singapore = try XCTUnwrap(CountryDataCache.shared.countries.first { $0.name == "Singapore" })
+        XCTAssertNil(CountrySilhouette(singapore))
+    }
+}
+
 /// The iCloud reconciliation rule for the synced sets (issue #152): the cloud
 /// wins once a device has synced, so removals and resets reach other devices.
 final class GlobeStateSyncTests: XCTestCase {
