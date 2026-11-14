@@ -8,7 +8,7 @@ final class CountryHitTester {
 
     private struct PolygonEntry {
         let countryName: String
-        let ring: [[Double]]
+        let ring: Ring
         let minLon: Double, maxLon: Double, minLat: Double, maxLat: Double
 
         func boundingBoxContains(lon: Double, lat: Double) -> Bool {
@@ -21,7 +21,9 @@ final class CountryHitTester {
     private let pointCountries: [(name: String, lat: Double, lon: Double)]
     private let countriesByName: [String: GeoJSONCountry]
     private var focuses: [String: CountryFocus] = [:]
-    private let focusLock = NSLock()
+    private var centers: [String: (lat: Double, lon: Double)] = [:]
+    /// Guards `focuses` and `centers`, which fill in lazily from any thread.
+    private let cacheLock = NSLock()
 
     private init() {
         var polygonEntries: [PolygonEntry] = []
@@ -29,14 +31,14 @@ final class CountryHitTester {
         var pointCountries: [(name: String, lat: Double, lon: Double)] = []
         var countriesByName: [String: GeoJSONCountry] = [:]
 
-        func makeEntry(_ name: String, _ ring: [[Double]]) -> PolygonEntry? {
+        func makeEntry(_ name: String, _ ring: Ring) -> PolygonEntry? {
             var minLon = Double.infinity, maxLon = -Double.infinity
             var minLat = Double.infinity, maxLat = -Double.infinity
-            for coord in ring where coord.count >= 2 {
-                minLon = min(minLon, coord[0])
-                maxLon = max(maxLon, coord[0])
-                minLat = min(minLat, coord[1])
-                maxLat = max(maxLat, coord[1])
+            for coord in ring {
+                minLon = min(minLon, coord.lon)
+                maxLon = max(maxLon, coord.lon)
+                minLat = min(minLat, coord.lat)
+                maxLat = max(maxLat, coord.lat)
             }
             guard minLon <= maxLon else { return nil }
             return PolygonEntry(countryName: name, ring: ring,
@@ -121,8 +123,8 @@ final class CountryHitTester {
     /// on first use and kept, since the enclosing cap walks every boundary point
     /// of the country a hundred times.
     func focus(of name: String) -> CountryFocus? {
-        focusLock.lock()
-        defer { focusLock.unlock() }
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
         if let cached = focuses[name] { return cached }
         guard let country = countriesByName[name], let focus = CountryFocus(country) else { return nil }
         focuses[name] = focus
@@ -130,38 +132,49 @@ final class CountryHitTester {
     }
 
     /// Geographic center of a country (average of boundary points, antimeridian-aware).
+    /// Worked out on first use and kept, like `focus(of:)`: it is asked on every tap
+    /// and every zoom reset, and walks every boundary point of the country.
     func center(of name: String) -> (lat: Double, lon: Double)? {
-        guard let country = countriesByName[name] else { return nil }
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        if let cached = centers[name] { return cached }
+        guard let country = countriesByName[name], let found = Self.averageBoundaryPoint(of: country) else { return nil }
+        centers[name] = found
+        return found
+    }
 
+    private static func averageBoundaryPoint(of country: GeoJSONCountry) -> (lat: Double, lon: Double)? {
         // Point countries have their center stored directly
         if country.isPointCountry, let coord = country.pointCoordinate {
             return coord
         }
 
-        var lats: [Double] = []
-        var lons: [Double] = []
+        var count = 0
+        var latSum = 0.0, lonSum = 0.0, shiftedLonSum = 0.0
+        var minLon = Double.infinity, maxLon = -Double.infinity
         for polygon in country.polygons {
-            for coord in polygon where coord.count >= 2 {
-                lons.append(coord[0])
-                lats.append(coord[1])
+            for coord in polygon {
+                count += 1
+                latSum += coord.lat
+                lonSum += coord.lon
+                shiftedLonSum += coord.lon < 0 ? coord.lon + 360 : coord.lon
+                minLon = min(minLon, coord.lon)
+                maxLon = max(maxLon, coord.lon)
             }
         }
-        guard !lats.isEmpty else { return nil }
+        guard count > 0 else { return nil }
 
         // Handle antimeridian-crossing countries (e.g. Fiji): if the longitude
         // range exceeds 180°, shift negative longitudes by +360° before averaging.
-        let minLon = lons.min()!
-        let maxLon = lons.max()!
         var avgLon: Double
         if maxLon - minLon > 180 {
-            let adjusted = lons.map { $0 < 0 ? $0 + 360 : $0 }
-            avgLon = adjusted.reduce(0, +) / Double(adjusted.count)
+            avgLon = shiftedLonSum / Double(count)
             if avgLon > 180 { avgLon -= 360 }
         } else {
-            avgLon = lons.reduce(0, +) / Double(lons.count)
+            avgLon = lonSum / Double(count)
         }
 
-        return (lat: lats.reduce(0, +) / Double(lats.count), lon: avgLon)
+        return (lat: latSum / Double(count), lon: avgLon)
     }
 }
 
@@ -199,7 +212,7 @@ struct CountryFocus {
             self = CountryFocus(lat: coord.lat, lon: coord.lon, radiusDegrees: 0)
             return
         }
-        let rings = country.polygons.map { $0.filter { $0.count >= 2 } }.filter { !$0.isEmpty }
+        let rings = country.polygons.filter { !$0.isEmpty }
         guard !rings.isEmpty else { return nil }
         let areas = rings.map { Self.approximateArea($0) }
         let largest = areas.max()!
@@ -210,13 +223,13 @@ struct CountryFocus {
     /// Shoelace area in degrees², scaled by the cosine of the ring's mean
     /// latitude. Only ever compared between rings of one country, so the rough
     /// correction for converging meridians is all it needs.
-    private static func approximateArea(_ ring: [[Double]]) -> Double {
+    private static func approximateArea(_ ring: Ring) -> Double {
         var twice = 0.0
         var latSum = 0.0
         for i in 0..<ring.count {
             let j = (i + 1) % ring.count
-            twice += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1]
-            latSum += ring[i][1]
+            twice += ring[i].lon * ring[j].lat - ring[j].lon * ring[i].lat
+            latSum += ring[i].lat
         }
         return abs(twice) / 2 * cos(latSum / Double(ring.count) * .pi / 180)
     }
@@ -226,12 +239,12 @@ struct CountryFocus {
     /// onto the sphere. Working in 3D makes it antimeridian-safe for free, and the
     /// cap's center is not dragged toward detailed coastlines the way a mean of
     /// boundary points is.
-    private static func enclosingCap(_ rings: [[[Double]]]) -> CountryFocus {
+    private static func enclosingCap(_ rings: [Ring]) -> CountryFocus {
         var points: [SIMD3<Double>] = []
         for ring in rings {
             for coord in ring {
-                let lat = coord[1] * .pi / 180
-                let lon = coord[0] * .pi / 180
+                let lat = coord.lat * .pi / 180
+                let lon = coord.lon * .pi / 180
                 points.append(SIMD3(cos(lat) * cos(lon), cos(lat) * sin(lon), sin(lat)))
             }
         }

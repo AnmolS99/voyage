@@ -14,8 +14,8 @@ struct CountrySilhouetteView: View {
                 let allPoints = country.polygons.flatMap { $0 }
                 guard !allPoints.isEmpty else { return }
 
-                let lons = allPoints.compactMap { $0.count >= 2 ? $0[0] : nil }
-                let lats = allPoints.compactMap { $0.count >= 2 ? $0[1] : nil }
+                let lons = allPoints.map(\.lon)
+                let lats = allPoints.map(\.lat)
                 guard let minLon = lons.min(), let maxLon = lons.max(),
                       let minLat = lats.min(), let maxLat = lats.max() else { return }
 
@@ -43,9 +43,8 @@ struct CountrySilhouetteView: View {
                     guard polygon.count >= 3 else { continue }
                     var path = Path()
                     for (i, coord) in polygon.enumerated() {
-                        guard coord.count >= 2 else { continue }
-                        let x = (coord[0] - minLon) * scale + offsetX
-                        let y = (maxLat - coord[1]) * scale + offsetY
+                        let x = (coord.lon - minLon) * scale + offsetX
+                        let y = (maxLat - coord.lat) * scale + offsetY
                         if i == 0 {
                             path.move(to: CGPoint(x: x, y: y))
                         } else {
@@ -60,9 +59,8 @@ struct CountrySilhouetteView: View {
                     guard hole.count >= 3 else { continue }
                     var path = Path()
                     for (i, coord) in hole.enumerated() {
-                        guard coord.count >= 2 else { continue }
-                        let x = (coord[0] - minLon) * scale + offsetX
-                        let y = (maxLat - coord[1]) * scale + offsetY
+                        let x = (coord.lon - minLon) * scale + offsetX
+                        let y = (maxLat - coord.lat) * scale + offsetY
                         if i == 0 {
                             path.move(to: CGPoint(x: x, y: y))
                         } else {

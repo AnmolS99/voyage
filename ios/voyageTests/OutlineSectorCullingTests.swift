@@ -23,7 +23,7 @@ final class OutlineSectorCullingTests: XCTestCase {
         let positions: [simd_float3]
     }
 
-    private lazy var borderRings: [[[Double]]] = CountryDataCache.shared.countries
+    private lazy var borderRings: [Ring] = CountryDataCache.shared.countries
         .filter { !$0.isPointCountry }
         .flatMap { $0.polygons }
 
@@ -132,8 +132,8 @@ final class OutlineSectorCullingTests: XCTestCase {
     }
 
     /// A closed square ring from (lat, lon) spanning `size` degrees, counter-clockwise.
-    private func square(lat: Double, lon: Double, size: Double) -> [[Double]] {
-        [[lon, lat], [lon + size, lat], [lon + size, lat + size], [lon, lat + size], [lon, lat]]
+    private func square(lat: Double, lon: Double, size: Double) -> Ring {
+        Ring(geoJSON: [[lon, lat], [lon + size, lat], [lon + size, lat + size], [lon, lat + size], [lon, lat]])
     }
 
     func testWorldOutlineVertexCountStaysWithinTheBudgetTheCullingAssumes() {
