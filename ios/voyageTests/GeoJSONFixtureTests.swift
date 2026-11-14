@@ -122,8 +122,8 @@ final class GeoJSONFixtureTests: XCTestCase {
         for (want, got) in pairs {
             guard let bbox = want.bbox else { continue }
             let rings = got.polygons + got.holes
-            let lons = rings.flatMap { $0.map { $0[0] } }
-            let lats = rings.flatMap { $0.map { $0[1] } }
+            let lons = rings.flatMap { $0.map(\.lon) }
+            let lats = rings.flatMap { $0.map(\.lat) }
             XCTAssertEqual(lons.min() ?? .nan, bbox[0], accuracy: Self.tolerance, "\(want.name) minLon")
             XCTAssertEqual(lats.min() ?? .nan, bbox[1], accuracy: Self.tolerance, "\(want.name) minLat")
             XCTAssertEqual(lons.max() ?? .nan, bbox[2], accuracy: Self.tolerance, "\(want.name) maxLon")

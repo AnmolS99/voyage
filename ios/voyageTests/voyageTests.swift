@@ -73,13 +73,13 @@ final class voyageTests: XCTestCase {
     // Test point-in-polygon algorithm
     func testPointInPolygon() {
         // Simple square polygon: corners at (0,0), (10,0), (10,10), (0,10)
-        let square: [[Double]] = [
+        let square = Ring(geoJSON: [
             [0, 0],
             [10, 0],
             [10, 10],
             [0, 10],
             [0, 0]  // Closing point
-        ]
+        ])
 
         // Point inside
         XCTAssertTrue(isPointInPolygon(lon: 5, lat: 5, polygon: square), "Point (5,5) should be inside square")
@@ -95,13 +95,13 @@ final class voyageTests: XCTestCase {
     // Test with a real country polygon (simplified USA bounding box)
     func testUSABoundingBox() {
         // Rough bounding box for continental USA
-        let usaBounds: [[Double]] = [
+        let usaBounds = Ring(geoJSON: [
             [-125, 24],  // SW corner
             [-66, 24],   // SE corner
             [-66, 49],   // NE corner
             [-125, 49],  // NW corner
             [-125, 24]   // Close
-        ]
+        ])
 
         // Point in middle of USA (roughly Kansas)
         XCTAssertTrue(isPointInPolygon(lon: -98, lat: 38, polygon: usaBounds), "Kansas should be in USA bounds")
@@ -338,17 +338,13 @@ final class voyageTests: XCTestCase {
 
     // Helper functions for tests
 
-    func isPointInPolygon(lon: Double, lat: Double, polygon: [[Double]]) -> Bool {
+    func isPointInPolygon(lon: Double, lat: Double, polygon: Ring) -> Bool {
         var inside = false
         var j = polygon.count - 1
 
         for i in 0..<polygon.count {
-            guard polygon[i].count >= 2 && polygon[j].count >= 2 else {
-                j = i
-                continue
-            }
-            let xi = polygon[i][0], yi = polygon[i][1]
-            let xj = polygon[j][0], yj = polygon[j][1]
+            let xi = polygon[i].lon, yi = polygon[i].lat
+            let xj = polygon[j].lon, yj = polygon[j].lat
 
             if ((yi > lat) != (yj > lat)) &&
                 (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
@@ -423,7 +419,7 @@ final class GlobeLayersTests: XCTestCase {
     }
 
     func testBuiltGeometryLandsOnTheLayerRadii() {
-        let square: [[[Double]]] = [[[10, 10], [12, 10], [12, 12], [10, 12], [10, 10]]]
+        let square = [Ring(geoJSON: [[10, 10], [12, 10], [12, 12], [10, 12], [10, 10]])]
         let fill = PolygonTriangulator.createCountryGeometry(polygons: square)!
         let outline = PolygonTriangulator.createBorderOutlineGeometry(polygons: square)!
         XCTAssertEqual(PolygonTriangulator.builtRadius(of: fill)!, GlobeLayer.fill, accuracy: 1e-5)
@@ -558,15 +554,15 @@ final class CountrySilhouetteTests: XCTestCase {
 
     func testDistantIslandsAreLeftOutAndNearOnesKept() throws {
         let us = try XCTUnwrap(CountryHitTester.shared.focus(of: "United States of America"))
-        let alaska = [[-150.0, 61.0], [-149.0, 61.0], [-149.0, 62.0]]
-        let hawaii = [[-155.5, 19.5], [-155.0, 19.5], [-155.0, 20.0]]
+        let alaska = Ring(geoJSON: [[-150, 61], [-149, 61], [-149, 62]])
+        let hawaii = Ring(geoJSON: [[-155.5, 19.5], [-155, 19.5], [-155, 20]])
         let withHawaii = try XCTUnwrap(CountrySilhouette(rings: [alaska, hawaii], focus: us))
         let alaskaOnly = try XCTUnwrap(CountrySilhouette(rings: [alaska], focus: us))
         XCTAssertEqual(withHawaii.bounds, alaskaOnly.bounds)
 
         let focus = CountryFocus(lat: 0, lon: 0, radiusDegrees: 1)
-        let near = [[2.5, 0.0], [3.5, 0.0], [3.5, 1.0]]     // 2.5° out: within the 2° margin
-        let far = [[3.5, 0.0], [4.5, 0.0], [4.5, 1.0]]      // 3.5° out: beyond it
+        let near = Ring(geoJSON: [[2.5, 0], [3.5, 0], [3.5, 1]])  // 2.5° out: within the 2° margin
+        let far = Ring(geoJSON: [[3.5, 0], [4.5, 0], [4.5, 1]])  // 3.5° out: beyond it
         XCTAssertNotNil(CountrySilhouette(rings: [near], focus: focus))
         XCTAssertNil(CountrySilhouette(rings: [far], focus: focus))
     }

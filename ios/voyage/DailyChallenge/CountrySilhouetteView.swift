@@ -28,7 +28,7 @@ struct CountrySilhouette {
         self.init(rings: country.polygons + country.holes, focus: focus)
     }
 
-    init?(rings: [[[Double]]], focus: CountryFocus) {
+    init?(rings: [Ring], focus: CountryFocus) {
         let toRadians = Double.pi / 180
         let lat0 = focus.lat * toRadians
         let sinLat0 = sin(lat0)
@@ -37,10 +37,9 @@ struct CountrySilhouette {
 
         var path = Path()
         for ring in rings {
-            let projected = ring.compactMap { coord -> (point: CGPoint, cosDistance: Double)? in
-                guard coord.count >= 2 else { return nil }
-                let lat = coord[1] * toRadians
-                let dLon = (coord[0] - focus.lon) * toRadians
+            let projected = ring.map { coord -> (point: CGPoint, cosDistance: Double) in
+                let lat = coord.lat * toRadians
+                let dLon = (coord.lon - focus.lon) * toRadians
                 let x = cos(lat) * sin(dLon)
                 let y = cosLat0 * sin(lat) - sinLat0 * cos(lat) * cos(dLon)
                 let cosDistance = sinLat0 * sin(lat) + cosLat0 * cos(lat) * cos(dLon)
