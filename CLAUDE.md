@@ -254,7 +254,7 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 
 ### Data persistence
 
-`GlobeState` persists to both `UserDefaults` (local) and `NSUbiquitousKeyValueStore` (iCloud KV store), unioning the two on load and re-saving the merge so multi-device edits don't clobber each other. It observes `NSUbiquitousKeyValueStore.didChangeExternallyNotification` to pick up remote changes live. The Daily Challenge feature persists separately via `ChallengeStore` (UserDefaults only, keyed by date).
+`GlobeState` persists to both `UserDefaults` (local) and `NSUbiquitousKeyValueStore` (iCloud KV store), and observes `NSUbiquitousKeyValueStore.didChangeExternallyNotification` to pick up remote changes live. For the synced sets (visited, wishlist, checked cities and attractions) **the cloud wins** whenever it holds the key, on launch and on an external change, so a removal or a reset on one device reaches the others — a union could only add (issue #152). The only union is a device's first sync (`hasSyncedWithICloud` unset), so a new device keeps what it had; a key iCloud has never had is filled from local unless local is empty. The rule is `GlobeState.resolveSynced`, pinned by `GlobeStateSyncTests`. Each mutation writes only the keys it changed (`persist`), never every key, so a device can't push stale copies of the others over newer iCloud values. Android has no live sync (Auto Backup restores its DataStore file whole), so this is iOS-only. The Daily Challenge feature persists separately via `ChallengeStore` (UserDefaults only, keyed by date).
 
 ### Country data loading
 
