@@ -590,20 +590,63 @@ object PolygonTriangulator {
     // Border outline
 
     /**
+     * Whether a ring's segment from (aLon, aLat) to (bLon, bLat) is a seam of
+     * the data rather than a border: a ring that crosses the antimeridian is cut
+     * there and closed along ±180° (Russia, Fiji), and Antarctica's is closed
+     * down 180° to the pole and along −90°. No country lies across such an edge,
+     * so drawing it would put a line through the middle of one — across the
+     * Ross Ice Shelf to the South Pole, for Antarctica.
+     */
+    fun isSeamSegment(aLon: Double, aLat: Double, bLon: Double, bLat: Double): Boolean =
+        (aLon == bLon && abs(aLon) == 180.0) || (aLat == bLat && abs(aLat) == 90.0)
+
+    /** A stretch of a ring's border to draw. */
+    class BorderRun(val coords: Ring, val closed: Boolean)
+
+    /**
+     * A ring's border as runs to draw: the whole ring, closed, when it has no
+     * seam segment ([isSeamSegment]); otherwise the open stretches between its
+     * seams. iOS's `PolygonTriangulator.borderRuns` splits the same way.
+     */
+    fun borderRuns(ring: Ring): List<BorderRun> {
+        val n = ring.size
+        fun seamAfter(i: Int): Boolean {
+            val next = (i + 1) % n
+            return isSeamSegment(ring.lon(i), ring.lat(i), ring.lon(next), ring.lat(next))
+        }
+        val firstSeam = (0 until n).firstOrNull(::seamAfter) ?: return listOf(BorderRun(ring, closed = true))
+        val runs = mutableListOf<BorderRun>()
+        var current = DoubleArrayBuilder(ring.lonLat.size)
+        // Start just past a seam, so the walk ends on one and no run wraps around.
+        for (step in 1..n) {
+            val i = (firstSeam + step) % n
+            current.add(ring.lon(i))
+            current.add(ring.lat(i))
+            if (seamAfter(i)) {
+                if (current.size >= 4) runs.add(BorderRun(Ring(current.toArray()), closed = false))
+                current = DoubleArrayBuilder(ring.lonLat.size)
+            }
+        }
+        return runs
+    }
+
+    /**
      * Inserts interpolated points into segments longer than [MAX_EDGE_DEGREES]
      * so the outline follows the sphere surface (a long straight chord would
-     * dip below it and disappear). Returns flat `[lon, lat]` pairs.
+     * dip below it and disappear). Returns flat `[lon, lat]` pairs. An open run
+     * has no closing segment to densify.
      */
-    private fun densifyRing(coords: Ring): DoubleArray {
+    private fun densifyRing(coords: Ring, closed: Boolean = true): DoubleArray {
         val result = DoubleArrayBuilder(coords.lonLat.size)
         for (i in 0 until coords.size) {
-            val next = (i + 1) % coords.size
             val curLon = coords.lon(i)
             val curLat = coords.lat(i)
-            val nextLon = coords.lon(next)
-            val nextLat = coords.lat(next)
             result.add(curLon)
             result.add(curLat)
+            if (!closed && i == coords.size - 1) break
+            val next = (i + 1) % coords.size
+            val nextLon = coords.lon(next)
+            val nextLat = coords.lat(next)
             val length = angularLength(curLon, curLat, nextLon, nextLat)
             if (length > MAX_EDGE_DEGREES) {
                 val segments = ceil(length / MAX_EDGE_DEGREES).toInt()
@@ -700,98 +743,113 @@ object PolygonTriangulator {
     fun createBorderCenterline(polygons: List<Ring>, radius: Float = OUTLINE_RADIUS): BorderCenterline? {
         val points = FloatArrayBuilder()
         val ringSizes = IntArrayBuilder()
+        val closed = IntArrayBuilder()
         // The gradient parameter rides in the miter's w, so it needs the box the
         // fill's UVs use — measured over the same rings the caller passed in.
         val bounds = lonLatBounds(polygons)
 
         for (polygon in polygons) {
             val cleaned = cleanRing(polygon) ?: continue
-            val coords = densifyRing(cleaned)
+            for (run in borderRuns(cleaned)) {
+                val coords = densifyRing(run.coords, run.closed)
 
-            val n = coords.size / 2
+                val n = coords.size / 2
 
-            // Convert all coordinates to 3D positions on sphere
-            val positions = FloatArray(n * 3)
-            for (i in 0 until n) {
-                val p = latLonToSphere(lat = coords[i * 2 + 1], lon = coords[i * 2], radius = radius)
-                positions[i * 3] = p.x
-                positions[i * 3 + 1] = p.y
-                positions[i * 3 + 2] = p.z
+                // Convert all coordinates to 3D positions on sphere
+                val positions = FloatArray(n * 3)
+                for (i in 0 until n) {
+                    val p = latLonToSphere(lat = coords[i * 2 + 1], lon = coords[i * 2], radius = radius)
+                    positions[i * 3] = p.x
+                    positions[i * 3 + 1] = p.y
+                    positions[i * 3 + 2] = p.z
+                }
+
+                // One entry per point, with the miter offset direction the outline
+                // material pushes the strip's two edges along
+                for (i in 0 until n) {
+                    val px = positions[i * 3]
+                    val py = positions[i * 3 + 1]
+                    val pz = positions[i * 3 + 2]
+                    val prev = (i - 1 + n) % n
+                    val next = (i + 1) % n
+
+                    val normalX = px / radius
+                    val normalY = py / radius
+                    val normalZ = pz / radius
+
+                    // Perpendicular to each adjacent edge, projected onto sphere surface
+                    val e1x = px - positions[prev * 3]
+                    val e1y = py - positions[prev * 3 + 1]
+                    val e1z = pz - positions[prev * 3 + 2]
+                    var perp1X = e1y * normalZ - e1z * normalY
+                    var perp1Y = e1z * normalX - e1x * normalZ
+                    var perp1Z = e1x * normalY - e1y * normalX
+                    val len1 = sqrt(perp1X * perp1X + perp1Y * perp1Y + perp1Z * perp1Z)
+                    perp1X /= len1; perp1Y /= len1; perp1Z /= len1
+
+                    val e2x = positions[next * 3] - px
+                    val e2y = positions[next * 3 + 1] - py
+                    val e2z = positions[next * 3 + 2] - pz
+                    var perp2X = e2y * normalZ - e2z * normalY
+                    var perp2Y = e2z * normalX - e2x * normalZ
+                    var perp2Z = e2x * normalY - e2y * normalX
+                    val len2 = sqrt(perp2X * perp2X + perp2Y * perp2Y + perp2Z * perp2Z)
+                    perp2X /= len2; perp2Y /= len2; perp2Z /= len2
+
+                    // An open run's ends have one edge each, which stands in for the
+                    // missing one and squares the end off
+                    if (!run.closed && i == 0) { perp1X = perp2X; perp1Y = perp2Y; perp1Z = perp2Z }
+                    if (!run.closed && i == n - 1) { perp2X = perp1X; perp2Y = perp1Y; perp2Z = perp1Z }
+
+                    // Miter direction: average of the two perpendiculars, lengthened on sharp
+                    // corners (capped at 2x) so the strip keeps its visual width
+                    var miterX = perp1X + perp2X
+                    var miterY = perp1Y + perp2Y
+                    var miterZ = perp1Z + perp2Z
+                    val miterLen = sqrt(miterX * miterX + miterY * miterY + miterZ * miterZ)
+                    miterX /= miterLen; miterY /= miterLen; miterZ /= miterLen
+                    val dot = miterX * perp1X + miterY * perp1Y + miterZ * perp1Z
+                    val scale = if (dot > 0.3f) minOf(1.0f / dot, 2.0f) else 1.0f
+                    miterX *= scale; miterY *= scale; miterZ *= scale
+
+                    val gradient = boxCoords(px.toDouble(), py.toDouble(), pz.toDouble(), bounds)
+                    val t = ((gradient[0] + gradient[1]) * 0.5).coerceIn(0.0, 1.0).toFloat()
+
+                    points.add(px, py, pz)
+                    points.add(miterX, miterY, miterZ)
+                    points.add(t)
+                }
+                ringSizes.add(n)
+                closed.add(if (run.closed) 1 else 0)
             }
-
-            // One entry per point, with the miter offset direction the outline
-            // material pushes the strip's two edges along
-            for (i in 0 until n) {
-                val px = positions[i * 3]
-                val py = positions[i * 3 + 1]
-                val pz = positions[i * 3 + 2]
-                val prev = (i - 1 + n) % n
-                val next = (i + 1) % n
-
-                val normalX = px / radius
-                val normalY = py / radius
-                val normalZ = pz / radius
-
-                // Perpendicular to each adjacent edge, projected onto sphere surface
-                val e1x = px - positions[prev * 3]
-                val e1y = py - positions[prev * 3 + 1]
-                val e1z = pz - positions[prev * 3 + 2]
-                var perp1X = e1y * normalZ - e1z * normalY
-                var perp1Y = e1z * normalX - e1x * normalZ
-                var perp1Z = e1x * normalY - e1y * normalX
-                val len1 = sqrt(perp1X * perp1X + perp1Y * perp1Y + perp1Z * perp1Z)
-                perp1X /= len1; perp1Y /= len1; perp1Z /= len1
-
-                val e2x = positions[next * 3] - px
-                val e2y = positions[next * 3 + 1] - py
-                val e2z = positions[next * 3 + 2] - pz
-                var perp2X = e2y * normalZ - e2z * normalY
-                var perp2Y = e2z * normalX - e2x * normalZ
-                var perp2Z = e2x * normalY - e2y * normalX
-                val len2 = sqrt(perp2X * perp2X + perp2Y * perp2Y + perp2Z * perp2Z)
-                perp2X /= len2; perp2Y /= len2; perp2Z /= len2
-
-                // Miter direction: average of the two perpendiculars, lengthened on sharp
-                // corners (capped at 2x) so the strip keeps its visual width
-                var miterX = perp1X + perp2X
-                var miterY = perp1Y + perp2Y
-                var miterZ = perp1Z + perp2Z
-                val miterLen = sqrt(miterX * miterX + miterY * miterY + miterZ * miterZ)
-                miterX /= miterLen; miterY /= miterLen; miterZ /= miterLen
-                val dot = miterX * perp1X + miterY * perp1Y + miterZ * perp1Z
-                val scale = if (dot > 0.3f) minOf(1.0f / dot, 2.0f) else 1.0f
-                miterX *= scale; miterY *= scale; miterZ *= scale
-
-                val gradient = boxCoords(px.toDouble(), py.toDouble(), pz.toDouble(), bounds)
-                val t = ((gradient[0] + gradient[1]) * 0.5).coerceIn(0.0, 1.0).toFloat()
-
-                points.add(px, py, pz)
-                points.add(miterX, miterY, miterZ)
-                points.add(t)
-            }
-            ringSizes.add(n)
         }
 
         if (points.size == 0) return null
-        return BorderCenterline(points = points.toArray(), ringSizes = ringSizes.toArray())
+        return BorderCenterline(points = points.toArray(), ringSizes = ringSizes.toArray(), closed = closed.toArray())
     }
 
     /**
      * Widens [centerline] into the strip the outline material draws: every point
      * becomes two vertices at the same position whose miters point to opposite
-     * sides of the line, and every ring a closed quad strip between them. Pure
-     * bookkeeping — the math went into the centerline — which is why the build
-     * caches centerlines and the device runs this.
+     * sides of the line, and every ring a quad strip between them — closed, or
+     * open for a run between seams. Pure bookkeeping — the math went into the
+     * centerline — which is why the build caches centerlines and the device
+     * runs this.
      */
     fun createOutlineMesh(centerline: BorderCenterline): OutlineMesh {
         val source = centerline.points
         val positions = FloatArray(centerline.pointCount * 2 * 3)
         val miters = FloatArray(centerline.pointCount * 2 * 4)
-        val indices = IntArray(centerline.pointCount * 6)
+        var segmentCount = 0
+        for ((ring, n) in centerline.ringSizes.withIndex()) {
+            segmentCount += if (centerline.closed[ring] != 0) n else n - 1
+        }
+        val indices = IntArray(segmentCount * 6)
 
         var ringStart = 0
         var slot = 0
-        for (n in centerline.ringSizes) {
+        for ((ring, n) in centerline.ringSizes.withIndex()) {
+            val closed = centerline.closed[ring] != 0
             for (i in 0 until n) {
                 val point = (ringStart + i) * BorderCenterline.STRIDE
                 // The negated miter's vertex first: the index order below relies on it.
@@ -808,8 +866,8 @@ object PolygonTriangulator {
                 }
             }
 
-            // Connect as continuous quad strip wrapping around
-            for (i in 0 until n) {
+            // Connect as continuous quad strip, wrapping around unless the run is open
+            for (i in 0 until if (closed) n else n - 1) {
                 val next = (i + 1) % n
                 val i0 = (ringStart + i) * 2
                 val i1 = i0 + 1

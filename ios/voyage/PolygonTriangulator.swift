@@ -513,15 +513,48 @@ class PolygonTriangulator {
 
     // MARK: - Border outline
 
+    /// Whether a ring's segment from `a` to `b` is a seam of the data rather than a border:
+    /// a ring that crosses the antimeridian is cut there and closed along ±180° (Russia,
+    /// Fiji), and Antarctica's is closed down 180° to the pole and along −90°. No country
+    /// lies across such an edge, so drawing it would put a line through the middle of
+    /// one — across the Ross Ice Shelf to the South Pole, for Antarctica.
+    static func isSeamSegment(_ a: LonLat, _ b: LonLat) -> Bool {
+        (a.lon == b.lon && abs(a.lon) == 180) || (a.lat == b.lat && abs(a.lat) == 90)
+    }
+
+    /// A ring's border as runs to draw: the whole ring, closed, when it has no seam
+    /// segment; otherwise the open stretches between its seams. Android's
+    /// `PolygonTriangulator.borderRuns` splits the same way.
+    static func borderRuns(_ ring: Ring) -> [(coords: Ring, closed: Bool)] {
+        let n = ring.count
+        guard let firstSeam = (0..<n).first(where: { isSeamSegment(ring[$0], ring[($0 + 1) % n]) }) else {
+            return [(ring, true)]
+        }
+        var runs: [(coords: Ring, closed: Bool)] = []
+        var current: Ring = []
+        // Start just past a seam, so the walk ends on one and no run wraps around.
+        for step in 1...n {
+            let i = (firstSeam + step) % n
+            current.append(ring[i])
+            if isSeamSegment(ring[i], ring[(i + 1) % n]) {
+                if current.count >= 2 { runs.append((current, false)) }
+                current = []
+            }
+        }
+        return runs
+    }
+
     /// Inserts interpolated points into segments longer than maxEdgeDegrees so the outline
     /// follows the sphere surface (a long straight chord would dip below it and disappear).
-    private static func densifyRing(_ coords: Ring) -> Ring {
+    /// An open run has no closing segment to densify.
+    private static func densifyRing(_ coords: Ring, closed: Bool = true) -> Ring {
         var result: Ring = []
         result.reserveCapacity(coords.count)
         for i in 0..<coords.count {
             let current = coords[i]
-            let next = coords[(i + 1) % coords.count]
             result.append(current)
+            if !closed && i == coords.count - 1 { break }
+            let next = coords[(i + 1) % coords.count]
             let length = angularLength(current, next)
             if length > maxEdgeDegrees {
                 let segments = Int(ceil(length / maxEdgeDegrees))
@@ -598,51 +631,58 @@ class PolygonTriangulator {
 
         for polygon in polygons {
             guard let cleaned = cleanRing(polygon) else { continue }
-            let coords = densifyRing(cleaned)
+            for run in borderRuns(cleaned) {
+                let coords = densifyRing(run.coords, closed: run.closed)
+                let closed = run.closed
 
-            let n = coords.count
+                let n = coords.count
 
-            // Convert all coordinates to 3D positions on sphere
-            let positions: [simd_float3] = coords.map { coord in
-                let p = latLonToSphere(lat: coord.lat, lon: coord.lon, radius: radius)
-                return simd_float3(Float(p.x), Float(p.y), Float(p.z))
-            }
+                // Convert all coordinates to 3D positions on sphere
+                let positions: [simd_float3] = coords.map { coord in
+                    let p = latLonToSphere(lat: coord.lat, lon: coord.lon, radius: radius)
+                    return simd_float3(Float(p.x), Float(p.y), Float(p.z))
+                }
 
-            // Build inner/outer vertex pairs; the miter offset direction is stored per
-            // vertex and applied by the shader
-            let baseIndex = Int32(allVertices.count)
-            for i in 0..<n {
-                let p = positions[i]
-                let prev = positions[(i - 1 + n) % n]
-                let next = positions[(i + 1) % n]
-                let normal = p / radius
+                // Build inner/outer vertex pairs; the miter offset direction is stored per
+                // vertex and applied by the shader
+                let baseIndex = Int32(allVertices.count)
+                for i in 0..<n {
+                    let p = positions[i]
+                    let prev = positions[(i - 1 + n) % n]
+                    let next = positions[(i + 1) % n]
+                    let normal = p / radius
 
-                // Perpendicular to each adjacent edge, projected onto sphere surface
-                let perp1 = simd_normalize(simd_cross(p - prev, normal))
-                let perp2 = simd_normalize(simd_cross(next - p, normal))
+                    // Perpendicular to each adjacent edge, projected onto sphere surface
+                    var perp1 = simd_normalize(simd_cross(p - prev, normal))
+                    var perp2 = simd_normalize(simd_cross(next - p, normal))
+                    // An open run's ends have one edge each, which stands in for the
+                    // missing one and squares the end off
+                    if !closed && i == 0 { perp1 = perp2 }
+                    if !closed && i == n - 1 { perp2 = perp1 }
 
-                // Miter direction: average of the two perpendiculars, lengthened on sharp
-                // corners (capped at 2x) so the strip keeps its visual width
-                var miter = simd_normalize(perp1 + perp2)
-                let dot = simd_dot(miter, perp1)
-                let scale: Float = dot > 0.3 ? min(1.0 / dot, 2.0) : 1.0
-                miter *= scale
+                    // Miter direction: average of the two perpendiculars, lengthened on sharp
+                    // corners (capped at 2x) so the strip keeps its visual width
+                    var miter = simd_normalize(perp1 + perp2)
+                    let dot = simd_dot(miter, perp1)
+                    let scale: Float = dot > 0.3 ? min(1.0 / dot, 2.0) : 1.0
+                    miter *= scale
 
-                allVertices.append(SCNVector3(p))
-                allMiters.append(SCNVector3(-miter))
-                allVertices.append(SCNVector3(p))
-                allMiters.append(SCNVector3(miter))
-            }
+                    allVertices.append(SCNVector3(p))
+                    allMiters.append(SCNVector3(-miter))
+                    allVertices.append(SCNVector3(p))
+                    allMiters.append(SCNVector3(miter))
+                }
 
-            // Connect as continuous quad strip wrapping around
-            for i in 0..<n {
-                let next = (i + 1) % n
-                let i0 = baseIndex + Int32(i * 2)
-                let i1 = i0 + 1
-                let i2 = baseIndex + Int32(next * 2)
-                let i3 = i2 + 1
+                // Connect as continuous quad strip, wrapping around unless the run is open
+                for i in 0..<(closed ? n : n - 1) {
+                    let next = (i + 1) % n
+                    let i0 = baseIndex + Int32(i * 2)
+                    let i1 = i0 + 1
+                    let i2 = baseIndex + Int32(next * 2)
+                    let i3 = i2 + 1
 
-                allIndices.append(contentsOf: [i0, i1, i3, i0, i3, i2])
+                    allIndices.append(contentsOf: [i0, i1, i3, i0, i3, i2])
+                }
             }
         }
 

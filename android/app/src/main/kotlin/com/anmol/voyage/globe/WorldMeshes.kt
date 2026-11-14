@@ -56,7 +56,7 @@ object WorldMeshesFile {
     private const val MAGIC = 0x5659474D // "VYGM"
 
     /** Bump when the layout below changes. The app and its assets are always built together. */
-    private const val VERSION = 1
+    private const val VERSION = 2
 
     fun write(countries: List<GeoJsonCountry>, output: OutputStream) {
         BinaryWriter(output).run {
@@ -75,6 +75,7 @@ object WorldMeshesFile {
             for (border in borders) {
                 floats(border.points)
                 ints(border.ringSizes)
+                ints(border.closed)
             }
             flush()
         }
@@ -94,7 +95,7 @@ object WorldMeshesFile {
             )
         }
         val outlineSectors = List(size()) {
-            PolygonTriangulator.createOutlineMesh(BorderCenterline(points = floats(), ringSizes = ints()))
+            PolygonTriangulator.createOutlineMesh(BorderCenterline(points = floats(), ringSizes = ints(), closed = ints()))
         }
         end()
         WorldMeshes(countries, outlineSectors)
