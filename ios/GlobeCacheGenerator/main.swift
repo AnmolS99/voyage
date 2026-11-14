@@ -5,8 +5,8 @@ import SceneKit
 
 struct GeoJSONCountry {
     let name: String
-    let polygons: [[[Double]]]
-    let holes: [[[Double]]]
+    let polygons: [Ring]
+    let holes: [Ring]
     let isPointCountry: Bool
     let pointCoordinate: (lat: Double, lon: Double)?
 
@@ -27,7 +27,7 @@ func loadCountries(from geojsonPath: String) -> [GeoJSONCountry] {
 
     for feature in features {
         guard let properties = feature["properties"] as? [String: Any],
-              let name = properties["name"] as? String ?? properties["NAME"] as? String,
+              let name = properties["name"] as? String,
               let geometry = feature["geometry"] as? [String: Any],
               let type = geometry["type"] as? String,
               let coordinates = geometry["coordinates"] else {
@@ -51,28 +51,24 @@ func loadCountries(from geojsonPath: String) -> [GeoJSONCountry] {
                 countries.append(country)
             }
         } else {
-            var polygons: [[[Double]]] = []
-            var holes: [[[Double]]] = []
+            var polygons: [Ring] = []
+            var holes: [Ring] = []
 
             if type == "Polygon" {
                 if let coords = coordinates as? [[[Double]]] {
                     // First ring is the outer boundary; subsequent rings are holes (e.g., enclaves)
                     if let outerRing = coords.first {
-                        polygons.append(outerRing)
+                        polygons.append(Ring(geoJSON: outerRing))
                     }
-                    if coords.count > 1 {
-                        holes.append(contentsOf: coords.dropFirst())
-                    }
+                    holes.append(contentsOf: coords.dropFirst().map { Ring(geoJSON: $0) })
                 }
             } else if type == "MultiPolygon" {
                 if let multiCoords = coordinates as? [[[[Double]]]] {
                     for polygon in multiCoords {
                         if let outerRing = polygon.first {
-                            polygons.append(outerRing)
+                            polygons.append(Ring(geoJSON: outerRing))
                         }
-                        if polygon.count > 1 {
-                            holes.append(contentsOf: polygon.dropFirst())
-                        }
+                        holes.append(contentsOf: polygon.dropFirst().map { Ring(geoJSON: $0) })
                     }
                 }
             }
@@ -115,7 +111,7 @@ func createGlobeNode(countries: [GeoJSONCountry]) -> SCNNode {
     globeNode.addChildNode(oceanNode)
 
     // Add countries
-    var allOutlinePolygons: [[[Double]]] = []
+    var allOutlinePolygons: [Ring] = []
     for country in countries {
         if country.isPointCountry {
             guard let pointCoord = country.pointCoordinate else { continue }

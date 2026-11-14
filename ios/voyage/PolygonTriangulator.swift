@@ -2,6 +2,27 @@ import Foundation
 import SceneKit
 import simd
 
+/// One boundary point of a country, in degrees.
+///
+/// A ring is one contiguous `[LonLat]` buffer, not an array of two-element
+/// `[Double]` arrays: no heap allocation per point (171k of them world-wide) and
+/// no pointer chase per point in the loops that walk a border.
+struct LonLat: Equatable {
+    var lon: Double
+    var lat: Double
+}
+
+/// A closed boundary ring, as `world.geojson` lists it (the closing point repeats the first).
+typealias Ring = [LonLat]
+
+extension Array where Element == LonLat {
+    /// A ring from GeoJSON positions (`[lon, lat]`, extra values ignored), skipping
+    /// any position with fewer than two numbers.
+    init(geoJSON positions: [[Double]]) {
+        self = positions.compactMap { $0.count >= 2 ? LonLat(lon: $0[0], lat: $0[1]) : nil }
+    }
+}
+
 /// How far each layer of the globe sits above the textured ocean sphere (radius 1.0).
 ///
 /// A layer raised above the ocean is seen along a slightly different ray than the
@@ -112,16 +133,16 @@ class PolygonTriangulator {
     }
 
     // Compute UV texture coordinates from 3D vertices by reverse-mapping to lat/lon
-    private static func computeTexCoords(vertices: [SCNVector3], polygons: [[[Double]]]) -> [CGPoint] {
+    private static func computeTexCoords(vertices: [SCNVector3], polygons: [Ring]) -> [CGPoint] {
         // Compute overall bounding box across all polygons
         var minLon = Double.infinity, maxLon = -Double.infinity
         var minLat = Double.infinity, maxLat = -Double.infinity
         for polygon in polygons {
-            for coord in polygon where coord.count >= 2 {
-                minLon = min(minLon, coord[0])
-                maxLon = max(maxLon, coord[0])
-                minLat = min(minLat, coord[1])
-                maxLat = max(maxLat, coord[1])
+            for coord in polygon {
+                minLon = min(minLon, coord.lon)
+                maxLon = max(maxLon, coord.lon)
+                minLat = min(minLat, coord.lat)
+                maxLat = max(maxLat, coord.lat)
             }
         }
         let lonSpan = maxLon - minLon
@@ -139,35 +160,34 @@ class PolygonTriangulator {
 
     // MARK: - Ring helpers
 
-    /// Drops malformed coordinates, consecutive duplicates (zero-length segments break the
+    /// Drops consecutive duplicates (zero-length segments break the
     /// miter math), and the duplicate closing point; nil if fewer than 3 points remain.
-    private static func cleanRing(_ ring: [[Double]]) -> [[Double]]? {
-        var coords: [[Double]] = []
+    private static func cleanRing(_ ring: Ring) -> Ring? {
+        var coords: Ring = []
         coords.reserveCapacity(ring.count)
-        for coord in ring where coord.count >= 2 {
-            if let last = coords.last, last[0] == coord[0] && last[1] == coord[1] { continue }
+        for coord in ring {
+            if let last = coords.last, last == coord { continue }
             coords.append(coord)
         }
-        if coords.count > 1, let first = coords.first, let last = coords.last,
-           first[0] == last[0] && first[1] == last[1] {
+        if coords.count > 1, let first = coords.first, let last = coords.last, first == last {
             coords.removeLast()
         }
         return coords.count >= 3 ? coords : nil
     }
 
     /// Absolute shoelace area of a ring in lon/lat space.
-    private static func ringArea(_ coords: [[Double]]) -> Double {
+    private static func ringArea(_ coords: Ring) -> Double {
         var sum = 0.0
         var j = coords.count - 1
         for i in 0..<coords.count {
-            sum += (coords[j][0] - coords[i][0]) * (coords[j][1] + coords[i][1])
+            sum += (coords[j].lon - coords[i].lon) * (coords[j].lat + coords[i].lat)
             j = i
         }
         return abs(sum / 2)
     }
 
     /// Length of a lon/lat segment in true angular degrees (longitude scaled by latitude).
-    private static func angularLength(_ a: (lon: Double, lat: Double), _ b: (lon: Double, lat: Double)) -> Double {
+    private static func angularLength(_ a: LonLat, _ b: LonLat) -> Double {
         let midLat = (a.lat + b.lat) / 2 * .pi / 180
         let dLon = (b.lon - a.lon) * cos(midLat)
         let dLat = b.lat - a.lat
@@ -179,15 +199,15 @@ class PolygonTriangulator {
     // Create country fill geometry by ear-clipping triangulation (with holes) in lon/lat space,
     // subdividing large triangles to follow sphere curvature, then projecting onto the sphere.
     // holes: inner ring coordinates to exclude from the fill (e.g., the Lesotho enclave in South Africa).
-    static func createCountryGeometry(polygons: [[[Double]]], holes: [[[Double]]] = [], radius: Float = GlobeLayer.fill) -> SCNGeometry? {
+    static func createCountryGeometry(polygons: [Ring], holes: [Ring] = [], radius: Float = GlobeLayer.fill) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allIndices: [Int32] = []
 
         // Assign each hole ring to the outer ring that contains it
-        var holesForPolygon: [Int: [[[Double]]]] = [:]
+        var holesForPolygon: [Int: [Ring]] = [:]
         for hole in holes {
-            guard let first = hole.first(where: { $0.count >= 2 }) else { continue }
-            if let index = polygons.firstIndex(where: { isPointInPolygon(lon: first[0], lat: first[1], polygon: $0) }) {
+            guard let first = hole.first else { continue }
+            if let index = polygons.firstIndex(where: { isPointInPolygon(lon: first.lon, lat: first.lat, polygon: $0) }) {
                 holesForPolygon[index, default: []].append(hole)
             }
         }
@@ -214,7 +234,7 @@ class PolygonTriangulator {
 
     /// Triangulates one outer ring (+ its holes) with earcut. Returns false if the
     /// triangulation fails or covers a wrong area, so the caller can fall back.
-    private static func appendEarcutFill(polygon: [[Double]], holes: [[[Double]]], radius: Float,
+    private static func appendEarcutFill(polygon: Ring, holes: [Ring], radius: Float,
                                          vertices: inout [SCNVector3], indices: inout [Int32]) -> Bool {
         guard let outer = cleanRing(polygon) else { return false }
 
@@ -224,15 +244,15 @@ class PolygonTriangulator {
         var expectedArea = ringArea(outer)
 
         for coord in outer {
-            flat.append(coord[0])
-            flat.append(coord[1])
+            flat.append(coord.lon)
+            flat.append(coord.lat)
         }
         for hole in holes {
             guard let cleaned = cleanRing(hole) else { continue }
             holeIndices.append(flat.count / 2)
             for coord in cleaned {
-                flat.append(coord[0])
-                flat.append(coord[1])
+                flat.append(coord.lon)
+                flat.append(coord.lat)
             }
             expectedArea -= ringArea(cleaned)
         }
@@ -241,10 +261,10 @@ class PolygonTriangulator {
         let triangulated = Earcut.triangulate(data: flat, holeIndices: holeIndices)
         guard !triangulated.isEmpty else { return false }
 
-        var points: [(lon: Double, lat: Double)] = []
+        var points: Ring = []
         points.reserveCapacity(flat.count / 2)
         for i in stride(from: 0, to: flat.count, by: 2) {
-            points.append((lon: flat[i], lat: flat[i + 1]))
+            points.append(LonLat(lon: flat[i], lat: flat[i + 1]))
         }
 
         // Validate coverage: a degenerate input (e.g. self-intersecting ring) produces a
@@ -274,15 +294,15 @@ class PolygonTriangulator {
 
     /// Splits triangles until no edge exceeds maxEdgeDegrees. Midpoints are shared between
     /// neighboring triangles (edge cache), keeping the mesh watertight.
-    private static func subdivideForCurvature(points: inout [(lon: Double, lat: Double)], triangles: [Int]) -> [Int] {
+    private static func subdivideForCurvature(points: inout Ring, triangles: [Int]) -> [Int] {
         var midpointCache: [Int64: Int] = [:]
 
         func midpoint(_ i: Int, _ j: Int) -> Int {
             let key = (Int64(min(i, j)) << 32) | Int64(max(i, j))
             if let cached = midpointCache[key] { return cached }
             let index = points.count
-            points.append((lon: (points[i].lon + points[j].lon) / 2,
-                           lat: (points[i].lat + points[j].lat) / 2))
+            points.append(LonLat(lon: (points[i].lon + points[j].lon) / 2,
+                                 lat: (points[i].lat + points[j].lat) / 2))
             midpointCache[key] = index
             return index
         }
@@ -324,7 +344,7 @@ class PolygonTriangulator {
     // Legacy adaptive grid-based point-in-polygon fill. Large cells cover the interior;
     // cells near borders subdivide to finer resolution. Kept as a fallback for rings
     // that earcut cannot triangulate.
-    private static func appendGridFill(polygon: [[Double]], holes: [[[Double]]], radius: Float,
+    private static func appendGridFill(polygon: Ring, holes: [Ring], radius: Float,
                                        vertices allVertices: inout [SCNVector3], indices allIndices: inout [Int32]) {
         guard let coords = cleanRing(polygon) else { return }
 
@@ -332,10 +352,10 @@ class PolygonTriangulator {
         var minLon = Double.infinity, maxLon = -Double.infinity
         var minLat = Double.infinity, maxLat = -Double.infinity
         for coord in coords {
-            minLon = min(minLon, coord[0])
-            maxLon = max(maxLon, coord[0])
-            minLat = min(minLat, coord[1])
-            maxLat = max(maxLat, coord[1])
+            minLon = min(minLon, coord.lon)
+            maxLon = max(maxLon, coord.lon)
+            minLat = min(minLat, coord.lat)
+            maxLat = max(maxLat, coord.lat)
         }
 
         let maxSpan = max(maxLon - minLon, maxLat - minLat)
@@ -406,8 +426,8 @@ class PolygonTriangulator {
                     let holeOverlaps = !holes.isEmpty && holes.contains { hole in
                         isPointInPolygon(lon: centerLon, lat: centerLat, polygon: hole) ||
                         hole.contains { coord in
-                            coord[0] >= lon && coord[0] <= lon + size &&
-                            coord[1] >= lat && coord[1] <= lat + size
+                            coord.lon >= lon && coord.lon <= lon + size &&
+                            coord.lat >= lat && coord.lat <= lat + size
                         }
                     }
                     if holeOverlaps {
@@ -430,8 +450,8 @@ class PolygonTriangulator {
                 // All test points outside — but a narrow feature (peninsula, isthmus)
                 // might still pass through. Subdivide if any polygon vertex is in the cell.
                 let hasVertex = coords.contains { coord in
-                    coord[0] >= lon && coord[0] <= lon + size &&
-                    coord[1] >= lat && coord[1] <= lat + size
+                    coord.lon >= lon && coord.lon <= lon + size &&
+                    coord.lat >= lat && coord.lat <= lat + size
                 }
                 if !hasVertex { return }
                 let half = size / 2
@@ -462,11 +482,11 @@ class PolygonTriangulator {
         // Fallback for tiny polygons where no grid cell center falls inside
         if cellCount == 0 {
             let baseIndex = Int32(allVertices.count)
-            let centroidLon = coords.reduce(0.0) { $0 + $1[0] } / Double(coords.count)
-            let centroidLat = coords.reduce(0.0) { $0 + $1[1] } / Double(coords.count)
+            let centroidLon = coords.reduce(0.0) { $0 + $1.lon } / Double(coords.count)
+            let centroidLat = coords.reduce(0.0) { $0 + $1.lat } / Double(coords.count)
             allVertices.append(latLonToSphere(lat: centroidLat, lon: centroidLon, radius: radius))
             for coord in coords {
-                allVertices.append(latLonToSphere(lat: coord[1], lon: coord[0], radius: radius))
+                allVertices.append(latLonToSphere(lat: coord.lat, lon: coord.lon, radius: radius))
             }
             for i in 0..<coords.count {
                 let next = (i + 1) % coords.count
@@ -476,12 +496,12 @@ class PolygonTriangulator {
     }
 
     // Ray casting point-in-polygon test
-    static func isPointInPolygon(lon: Double, lat: Double, polygon: [[Double]]) -> Bool {
+    static func isPointInPolygon(lon: Double, lat: Double, polygon: Ring) -> Bool {
         var inside = false
         var j = polygon.count - 1
         for i in 0..<polygon.count {
-            let xi = polygon[i][0], yi = polygon[i][1]
-            let xj = polygon[j][0], yj = polygon[j][1]
+            let xi = polygon[i].lon, yi = polygon[i].lat
+            let xj = polygon[j].lon, yj = polygon[j].lat
             if ((yi > lat) != (yj > lat)) &&
                 (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
                 inside = !inside
@@ -495,20 +515,20 @@ class PolygonTriangulator {
 
     /// Inserts interpolated points into segments longer than maxEdgeDegrees so the outline
     /// follows the sphere surface (a long straight chord would dip below it and disappear).
-    private static func densifyRing(_ coords: [[Double]]) -> [[Double]] {
-        var result: [[Double]] = []
+    private static func densifyRing(_ coords: Ring) -> Ring {
+        var result: Ring = []
         result.reserveCapacity(coords.count)
         for i in 0..<coords.count {
             let current = coords[i]
             let next = coords[(i + 1) % coords.count]
             result.append(current)
-            let length = angularLength((lon: current[0], lat: current[1]), (lon: next[0], lat: next[1]))
+            let length = angularLength(current, next)
             if length > maxEdgeDegrees {
                 let segments = Int(ceil(length / maxEdgeDegrees))
                 for s in 1..<segments {
                     let t = Double(s) / Double(segments)
-                    result.append([current[0] + (next[0] - current[0]) * t,
-                                   current[1] + (next[1] - current[1]) * t])
+                    result.append(LonLat(lon: current.lon + (next.lon - current.lon) * t,
+                                         lat: current.lat + (next.lat - current.lat) * t))
                 }
             }
         }
@@ -553,14 +573,14 @@ class PolygonTriangulator {
     /// single-digit percentages for double the draw calls. Empty cells — most of the
     /// ocean — produce no geometry at all. Android measured the same and ships the same
     /// grid; see its `PolygonTriangulator.createSectoredOutlineGeometries`.
-    static func createSectoredOutlineGeometries(polygons: [[[Double]]],
+    static func createSectoredOutlineGeometries(polygons: [Ring],
                                                 longitudeBands: Int = 12,
                                                 latitudeBands: Int = 4) -> [SCNGeometry] {
-        var buckets: [[[[Double]]]] = Array(repeating: [], count: longitudeBands * latitudeBands)
+        var buckets: [[Ring]] = Array(repeating: [], count: longitudeBands * latitudeBands)
         for polygon in polygons {
             guard let cleaned = cleanRing(polygon) else { continue }
-            let centroidLon = cleaned.reduce(0.0) { $0 + $1[0] } / Double(cleaned.count)
-            let centroidLat = cleaned.reduce(0.0) { $0 + $1[1] } / Double(cleaned.count)
+            let centroidLon = cleaned.reduce(0.0) { $0 + $1.lon } / Double(cleaned.count)
+            let centroidLat = cleaned.reduce(0.0) { $0 + $1.lat } / Double(cleaned.count)
             let lonIndex = min(longitudeBands - 1, max(0, Int((centroidLon + 180.0) / 360.0 * Double(longitudeBands))))
             let latIndex = min(latitudeBands - 1, max(0, Int((centroidLat + 90.0) / 180.0 * Double(latitudeBands))))
             buckets[latIndex * longitudeBands + lonIndex].append(polygon)
@@ -571,7 +591,7 @@ class PolygonTriangulator {
     // Create border outline as a continuous quad strip with shared vertices at joins.
     // Width is applied by outlineShaderModifier at render time (see above); without the
     // modifier this geometry is degenerate (zero width).
-    static func createBorderOutlineGeometry(polygons: [[[Double]]], radius: Float = GlobeLayer.outline) -> SCNGeometry? {
+    static func createBorderOutlineGeometry(polygons: [Ring], radius: Float = GlobeLayer.outline) -> SCNGeometry? {
         var allVertices: [SCNVector3] = []
         var allMiters: [SCNVector3] = []
         var allIndices: [Int32] = []
@@ -584,7 +604,7 @@ class PolygonTriangulator {
 
             // Convert all coordinates to 3D positions on sphere
             let positions: [simd_float3] = coords.map { coord in
-                let p = latLonToSphere(lat: coord[1], lon: coord[0], radius: radius)
+                let p = latLonToSphere(lat: coord.lat, lon: coord.lon, radius: radius)
                 return simd_float3(Float(p.x), Float(p.y), Float(p.z))
             }
 

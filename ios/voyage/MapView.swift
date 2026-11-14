@@ -30,15 +30,15 @@ struct MapView: View {
             self.mapWidth = mapWidth
             let mapHeight = mapWidth / 2
 
-            func project(_ coord: [Double]) -> CGPoint {
-                CGPoint(x: (coord[0] + 180) / 360 * mapWidth,
-                        y: (90 - coord[1]) / 180 * mapHeight)
+            func project(_ coord: LonLat) -> CGPoint {
+                CGPoint(x: (coord.lon + 180) / 360 * mapWidth,
+                        y: (90 - coord.lat) / 180 * mapHeight)
             }
 
-            func ringPath(_ ring: [[Double]]) -> Path {
+            func ringPath(_ ring: Ring) -> Path {
                 var path = Path()
                 var firstPoint = true
-                for coord in ring where coord.count >= 2 {
+                for coord in ring {
                     let point = project(coord)
                     if firstPoint {
                         path.move(to: point)
