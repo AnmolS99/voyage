@@ -362,28 +362,103 @@ class GlobeState: ObservableObject {
         }
     }
 
+    // MARK: - Persistence
+
+    /// How a synced set was reconciled, and which stores need the result.
+    struct SyncResolution<Value: Equatable>: Equatable {
+        let value: Value
+        let writesLocal: Bool
+        let writesCloud: Bool
+    }
+
+    /// Reconciles one synced collection (visited, wishlist, checked cities or
+    /// attractions) between UserDefaults and the iCloud key-value store.
+    ///
+    /// The cloud wins whenever it holds the key. A device writes both stores
+    /// together, so they only differ when another device changed the cloud,
+    /// and taking the cloud's value is what lets a removal or a reset on one
+    /// device reach the others (a union could only add, issue #152). `cloud`
+    /// is nil when iCloud has never had the key: then the local value stands
+    /// and is pushed up, unless it is empty, so a fresh install whose iCloud
+    /// data has not arrived yet cannot overwrite it with nothing.
+    ///
+    /// The one union is `isFirstSync`: the first time this device sees iCloud
+    /// data, so a new device, or one that kept data before syncing, merges what
+    /// it had instead of losing it.
+    static func resolveSynced<Value: Collection & Equatable>(
+        local: Value,
+        cloud: Value?,
+        isFirstSync: Bool,
+        union: (Value, Value) -> Value,
+        migrate: (Value) -> Value
+    ) -> SyncResolution<Value> {
+        let value: Value
+        if let cloud {
+            value = migrate(isFirstSync ? union(local, cloud) : cloud)
+        } else {
+            value = migrate(local)
+        }
+        return SyncResolution(
+            value: value,
+            writesLocal: value != local,
+            writesCloud: cloud.map { value != $0 } ?? !value.isEmpty
+        )
+    }
+
+    /// Stored `[country: [item]]` as sets, without countries left empty.
+    static func setsByCountry(_ raw: [String: [String]]) -> [String: Set<String>] {
+        raw.compactMapValues { $0.isEmpty ? nil : Set($0) }
+    }
+
+    static func unionByCountry(_ a: [String: Set<String>], _ b: [String: Set<String>]) -> [String: Set<String>] {
+        a.merging(b) { $0.union($1) }
+    }
+
+    /// Set once this device has adopted iCloud's copy of the synced sets; until
+    /// then the first iCloud data it sees is unioned with its own.
+    private let hasSyncedKey = "hasSyncedWithICloud"
+
     private func loadData() {
-        // Load visited countries
-        let localCountries = Set(userDefaults.stringArray(forKey: visitedCountriesKey) ?? [])
-        let cloudCountries = Set(iCloudStore.array(forKey: visitedCountriesKey) as? [String] ?? [])
-        visitedCountries = Self.migrateRenamedCountries(in: localCountries.union(cloudCountries))
+        let isFirstSync = !userDefaults.bool(forKey: hasSyncedKey)
+        var sawCloud = false
 
-        // Load wishlist countries
-        let localWishlist = Set(userDefaults.stringArray(forKey: wishlistCountriesKey) ?? [])
-        let cloudWishlist = Set(iCloudStore.array(forKey: wishlistCountriesKey) as? [String] ?? [])
-        wishlistCountries = Self.migrateRenamedCountries(in: localWishlist.union(cloudWishlist))
+        func resolve<Value: Collection & Equatable>(
+            local: Value, cloud: Value?,
+            union: (Value, Value) -> Value, migrate: (Value) -> Value,
+            save: (Value, _ local: Bool, _ cloud: Bool) -> Void
+        ) -> Value {
+            if cloud != nil { sawCloud = true }
+            let r = Self.resolveSynced(local: local, cloud: cloud, isFirstSync: isFirstSync,
+                                       union: union, migrate: migrate)
+            if r.writesLocal || r.writesCloud { save(r.value, r.writesLocal, r.writesCloud) }
+            return r.value
+        }
 
-        // Load checked cities
-        let localCities = userDefaults.dictionary(forKey: checkedCitiesKey) as? [String: [String]] ?? [:]
-        let cloudCities = iCloudStore.dictionary(forKey: checkedCitiesKey) as? [String: [String]] ?? [:]
-        let mergedCities = mergeDictionaries(localCities, cloudCities)
-        checkedCities = Self.migrateRenamedCountries(inKeysOf: mergedCities)
+        visitedCountries = resolve(
+            local: Set(userDefaults.stringArray(forKey: visitedCountriesKey) ?? []),
+            cloud: (iCloudStore.array(forKey: visitedCountriesKey) as? [String]).map { Set($0) },
+            union: { $0.union($1) }, migrate: Self.migrateRenamedCountries(in:)
+        ) { persist(Array($0), forKey: visitedCountriesKey, local: $1, cloud: $2) }
 
-        // Load checked attractions
-        let localAttractions = userDefaults.dictionary(forKey: checkedAttractionsKey) as? [String: [String]] ?? [:]
-        let cloudAttractions = iCloudStore.dictionary(forKey: checkedAttractionsKey) as? [String: [String]] ?? [:]
-        let mergedAttractions = mergeDictionaries(localAttractions, cloudAttractions)
-        checkedAttractions = Self.migrateRenamedCountries(inKeysOf: mergedAttractions)
+        wishlistCountries = resolve(
+            local: Set(userDefaults.stringArray(forKey: wishlistCountriesKey) ?? []),
+            cloud: (iCloudStore.array(forKey: wishlistCountriesKey) as? [String]).map { Set($0) },
+            union: { $0.union($1) }, migrate: Self.migrateRenamedCountries(in:)
+        ) { persist(Array($0), forKey: wishlistCountriesKey, local: $1, cloud: $2) }
+
+        checkedCities = resolve(
+            local: Self.setsByCountry(userDefaults.dictionary(forKey: checkedCitiesKey) as? [String: [String]] ?? [:]),
+            cloud: (iCloudStore.dictionary(forKey: checkedCitiesKey) as? [String: [String]]).map(Self.setsByCountry),
+            union: Self.unionByCountry, migrate: Self.migrateRenamedCountries(inKeysOf:)
+        ) { persist($0.mapValues { Array($0) }, forKey: checkedCitiesKey, local: $1, cloud: $2) }
+
+        checkedAttractions = resolve(
+            local: Self.setsByCountry(userDefaults.dictionary(forKey: checkedAttractionsKey) as? [String: [String]] ?? [:]),
+            cloud: (iCloudStore.dictionary(forKey: checkedAttractionsKey) as? [String: [String]]).map(Self.setsByCountry),
+            union: Self.unionByCountry, migrate: Self.migrateRenamedCountries(inKeysOf:)
+        ) { persist($0.mapValues { Array($0) }, forKey: checkedAttractionsKey, local: $1, cloud: $2) }
+
+        if sawCloud && isFirstSync { userDefaults.set(true, forKey: hasSyncedKey) }
 
         // Load globe style (prefer iCloud, fall back to local)
         if let raw = iCloudStore.string(forKey: globeStyleKey) ?? userDefaults.string(forKey: globeStyleKey),
@@ -412,61 +487,38 @@ class GlobeState: ObservableObject {
             themeMode = iCloudStore.bool(forKey: isDarkModeKey) || userDefaults.bool(forKey: isDarkModeKey) ? .dark : .light
         }
         resolveDarkMode()
-
-        // Sync merged (and name-migrated) data back to both stores
-        if visitedCountries != localCountries || visitedCountries != cloudCountries ||
-           wishlistCountries != localWishlist || wishlistCountries != cloudWishlist ||
-           checkedCities != mergedCities || checkedAttractions != mergedAttractions {
-            saveData()
-        }
     }
 
-    private func saveData() {
+    /// Writes one key to UserDefaults and/or iCloud. Each mutation writes only
+    /// the keys it changed: rewriting every key would push this device's stale
+    /// copy of the others over newer iCloud values. No `synchronize()` per
+    /// write; the system schedules uploads (`init` calls it once at launch).
+    private func persist(_ value: Any, forKey key: String, local: Bool = true, cloud: Bool = true) {
         guard isPersistent else { return }
-        let visitedArray = Array(visitedCountries)
-        userDefaults.set(visitedArray, forKey: visitedCountriesKey)
-        iCloudStore.set(visitedArray, forKey: visitedCountriesKey)
+        if local { userDefaults.set(value, forKey: key) }
+        if cloud { iCloudStore.set(value, forKey: key) }
+    }
 
-        let wishlistArray = Array(wishlistCountries)
-        userDefaults.set(wishlistArray, forKey: wishlistCountriesKey)
-        iCloudStore.set(wishlistArray, forKey: wishlistCountriesKey)
-
-        userDefaults.set(globeStyle.rawValue, forKey: globeStyleKey)
-        iCloudStore.set(globeStyle.rawValue, forKey: globeStyleKey)
-
-        userDefaults.set(mapStyle.rawValue, forKey: mapStyleKey)
-        iCloudStore.set(mapStyle.rawValue, forKey: mapStyleKey)
-
-        userDefaults.set(showsTerrain, forKey: showsTerrainKey)
-        iCloudStore.set(showsTerrain, forKey: showsTerrainKey)
-
-        userDefaults.set(themeMode.rawValue, forKey: themeModeKey)
-        iCloudStore.set(themeMode.rawValue, forKey: themeModeKey)
-
-        let citiesDict = checkedCities.mapValues { Array($0) }
-        userDefaults.set(citiesDict, forKey: checkedCitiesKey)
-        iCloudStore.set(citiesDict, forKey: checkedCitiesKey)
-
-        let attractionsDict = checkedAttractions.mapValues { Array($0) }
-        userDefaults.set(attractionsDict, forKey: checkedAttractionsKey)
-        iCloudStore.set(attractionsDict, forKey: checkedAttractionsKey)
-
-        iCloudStore.synchronize()
+    private func saveVisited() { persist(Array(visitedCountries), forKey: visitedCountriesKey) }
+    private func saveWishlist() { persist(Array(wishlistCountries), forKey: wishlistCountriesKey) }
+    private func saveCheckedCities() { persist(checkedCities.mapValues { Array($0) }, forKey: checkedCitiesKey) }
+    private func saveCheckedAttractions() {
+        persist(checkedAttractions.mapValues { Array($0) }, forKey: checkedAttractionsKey)
     }
 
     func setGlobeStyle(_ style: GlobeStyle) {
         globeStyle = style
-        saveData()
+        persist(style.rawValue, forKey: globeStyleKey)
     }
 
     func setMapStyle(_ style: GlobeStyle) {
         mapStyle = style
-        saveData()
+        persist(style.rawValue, forKey: mapStyleKey)
     }
 
     func setShowsTerrain(_ shows: Bool) {
         showsTerrain = shows
-        saveData()
+        persist(shows, forKey: showsTerrainKey)
     }
 
     func setThemeMode(_ mode: ThemeMode) {
@@ -477,7 +529,7 @@ class GlobeState: ObservableObject {
             systemIsDark = Self.currentSystemIsDark()
         }
         resolveDarkMode()
-        saveData()
+        persist(mode.rawValue, forKey: themeModeKey)
     }
 
     /// For `.preferredColorScheme`: nil leaves the window on the system's appearance.
@@ -528,12 +580,12 @@ class GlobeState: ObservableObject {
 
     func addVisit(_ name: String) {
         visitedCountries.insert(name)
-        saveData()
+        saveVisited()
     }
 
     func removeVisit(_ name: String) {
         visitedCountries.remove(name)
-        saveData()
+        saveVisited()
     }
 
     func isVisited(_ name: String) -> Bool {
@@ -542,12 +594,12 @@ class GlobeState: ObservableObject {
 
     func addToWishlist(_ name: String) {
         wishlistCountries.insert(name)
-        saveData()
+        saveWishlist()
     }
 
     func removeFromWishlist(_ name: String) {
         wishlistCountries.remove(name)
-        saveData()
+        saveWishlist()
     }
 
     func isInWishlist(_ name: String) -> Bool {
@@ -573,7 +625,8 @@ class GlobeState: ObservableObject {
             visitedCountries.insert(country)
         }
         checkedCities[country] = set.isEmpty ? nil : set
-        saveData()
+        saveCheckedCities()
+        saveVisited()
     }
 
     func toggleCheckedAttraction(_ attraction: String, for country: String) {
@@ -585,7 +638,8 @@ class GlobeState: ObservableObject {
             visitedCountries.insert(country)
         }
         checkedAttractions[country] = set.isEmpty ? nil : set
-        saveData()
+        saveCheckedAttractions()
+        saveVisited()
     }
 
     func deselectCountry(resumeAutoRotation: Bool = true) {
@@ -646,7 +700,10 @@ class GlobeState: ObservableObject {
         countryHighlightColors.removeAll()
         targetCountryCenter = nil
         isAutoRotating = true
-        saveData()
+        saveVisited()
+        saveWishlist()
+        saveCheckedCities()
+        saveCheckedAttractions()
     }
 
     // Get flag emoji for a country
@@ -665,15 +722,6 @@ class GlobeState: ObservableObject {
     /// Whether the country counts toward the UN-country progress total.
     func countsTowardProgress(_ name: String) -> Bool {
         !Self.nonUNTerritories.contains(name)
-    }
-
-    private func mergeDictionaries(_ local: [String: [String]], _ cloud: [String: [String]]) -> [String: Set<String>] {
-        var result: [String: Set<String>] = [:]
-        for key in Set(local.keys).union(cloud.keys) {
-            let merged = Set(local[key] ?? []).union(Set(cloud[key] ?? []))
-            if !merged.isEmpty { result[key] = merged }
-        }
-        return result
     }
 
     private func flagEmoji(from countryCode: String) -> String {

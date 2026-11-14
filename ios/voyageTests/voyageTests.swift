@@ -530,3 +530,87 @@ final class CountryFocusTests: XCTestCase {
                        accuracy: 1e-5)
     }
 }
+
+/// The iCloud reconciliation rule for the synced sets (issue #152): the cloud
+/// wins once a device has synced, so removals and resets reach other devices.
+final class GlobeStateSyncTests: XCTestCase {
+    private func resolve(local: Set<String>, cloud: Set<String>?, isFirstSync: Bool = false)
+        -> GlobeState.SyncResolution<Set<String>> {
+        GlobeState.resolveSynced(local: local, cloud: cloud, isFirstSync: isFirstSync,
+                                 union: { $0.union($1) }, migrate: GlobeState.migrateRenamedCountries(in:))
+    }
+
+    func testRemovalOnAnotherDeviceSticks() {
+        // Device A removed France; this device still has it locally.
+        let r = resolve(local: ["France", "Spain"], cloud: ["Spain"])
+        XCTAssertEqual(r.value, ["Spain"])
+        XCTAssertTrue(r.writesLocal)
+        XCTAssertFalse(r.writesCloud, "Writing back would undo the removal on device A")
+    }
+
+    func testResetOnAnotherDeviceSticks() {
+        let r = resolve(local: ["France", "Spain"], cloud: [])
+        XCTAssertEqual(r.value, [])
+        XCTAssertTrue(r.writesLocal)
+        XCTAssertFalse(r.writesCloud)
+    }
+
+    func testFirstSyncUnionsWhatTheDeviceHad() {
+        let r = resolve(local: ["France"], cloud: ["Spain"], isFirstSync: true)
+        XCTAssertEqual(r.value, ["France", "Spain"])
+        XCTAssertTrue(r.writesLocal)
+        XCTAssertTrue(r.writesCloud)
+    }
+
+    func testFreshInstallTakesTheCloud() {
+        let r = resolve(local: [], cloud: ["Spain"], isFirstSync: true)
+        XCTAssertEqual(r.value, ["Spain"])
+        XCTAssertTrue(r.writesLocal)
+        XCTAssertFalse(r.writesCloud)
+    }
+
+    func testLocalDataIsPushedWhenTheCloudHasNone() {
+        let r = resolve(local: ["France"], cloud: nil)
+        XCTAssertEqual(r.value, ["France"])
+        XCTAssertFalse(r.writesLocal)
+        XCTAssertTrue(r.writesCloud)
+    }
+
+    func testEmptyDeviceNeverWritesNothingOverACloudThatHasNotArrived() {
+        let r = resolve(local: [], cloud: nil, isFirstSync: true)
+        XCTAssertEqual(r.value, [])
+        XCTAssertFalse(r.writesLocal)
+        XCTAssertFalse(r.writesCloud)
+    }
+
+    func testInSyncWritesNothing() {
+        let r = resolve(local: ["France"], cloud: ["France"])
+        XCTAssertFalse(r.writesLocal)
+        XCTAssertFalse(r.writesCloud)
+    }
+
+    func testRenamedCountriesAreMigratedAndWrittenToBoth() {
+        let r = resolve(local: ["Turkey"], cloud: ["Turkey"])
+        XCTAssertEqual(r.value, ["Türkiye"])
+        XCTAssertTrue(r.writesLocal)
+        XCTAssertTrue(r.writesCloud)
+    }
+
+    func testCheckedItemsFollowTheSameRule() {
+        let local = GlobeState.setsByCountry(["France": ["Paris", "Lyon"], "Spain": []])
+        let cloud = GlobeState.setsByCountry(["France": ["Paris"]])
+        XCTAssertEqual(local, ["France": ["Paris", "Lyon"]], "Empty countries are dropped")
+
+        let r = GlobeState.resolveSynced(local: local, cloud: cloud, isFirstSync: false,
+                                         union: GlobeState.unionByCountry,
+                                         migrate: GlobeState.migrateRenamedCountries(inKeysOf:))
+        XCTAssertEqual(r.value, ["France": ["Paris"]])
+        XCTAssertFalse(r.writesCloud)
+
+        let first = GlobeState.resolveSynced(local: local, cloud: cloud, isFirstSync: true,
+                                             union: GlobeState.unionByCountry,
+                                             migrate: GlobeState.migrateRenamedCountries(inKeysOf:))
+        XCTAssertEqual(first.value, ["France": ["Paris", "Lyon"]])
+        XCTAssertTrue(first.writesCloud)
+    }
+}
