@@ -133,8 +133,15 @@ class GlobeScene {
     private static func rebuildCoordinatorData(from globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let landColor = AppColors.landUI
 
+        // Country nodes are direct children of the globe (see addCountriesFromGeoJSON
+        // and GlobeCacheGenerator), so one pass finds them all — rather than a
+        // recursive name search of the whole tree per country.
+        var nodesByName: [String: SCNNode] = [:]
+        for node in globeNode.childNodes {
+            if let name = node.name, nodesByName[name] == nil { nodesByName[name] = node }
+        }
         for country in CountryDataCache.shared.countries {
-            if let node = globeNode.childNode(withName: country.name, recursively: true) {
+            if let node = nodesByName[country.name] {
                 coordinator.countryNodes[country.name] = node
                 coordinator.originalColors[country.name] = landColor
             }
@@ -194,7 +201,7 @@ class GlobeScene {
     static func addCountriesFromGeoJSON(to globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
         let countries = CountryDataCache.shared.countries
         let landColor = AppColors.landUI
-        var allOutlinePolygons: [[[Double]]] = []
+        var allOutlinePolygons: [Ring] = []
 
         for country in countries {
             if country.isPointCountry {
@@ -246,7 +253,7 @@ class GlobeScene {
                 // Render as polygon (regular countries)
                 if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons, holes: country.holes) {
                     let material = SCNMaterial()
-                    material.diffuse.contents = country.color
+                    material.diffuse.contents = landColor
                     material.specular.contents = UIColor.clear
                     material.shininess = 0.2
                     // Single-sided: fills face outward, so the GPU culls the back hemisphere
@@ -257,7 +264,7 @@ class GlobeScene {
                     node.name = country.name
                     globeNode.addChildNode(node)
                     coordinator.countryNodes[country.name] = node
-                    coordinator.originalColors[country.name] = country.color
+                    coordinator.originalColors[country.name] = landColor
 
                     allOutlinePolygons.append(contentsOf: country.polygons)
                 }

@@ -53,11 +53,9 @@ struct CountryListView: View {
 
         for polygon in country.polygons {
             for coord in polygon {
-                if coord.count >= 2 {
-                    totalLon += coord[0]
-                    totalLat += coord[1]
-                    count += 1
-                }
+                totalLon += coord.lon
+                totalLat += coord.lat
+                count += 1
             }
         }
 

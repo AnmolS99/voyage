@@ -1,14 +1,12 @@
 import Foundation
-import UIKit
 
 /// A capital city and its location.
 typealias Capital = (name: String, lat: Double, lon: Double)
 
 struct GeoJSONCountry {
     let name: String
-    let polygons: [[[Double]]] // Array of outer rings, each ring is array of [lon, lat] coordinates (empty for point countries)
-    let holes: [[[Double]]]    // Inner rings (holes) — e.g., the Lesotho enclave inside South Africa
-    let color: UIColor
+    let polygons: [Ring] // Outer rings (empty for point countries)
+    let holes: [Ring]    // Inner rings (holes) — e.g., the Lesotho enclave inside South Africa
     let continent: String?
     let isPointCountry: Bool
     let pointCoordinate: (lat: Double, lon: Double)? // For point countries (small islands, microstates)
@@ -38,10 +36,6 @@ struct GeoJSONCountry {
     func capital(named name: String) -> Capital? {
         capitals.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
     }
-
-    static func landColor() -> UIColor {
-        return AppColors.landUI
-    }
 }
 
 class GeoJSONParser {
@@ -59,7 +53,7 @@ class GeoJSONParser {
 
         for feature in features {
             guard let properties = feature["properties"] as? [String: Any],
-                  let name = properties["name"] as? String ?? properties["NAME"] as? String,
+                  let name = properties["name"] as? String,
                   let geometry = feature["geometry"] as? [String: Any],
                   let type = geometry["type"] as? String,
                   let coordinates = geometry["coordinates"] else {
@@ -94,7 +88,6 @@ class GeoJSONParser {
                         name: name,
                         polygons: [],
                         holes: [],
-                        color: GeoJSONCountry.landColor(),
                         continent: continent,
                         isPointCountry: true,
                         pointCoordinate: (lat: lat, lon: lon),
@@ -106,28 +99,24 @@ class GeoJSONParser {
                 }
             } else {
                 // Polygon or MultiPolygon country
-                var polygons: [[[Double]]] = []
-                var holes: [[[Double]]] = []
+                var polygons: [Ring] = []
+                var holes: [Ring] = []
 
                 if type == "Polygon" {
                     if let coords = coordinates as? [[[Double]]] {
                         // First ring is the outer boundary; subsequent rings are holes (e.g., enclaves)
                         if let outerRing = coords.first {
-                            polygons.append(outerRing)
+                            polygons.append(Ring(geoJSON: outerRing))
                         }
-                        if coords.count > 1 {
-                            holes.append(contentsOf: coords.dropFirst())
-                        }
+                        holes.append(contentsOf: coords.dropFirst().map { Ring(geoJSON: $0) })
                     }
                 } else if type == "MultiPolygon" {
                     if let multiCoords = coordinates as? [[[[Double]]]] {
                         for polygon in multiCoords {
                             if let outerRing = polygon.first {
-                                polygons.append(outerRing)
+                                polygons.append(Ring(geoJSON: outerRing))
                             }
-                            if polygon.count > 1 {
-                                holes.append(contentsOf: polygon.dropFirst())
-                            }
+                            holes.append(contentsOf: polygon.dropFirst().map { Ring(geoJSON: $0) })
                         }
                     }
                 }
@@ -137,7 +126,6 @@ class GeoJSONParser {
                         name: name,
                         polygons: polygons,
                         holes: holes,
-                        color: GeoJSONCountry.landColor(),
                         continent: continent,
                         isPointCountry: isPointCountry,
                         pointCoordinate: nil,
