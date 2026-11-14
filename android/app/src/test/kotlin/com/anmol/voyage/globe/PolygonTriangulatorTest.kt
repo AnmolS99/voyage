@@ -204,6 +204,55 @@ class PolygonTriangulatorTest {
     }
 
     @Test
+    fun `a ring with no seam is drawn whole and closed`() {
+        val runs = PolygonTriangulator.borderRuns(square(0.0, 0.0, 20.0))
+
+        assertEquals(1, runs.size)
+        assertTrue(runs[0].closed)
+    }
+
+    @Test
+    fun `antimeridian and pole seams are left out of the outline`() {
+        // Antarctica's shape: the coast from 180°W round to 180°E, closed down
+        // 180°E to the pole, along -90° and back up 180°W. Only the coast is a border.
+        val ring = Ring(
+            doubleArrayOf(
+                -180.0, -78.0, -90.0, -72.0, 0.0, -70.0, 90.0, -66.0, 180.0, -78.0,
+                180.0, -84.0, 180.0, -90.0, 0.0, -90.0, -180.0, -90.0, -180.0, -84.0,
+            ),
+        )
+
+        val runs = PolygonTriangulator.borderRuns(ring)
+
+        assertEquals(1, runs.size)
+        val coast = runs[0]
+        assertTrue(!coast.closed)
+        assertEquals(5, coast.coords.size)
+        assertEquals(-180.0, coast.coords.lon(0), 0.0)
+        assertEquals(180.0, coast.coords.lon(4), 0.0)
+
+        // No outline vertex lies south of the coast
+        val mesh = PolygonTriangulator.createBorderOutlineGeometry(listOf(ring))!!
+        for (v in 0 until mesh.vertexCount) {
+            assertTrue(latLonOf(mesh.positions, v).lat > -78.5)
+        }
+        // An open strip: one quad per segment, none closing the run
+        assertEquals((mesh.vertexCount / 2 - 1) * 6, mesh.indices.size)
+    }
+
+    @Test
+    fun `a ring cut at the antimeridian keeps its coast on both sides of the cut`() {
+        // A Chukotka-like piece west of 180°E, cut along the meridian twice
+        val ring = Ring(doubleArrayOf(170.0, 65.0, 180.0, 65.0, 180.0, 66.0, 175.0, 67.0, 180.0, 68.0, 180.0, 69.0, 170.0, 69.0))
+
+        val runs = PolygonTriangulator.borderRuns(ring)
+
+        assertEquals(2, runs.size)
+        assertTrue(runs.none { it.closed })
+        assertEquals(listOf(3, 4), runs.map { it.coords.size }.sorted())
+    }
+
+    @Test
     fun `outline vertices sit on the border centerline at the outline radius`() {
         val mesh = PolygonTriangulator.createBorderOutlineGeometry(listOf(square(0.0, 0.0, 20.0)))!!
 

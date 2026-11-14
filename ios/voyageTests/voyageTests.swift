@@ -426,6 +426,48 @@ final class GlobeLayersTests: XCTestCase {
         XCTAssertEqual(PolygonTriangulator.builtRadius(of: outline)!, GlobeLayer.outline, accuracy: 1e-5)
     }
 
+    /// Antarctica's ring is closed down 180° to the pole and along −90°, and
+    /// Russia's and Fiji's are cut along the antimeridian. Those edges are seams of
+    /// the data, not borders, so the outline must leave them out — otherwise a line
+    /// runs from the Ross Ice Shelf to the South Pole. Android's
+    /// `PolygonTriangulatorTest` pins the same cases.
+    func testOutlineLeavesOutAntimeridianAndPoleSeams() {
+        let antarctica = Ring(geoJSON: [
+            [-180, -78], [-90, -72], [0, -70], [90, -66], [180, -78],
+            [180, -84], [180, -90], [0, -90], [-180, -90], [-180, -84],
+        ])
+        let runs = PolygonTriangulator.borderRuns(antarctica)
+        XCTAssertEqual(runs.count, 1)
+        XCTAssertFalse(runs[0].closed)
+        XCTAssertEqual(runs[0].coords.count, 5)
+        XCTAssertEqual(runs[0].coords.first?.lon, -180)
+        XCTAssertEqual(runs[0].coords.last?.lon, 180)
+
+        let outline = PolygonTriangulator.createBorderOutlineGeometry(polygons: [antarctica])!
+        let vertices = outline.sources(for: .vertex)[0]
+        let positions: [SCNVector3] = vertices.data.withUnsafeBytes { raw in
+            (0..<vertices.vectorCount).map { i in
+                let base = vertices.dataOffset + i * vertices.dataStride
+                let x = raw.load(fromByteOffset: base, as: Float.self)
+                let y = raw.load(fromByteOffset: base + 4, as: Float.self)
+                let z = raw.load(fromByteOffset: base + 8, as: Float.self)
+                return SCNVector3(x, y, z)
+            }
+        }
+        for p in positions {
+            let lat = PolygonTriangulator.sphereToLatLon(simd_double3(Double(p.x), Double(p.y), Double(p.z))).lat
+            XCTAssertGreaterThan(lat, -78.5)
+        }
+        // An open strip: one quad per segment, none closing the run
+        XCTAssertEqual(outline.elements[0].primitiveCount, (positions.count / 2 - 1) * 2)
+
+        let chukotka = Ring(geoJSON: [[170, 65], [180, 65], [180, 66], [175, 67], [180, 68], [180, 69], [170, 69]])
+        XCTAssertEqual(PolygonTriangulator.borderRuns(chukotka).map(\.coords.count).sorted(), [3, 4])
+
+        let square = Ring(geoJSON: [[10, 10], [12, 10], [12, 12], [10, 12]])
+        XCTAssertEqual(PolygonTriangulator.borderRuns(square).map(\.closed), [true])
+    }
+
     /// globe.scn may predate the current radii; loading it must settle every layer
     /// on them anyway.
     func testCachedGlobeSettlesOnTheLayerRadii() throws {

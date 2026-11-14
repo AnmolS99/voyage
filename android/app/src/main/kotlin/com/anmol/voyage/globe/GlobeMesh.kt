@@ -102,10 +102,11 @@ class OutlineMesh(
  * @property points [STRIDE] floats per point: its position on the sphere, the
  *   miter direction on one side of the line (the other side takes its
  *   negation), and the gradient parameter [OutlineMesh.miters] carries in `w`.
- * @property ringSizes How many points each ring has, in order. Every ring closes
- *   back on its own first point.
+ * @property ringSizes How many points each ring has, in order.
+ * @property closed Per ring, 1 if it closes back on its own first point, 0 if
+ *   it is an open run between two seams (see [PolygonTriangulator.borderRuns]).
  */
-class BorderCenterline(val points: FloatArray, val ringSizes: IntArray) {
+class BorderCenterline(val points: FloatArray, val ringSizes: IntArray, val closed: IntArray) {
     val pointCount: Int get() = points.size / STRIDE
 
     companion object {
