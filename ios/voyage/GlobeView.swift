@@ -1,5 +1,6 @@
 import SwiftUI
 import SceneKit
+import Metal
 import UIKit
 import simd
 
@@ -635,13 +636,36 @@ struct GlobeView: UIViewRepresentable {
                   let oceanGeometry = oceanNode.geometry,
                   let oceanMaterial = oceanGeometry.materials.first else { return }
 
-            if let texture = UIImage(named: globeState.globeStyle.textureName) {
-                oceanMaterial.diffuse.contents = texture
-                // Shift texture to align with country polygon coordinate system
-                // latLonToSphere maps lon=0 to +X axis, but SCNSphere UV has U=0.5 offset
-                oceanMaterial.diffuse.contentsTransform = SCNMatrix4MakeTranslation(-0.25, 0, 0)
-                oceanMaterial.diffuse.wrapS = .repeat
+            // Compressed and at full size if it is ready (see `EarthTexture`);
+            // otherwise a small copy now, and the real one once it is made.
+            let name = globeState.globeStyle.textureName
+            guard let device = sceneView?.device ?? MTLCreateSystemDefaultDevice() else {
+                showEarthTexture(EarthTexture.fallbackImage(named: name), on: oceanMaterial)
+                return
             }
+            if let texture = EarthTexture.cached(named: name, device: device) {
+                showEarthTexture(texture, on: oceanMaterial)
+                return
+            }
+            showEarthTexture(EarthTexture.preview(named: name), on: oceanMaterial)
+            EarthTexture.load(named: name, device: device) { [weak self] contents in
+                // The style may have changed again while this one was compressed
+                guard let self, self.globeState.globeStyle.textureName == name else { return }
+                self.showEarthTexture(contents, on: oceanMaterial)
+            }
+        }
+
+        private func showEarthTexture(_ contents: Any?, on material: SCNMaterial) {
+            guard let contents else { return }
+            material.diffuse.contents = contents
+            // Shift texture to align with country polygon coordinate system
+            // latLonToSphere maps lon=0 to +X axis, but SCNSphere UV has U=0.5 offset
+            material.diffuse.contentsTransform = SCNMatrix4MakeTranslation(-0.25, 0, 0)
+            material.diffuse.wrapS = .repeat
+            // Blend between mipmap levels, and keep the texture sharp where the
+            // sphere turns away from the camera toward its edge
+            material.diffuse.mipFilter = .linear
+            material.diffuse.maxAnisotropy = 16
         }
 
         /// Hard-lights the relief over the ocean and the polygon fills, as the map
