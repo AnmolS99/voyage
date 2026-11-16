@@ -152,12 +152,67 @@ struct CountryExploreView: View {
 
 /// The Journey design's header: the country's painted art full-bleed, with its
 /// flag and name over the top-left, which the art keeps as calm sky.
+/// How the Journey header sets a country's name beside its flag — Android
+/// `JourneyTitle`, same sizes and same rule. One line at 40 pt, shrunk to fit
+/// down to 30 pt; a name still too long for that ("Democratic Republic of the
+/// Congo") goes on two lines at 30 pt, broken where the two come out most even,
+/// and shrunk only if its wider line still doesn't fit. Two lines at 30 pt stay
+/// in the art's top third, which every painting keeps as open sky.
+enum JourneyTitle {
+    static let fullSize: CGFloat = 40
+    static let smallestSingleLine: CGFloat = 30
+    static let twoLineSize: CGFloat = 30
+
+    struct Fit: Equatable {
+        let size: CGFloat
+        let lines: [String]
+    }
+
+    /// The size and lines for `name` in `width`, where `widthAtFullSize` is how
+    /// wide a piece of it is set at `fullSize`. Sizes are floored to half points
+    /// so measuring and drawing never disagree by a fraction.
+    static func fit(_ name: String, in width: CGFloat, widthAtFullSize: (String) -> CGFloat) -> Fit {
+        let oneLine = floorToHalf(min(fullSize, fullSize * width / widthAtFullSize(name)))
+        let words = name.split(separator: " ").map(String.init)
+        if oneLine >= smallestSingleLine || words.count < 2 {
+            return Fit(size: oneLine, lines: [name])
+        }
+        let splits = (1..<words.count).map { i -> (first: String, second: String, wider: CGFloat) in
+            let first = words[..<i].joined(separator: " ")
+            let second = words[i...].joined(separator: " ")
+            return (first, second, max(widthAtFullSize(first), widthAtFullSize(second)))
+        }
+        let best = splits.min { $0.wider < $1.wider }!
+        return Fit(
+            size: floorToHalf(min(twoLineSize, fullSize * width / best.wider)),
+            lines: [best.first, best.second]
+        )
+    }
+
+    private static func floorToHalf(_ size: CGFloat) -> CGFloat {
+        (size * 2).rounded(.down) / 2
+    }
+
+    static func widthAtFullSize(_ text: String) -> CGFloat {
+        guard let font = UIFont(name: AppFonts.displayName(for: .medium), size: fullSize) else { return 0 }
+        return ceil((text as NSString).size(withAttributes: [.font: font]).width)
+    }
+
+    static func flagWidth(_ flag: String) -> CGFloat {
+        ceil((flag as NSString).size(withAttributes: [.font: UIFont.systemFont(ofSize: fullSize)]).width)
+    }
+}
+
 struct JourneyHeader: View {
     let image: UIImage
     let flag: String
     let countryName: String
     let place: String?
     let isDarkMode: Bool
+
+    private static let titleLeading: CGFloat = 20
+    private static let titleTrailing: CGFloat = 96 // clear of the Done button
+    private static let flagGap: CGFloat = 12
 
     var body: some View {
         Image(uiImage: image)
@@ -180,20 +235,31 @@ struct JourneyHeader: View {
                 .frame(height: 56)
             }
             .overlay(alignment: .topLeading) {
-                HStack(spacing: 12) {
-                    Text(flag)
-                        .font(.system(size: 40))
-                    Text(countryName)
-                        .font(.voyageDisplay(40, weight: .medium))
-                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .centredOnDisplayCapitals()
+                GeometryReader { proxy in
+                    let flagWidth = JourneyTitle.flagWidth(flag)
+                    let title = JourneyTitle.fit(
+                        countryName,
+                        in: proxy.size.width - Self.titleLeading - Self.titleTrailing - flagWidth - Self.flagGap,
+                        widthAtFullSize: JourneyTitle.widthAtFullSize
+                    )
+                    HStack(spacing: Self.flagGap) {
+                        Text(flag)
+                            .font(.system(size: JourneyTitle.fullSize))
+                        Text(title.lines.joined(separator: "\n"))
+                            .font(.voyageDisplay(title.size, weight: .medium))
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                            .lineLimit(title.lines.count)
+                            // Only a guard against rounding: `fit` already sized it.
+                            .minimumScaleFactor(0.9)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .centredOnDisplayCapitals(lines: title.lines.count)
+                            .accessibilityLabel(countryName)
+                    }
+                    .padding(.leading, Self.titleLeading)
+                    .padding(.trailing, Self.titleTrailing)
+                    .padding(.top, 14)
+                    .accessibilityElement(children: .combine)
                 }
-                .padding(.leading, 20)
-                .padding(.trailing, 96) // clear of the Done button
-                .padding(.top, 14)
-                .accessibilityElement(children: .combine)
             }
             .overlay(alignment: .bottomTrailing) {
                 if let place {

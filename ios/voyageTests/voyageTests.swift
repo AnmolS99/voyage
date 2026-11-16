@@ -34,6 +34,22 @@ final class voyageTests: XCTestCase {
         }
     }
 
+    // The Journey header's title rule, with the same cases as Android's
+    // `JourneyTitleTest`: every letter 20 pt wide at full size
+    func testJourneyTitleFitsLongNamesOnTwoLines() {
+        let width: (String) -> CGFloat = { CGFloat($0.count) * 20 }
+        XCTAssertEqual(JourneyTitle.fit("Chad", in: 222, widthAtFullSize: width),
+                       .init(size: 40, lines: ["Chad"]))
+        XCTAssertEqual(JourneyTitle.fit("United Kingdom", in: 222, widthAtFullSize: width),
+                       .init(size: 31.5, lines: ["United Kingdom"]))
+        XCTAssertEqual(JourneyTitle.fit("United States of America", in: 222, widthAtFullSize: width),
+                       .init(size: 30, lines: ["United States", "of America"]))
+        XCTAssertEqual(JourneyTitle.fit("Democratic Republic of the Congo", in: 222, widthAtFullSize: width),
+                       .init(size: 23, lines: ["Democratic Republic", "of the Congo"]))
+        XCTAssertEqual(JourneyTitle.fit("Kyrgyzstanabcdefghij", in: 222, widthAtFullSize: width),
+                       .init(size: 22, lines: ["Kyrgyzstanabcdefghij"]))
+    }
+
     // Test that globe.scn contains all countries from source data (map and globe consistency)
     func testGlobeAndMapCountryConsistency() {
         // Get expected countries from source data (used by map)
