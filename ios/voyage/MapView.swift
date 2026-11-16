@@ -8,27 +8,43 @@ struct MapView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var lastOffset: CGSize = .zero
     @State private var pathCache = PathCache()
-    @State private var zoomDrag = ZoomDrag()
+    @State private var touches = TouchTracker()
 
-    /// Tap, then press and drag vertically: the one-finger zoom the globe has
-    /// (`GlobeView.Coordinator.handleDoubleTapDrag`), and Android's
+    /// What the touch in progress is doing. The map follows every touch through one
+    /// zero-distance drag, which tells a tap, a pan and a zoom drag apart itself:
+    /// a zero-distance drag recognises the moment a finger lands, so a separate
+    /// `onTapGesture` beside it never fires.
+    ///
+    /// The zoom drag is tap, then press and drag vertically: the one-finger zoom
+    /// the globe has (`GlobeView.Coordinator.handleDoubleTapDrag`), and Android's
     /// `detectZoomDrags`, which both of its renderers share. SwiftUI has no
-    /// tap-then-press gesture before iOS 18, so this follows every touch through a
-    /// zero-distance drag and recognises the second press of a quick double tap.
-    private struct ZoomDrag {
-        /// When the touch in progress went down; nil between touches.
-        var touchDown: Date?
-        /// The last touch that was a tap, which a press soon after it turns into a zoom drag.
-        var lastTap: (time: Date, location: CGPoint)?
-        var isZooming = false
+    /// tap-then-press gesture before iOS 18, hence recognising it by hand.
+    ///
+    /// A reference type, like `PathCache`: bookkeeping a touch must not invalidate
+    /// the view, as every invalidation redraws the whole Canvas.
+    private final class TouchTracker {
+        enum Mode { case undecided, panning, zooming }
+
+        /// Where the touch in progress went down; nil between touches.
+        var startLocation: CGPoint?
+        var downTime = Date.distantPast
+        var mode = Mode.undecided
+        /// A pinch began during this touch, so its end is not a tap.
+        var pinched = false
+        /// Zoom and pan when the touch went down, which a pan and a zoom drag
+        /// both measure from.
         var startScale: CGFloat = 1
         var startOffset: CGSize = .zero
-        var anchor: CGPoint = .zero
+        /// The last touch that was a quick tap, which a press soon after it turns
+        /// into a zoom drag.
+        var lastTap: (time: Date, location: CGPoint)?
 
-        /// Longest touch that still counts as the first tap, and the movement it
-        /// may have — UIKit's long-press defaults, as the globe's recognizer uses.
-        static let maxTapDuration: TimeInterval = 0.4
+        /// Movement a touch may have and still be a tap; past it, it pans.
+        /// `DragGesture`'s default minimum distance.
         static let tapSlop: CGFloat = 10
+        /// Longest touch that still counts as a zoom drag's first tap — UIKit's
+        /// long-press default, as the globe's recognizer uses.
+        static let maxTapDuration: TimeInterval = 0.4
         /// How soon, and how close to the tap, the second press must land.
         static let maxTapInterval: TimeInterval = 0.3
         static let maxTapDistance: CGFloat = 40
@@ -145,13 +161,55 @@ struct MapView: View {
         }
     }
 
-    var body: some View {
-        GeometryReader { geometry in
-            let fit = MapFit(viewSize: geometry.size)
+    /// The Earth texture and the relief as the Canvas draws them every frame:
+    /// decoded once and kept, at most `maxPixelWidth` wide. A `UIImage(named:)`
+    /// of the 8192 px Earth texture was decoded again by every frame that drew
+    /// it, which alone took most of a frame's time.
+    private enum MapImage {
+        /// As wide as Android decodes the same textures.
+        static let maxPixelWidth: CGFloat = 4096
 
-            Canvas { context, size in
+        private static var prepared: [String: UIImage] = [:]
+        private static let lock = NSLock()
+
+        static func named(_ name: String) -> UIImage? {
+            lock.lock()
+            defer { lock.unlock() }
+            if let image = prepared[name] { return image }
+            guard let source = UIImage(named: name) else { return nil }
+            let shrink = min(1, maxPixelWidth / (source.size.width * source.scale))
+            let image = (shrink < 1
+                ? source.preparingThumbnail(of: CGSize(width: source.size.width * shrink,
+                                                       height: source.size.height * shrink))
+                : source.preparingForDisplay()) ?? source
+            prepared[name] = image
+            return image
+        }
+    }
+
+    /// The map's drawing, as a view of its own holding plain values. Its Canvas
+    /// renders off the main thread — hard-lighting the relief over the whole
+    /// map takes several frames' worth of time, which on the main thread held
+    /// up the touches of the very pan or zoom being drawn — so it may read
+    /// nothing from `MapView`'s state or `GlobeState` while drawing: `MapView`
+    /// reads those in its `body` and hands them in.
+    private struct MapCanvas: View {
+        let fit: MapFit
+        let scale: CGFloat
+        let offset: CGSize
+        let countries: [GeoJSONCountry]
+        let entries: [PathCache.Entry]
+        let isDarkMode: Bool
+        let textureName: String
+        let showsTerrain: Bool
+        let visited: Set<String>
+        let wishlist: Set<String>
+        let selected: String?
+
+        var body: some View {
+            Canvas(rendersAsynchronously: true) { context, size in
                 // Draw ocean background (fallback under texture)
-                let oceanColor = globeState.isDarkMode ? AppColors.oceanDark : AppColors.oceanMap
+                let oceanColor = isDarkMode ? AppColors.oceanDark : AppColors.oceanMap
                 context.fill(
                     Path(CGRect(origin: .zero, size: size)),
                     with: .color(oceanColor)
@@ -175,7 +233,7 @@ struct MapView: View {
 
                 // Draw map texture background
                 var hasTexture = false
-                if let textureImage = UIImage(named: globeState.mapStyle.textureName) {
+                if let textureImage = MapImage.named(textureName) {
                     let resolved = context.resolve(Image(uiImage: textureImage))
                     context.draw(resolved, in: mapRect)
                     hasTexture = true
@@ -183,7 +241,6 @@ struct MapView: View {
 
                 // Draw polygon countries from the path cache through a canvas-level
                 // transform (pan/zoom), so paths are built once instead of per frame.
-                pathCache.rebuildIfNeeded(countries: countries, mapWidth: fit.mapWidth)
 
                 var mapContext = context
                 mapContext.translateBy(x: size.width / 2 + offset.width, y: size.height / 2 + offset.height)
@@ -192,10 +249,10 @@ struct MapView: View {
                 mapContext.translateBy(x: fit.horizontalOffset, y: fit.verticalOffset)
 
                 var borders: [(paths: [Path], shading: GraphicsContext.Shading, width: CGFloat)] = []
-                for entry in pathCache.entries {
-                    let isVisited = globeState.visitedCountries.contains(entry.name)
-                    let isWishlist = globeState.wishlistCountries.contains(entry.name)
-                    let isSelected = globeState.selectedCountry == entry.name
+                for entry in entries {
+                    let isVisited = visited.contains(entry.name)
+                    let isWishlist = wishlist.contains(entry.name)
+                    let isSelected = selected == entry.name
                     // Divide by scale: the canvas transform magnifies strokes, border width stays constant on screen
                     let borderWidth: CGFloat = (isSelected ? 1.5 : 0.5) / scale
                     let isBoth = isVisited && isWishlist
@@ -233,7 +290,7 @@ struct MapView: View {
                 // gray leaves a color as it is, so the ocean and flat land keep their
                 // palette colors and only slopes shade. Over the fills, under the
                 // borders and markers — which the globe leaves unshaded too.
-                if globeState.showsTerrain, let relief = TerrainRelief.image {
+                if showsTerrain, let relief = MapImage.named(TerrainRelief.imageName) {
                     var reliefContext = context
                     reliefContext.blendMode = .hardLight
                     reliefContext.draw(reliefContext.resolve(Image(uiImage: relief)), in: mapRect)
@@ -250,9 +307,9 @@ struct MapView: View {
                 // on the map with a screen-space floor, so they stay visible and tappable at any zoom.
                 let dotRadius = fit.dotRadius(scale: scale)
                 for country in countries where country.isPointCountry {
-                    let isVisited = globeState.visitedCountries.contains(country.name)
-                    let isWishlist = globeState.wishlistCountries.contains(country.name)
-                    let isSelected = globeState.selectedCountry == country.name
+                    let isVisited = visited.contains(country.name)
+                    let isWishlist = wishlist.contains(country.name)
+                    let isSelected = selected == country.name
                     let borderWidth: CGFloat = isSelected ? 1.5 : 0.5
                     let isBoth = isVisited && isWishlist
 
@@ -290,7 +347,7 @@ struct MapView: View {
                 }
 
                 // Draw a seal at each capital of the selected country
-                if let selectedCountry = globeState.selectedCountry,
+                if let selectedCountry = selected,
                    let country = countries.first(where: { $0.name == selectedCountry }) {
                     for capital in country.capitals {
                         let center = fit.point(lat: capital.lat, lon: capital.lon).applying(transform)
@@ -302,9 +359,28 @@ struct MapView: View {
                     }
                 }
             }
+        }
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let fit = MapFit(viewSize: geometry.size)
+
+            // Rebuilt here, not while drawing: the Canvas draws off the main thread.
+            let _ = pathCache.rebuildIfNeeded(countries: countries, mapWidth: fit.mapWidth)
+
+            MapCanvas(fit: fit, scale: scale, offset: offset,
+                      countries: countries, entries: pathCache.entries,
+                      isDarkMode: globeState.isDarkMode,
+                      textureName: globeState.mapStyle.textureName,
+                      showsTerrain: globeState.showsTerrain,
+                      visited: globeState.visitedCountries,
+                      wishlist: globeState.wishlistCountries,
+                      selected: globeState.selectedCountry)
             .gesture(
                 MagnifyGesture()
                     .onChanged { value in
+                        touches.pinched = true
                         let newScale = min(max(lastScale * value.magnification, 1.0), 10.0)
 
                         // Keep the pinch's anchor point stationary
@@ -319,29 +395,11 @@ struct MapView: View {
                     }
             )
             .simultaneousGesture(
-                DragGesture()
-                    .onChanged { value in
-                        // A zoom drag's finger zooms; it does not also pan.
-                        guard !zoomDrag.isZooming else { return }
-                        let newOffset = CGSize(
-                            width: lastOffset.width + value.translation.width,
-                            height: lastOffset.height + value.translation.height
-                        )
-                        offset = clampOffset(newOffset, scale: scale, viewSize: geometry.size)
-                    }
-                    .onEnded { _ in
-                        lastOffset = offset
-                    }
-            )
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in trackZoomDrag(value, viewSize: geometry.size) }
-                    .onEnded { value in endZoomDrag(value) }
+                DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                    .onChanged { value in touchChanged(value, viewSize: geometry.size) }
+                    .onEnded { value in touchEnded(value, viewSize: geometry.size) }
             )
             .contentShape(Rectangle())
-            .onTapGesture(coordinateSpace: .local) { location in
-                handleTap(at: location, in: geometry.size)
-            }
             // A pan built against the old bounds is meaningless after a rotation, so
             // zoom resets with the view size — as on Android.
             .onChange(of: geometry.size) { _, size in resetZoom(viewSize: size) }
@@ -371,43 +429,67 @@ struct MapView: View {
         lastOffset = offset
     }
 
-    /// Every change of every touch: a new touch that presses soon after a tap, near
-    /// it, starts a zoom drag about where it pressed, as a pinch zooms about its
-    /// anchor. Nothing changes until the finger moves, so a plain double tap
-    /// stays a plain double tap.
-    private func trackZoomDrag(_ value: DragGesture.Value, viewSize: CGSize) {
-        if zoomDrag.touchDown == nil {
-            zoomDrag.touchDown = value.time
-            if let tap = zoomDrag.lastTap,
-               value.time.timeIntervalSince(tap.time) <= ZoomDrag.maxTapInterval,
+    /// Every change of every touch. A touch that presses soon after a tap, near
+    /// it, is a zoom drag about where it pressed, as a pinch zooms about its
+    /// anchor; any other pans once it has moved past the tap slop. Nothing changes
+    /// until the finger moves, so a tap stays a tap.
+    private func touchChanged(_ value: DragGesture.Value, viewSize: CGSize) {
+        if touches.startLocation != value.startLocation {
+            // A new touch — told by where it started rather than by the last one
+            // having ended, as a cancelled drag never reports its end.
+            touches.startLocation = value.startLocation
+            touches.downTime = value.time
+            touches.mode = .undecided
+            touches.pinched = false
+            touches.startScale = scale
+            touches.startOffset = offset
+            if let tap = touches.lastTap,
+               value.time.timeIntervalSince(tap.time) <= TouchTracker.maxTapInterval,
                hypot(value.startLocation.x - tap.location.x,
-                     value.startLocation.y - tap.location.y) <= ZoomDrag.maxTapDistance {
-                zoomDrag.isZooming = true
-                zoomDrag.startScale = scale
-                zoomDrag.startOffset = offset
-                zoomDrag.anchor = value.startLocation
+                     value.startLocation.y - tap.location.y) <= TouchTracker.maxTapDistance {
+                touches.mode = .zooming
             }
-            zoomDrag.lastTap = nil
+            touches.lastTap = nil
         }
-        guard zoomDrag.isZooming else { return }
 
-        let newScale = Self.zoomDragScale(from: zoomDrag.startScale, travel: value.translation.height)
-        offset = zoomedOffset(about: zoomDrag.anchor, from: zoomDrag.startOffset,
-                              fromScale: zoomDrag.startScale, toScale: newScale, viewSize: viewSize)
-        scale = newScale
+        switch touches.mode {
+        case .zooming:
+            let newScale = Self.zoomDragScale(from: touches.startScale, travel: value.translation.height)
+            guard newScale != scale else { return }
+            offset = zoomedOffset(about: value.startLocation, from: touches.startOffset,
+                                  fromScale: touches.startScale, toScale: newScale, viewSize: viewSize)
+            scale = newScale
+        case .undecided:
+            guard Self.travel(of: value) > TouchTracker.tapSlop else { return }
+            touches.mode = .panning
+            fallthrough
+        case .panning:
+            let newOffset = CGSize(
+                width: touches.startOffset.width + value.translation.width,
+                height: touches.startOffset.height + value.translation.height
+            )
+            offset = clampOffset(newOffset, scale: scale, viewSize: viewSize)
+        }
     }
 
-    private func endZoomDrag(_ value: DragGesture.Value) {
-        if zoomDrag.isZooming {
-            lastScale = scale
-            lastOffset = offset
-        } else if let down = zoomDrag.touchDown,
-                  value.time.timeIntervalSince(down) <= ZoomDrag.maxTapDuration,
-                  hypot(value.translation.width, value.translation.height) <= ZoomDrag.tapSlop {
-            zoomDrag.lastTap = (value.time, value.location)
+    private func touchEnded(_ value: DragGesture.Value, viewSize: CGSize) {
+        lastScale = scale
+        lastOffset = offset
+
+        // A touch that went nowhere is a tap, whatever it might have become.
+        if touches.mode != .panning, !touches.pinched,
+           Self.travel(of: value) <= TouchTracker.tapSlop {
+            handleTap(at: value.location, in: viewSize)
+            if value.time.timeIntervalSince(touches.downTime) <= TouchTracker.maxTapDuration {
+                touches.lastTap = (value.time, value.location)
+            }
         }
-        zoomDrag.touchDown = nil
-        zoomDrag.isZooming = false
+        touches.startLocation = nil
+        touches.mode = .undecided
+    }
+
+    private static func travel(of value: DragGesture.Value) -> CGFloat {
+        hypot(value.translation.width, value.translation.height)
     }
 
     /// The pan that keeps view point `anchor` still while the zoom goes from
