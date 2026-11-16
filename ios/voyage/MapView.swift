@@ -162,28 +162,32 @@ struct MapView: View {
     }
 
     /// The Earth texture and the relief as the Canvas draws them every frame:
-    /// decoded once and kept, at most `maxPixelWidth` wide. A `UIImage(named:)`
-    /// of the 8192 px Earth texture was decoded again by every frame that drew
-    /// it, which alone took most of a frame's time.
+    /// decoded once and kept. A `UIImage(named:)` of the 8192 px Earth texture
+    /// was decoded again by every frame that drew it, which alone took most of
+    /// a frame's time.
+    ///
+    /// The texture is kept at its full size — at minimum zoom the map is
+    /// already wider in pixels than half of it — which is about 134 MB decoded,
+    /// so only the style in use is held: choosing another lets the last one go.
     private enum MapImage {
-        /// As wide as Android decodes the same textures.
-        static let maxPixelWidth: CGFloat = 4096
+        static let relief: UIImage? = decoded(TerrainRelief.imageName)
 
-        private static var prepared: [String: UIImage] = [:]
+        private static var texture: (name: String, image: UIImage)?
         private static let lock = NSLock()
 
-        static func named(_ name: String) -> UIImage? {
+        static func texture(named name: String) -> UIImage? {
             lock.lock()
             defer { lock.unlock() }
-            if let image = prepared[name] { return image }
-            guard let source = UIImage(named: name) else { return nil }
-            let shrink = min(1, maxPixelWidth / (source.size.width * source.scale))
-            let image = (shrink < 1
-                ? source.preparingThumbnail(of: CGSize(width: source.size.width * shrink,
-                                                       height: source.size.height * shrink))
-                : source.preparingForDisplay()) ?? source
-            prepared[name] = image
+            if let texture, texture.name == name { return texture.image }
+            texture = nil
+            guard let image = decoded(name) else { return nil }
+            texture = (name, image)
             return image
+        }
+
+        private static func decoded(_ name: String) -> UIImage? {
+            guard let source = UIImage(named: name) else { return nil }
+            return source.preparingForDisplay() ?? source
         }
     }
 
@@ -233,7 +237,7 @@ struct MapView: View {
 
                 // Draw map texture background
                 var hasTexture = false
-                if let textureImage = MapImage.named(textureName) {
+                if let textureImage = MapImage.texture(named: textureName) {
                     let resolved = context.resolve(Image(uiImage: textureImage))
                     context.draw(resolved, in: mapRect)
                     hasTexture = true
@@ -290,7 +294,7 @@ struct MapView: View {
                 // gray leaves a color as it is, so the ocean and flat land keep their
                 // palette colors and only slopes shade. Over the fills, under the
                 // borders and markers — which the globe leaves unshaded too.
-                if showsTerrain, let relief = MapImage.named(TerrainRelief.imageName) {
+                if showsTerrain, let relief = MapImage.relief {
                     var reliefContext = context
                     reliefContext.blendMode = .hardLight
                     reliefContext.draw(reliefContext.resolve(Image(uiImage: relief)), in: mapRect)
