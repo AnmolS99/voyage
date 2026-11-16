@@ -42,7 +42,7 @@ struct GlobeBackdrop: View {
 }
 
 struct HomeView: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     @State private var showingCountryList = false
     @State private var showingExplore = false
 

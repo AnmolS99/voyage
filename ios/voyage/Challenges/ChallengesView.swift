@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Challenges tab: a menu of playable game modes with lifetime statistics.
 struct ChallengesView: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     @ObservedObject private var statsStore = ChallengeStatsStore.shared
     @State private var activeGame: ActiveGame?
 
@@ -164,7 +164,7 @@ struct GameModeCard: View {
 /// region's lifetime stats (best result and games played).
 struct RegionSelectView: View {
     let mode: ChallengeGameMode
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     let onPlay: (ChallengeRegion) -> Void
 
     @ObservedObject private var statsStore = ChallengeStatsStore.shared

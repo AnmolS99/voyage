@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 struct ContentView: View {
-    @StateObject private var globeState = GlobeState()
+    @State private var globeState = GlobeState()
     @State private var selectedTab = 0
     @State private var showDailyBadge = false
     @State private var showDailyToast = false
@@ -188,7 +188,11 @@ enum ThemeMode: String, CaseIterable {
     }
 }
 
-class GlobeState: ObservableObject {
+/// `@Observable`, so a view is re-evaluated only when a property it reads
+/// changes: a tap on the globe no longer wakes the four tabs that show no
+/// selection (issue #161).
+@Observable
+final class GlobeState {
     /// A one-shot camera flight request, consumed by the globe coordinator.
     /// A nil distance keeps the camera at its current zoom while centering.
     struct CameraTarget: Equatable {
@@ -197,87 +201,35 @@ class GlobeState: ObservableObject {
         let distance: Float?
     }
 
-    @Published var selectedCountry: String?
-    @Published var pendingCameraTarget: CameraTarget?
+    var selectedCountry: String?
+    var pendingCameraTarget: CameraTarget?
     /// Temporary per-country fill colors (challenge games); takes precedence
     /// over visited/wishlist coloring on the globe. Not persisted.
-    @Published var countryHighlightColors: [String: UIColor] = [:]
+    var countryHighlightColors: [String: UIColor] = [:]
     /// Whether selecting a country shows its capital marker on the globe.
     /// Challenge games turn this off — the marker is irrelevant there and
     /// would hint at the answer. Not persisted.
     var showsCapitalMarker = true
-    @Published var selectedCountries: Set<String> = []
-    @Published var visitedCountries: Set<String> = []
-    @Published var wishlistCountries: Set<String> = []
-    @Published var checkedCities: [String: Set<String>] = [:]
-    @Published var checkedAttractions: [String: Set<String>] = [:]
-    /// Closest the camera may get to the globe's center: just above the surface,
-    /// with the camera's zNear clearing it at `minCameraDistance - 1`.
-    static let minCameraDistance: Float = 1.1
-    /// Furthest the camera may get from the globe's center.
-    ///
-    /// Far enough out that the whole world is in frame — the globe still spans
-    /// about 40% of the screen's height — and no further: past this it is a small
-    /// ball in a lot of empty space, with nothing to see that the last step out
-    /// did not already show. Android clamps to the same 6.0, and its
-    /// `GlobeCameraTest` pins it as this does.
-    ///
-    /// Read by `handlePinch` and `handleDoubleTapDrag`, which are the only two
-    /// ways to zoom: they used to undercut it with their own `min(8.0, ...)`,
-    /// which left the constant describing nothing.
-    static let maxCameraDistance: Float = 6.0
-
-    /// How far from the globe's center the camera must sit for a country to fill
-    /// the view: a cap of `radiusDegrees` around `latitude`, fitted to the narrower
-    /// axis of a view `aspect` (width ÷ height) wide.
-    ///
-    /// A point θ from the view's center is seen at α off-axis, where
-    /// tan α = sin θ / (d − cos θ); solving that for d with tan α at `fitMargin` of
-    /// the narrower half-field of view gives the distance. The camera can't tilt
-    /// past `maxCameraLatitude`, so a cap centered beyond it is widened by the
-    /// shortfall — the camera looks at it from the side.
-    ///
-    /// Clamped to `minFitDistance...maxFitDistance`: a microstate still shows its
-    /// neighbors, and nothing pulls back to the zoom-out limit. Android's
-    /// `GlobeCamera.distanceToFit` is the same formula with the same constants;
-    /// `CountryFocusTests` and its `GlobeCameraTest` pin the same distances.
-    static func distanceToFit(radiusDegrees: Double, latitude: Double, aspect: Double) -> Float {
-        let shortfall = max(0, abs(latitude) - maxCameraLatitude)
-        let theta = (radiusDegrees + shortfall) * .pi / 180
-        let tanHalf = tan(cameraFieldOfView / 2 * .pi / 180) * min(1, aspect) * fitMargin
-        let distance = Float(cos(theta) + sin(theta) / tanHalf)
-        return max(minFitDistance, min(maxFitDistance, distance))
-    }
-    /// `SCNCamera.fieldOfView` in `GlobeScene` — vertical, as on Android.
-    static let cameraFieldOfView = 45.0
-    /// The `±.pi / 2.5` tilt clamp on `currentRotationX`, in degrees.
-    static let maxCameraLatitude = 72.0
-    /// Share of the narrower half-field of view a selected country may span.
-    static let fitMargin = 0.85
-    /// Closest a selection flies in: Luxembourg, Vatican City, every microstate dot.
-    static let minFitDistance: Float = 1.25
-    /// Furthest a selection pulls back: Russia in portrait lands just inside it.
-    static let maxFitDistance: Float = 4.8
+    var visitedCountries: Set<String> = []
+    var wishlistCountries: Set<String> = []
+    var checkedCities: [String: Set<String>] = [:]
+    var checkedAttractions: [String: Set<String>] = [:]
     /// The appearance actually on screen — `themeMode` resolved against the
     /// system's. Persistent instances derive it; in-memory ones (challenge games)
     /// copy it from the main state.
-    @Published var isDarkMode: Bool = false
-    @Published private(set) var themeMode: ThemeMode = .daylight
+    var isDarkMode: Bool = false
+    private(set) var themeMode: ThemeMode = .daylight
     /// Last known system appearance; only meaningful while `themeMode` is `.system`.
-    private var systemIsDark = GlobeState.currentSystemIsDark()
-    @Published var isAutoRotating: Bool = true
-    @Published var targetCountryCenter: (lat: Double, lon: Double)?
-    @Published var viewMode: ViewMode = .globe
-    @Published var globeStyle: GlobeStyle = .realistic
-    @Published var mapStyle: GlobeStyle = .realistic
+    @ObservationIgnored private var systemIsDark = GlobeState.currentSystemIsDark()
+    var isAutoRotating: Bool = true
+    var targetCountryCenter: (lat: Double, lon: Double)?
+    var viewMode: ViewMode = .globe
+    var globeStyle: GlobeStyle = .realistic
+    var mapStyle: GlobeStyle = .realistic
     /// Whether the globe and the map shade terrain (`TerrainRelief`). One switch
     /// for both, so they never disagree; on unless turned off, as on Android.
-    @Published var showsTerrain: Bool = true
+    var showsTerrain: Bool = true
     let totalUNCountries = 195
-
-    // Flag codes and capital names loaded from GeoJSON
-    private var countryFlagCodes: [String: String] = [:]
-    private var countryCapitals: [String: String] = [:]
 
     // Territories that are not UN member or observer states (excluded from progress count)
     static let nonUNTerritories: Set<String> = [
@@ -336,9 +288,20 @@ class GlobeState: ObservableObject {
     private let checkedCitiesKey = "checkedCities"
     private let checkedAttractionsKey = "checkedAttractions"
 
+    /// A throwaway globe for a challenge game: nothing saved, no idle spin and
+    /// no capital seal, looking as `mainState`'s does.
+    static func forGame(matching mainState: GlobeState) -> GlobeState {
+        let globe = GlobeState(inMemory: true)
+        globe.globeStyle = mainState.globeStyle
+        globe.showsTerrain = mainState.showsTerrain
+        globe.isDarkMode = mainState.isDarkMode
+        globe.isAutoRotating = false
+        globe.showsCapitalMarker = false
+        return globe
+    }
+
     init(inMemory: Bool = false) {
         isPersistent = !inMemory
-        loadCountryInfo()
 
         guard isPersistent else { return }
         loadData()
@@ -351,18 +314,6 @@ class GlobeState: ObservableObject {
         )
 
         iCloudStore.synchronize()
-    }
-
-    private func loadCountryInfo() {
-        let countries = CountryDataCache.shared.countries
-        for country in countries {
-            if let flagCode = country.flagCode {
-                countryFlagCodes[country.name] = flagCode
-            }
-            if let capitals = country.capitalsLine {
-                countryCapitals[country.name] = capitals
-            }
-        }
     }
 
     // MARK: - Persistence
@@ -576,7 +527,6 @@ class GlobeState: ObservableObject {
 
     func selectCountry(_ name: String, center: (lat: Double, lon: Double)? = nil) {
         selectedCountry = name
-        selectedCountries.insert(name)
         isAutoRotating = false
         targetCountryCenter = center
     }
@@ -667,12 +617,7 @@ class GlobeState: ObservableObject {
     /// Bumped each time Home's tab is re-selected while the globe is showing;
     /// the globe answers each new value by turning to where the user is.
     /// Not persisted. Android `VoyageState.homeRequest`.
-    @Published private(set) var homeRequest = 0
-
-    /// How long the globe takes to turn back home — longer than a selection's
-    /// 0.8 s flight, since it can be half a turn and a full zoom out away.
-    /// Android `GlobeFlight.RETURN_HOME_SECONDS`.
-    static let returnHomeDuration: TimeInterval = 1.2
+    private(set) var homeRequest = 0
 
     /// Sends the globe home: deselects, so the country's card closes, and asks
     /// the globe to fly to the user's time zone's city (`Daylight.location`), or
@@ -688,14 +633,12 @@ class GlobeState: ObservableObject {
 
     func resetSelection() {
         selectedCountry = nil
-        selectedCountries.removeAll()
         targetCountryCenter = nil
         isAutoRotating = true
     }
 
     func resetAllData() {
         selectedCountry = nil
-        selectedCountries.removeAll()
         visitedCountries.removeAll()
         wishlistCountries.removeAll()
         checkedCities.removeAll()
@@ -711,24 +654,20 @@ class GlobeState: ObservableObject {
 
     // Get flag emoji for a country
     func flagForCountry(_ name: String) -> String {
-        if let code = countryFlagCodes[name] {
-            return flagEmoji(from: code)
+        if let code = CountryDataCache.shared.countryNamed(name)?.flagCode {
+            return flagEmojiFromCode(code)
         }
         return "🌍" // Generic globe emoji as fallback
     }
 
     /// "La Paz, Sucre" — every capital of the country, the main one first.
     func capitalsForCountry(_ name: String) -> String? {
-        countryCapitals[name]
+        CountryDataCache.shared.countryNamed(name)?.capitalsLine
     }
 
     /// Whether the country counts toward the UN-country progress total.
     func countsTowardProgress(_ name: String) -> Bool {
         !Self.nonUNTerritories.contains(name)
-    }
-
-    private func flagEmoji(from countryCode: String) -> String {
-        flagEmojiFromCode(countryCode)
     }
 }
 

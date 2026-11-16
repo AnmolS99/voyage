@@ -22,14 +22,14 @@ enum Continent: String, CaseIterable {
     }
 
     var countries: Set<String> {
-        Set(ContinentData.countriesByContinent[self] ?? [])
+        ContinentData.countriesByContinent[self] ?? []
     }
 
     /// The UN states on this continent — what its Explorer medal and its
     /// challenge region both count, so the two never disagree (Android
     /// `ContinentIndex.unCountries`).
     var unCountries: Set<String> {
-        countries.subtracting(GlobeState.nonUNTerritories)
+        ContinentData.unCountriesByContinent[self] ?? []
     }
 
     /// Initialize from raw string value (e.g., from GeoJSON)
@@ -48,32 +48,26 @@ enum Continent: String, CaseIterable {
 }
 
 struct ContinentData {
-    /// Lazily loaded country-to-continent mapping from GeoJSON
-    /// This is the single source of truth for which countries belong to which continent
-    private static var _countriesByContinent: [Continent: [String]]?
-
-    static var countriesByContinent: [Continent: [String]] {
-        if let cached = _countriesByContinent {
-            return cached
-        }
-
-        var mapping: [Continent: [String]] = [:]
+    /// Country-to-continent mapping from GeoJSON, built once: it depends only
+    /// on `world.geojson`. This is the single source of truth for which
+    /// countries belong to which continent (polygon and point countries alike).
+    static let countriesByContinent: [Continent: Set<String>] = {
+        var mapping: [Continent: Set<String>] = [:]
         for continent in Continent.allCases {
             mapping[continent] = []
         }
-
-        // Load all countries from GeoJSON (includes both polygon and point countries)
-        let geoJSONCountries = CountryDataCache.shared.countries
-        for country in geoJSONCountries {
+        for country in CountryDataCache.shared.countries {
             if let continentStr = country.continent,
                let continent = Continent(rawContinent: continentStr) {
-                mapping[continent, default: []].append(country.name)
+                mapping[continent, default: []].insert(country.name)
             }
         }
-
-        _countriesByContinent = mapping
         return mapping
-    }
+    }()
+
+    /// `countriesByContinent` without the non-UN territories.
+    static let unCountriesByContinent: [Continent: Set<String>] =
+        countriesByContinent.mapValues { $0.subtracting(GlobeState.nonUNTerritories) }
 
     static func continent(for country: String) -> Continent? {
         for (continent, countries) in countriesByContinent {
@@ -103,10 +97,5 @@ struct ContinentData {
     /// Continents with no visited country, in `Continent.allCases` order.
     static func remainingContinentNames(from visited: Set<String>) -> [String] {
         Continent.allCases.filter { !hasVisited($0, from: visited) }.map(\.rawValue)
-    }
-
-    /// Reset cached data (useful for testing)
-    static func resetCache() {
-        _countriesByContinent = nil
     }
 }

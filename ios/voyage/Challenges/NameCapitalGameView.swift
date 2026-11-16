@@ -11,7 +11,7 @@ struct NameCapitalGameView: View {
     let onDismiss: () -> Void
 
     @StateObject private var viewModel: NameCapitalGameViewModel
-    @StateObject private var gameGlobe: GlobeState
+    @State private var gameGlobe: GlobeState
     @State private var searchText = ""
     @State private var feedback: Feedback?
     @State private var feedbackToken = 0
@@ -41,13 +41,7 @@ struct NameCapitalGameView: View {
         self.isDarkMode = mainState.isDarkMode
         _viewModel = StateObject(wrappedValue: NameCapitalGameViewModel(region: region))
 
-        let globe = GlobeState(inMemory: true)
-        globe.globeStyle = mainState.globeStyle
-        globe.showsTerrain = mainState.showsTerrain
-        globe.isDarkMode = mainState.isDarkMode
-        globe.isAutoRotating = false
-        globe.showsCapitalMarker = false
-        _gameGlobe = StateObject(wrappedValue: globe)
+        _gameGlobe = State(initialValue: .forGame(matching: mainState))
 
         capitalSuggestions = .plain(Array(Set(CountryDataCache.shared.countries.flatMap(\.capitalNames))))
     }

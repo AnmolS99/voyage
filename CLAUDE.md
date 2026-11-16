@@ -75,11 +75,11 @@ home: it deselects and flies, at the launch distance, to where the user is
 taken to be — their time zone's city, `Daylight.location` on each, which asks
 for no location (see [Theme](#theme)); a zone with no city gets the launch
 pose — over 1.2 s
-(`GlobeFlight.RETURN_HOME_SECONDS`, iOS `GlobeState.returnHomeDuration`),
+(`GlobeFlight.RETURN_HOME_SECONDS`, iOS `GlobeCamera.returnHomeDuration`),
 where the idle spin carries on — `returnHome` and `homeRequest` on each
 platform's state. Selecting a country flies the camera to it via
 `globe/GlobeFlight.kt`, a port of `GlobeView.Coordinator.flyTo` down to its
-easing curve. How far back that flight settles is fitted to the country: `CountryFocus` (the smallest cap around its main landmass, in each platform's `CountryHitTester`) and `distanceToFit` (iOS `GlobeState`, Android `GlobeCamera`) size it to the view's narrower axis, so Luxembourg fills the screen and Russia fits in it — same algorithm, margin and clamps on both, pinned by `CountryFocusTests` and `CountryHitTesterTest`/`GlobeCameraTest`. Both platforms integrate one step per rendered frame — on Android a
+easing curve. How far back that flight settles is fitted to the country: `CountryFocus` (the smallest cap around its main landmass, in each platform's `CountryHitTester`) and `distanceToFit` (`GlobeCamera` on both) size it to the view's narrower axis, so Luxembourg fills the screen and Russia fits in it — same algorithm, margin and clamps on both, pinned by `CountryFocusTests` and `CountryHitTesterTest`/`GlobeCameraTest`. Both platforms integrate one step per rendered frame — on Android a
 flight, a coasting flick and the idle spin are three cases of one `advance()`
 step, so exactly one of them writes the camera per frame — and the decay curve,
 pan speed, idle rate and flight timing are pinned by tests on each; retuning any
@@ -250,7 +250,7 @@ cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig
 - **GeoJSON** for country boundary data
 - **Supabase** for daily challenge backend
 
-The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: daylight/system/light/dark, as on Android — see [Theme](#theme)). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
+The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `@Observable` class passed to every tab (so a view is re-evaluated only when a property it reads changes — `GlobeView.observeState` names the globe's, since `updateUIView` returns early past some) that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: daylight/system/light/dark, as on Android — see [Theme](#theme)). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
 
 ### Data persistence
 
@@ -271,7 +271,8 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 | `Earcut.swift`              | Ear-clipping triangulation (port of mapbox/earcut) |
 | `GeoJSONParser.swift`       | Parses world.geojson into country data            |
 | `CountryHitTester.swift`    | Shared tap-to-country lookup (globe + map)        |
-| `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights   |
+| `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights; `countryNamed` / `countryWithIsoCode` lookups |
+| `GlobeCamera.swift`         | Camera limits and `distanceToFit` (Android `GlobeCamera`) |
 | `MapView.swift`             | 2D flat map view alternative                      |
 | `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
 | `Typography.swift`          | `Font.voyageDisplay` / `.voyageText` (see Typography below) |

@@ -182,7 +182,7 @@ final class CountryHitTester {
 /// around its main landmass, as a center and an angular radius in degrees.
 ///
 /// The globe turns the radius into a camera distance for the view it is in
-/// (`GlobeState.distanceToFit`), so Luxembourg fills the screen and Russia fits
+/// (`GlobeCamera.distanceToFit`), so Luxembourg fills the screen and Russia fits
 /// inside it instead of every country landing at one fixed zoom.
 ///
 /// Android's `CountryFocus` is a port of this, down to the iteration count:

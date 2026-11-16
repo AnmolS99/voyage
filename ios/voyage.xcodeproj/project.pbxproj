@@ -35,6 +35,7 @@
 		E81234560014 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550014 /* SettingsView.swift */; };
 		E81234560018 /* GlobeCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550018 /* GlobeCache.swift */; };
 		E81234560046 /* GlobeInertia.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550051 /* GlobeInertia.swift */; };
+		E81234560161 /* GlobeCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550161 /* GlobeCamera.swift */; };
 		E81234560019 /* globe.scn in Resources */ = {isa = PBXBuildFile; fileRef = E81234550019 /* globe.scn */; };
 		E81234560020 /* voyageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550020 /* voyageTests.swift */; };
 		E81234560021 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550021 /* AchievementsView.swift */; };
@@ -136,6 +137,7 @@
 		E81234550016 /* voyage.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = voyage.entitlements; sourceTree = "<group>"; };
 		E81234550018 /* GlobeCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeCache.swift; sourceTree = "<group>"; };
 		E81234550051 /* GlobeInertia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeInertia.swift; sourceTree = "<group>"; };
+		E81234550161 /* GlobeCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobeCamera.swift; sourceTree = "<group>"; };
 		E81234550019 /* globe.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = globe.scn; sourceTree = "<group>"; };
 		E81234550020 /* voyageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = voyageTests.swift; sourceTree = "<group>"; };
 		E81234550021 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
@@ -252,6 +254,7 @@
 				E81234590003 /* CapitalMarker.swift */,
 				E81234550018 /* GlobeCache.swift */,
 				E81234550051 /* GlobeInertia.swift */,
+				E81234550161 /* GlobeCamera.swift */,
 				E81234550021 /* AchievementsView.swift */,
 				E81234550052 /* MedalOverlayView.swift */,
 				E81234550028 /* Achievement.swift */,
@@ -509,6 +512,7 @@
 				E81234590004 /* CapitalMarker.swift in Sources */,
 				E81234560018 /* GlobeCache.swift in Sources */,
 				E81234560046 /* GlobeInertia.swift in Sources */,
+				E81234560161 /* GlobeCamera.swift in Sources */,
 				E81234560021 /* AchievementsView.swift in Sources */,
 				E81234560047 /* MedalOverlayView.swift in Sources */,
 				E81234560028 /* Achievement.swift in Sources */,

@@ -27,7 +27,7 @@ final class DailyChallengeViewModel: ObservableObject {
 
     var answerCountry: GeoJSONCountry? {
         guard let isoCode = challenge?.answer else { return nil }
-        return CountryDataCache.shared.countries.first { $0.flagCode == isoCode }
+        return CountryDataCache.shared.countryWithIsoCode(isoCode)
     }
 
     var remainingAttempts: Int {

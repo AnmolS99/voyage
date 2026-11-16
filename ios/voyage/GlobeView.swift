@@ -5,7 +5,7 @@ import UIKit
 import simd
 
 struct GlobeView: UIViewRepresentable {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     /// When set, tapping a country calls this instead of selecting it —
     /// used by challenge games to treat taps as guesses.
     var onCountryTapped: ((String) -> Void)? = nil
@@ -45,7 +45,21 @@ struct GlobeView: UIViewRepresentable {
         return sceneView
     }
 
+    /// Reads everything the globe draws from. `GlobeState` is `@Observable`, so
+    /// SwiftUI calls `updateUIView` again only for properties read during it, and
+    /// the coordinator's updates below return early — before the scene has
+    /// loaded, say — without reaching some of them. Reading them all here keeps
+    /// the globe subscribed whichever path an update takes.
+    private func observeState() {
+        _ = (globeState.selectedCountry, globeState.targetCountryCenter,
+             globeState.pendingCameraTarget, globeState.homeRequest,
+             globeState.isAutoRotating, globeState.visitedCountries,
+             globeState.wishlistCountries, globeState.countryHighlightColors,
+             globeState.globeStyle, globeState.showsTerrain)
+    }
+
     func updateUIView(_ uiView: SCNView, context: Context) {
+        observeState()
         context.coordinator.onCountryTapped = onCountryTapped
         context.coordinator.updateGlobeStyle()
         context.coordinator.updateTerrain()
@@ -67,7 +81,6 @@ struct GlobeView: UIViewRepresentable {
         var globeNode: SCNNode?
         var countryNodes: [String: SCNNode] = [:]
         var originalColors: [String: UIColor] = [:]
-        var cachedCountries: [GeoJSONCountry] = []
         /// Material shared by all outline sector nodes (one uniform update per zoom change)
         var sharedOutlineMaterial: SCNMaterial?
         /// Overlay node drawing the selected country's outline (thicker, colored, raised)
@@ -172,7 +185,7 @@ struct GlobeView: UIViewRepresentable {
             let quadratic = basePanRotationSpeed * distanceRatio * distanceRatio
             guard cameraDistance < referenceCameraDistance else { return quadratic }
 
-            let zoomOutProgress = (cameraDistance - GlobeState.minCameraDistance) / (referenceCameraDistance - GlobeState.minCameraDistance)
+            let zoomOutProgress = (cameraDistance - GlobeCamera.minCameraDistance) / (referenceCameraDistance - GlobeCamera.minCameraDistance)
             let tracking = fullZoomTrackingFactor
                 + (1 - fullZoomTrackingFactor) * max(0, min(1, zoomOutProgress))
             return min(quadratic, basePanRotationSpeed * tracking * screenScale(cameraDistance: cameraDistance))
@@ -220,7 +233,6 @@ struct GlobeView: UIViewRepresentable {
             self.lastHomeRequest = globeState.homeRequest
             super.init()
             // Cache countries data once
-            self.cachedCountries = CountryDataCache.shared.countries
         }
 
         deinit {
@@ -250,7 +262,7 @@ struct GlobeView: UIViewRepresentable {
         /// outlines fattening once past the old 1/6 floor. Runs inside the caller's
         /// SCNTransaction, so animated zooms animate the sizing too.
         func updateZoomDependentSizing(cameraDistance: Float) {
-            let minScale = Self.screenScale(cameraDistance: GlobeState.minCameraDistance)
+            let minScale = Self.screenScale(cameraDistance: GlobeCamera.minCameraDistance)
             let scale = max(minScale, min(1.0, Self.screenScale(cameraDistance: cameraDistance)))
 
             // Cheap and needed on every call: the marker node is rebuilt whenever the
@@ -320,7 +332,7 @@ struct GlobeView: UIViewRepresentable {
             }
             let bounds = sceneView?.bounds ?? .zero
             let aspect = bounds.height > 0 ? Double(bounds.width / bounds.height) : 1
-            let distance = GlobeState.distanceToFit(radiusDegrees: focus.radiusDegrees,
+            let distance = GlobeCamera.distanceToFit(radiusDegrees: focus.radiusDegrees,
                                                     latitude: focus.lat, aspect: aspect)
             flyTo(lat: focus.lat, lon: focus.lon, distance: distance)
         }
@@ -354,7 +366,7 @@ struct GlobeView: UIViewRepresentable {
             flyTo(lat: home?.latitude ?? 0,
                   lon: home?.longitude ?? GlobeScene.homeLongitude,
                   distance: GlobeScene.homeCameraDistance,
-                  duration: GlobeState.returnHomeDuration) { [weak self] in
+                  duration: GlobeCamera.returnHomeDuration) { [weak self] in
                 guard let self, self.globeState.selectedCountry == nil else { return }
                 self.globeState.isAutoRotating = true
             }
@@ -514,7 +526,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = currentDistance - Float(gesture.scale - 1) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(GlobeState.minCameraDistance, min(GlobeState.maxCameraDistance, newDistance))
+                newDistance = max(GlobeCamera.minCameraDistance, min(GlobeCamera.maxCameraDistance, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,
@@ -560,7 +572,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = doubleTapDragStartDistance + Float(deltaY) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(GlobeState.minCameraDistance, min(GlobeState.maxCameraDistance, newDistance))
+                newDistance = max(GlobeCamera.minCameraDistance, min(GlobeCamera.maxCameraDistance, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,
@@ -792,7 +804,7 @@ struct GlobeView: UIViewRepresentable {
             guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
 
             guard let name = globeState.selectedCountry,
-                  let country = cachedCountries.first(where: { $0.name == name }),
+                  let country = CountryDataCache.shared.countryNamed(name),
                   !country.isPointCountry else {
                 selectedOutlineNode?.isHidden = true
                 return
@@ -843,7 +855,7 @@ struct GlobeView: UIViewRepresentable {
 
             // If a country is selected, show a star at each of its capitals
             guard let selectedCountry = globeState.selectedCountry,
-                  let country = cachedCountries.first(where: { $0.name == selectedCountry }) else { return }
+                  let country = CountryDataCache.shared.countryNamed(selectedCountry) else { return }
 
             for capital in country.capitals {
                 let holder = createCapitalHolder(at: capital)

@@ -117,6 +117,19 @@ enum AchievementCatalog {
         }
     }
 
+    /// What the achievements count against. Both depend only on
+    /// `world.geojson`, so they are built once, not on every reading.
+    private static let unCountries = CountryDataCache.shared.countryNames
+        .subtracting(GlobeState.nonUNTerritories)
+
+    /// Every UN country with a capital: its main one, which Capital Collector
+    /// lists while unvisited, and all of them, any of which counts.
+    private static let capitals: [(name: String, main: String, capitalNames: [String])] =
+        CountryDataCache.shared.countries.compactMap { country in
+            guard unCountries.contains(country.name), let capital = country.capital else { return nil }
+            return (country.name, capital.name, country.capitalNames)
+        }
+
     static func achievements(
         visited: Set<String>,
         checkedCities: [String: Set<String>],
@@ -125,8 +138,6 @@ enum AchievementCatalog {
         var list: [Achievement] = []
 
         // World traveler achievement (first)
-        let allCountries = CountryDataCache.shared.countryNames
-        let unCountries = allCountries.subtracting(GlobeState.nonUNTerritories)
         let visitedUNSet = visited.subtracting(GlobeState.nonUNTerritories)
         let visitedUN = Array(visitedUNSet).sorted()
         let remainingUN = Array(unCountries.subtracting(visitedUNSet)).sorted()
@@ -143,13 +154,12 @@ enum AchievementCatalog {
         // (Sucre as well as La Paz), listed by the one checked
         var visitedCapitals: [String] = []
         var remainingCapitals: [String] = []
-        for country in CountryDataCache.shared.countries where unCountries.contains(country.name) {
-            guard let capital = country.capital else { continue }
+        for country in capitals {
             let checked = checkedCities[country.name] ?? []
             if let visited = country.capitalNames.first(where: checked.contains) {
                 visitedCapitals.append(visited)
             } else {
-                remainingCapitals.append(capital.name)
+                remainingCapitals.append(country.main)
             }
         }
         visitedCapitals.sort()

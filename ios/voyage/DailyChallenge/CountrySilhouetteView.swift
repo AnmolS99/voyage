@@ -74,7 +74,7 @@ struct CountrySilhouette {
 
     @MainActor static func of(flagCode: String) -> CountrySilhouette? {
         if let cached = cache[flagCode] { return cached }
-        guard let country = CountryDataCache.shared.countries.first(where: { $0.flagCode == flagCode }),
+        guard let country = CountryDataCache.shared.countryWithIsoCode(flagCode),
               let silhouette = CountrySilhouette(country) else { return nil }
         cache[flagCode] = silhouette
         return silhouette
