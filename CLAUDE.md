@@ -408,9 +408,11 @@ height there from the Astronomical Almanac's low-precision formulas and calls it
 night below −0.833°; asking for the height rather than sunrise and sunset times
 means polar night and the midnight sun need no special case. A zone with no
 city (`UTC`, `GMT+2`) is dark from 19:00 to 07:00 on its own clock. Both apps
-ask again once a minute (iOS `GlobeState.refreshDaylight` off a timer in
-`ContentView`, Android `ThemeMode.isDarkNow`), which is what flips the theme at
-sunrise and sunset. The picker is a row of Home in miniature, one per mode
+ask again at the top of every minute (iOS `GlobeState.refreshDaylight` off a
+`.task` loop in `ContentView`, Android `ThemeMode.isDarkNow`), which is what
+flips the theme at sunrise and sunset; `isNight` for a zone asks at the start
+of the minute, so it flips on the whole minute Settings names, not seconds into
+the minute before. The picker is a row of Home in miniature, one per mode
 (`ThemeOption` and `ThemePreview` on each: iOS in `SettingsView.swift`, Android
 `ui/settings/ThemeSetting.kt`, same proportions): the globe rising into the
 day's warm sky or the night's starry one. System and Daylight are day on the
