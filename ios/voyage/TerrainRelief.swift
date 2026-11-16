@@ -14,9 +14,6 @@ import UIKit
 enum TerrainRelief {
     static let imageName = "relief.png"
 
-    /// The relief for the flat map, decoded once.
-    static let image: UIImage? = UIImage(named: imageName)
-
     /// The texture the globe's shader modifier samples, as raw 8-bit values with
     /// mipmaps: loaded through MetalKit rather than handed to SceneKit as an
     /// image so it is never read as sRGB, which would move "neutral" off 0.5.
