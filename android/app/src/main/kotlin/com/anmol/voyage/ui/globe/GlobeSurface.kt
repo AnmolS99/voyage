@@ -8,7 +8,6 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
@@ -41,11 +40,11 @@ import com.anmol.voyage.state.Daylight
 import com.anmol.voyage.ui.map.CameraFocus
 import com.anmol.voyage.ui.map.CapitalMarker
 import com.anmol.voyage.ui.map.MarkerSizes
+import com.anmol.voyage.ui.map.detectZoomDrags
 import com.anmol.voyage.ui.map.rememberMarkerSizes
 import com.google.android.filament.android.UiHelper
 import java.time.ZoneId
 import kotlin.math.exp
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * How one microstate's dot is currently painted.
@@ -295,7 +294,7 @@ private fun Modifier.globeGestures(
         // sees every event before the detectors above it and its
         // consumption is what keeps a zoom drag from also turning the
         // globe. See `detectZoomDrags`.
-        detectZoomDrags(host)
+        detectZoomDrags(onStart = { host.beginZoomDrag() }, onDrag = host::zoomDrag)
     }
 
 /**
@@ -746,66 +745,6 @@ private suspend fun PointerInputScope.trackFlicks(host: GlobeSurfaceHost) {
         } while (event.changes.any { it.pressed })
 
         host.flick(velocity.calculateVelocity())
-    }
-}
-
-/**
- * Tap, then press and drag vertically: a one-finger zoom, ported from iOS's
- * `handleDoubleTapDrag`.
- *
- * Dragging **down** zooms in, the direction Google Maps uses on Android and the
- * opposite of iOS — the gesture is a port, its direction deliberately is not.
- * [GlobeCamera.zoomDraggedBy] holds that decision.
- *
- * Runs as the innermost pointer handler on the globe, so it sees each event on
- * the main pass before the rotate detector, the flick tracker and the tap
- * detector do. Consuming is what makes the three of them stand down:
- * `detectTransformGestures` abandons a gesture the moment a change is consumed,
- * `detectTapGestures` reports no tap, and `trackFlicks` skips consumed changes,
- * so a gesture meant only to zoom neither turns the globe nor leaves it
- * spinning.
- *
- * Nothing happens until the second touch actually moves, so a plain double tap
- * stays a plain double tap and leaves the idle spin alone.
- */
-private suspend fun PointerInputScope.detectZoomDrags(host: GlobeSurfaceHost) {
-    awaitEachGesture {
-        val firstDown = awaitFirstDown(requireUnconsumed = false)
-        // A first touch that is a tap: back up quickly, and from where it
-        // landed. A touch that is held or travels is a rotation, and belongs to
-        // the detector above — iOS spends `minimumPressDuration` and
-        // `allowableMovement` on the same two questions.
-        val firstUp = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-            waitForUpOrCancellation()
-        } ?: return@awaitEachGesture
-        if ((firstUp.position - firstDown.position).getDistance() > viewConfiguration.touchSlop) {
-            return@awaitEachGesture
-        }
-
-        // ...and a second touch soon enough after it to be the same gesture.
-        val press = withTimeoutOrNull(viewConfiguration.doubleTapTimeoutMillis) {
-            awaitFirstDown(requireUnconsumed = false)
-        } ?: return@awaitEachGesture
-
-        var travelDp = 0f
-        var zooming = false
-        while (true) {
-            val event = awaitPointerEvent()
-            val finger = event.changes.firstOrNull { it.id == press.id } ?: break
-            travelDp += (finger.position.y - finger.previousPosition.y) / density
-            if (!zooming && travelDp != 0f) {
-                host.beginZoomDrag()
-                zooming = true
-            }
-            if (zooming) {
-                host.zoomDrag(travelDp)
-                // Every change, not only the zooming finger: a second finger
-                // landing mid-drag would otherwise reach the rotate detector as
-                // the beginning of a pinch.
-                event.changes.forEach { it.consume() }
-            }
-            if (!finger.pressed) break
-        }
     }
 }
 

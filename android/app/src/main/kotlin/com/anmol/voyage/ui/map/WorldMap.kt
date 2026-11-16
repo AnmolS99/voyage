@@ -109,6 +109,35 @@ fun WorldMap(
                     val name = hitTester.findCountry(lat = point.lat, lon = point.lon)
                     if (name != null) scene.onCountryTapped(name)
                 }
+            }
+            .pointerInput(projection) {
+                // Last in the chain, so it is the innermost handler and its
+                // consumption keeps a zoom drag from also panning — as on the
+                // globe. Zooms about where the second touch pressed, as a pinch
+                // zooms about its centroid.
+                var startScale = scale
+                var startOffset = offset
+                var anchor = Offset.Zero
+                detectZoomDrags(
+                    onStart = { press ->
+                        startScale = scale
+                        startOffset = offset
+                        anchor = press
+                    },
+                    onDrag = { travelDp ->
+                        val newScale = MapProjection.zoomDragScale(startScale, travelDp)
+                        val (x, y) = projection.offsetZoomingAbout(
+                            anchorX = anchor.x,
+                            anchorY = anchor.y,
+                            offsetX = startOffset.x,
+                            offsetY = startOffset.y,
+                            fromScale = startScale,
+                            toScale = newScale,
+                        )
+                        scale = newScale
+                        offset = Offset(x, y)
+                    },
+                )
             },
     ) {
         drawRect(oceanColor)

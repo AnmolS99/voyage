@@ -162,4 +162,40 @@ class MapProjectionTest {
         assertEquals(12f, projection.dotRadius(minRadiusPx = 12f, scale = 1f), tolerance)
         assertEquals(4000f * 0.8f / 360f * 10f, projection.dotRadius(minRadiusPx = 12f, scale = 10f), tolerance)
     }
+
+    @Test
+    fun `a zoom drag doubles the zoom every hundred dp, dragging down to zoom in`() {
+        assertEquals(2f, MapProjection.zoomDragScale(1f, 100f), tolerance)
+        assertEquals(4f, MapProjection.zoomDragScale(2f, 100f), tolerance)
+        assertEquals(1f, MapProjection.zoomDragScale(2f, -100f), tolerance)
+    }
+
+    @Test
+    fun `a zoom drag is measured from its start, so dragging back undoes it`() {
+        assertEquals(3f, MapProjection.zoomDragScale(3f, 0f), tolerance)
+    }
+
+    @Test
+    fun `a zoom drag stops at the zoom limits`() {
+        assertEquals(MapProjection.MAX_SCALE, MapProjection.zoomDragScale(1f, 10_000f), tolerance)
+        assertEquals(MapProjection.MIN_SCALE, MapProjection.zoomDragScale(5f, -10_000f), tolerance)
+    }
+
+    @Test
+    fun `zooming about a point keeps the place under it still`() {
+        val anchorX = 300f
+        val anchorY = 700f
+        val before = projection.lonLatAt(anchorX, anchorY, scale = 2f, offsetX = 100f, offsetY = -50f)
+        val (x, y) = projection.offsetZoomingAbout(anchorX, anchorY, 100f, -50f, fromScale = 2f, toScale = 3f)
+        val after = projection.lonLatAt(anchorX, anchorY, scale = 3f, offsetX = x, offsetY = y)
+        assertEquals(before.lat, after.lat, 1e-3)
+        assertEquals(before.lon, after.lon, 1e-3)
+    }
+
+    @Test
+    fun `zooming about a point still keeps the map's edges out of view`() {
+        // Zooming out about a point near an edge would pull that edge into view.
+        val (x, y) = projection.offsetZoomingAbout(10f, 10f, 2500f, 900f, fromScale = 2f, toScale = 1f)
+        assertEquals(projection.clampOffset(x, y, 1f), Pair(x, y))
+    }
 }

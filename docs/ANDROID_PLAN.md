@@ -143,7 +143,10 @@ the cross-platform ones is a two-platform change.
   direction deliberately is not, because Google Maps zooms in dragging **down**
   and Apple's apps dragging **up**. This is the one place the two platforms are
   meant to differ. The drag consumes its events, which is what makes the rotate,
-  tap and flick handlers stand down for it.
+  tap and flick handlers stand down for it. The map has the same gesture, from
+  the same detector (`ui/map/ZoomDrag.kt`): it doubles the zoom every 100 dp
+  (`MapProjectionTest`, iOS `MapZoomDragTests`) about where the second touch
+  pressed, as a pinch zooms about its centroid.
 - **Selecting a country flies the camera to it in 0.8 s** (`GlobeFlightTest`,
   `GlobeGestureTest`). `GlobeFlight` ports `flyTo`: duration, `easeInEaseOut`,
   the shortest way round in longitude, the 2.8 it settles at. A flight outranks

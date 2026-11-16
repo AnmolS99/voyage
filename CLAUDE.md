@@ -322,6 +322,9 @@ The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain 
 - Color priority logic (visited/wishlist status takes precedence over selection)
 - Border/outline colors and styles
 - Capital star markers
+- Gestures: pinch, pan, tap and the one-finger zoom (tap, then press and drag
+  vertically — `handleDoubleTapDrag` on the globe, `MapView`'s `ZoomDrag` on the
+  map; Android's `detectZoomDrags` serves both renderers)
 - Map framing: at minimum zoom the 2:1 map *fills* the view (full height in
   portrait, full width in landscape) and pan is clamped so no map edge ever comes
   into view; zoom resets on rotation and on entering map mode, centred on the

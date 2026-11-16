@@ -8,6 +8,47 @@ struct MapView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var lastOffset: CGSize = .zero
     @State private var pathCache = PathCache()
+    @State private var zoomDrag = ZoomDrag()
+
+    /// Tap, then press and drag vertically: the one-finger zoom the globe has
+    /// (`GlobeView.Coordinator.handleDoubleTapDrag`), and Android's
+    /// `detectZoomDrags`, which both of its renderers share. SwiftUI has no
+    /// tap-then-press gesture before iOS 18, so this follows every touch through a
+    /// zero-distance drag and recognises the second press of a quick double tap.
+    private struct ZoomDrag {
+        /// When the touch in progress went down; nil between touches.
+        var touchDown: Date?
+        /// The last touch that was a tap, which a press soon after it turns into a zoom drag.
+        var lastTap: (time: Date, location: CGPoint)?
+        var isZooming = false
+        var startScale: CGFloat = 1
+        var startOffset: CGSize = .zero
+        var anchor: CGPoint = .zero
+
+        /// Longest touch that still counts as the first tap, and the movement it
+        /// may have — UIKit's long-press defaults, as the globe's recognizer uses.
+        static let maxTapDuration: TimeInterval = 0.4
+        static let tapSlop: CGFloat = 10
+        /// How soon, and how close to the tap, the second press must land.
+        static let maxTapInterval: TimeInterval = 0.3
+        static let maxTapDistance: CGFloat = 40
+    }
+
+    /// Finger travel, in points, that doubles (or halves) the zoom in a one-finger
+    /// zoom drag — Android `MapProjection.ZOOM_DRAG_DOUBLING_DP`, as a point and a
+    /// dp are the same physical size.
+    static let zoomDragDoublingDistance: CGFloat = 100
+
+    /// Applies a one-finger zoom drag: `travel` points of vertical finger travel
+    /// (positive downwards) since a drag that began at `startScale`.
+    ///
+    /// Exponential, so every point is the same *ratio* of zoom across the whole
+    /// 1…10 range, and measured from where the drag began, so dragging back puts
+    /// the zoom back exactly. Dragging **up** zooms in — Apple's direction, as on
+    /// the globe; Android's goes the other way (see `handleDoubleTapDrag`).
+    static func zoomDragScale(from startScale: CGFloat, travel: CGFloat) -> CGFloat {
+        min(max(startScale * pow(2, -travel / zoomDragDoublingDistance), 1.0), 10.0)
+    }
 
     /// Per-country paths prebuilt in base map space (lon/lat projected at scale 1, no pan/zoom),
     /// so the per-frame Canvas pass only applies a transform instead of re-projecting ~170k
@@ -266,27 +307,11 @@ struct MapView: View {
                     .onChanged { value in
                         let newScale = min(max(lastScale * value.magnification, 1.0), 10.0)
 
-                        // Get the pinch anchor point in view coordinates
-                        let anchor = value.startLocation
-
-                        // Calculate offset adjustment to keep anchor point stationary
-                        // The anchor point relative to center before zoom
-                        let anchorFromCenter = CGPoint(
-                            x: anchor.x - geometry.size.width / 2 - lastOffset.width,
-                            y: anchor.y - geometry.size.height / 2 - lastOffset.height
-                        )
-
-                        // Scale factor change
-                        let scaleChange = newScale / lastScale
-
-                        // After zoom, the anchor would move by this much, so compensate
-                        let newOffset = CGSize(
-                            width: lastOffset.width + anchorFromCenter.x * (1 - scaleChange),
-                            height: lastOffset.height + anchorFromCenter.y * (1 - scaleChange)
-                        )
-
+                        // Keep the pinch's anchor point stationary
+                        offset = zoomedOffset(about: value.startLocation, from: lastOffset,
+                                              fromScale: lastScale, toScale: newScale,
+                                              viewSize: geometry.size)
                         scale = newScale
-                        offset = clampOffset(newOffset, scale: scale, viewSize: geometry.size)
                     }
                     .onEnded { _ in
                         lastScale = scale
@@ -296,6 +321,8 @@ struct MapView: View {
             .simultaneousGesture(
                 DragGesture()
                     .onChanged { value in
+                        // A zoom drag's finger zooms; it does not also pan.
+                        guard !zoomDrag.isZooming else { return }
                         let newOffset = CGSize(
                             width: lastOffset.width + value.translation.width,
                             height: lastOffset.height + value.translation.height
@@ -305,6 +332,11 @@ struct MapView: View {
                     .onEnded { _ in
                         lastOffset = offset
                     }
+            )
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in trackZoomDrag(value, viewSize: geometry.size) }
+                    .onEnded { value in endZoomDrag(value) }
             )
             .contentShape(Rectangle())
             .onTapGesture(coordinateSpace: .local) { location in
@@ -337,6 +369,65 @@ struct MapView: View {
         lastScale = 1
         offset = clampOffset(centring, scale: 1, viewSize: viewSize)
         lastOffset = offset
+    }
+
+    /// Every change of every touch: a new touch that presses soon after a tap, near
+    /// it, starts a zoom drag about where it pressed, as a pinch zooms about its
+    /// anchor. Nothing changes until the finger moves, so a plain double tap
+    /// stays a plain double tap.
+    private func trackZoomDrag(_ value: DragGesture.Value, viewSize: CGSize) {
+        if zoomDrag.touchDown == nil {
+            zoomDrag.touchDown = value.time
+            if let tap = zoomDrag.lastTap,
+               value.time.timeIntervalSince(tap.time) <= ZoomDrag.maxTapInterval,
+               hypot(value.startLocation.x - tap.location.x,
+                     value.startLocation.y - tap.location.y) <= ZoomDrag.maxTapDistance {
+                zoomDrag.isZooming = true
+                zoomDrag.startScale = scale
+                zoomDrag.startOffset = offset
+                zoomDrag.anchor = value.startLocation
+            }
+            zoomDrag.lastTap = nil
+        }
+        guard zoomDrag.isZooming else { return }
+
+        let newScale = Self.zoomDragScale(from: zoomDrag.startScale, travel: value.translation.height)
+        offset = zoomedOffset(about: zoomDrag.anchor, from: zoomDrag.startOffset,
+                              fromScale: zoomDrag.startScale, toScale: newScale, viewSize: viewSize)
+        scale = newScale
+    }
+
+    private func endZoomDrag(_ value: DragGesture.Value) {
+        if zoomDrag.isZooming {
+            lastScale = scale
+            lastOffset = offset
+        } else if let down = zoomDrag.touchDown,
+                  value.time.timeIntervalSince(down) <= ZoomDrag.maxTapDuration,
+                  hypot(value.translation.width, value.translation.height) <= ZoomDrag.tapSlop {
+            zoomDrag.lastTap = (value.time, value.location)
+        }
+        zoomDrag.touchDown = nil
+        zoomDrag.isZooming = false
+    }
+
+    /// The pan that keeps view point `anchor` still while the zoom goes from
+    /// `fromScale` to `toScale`, starting from `startOffset` and clamped as any pan
+    /// is. Shared by the pinch and the zoom drag; Android
+    /// `MapProjection.offsetZoomingAbout`.
+    private func zoomedOffset(about anchor: CGPoint, from startOffset: CGSize,
+                        fromScale: CGFloat, toScale: CGFloat, viewSize: CGSize) -> CGSize {
+        // The anchor relative to the map's centre before the zoom, which the zoom
+        // moves by (1 - change) of itself, so compensate by that much.
+        let anchorFromCenter = CGPoint(
+            x: anchor.x - viewSize.width / 2 - startOffset.width,
+            y: anchor.y - viewSize.height / 2 - startOffset.height
+        )
+        let change = toScale / fromScale
+        let newOffset = CGSize(
+            width: startOffset.width + anchorFromCenter.x * (1 - change),
+            height: startOffset.height + anchorFromCenter.y * (1 - change)
+        )
+        return clampOffset(newOffset, scale: toScale, viewSize: viewSize)
     }
 
     private func handleTap(at location: CGPoint, in size: CGSize) {
