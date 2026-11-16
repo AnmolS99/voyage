@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CountryListView: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     /// Matching and ordering, by name and by alias ("uk", "england", "burma").
@@ -69,7 +69,7 @@ struct CountryRow: View {
     /// The alias the search found this country by, shown under its name so
     /// the match is clear. Nil when the name itself matched.
     var matchedAlias: CountryAlias? = nil
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     let onSelect: () -> Void
 
     @State private var showingExplore = false

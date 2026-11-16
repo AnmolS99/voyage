@@ -12,6 +12,20 @@ final class CountryDataCache {
     /// Set of all country names for quick lookup
     let countryNames: Set<String>
 
+    private let countriesByName: [String: GeoJSONCountry]
+    private let countriesByIsoCode: [String: GeoJSONCountry]
+
+    /// The country called `name`, or nil. Android `countryNamed`.
+    func countryNamed(_ name: String) -> GeoJSONCountry? {
+        countriesByName[name]
+    }
+
+    /// The country with this ISO 3166-1 alpha-2 code, or nil. Android
+    /// `countryWithIsoCode`.
+    func countryWithIsoCode(_ code: String) -> GeoJSONCountry? {
+        countriesByIsoCode[code]
+    }
+
     /// Cached country highlights keyed by ISO code
     private(set) lazy var countryHighlights: [String: CountryHighlights] = {
         CountryHighlightsParser.loadHighlights()
@@ -56,5 +70,11 @@ final class CountryDataCache {
     private init() {
         countries = GeoJSONParser.loadCountries()
         countryNames = Set(countries.map { $0.name })
+        // The first of any duplicates, as the `first { }` searches these replace found
+        countriesByName = Dictionary(countries.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+        countriesByIsoCode = Dictionary(
+            countries.compactMap { country in country.flagCode.map { ($0, country) } },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 }

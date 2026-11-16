@@ -15,7 +15,7 @@ final class NameCapitalGameViewModel: RegionSweepGameViewModel {
          statsStore: ChallengeStatsStore = .shared,
          capitalLookup: ((String) -> [String])? = nil) {
         let lookup = capitalLookup ?? { name in
-            CountryDataCache.shared.countries.first { $0.name == name }?.capitalNames ?? []
+            CountryDataCache.shared.countryNamed(name)?.capitalNames ?? []
         }
         self.capitalLookup = lookup
         // A country without capital data could never be answered — drop it

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ChallengeCalendarView: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     @State private var displayedMonth = Date()
     @State private var availableDates: Set<String> = []
     @State private var selectedDate: Date?

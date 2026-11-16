@@ -8,7 +8,7 @@ import SwiftUI
 /// fixed bottom edge. The progress row persists too, shrinking into the
 /// card's slim bottom row and growing back into the dock.
 struct CountriesDock: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     let onAddCountry: () -> Void
     let onExplore: () -> Void
 

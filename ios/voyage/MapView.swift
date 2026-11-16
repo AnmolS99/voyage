@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MapView: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     @State private var countries: [GeoJSONCountry] = []
     @State private var scale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
@@ -377,7 +377,7 @@ struct MapView: View {
 
                 // Draw a seal at each capital of the selected country
                 if let selectedCountry = selected,
-                   let country = countries.first(where: { $0.name == selectedCountry }) {
+                   let country = CountryDataCache.shared.countryNamed(selectedCountry) {
                     for capital in country.capitals {
                         let center = fit.point(lat: capital.lat, lon: capital.lon).applying(transform)
 

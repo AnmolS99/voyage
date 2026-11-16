@@ -2,7 +2,7 @@ import SwiftUI
 import StoreKit
 
 struct SettingsView: View {
-    @ObservedObject var globeState: GlobeState
+    @Bindable var globeState: GlobeState
     @State private var showingResetConfirmation = false
     @StateObject private var tipJarManager = TipJarManager()
     /// The icon on the Home Screen. iOS remembers it, so it is read back from
