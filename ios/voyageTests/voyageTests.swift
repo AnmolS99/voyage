@@ -34,6 +34,22 @@ final class voyageTests: XCTestCase {
         }
     }
 
+    // The Journey header's title rule, with the same cases as Android's
+    // `JourneyTitleTest`: every letter 20 pt wide at full size
+    func testJourneyTitleFitsLongNamesOnTwoLines() {
+        let width: (String) -> CGFloat = { CGFloat($0.count) * 20 }
+        XCTAssertEqual(JourneyTitle.fit("Chad", in: 222, widthAtFullSize: width),
+                       .init(size: 40, lines: ["Chad"]))
+        XCTAssertEqual(JourneyTitle.fit("United Kingdom", in: 222, widthAtFullSize: width),
+                       .init(size: 31.5, lines: ["United Kingdom"]))
+        XCTAssertEqual(JourneyTitle.fit("United States of America", in: 222, widthAtFullSize: width),
+                       .init(size: 30, lines: ["United States", "of America"]))
+        XCTAssertEqual(JourneyTitle.fit("Democratic Republic of the Congo", in: 222, widthAtFullSize: width),
+                       .init(size: 23, lines: ["Democratic Republic", "of the Congo"]))
+        XCTAssertEqual(JourneyTitle.fit("Kyrgyzstanabcdefghij", in: 222, widthAtFullSize: width),
+                       .init(size: 22, lines: ["Kyrgyzstanabcdefghij"]))
+    }
+
     // Test that globe.scn contains all countries from source data (map and globe consistency)
     func testGlobeAndMapCountryConsistency() {
         // Get expected countries from source data (used by map)
@@ -707,5 +723,25 @@ final class GlobeStateSyncTests: XCTestCase {
                                              migrate: GlobeState.migrateRenamedCountries(inKeysOf:))
         XCTAssertEqual(first.value, ["France": ["Paris", "Lyon"]])
         XCTAssertTrue(first.writesCloud)
+    }
+}
+
+/// The map's one-finger zoom drag — mirrors Android's `MapProjectionTest`, with
+/// the direction flipped: dragging up zooms in on iOS, down on Android.
+final class MapZoomDragTests: XCTestCase {
+
+    func testZoomDoublesEveryHundredPointsDraggingUp() {
+        XCTAssertEqual(MapView.zoomDragScale(from: 1, travel: -100), 2, accuracy: 1e-6)
+        XCTAssertEqual(MapView.zoomDragScale(from: 2, travel: -100), 4, accuracy: 1e-6)
+        XCTAssertEqual(MapView.zoomDragScale(from: 2, travel: 100), 1, accuracy: 1e-6)
+    }
+
+    func testZoomIsMeasuredFromTheStartOfTheDrag() {
+        XCTAssertEqual(MapView.zoomDragScale(from: 3, travel: 0), 3, accuracy: 1e-6)
+    }
+
+    func testZoomStopsAtTheLimits() {
+        XCTAssertEqual(MapView.zoomDragScale(from: 1, travel: -10_000), 10, accuracy: 1e-6)
+        XCTAssertEqual(MapView.zoomDragScale(from: 5, travel: 10_000), 1, accuracy: 1e-6)
     }
 }

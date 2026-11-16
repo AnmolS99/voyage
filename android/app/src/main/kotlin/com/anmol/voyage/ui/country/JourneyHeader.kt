@@ -18,6 +18,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.defaultMinSize
@@ -53,9 +54,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -67,6 +71,7 @@ import com.anmol.voyage.ui.theme.VoyagePalette
 import com.anmol.voyage.ui.theme.displayCapitalsCentre
 import java.io.IOException
 import java.io.InputStream
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -182,31 +187,49 @@ internal fun JourneyHeader(
                 ),
         )
 
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 20.dp, end = 20.dp, top = 28.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            FlagText(
-                flag = flag,
-                country = countryName,
-                fontSize = TITLE_SIZE,
-                modifier = Modifier.alignBy { it.measuredHeight / 2 },
-            )
-            Text(
-                text = countryName,
-                fontFamily = LocalVoyageFonts.current.display,
-                fontWeight = FontWeight.Medium,
-                fontSize = TITLE_SIZE,
-                lineHeight = 44.sp,
-                color = VoyagePalette.textPrimary(isDark),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .alignBy(DisplayCapitalsCentre)
-                    .displayCapitalsCentre(TITLE_SIZE),
-            )
+        val measurer = rememberTextMeasurer()
+        val display = LocalVoyageFonts.current.display
+        val density = LocalDensity.current
+        BoxWithConstraints(modifier = Modifier.align(Alignment.TopStart).fillMaxWidth()) {
+            val rowWidth = constraints.maxWidth
+            val title = remember(countryName, flag, rowWidth, display, density) {
+                val flagWidth = measurer.measure(flag, TextStyle(fontSize = TITLE_SIZE)).size.width
+                val insets = with(density) { (TITLE_START + TITLE_END + FLAG_GAP).toPx() }
+                JourneyTitle.fit(countryName, rowWidth - insets - flagWidth) { text ->
+                    measurer.measure(
+                        text,
+                        TextStyle(fontFamily = display, fontWeight = FontWeight.Medium, fontSize = TITLE_SIZE),
+                        softWrap = false,
+                        maxLines = 1,
+                    ).size.width.toFloat()
+                }
+            }
+            val titleSize = title.size.sp
+            Row(
+                modifier = Modifier.padding(start = TITLE_START, end = TITLE_END, top = 28.dp),
+                horizontalArrangement = Arrangement.spacedBy(FLAG_GAP),
+            ) {
+                FlagText(
+                    flag = flag,
+                    country = countryName,
+                    fontSize = TITLE_SIZE,
+                    modifier = Modifier.alignBy { it.measuredHeight / 2 },
+                )
+                Text(
+                    text = title.lines.joinToString("\n"),
+                    fontFamily = display,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = titleSize,
+                    lineHeight = (title.size * TITLE_LINE_HEIGHT).sp,
+                    color = VoyagePalette.textPrimary(isDark),
+                    maxLines = title.lines.size,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .alignBy(DisplayCapitalsCentre)
+                        .displayCapitalsCentre(titleSize)
+                        .semantics { contentDescription = countryName },
+                )
+            }
         }
 
         if (place != null) {
@@ -221,7 +244,52 @@ internal fun JourneyHeader(
     }
 }
 
-private val TITLE_SIZE = 40.sp
+private val TITLE_SIZE = JourneyTitle.FULL_SIZE.sp
+private const val TITLE_LINE_HEIGHT = 1.1f
+private val TITLE_START = 20.dp
+private val TITLE_END = 20.dp
+private val FLAG_GAP = 12.dp
+
+/**
+ * How the Journey header sets a country's name beside its flag — iOS
+ * `JourneyTitle`, same sizes and same rule. One line at 40 sp, shrunk to fit
+ * down to 30 sp; a name still too long for that ("Democratic Republic of the
+ * Congo") goes on two lines at 30 sp, broken where the two come out most even,
+ * and shrunk only if its wider line still doesn't fit. Two lines at 30 sp stay
+ * in the art's top third, which every painting keeps as open sky.
+ */
+internal object JourneyTitle {
+    const val FULL_SIZE = 40f
+    const val SMALLEST_SINGLE_LINE = 30f
+    const val TWO_LINE_SIZE = 30f
+
+    data class Fit(val size: Float, val lines: List<String>)
+
+    /**
+     * The size and lines for [name] in [width], where [widthAtFullSize] is how
+     * wide a piece of it is set at [FULL_SIZE], in the same unit as [width].
+     * Sizes are floored to half points so measuring and drawing never disagree
+     * by a fraction.
+     */
+    fun fit(name: String, width: Float, widthAtFullSize: (String) -> Float): Fit {
+        val oneLine = floorToHalf(minOf(FULL_SIZE, FULL_SIZE * width / widthAtFullSize(name)))
+        val words = name.split(' ').filter { it.isNotEmpty() }
+        if (oneLine >= SMALLEST_SINGLE_LINE || words.size < 2) return Fit(oneLine, listOf(name))
+        val best = (1 until words.size)
+            .map { i ->
+                val first = words.take(i).joinToString(" ")
+                val second = words.drop(i).joinToString(" ")
+                Triple(first, second, maxOf(widthAtFullSize(first), widthAtFullSize(second)))
+            }
+            .minBy { it.third }
+        return Fit(
+            floorToHalf(minOf(TWO_LINE_SIZE, FULL_SIZE * width / best.third)),
+            listOf(best.first, best.second),
+        )
+    }
+
+    private fun floorToHalf(size: Float): Float = floor(size * 2) / 2
+}
 
 /**
  * A small pin over the Journey art that opens into the name of the place the

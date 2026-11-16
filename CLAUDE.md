@@ -322,6 +322,9 @@ The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain 
 - Color priority logic (visited/wishlist status takes precedence over selection)
 - Border/outline colors and styles
 - Capital star markers
+- Gestures: pinch, pan, tap and the one-finger zoom (tap, then press and drag
+  vertically — `handleDoubleTapDrag` on the globe, `MapView`'s `ZoomDrag` on the
+  map; Android's `detectZoomDrags` serves both renderers)
 - Map framing: at minimum zoom the 2:1 map *fills* the view (full height in
   portrait, full width in landscape) and pan is clamped so no map edge ever comes
   into view; zoom resets on rotation and on entering map mode, centred on the
@@ -408,9 +411,11 @@ height there from the Astronomical Almanac's low-precision formulas and calls it
 night below −0.833°; asking for the height rather than sunrise and sunset times
 means polar night and the midnight sun need no special case. A zone with no
 city (`UTC`, `GMT+2`) is dark from 19:00 to 07:00 on its own clock. Both apps
-ask again once a minute (iOS `GlobeState.refreshDaylight` off a timer in
-`ContentView`, Android `ThemeMode.isDarkNow`), which is what flips the theme at
-sunrise and sunset. The picker is a row of Home in miniature, one per mode
+ask again at the top of every minute (iOS `GlobeState.refreshDaylight` off a
+`.task` loop in `ContentView`, Android `ThemeMode.isDarkNow`), which is what
+flips the theme at sunrise and sunset; `isNight` for a zone asks at the start
+of the minute, so it flips on the whole minute Settings names, not seconds into
+the minute before. The picker is a row of Home in miniature, one per mode
 (`ThemeOption` and `ThemePreview` on each: iOS in `SettingsView.swift`, Android
 `ui/settings/ThemeSetting.kt`, same proportions): the globe rising into the
 day's warm sky or the night's starry one. System and Daylight are day on the
@@ -523,7 +528,10 @@ Painted header art for the country sheet (the "Journey" design), one day (light
 mode) and one night (dark mode) image per country: iOS `CountryExploreView`
 (`JourneyHeader`) and Android `CountryDetailSheet` (`ui/country/JourneyHeader.kt`)
 show it full-bleed with the flag and name over its top-left, fading into the
-sheet at the bottom. A country without art keeps the plain header, so art can be
+sheet at the bottom. The name is one line at 40 pt, shrunk to fit down to 30 pt;
+a longer one ("Democratic Republic of the Congo") goes on two balanced lines
+at 30 pt or less (`JourneyTitle` on each, pinned by `JourneyTitleTest` and
+`testJourneyTitleFitsLongNamesOnTwoLines`). A country without art keeps the plain header, so art can be
 added one country at a time. The images are `shared/data/journey/<ISO>_day.webp`
 and `<ISO>_night.webp` (1170×720, the 390×240 banner at 3×). iOS bundles the
 folder through a folder reference, and Android packages it with the rest of

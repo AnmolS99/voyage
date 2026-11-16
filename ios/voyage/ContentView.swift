@@ -8,10 +8,6 @@ struct ContentView: View {
     @State private var showDailyToast = false
     @Environment(\.colorScheme) private var colorScheme
 
-    /// Once a minute, for the Daylight theme. A property, not built in `body`,
-    /// where every redraw would start the minute again.
-    private let daylightTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
-
     private static let badgeDateKey = "dailyBadgeNextDate"
 
     /// The tab selection, seeing re-selections too: tapping the tab you are
@@ -67,8 +63,15 @@ struct ContentView: View {
         .onChange(of: colorScheme, initial: true) { _, scheme in
             globeState.systemAppearanceChanged(isDark: scheme == .dark)
         }
-        .onReceive(daylightTimer) { _ in
-            globeState.refreshDaylight()
+        .task {
+            // At the top of every minute, for the Daylight theme — on the
+            // minute, as on Android, so it turns over when the clock reaches
+            // the sunrise or sunset Settings names, not up to a minute after.
+            while !Task.isCancelled {
+                let now = Date().timeIntervalSince1970
+                try? await Task.sleep(for: .seconds(60 - now.truncatingRemainder(dividingBy: 60)))
+                globeState.refreshDaylight()
+            }
         }
         .overlay { AchievementUnlockCelebration(globeState: globeState) }
         .overlay(alignment: .bottom) {
