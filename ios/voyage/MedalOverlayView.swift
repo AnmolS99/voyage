@@ -541,9 +541,9 @@ struct MedalSceneView: UIViewRepresentable {
     /// Non-blocking cache lookup for a card snapshot — safe to call from the
     /// main thread during view body evaluation. Never renders.
     static func cachedCardSnapshot(medal: String, tier: MedalTier?) -> UIImage? {
-        artworkLock.lock()
-        defer { artworkLock.unlock() }
-        return artworkCache[snapshotKey(medal: medal, tier: tier)]
+        snapshotLock.lock()
+        defer { snapshotLock.unlock() }
+        return snapshotCache[snapshotKey(medal: medal, tier: tier)]
     }
 
     /// The card's coin snapshot, rendering it off the calling thread on a
@@ -563,7 +563,10 @@ struct MedalSceneView: UIViewRepresentable {
     /// and tier. Cards display this instead of a live `SCNView`.
     /// Blocking — never call on the main thread.
     private static func renderCardSnapshot(medal: String, tier: MedalTier?) -> UIImage {
-        cachedArtwork(key: snapshotKey(medal: medal, tier: tier)) {
+        if let hit = cachedCardSnapshot(medal: medal, tier: tier) {
+            return hit
+        }
+        let image: UIImage = {
             snapshotRendererLock.lock()
             defer { snapshotRendererLock.unlock() }
             let scene = buildScene(medal: medal, tier: tier)
@@ -578,31 +581,46 @@ struct MedalSceneView: UIViewRepresentable {
             )
             snapshotRenderer.scene = nil
             return image
-        }
+        }()
+
+        snapshotLock.lock()
+        snapshotCache[snapshotKey(medal: medal, tier: tier)] = image
+        snapshotLock.unlock()
+        return image
     }
 
     // MARK: - Artwork cache
 
-    /// Rendering a coin snapshot is not free, and one card coin per achievement is needed when the Achievements tab
-    /// first appears. All rendered artwork — symbol textures and finished coin
-    /// snapshots — is cached here, and `prewarmArtwork` fills the cache off the
-    /// main thread at app launch so the tab opens instantly.
-    private static var artworkCache: [String: UIImage] = [:]
-    private static let artworkLock = NSLock()
+    /// Finished card coins, one per medal and tier. They are small (224 px), so
+    /// all of them are kept, and `prewarmArtwork` renders them off the main
+    /// thread at app launch so the Achievements tab opens instantly.
+    private static var snapshotCache: [String: UIImage] = [:]
+    private static let snapshotLock = NSLock()
     private static var didPrewarm = false
 
+    /// The textures a coin is built from: its cap and the symbols on its two
+    /// faces. Unlike the snapshots these are megabytes each, so they are held
+    /// only while something is rendering from them: the cache is emptied after
+    /// the launch prewarm, bounded while an overlay coin is open, and the
+    /// system purges it under memory pressure. Keeping every one of them at
+    /// screen scale once cost 800 MB at launch.
+    private static let textureCache: NSCache<NSString, UIImage> = {
+        let cache = NSCache<NSString, UIImage>()
+        cache.totalCostLimit = 16 << 20
+        return cache
+    }()
+
     /// Renders and caches every medal's card snapshot in all four variants
-    /// (unearned, bronze, silver, gold) on a background queue (each snapshot transitively
-    /// renders and caches the cap and symbol textures the overlay coin needs
-    /// too). Call once at app launch. Runs at .userInitiated so it usually
-    /// finishes before the user can reach the Achievements tab — but the tab
-    /// no longer depends on winning that race, since `MedalCardView` falls
-    /// back to an async render on a cache miss.
+    /// (unearned, bronze, silver, gold) on a background queue, then lets go of
+    /// the textures they were rendered from. Call once at app launch. Runs at
+    /// .userInitiated so it usually finishes before the user can reach the
+    /// Achievements tab — but the tab doesn't depend on winning that race,
+    /// since `MedalCardView` falls back to an async render on a cache miss.
     static func prewarmArtwork(medals: [String]) {
-        artworkLock.lock()
+        snapshotLock.lock()
         let alreadyPrewarmed = didPrewarm
         didPrewarm = true
-        artworkLock.unlock()
+        snapshotLock.unlock()
         guard !alreadyPrewarmed else { return }
 
         DispatchQueue.global(qos: .userInitiated).async {
@@ -611,66 +629,70 @@ struct MedalSceneView: UIViewRepresentable {
                     _ = renderCardSnapshot(medal: medal, tier: tier)
                 }
             }
+            textureCache.removeAllObjects()
         }
     }
 
-    private static func cachedArtwork(key: String, render: () -> UIImage) -> UIImage {
-        artworkLock.lock()
-        if let hit = artworkCache[key] {
-            artworkLock.unlock()
+    /// A texture `side` points square at `scale` pixels per point, drawn once
+    /// per key for as long as the cache holds it.
+    private static func cachedTexture(
+        key: String,
+        side: CGFloat,
+        scale: CGFloat,
+        draw: (UIGraphicsImageRendererContext) -> Void
+    ) -> UIImage {
+        if let hit = textureCache.object(forKey: key as NSString) {
             return hit
         }
-        artworkLock.unlock()
-
-        let image = render()
-
-        artworkLock.lock()
-        artworkCache[key] = image
-        artworkLock.unlock()
+        // Not the screen's scale, which would triple each side: a texture
+        // needs the pixels the coin covers on screen, not the screen's density.
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        let size = CGSize(width: side, height: side)
+        let image = UIGraphicsImageRenderer(size: size, format: format).image(actions: draw)
+        let pixels = Int(side * scale)
+        textureCache.setObject(image, forKey: key as NSString, cost: pixels * pixels * 4)
         return image
     }
 
     /// Emoji for the front, star for the back; an unearned medal shows a
     /// question mark in place of its emoji. Transparent background so the coin
-    /// face shows through.
+    /// face shows through. The largest coin, the overlay's, shows a symbol
+    /// about 430 px across on a 3x screen, which 512 px covers.
     private static func symbolImage(medal: String, front: Bool, tier: MedalTier?) -> UIImage {
-        cachedArtwork(key: "symbol|\(medal)|\(front)|\(MedalArtwork.key(tier))") {
+        // One image per distinct artwork: an emoji looks the same on every
+        // tier, and every medal shares its tier's star and the question mark.
+        let key: String
+        if !front {
+            key = "symbol|★|\(MedalArtwork.key(tier))"
+        } else if tier == nil {
+            key = "symbol|?"
+        } else {
+            key = "symbol|\(medal)"
+        }
+        let side: CGFloat = 512
+        return cachedTexture(key: key, side: side, scale: 1) { _ in
             let ringColor = MedalArtwork.colors(tier).rim
-            let side: CGFloat = 512
             let symbol = front && tier == nil
                 ? renderedText("?", fontSize: 400, weight: .bold, color: ringColor)
                 : renderedText(front ? medal : "★", fontSize: 400, color: ringColor)
-            let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
-            return renderer.image { _ in
-                // Fit the symbol inside the square, preserving aspect ratio
-                let scale = min(side / symbol.size.width, side / symbol.size.height)
-                let size = CGSize(width: symbol.size.width * scale, height: symbol.size.height * scale)
-                let origin = CGPoint(x: (side - size.width) / 2, y: (side - size.height) / 2)
-                symbol.draw(in: CGRect(origin: origin, size: size))
-            }
+            // Fit the symbol inside the square, preserving aspect ratio
+            let scale = min(side / symbol.size.width, side / symbol.size.height)
+            let size = CGSize(width: symbol.size.width * scale, height: symbol.size.height * scale)
+            let origin = CGPoint(x: (side - size.width) / 2, y: (side - size.height) / 2)
+            symbol.draw(in: CGRect(origin: origin, size: size))
         }
-    }
-
-    /// Cached cap textures — every coin shares one of these four images.
-    private static let capImages: [String: UIImage] = Dictionary(
-        uniqueKeysWithValues: MedalArtwork.variants.map {
-            (MedalArtwork.key($0), renderCapImage(tier: $0))
-        }
-    )
-
-    private static func capImage(tier: MedalTier?) -> UIImage {
-        capImages[MedalArtwork.key(tier)]!
     }
 
     /// Draws the coin cap: radial gradient with an embossed ring in the
     /// medal's metal, or flat dark while unearned. Rotationally symmetric by
-    /// design.
-    private static func renderCapImage(tier: MedalTier?) -> UIImage {
+    /// design, and shared by every coin of a tier. The overlay's coin is
+    /// about 730 px across on a 3x screen, which 896 px covers.
+    private static func capImage(tier: MedalTier?) -> UIImage {
         let side: CGFloat = 1024
         let center = CGPoint(x: side / 2, y: side / 2)
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
 
-        return renderer.image { ctx in
+        return cachedTexture(key: "cap|\(MedalArtwork.key(tier))", side: side, scale: 0.875) { ctx in
             let cg = ctx.cgContext
 
             let colors = MedalArtwork.colors(tier)
