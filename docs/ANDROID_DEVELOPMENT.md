@@ -196,9 +196,8 @@ android/
   The app reads it through `AssetManager`; JVM unit tests read the same files
   straight off disk (`SharedFiles`), so they need no emulator or Robolectric.
   That includes the Earth textures in `shared/data/textures/`, one per
-  `GlobeStyle` and bundled by iOS from the same place; `EarthTextureCache`
-  decodes them at most 4096 px wide, which is what both a `Canvas` and a GPU
-  texture will take.
+  `GlobeStyle` and bundled by iOS from the same place. Two are 8192 × 4096,
+  and both renderers show all of it — see [Earth textures](#earth-textures).
 - **Launcher icon** is generated from the iOS artwork; re-run after changing it:
 
   ```bash
@@ -337,6 +336,42 @@ triangulator test keep speaking for what the app actually loads. JVM tests never
 read the generated files themselves: `SharedFiles.countryDataCache()` parses the
 GeoJSON, and `GlobeGeometryCache` triangulates until `install` points it at the
 asset.
+
+## Earth textures
+
+An 8192 × 4096 image is 128 MB as a bitmap: more than a `Canvas` will draw
+(100 MB), and 171 MB on the GPU once it has mipmaps. So `EarthTextureCache`
+decodes a bitmap at most 4096 px wide — and neither renderer stops there.
+
+**The globe** takes the image at full size as ASTC 4 × 4, the format iOS holds
+it in: 43 MB with its mipmaps, what the 4096 px bitmap costs uncompressed.
+
+- Android has no ASTC encoder, and its ETC1 encoder leaves tinted blocks on
+  deserts and ice, so `data/Astc4x4.kt` is a small one: one block type (one
+  partition, 8-bit RGB endpoints, a 3-bit weight per pixel), fitted along each
+  block's principal axis. It measures 45.7 dB against the source over the
+  whole image. `Astc4x4Test` decodes its blocks by the ASTC specification; they
+  were also checked once against macOS's decoder (`sips`), which agreed
+  exactly.
+- `CompressedEarthTextureFile` runs it the first time a style is shown: the
+  JPEG is read in 128-row strips with `BitmapRegionDecoder` and encoded on a
+  few background-priority threads, every mip level, into one file in the cache
+  directory (8 s on the emulator; only the style in use is kept). The globe
+  shows the bitmap until it is done, then swaps.
+- On later launches the globe maps that file and uploads it as it is; the
+  bitmap is not decoded for the globe at all.
+- `GlobeRenderer.maxCompressedTextureWidth` is the guard: a GPU without ASTC
+  or with a texture limit below the image's width keeps the bitmap. It logs
+  what the GPU reported under the `GlobeRenderer` tag. **The emulator has no
+  ASTC**, so this path only runs on a device.
+
+**The map** draws the bitmap and, wherever the bitmap is being magnified, the
+image itself on top, in 512 px tiles (`ui/map/MapDetail.kt`). `MapDetailGrid`
+decides which tiles are in view — on an upright phone that is already the case
+at minimum zoom, since the map fills the screen's height — and `MapDetail`
+decodes them nearest the middle first, as hardware bitmaps, keeping what is on
+screen and a few more. Each tile is decoded one pixel wider than it is and
+clipped back, so neighbours blend at their edges instead of showing a grid.
 
 ## Materials
 

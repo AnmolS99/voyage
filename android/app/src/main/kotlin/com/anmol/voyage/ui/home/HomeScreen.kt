@@ -44,6 +44,7 @@ import com.anmol.voyage.R
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountryDetail
 import com.anmol.voyage.data.CountryHitTester
+import com.anmol.voyage.data.CompressedEarthTexture
 import com.anmol.voyage.data.EarthTextureCache
 import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.data.LatLon
@@ -63,6 +64,7 @@ import com.anmol.voyage.ui.globe.GlobeSurfaceHost
 import com.anmol.voyage.ui.globe.rememberGlobeGeometry
 import com.anmol.voyage.ui.globe.rememberGlobeSurfaceHost
 import com.anmol.voyage.ui.map.CountryPaths
+import com.anmol.voyage.ui.map.MapDetail
 import com.anmol.voyage.ui.map.MapProjection
 import com.anmol.voyage.ui.map.WorldMap
 import com.anmol.voyage.ui.map.WorldScene
@@ -293,6 +295,46 @@ fun HomeScreen(
     }
 }
 
+/**
+ * What the globe's ocean is painted with: [detail], the image at full size, or
+ * [image] until that exists. Both null only if [style]'s could not be decoded.
+ */
+private class GlobeEarth(val style: GlobeStyle, val image: Bitmap?, val detail: CompressedEarthTexture?) {
+    val hasTexture: Boolean get() = image != null || detail != null
+}
+
+/**
+ * The Earth texture for the globe in [style], or null while there is nothing
+ * to show yet.
+ *
+ * An image wider than a bitmap may be goes to the GPU compressed, at full
+ * size. Once that has been made — on the first launch that shows the style —
+ * it is all the globe loads, and the bitmap is never decoded for it. Until
+ * then the globe shows the bitmap and swaps when the compressing is done.
+ *
+ * @param maxCompressedWidth the widest compressed texture the GPU takes.
+ */
+@Composable
+private fun rememberGlobeEarth(style: GlobeStyle, maxCompressedWidth: Int): GlobeEarth? {
+    val cache = remember { EarthTextureCache.shared }
+    val initial = cache.loadedDetail(style)?.let { GlobeEarth(style, null, it) }
+        ?: cache.cached(style)?.let { GlobeEarth(style, it, null) }
+    val earth by produceState(initial, style, cache, maxCompressedWidth) {
+        if (value?.style == style && value?.detail != null) return@produceState
+        val ready = withContext(Dispatchers.IO) { cache.cachedDetail(style, maxCompressedWidth) }
+        if (ready != null) {
+            value = GlobeEarth(style, null, ready)
+            return@produceState
+        }
+        val image = withContext(Dispatchers.IO) { cache.get(style) }
+        value = GlobeEarth(style, image, null)
+        val detail = withContext(Dispatchers.IO) { cache.detail(style, maxCompressedWidth) }
+        if (detail != null) value = GlobeEarth(style, image, detail)
+    }
+    // A style change keeps the old value until the new one lands; never show it.
+    return earth?.takeIf { it.style == style }
+}
+
 /** The 3D globe, or a spinner while its geometry loads. */
 @Composable
 private fun BoxScope.GlobeBody(
@@ -303,7 +345,7 @@ private fun BoxScope.GlobeBody(
     visible: Boolean,
 ) {
     val geometry: GlobeGeometry? = rememberGlobeGeometry(data?.countries)
-    val texture = rememberEarthTexture(state.globeStyle)
+    val texture = rememberGlobeEarth(state.globeStyle, host.maxCompressedTextureWidth)
     val relief = rememberReliefTexture(state.showsTerrain)
     val hitTester = data?.hitTester
 
@@ -325,7 +367,7 @@ private fun BoxScope.GlobeBody(
         if (visible) HomeLoading()
         return
     }
-    val hasTexture = texture.image != null
+    val hasTexture = texture.hasTexture
 
     // Microstates have no shape to fill, so the globe marks them the way the map
     // does — a dot in their status colors. Only the colors are resolved here;
@@ -347,6 +389,7 @@ private fun BoxScope.GlobeBody(
         microstateDots = geometry.microstateDots,
         colorFor = { name -> scene.styleFor(name, hasTexture).fill.toGlobeFillOrNull() },
         earthTexture = texture.image,
+        earthDetail = texture.detail,
         reliefTexture = relief,
         oceanColor = VoyagePalette.ocean,
         hitTester = hitTester,
@@ -394,6 +437,16 @@ private fun BoxScope.MapBody(data: HomeData?, scene: WorldScene?, state: VoyageS
         return
     }
 
+    // The image at full size, for the map to read what is on screen from.
+    // Closed when the style changes or the map leaves, with all it decoded.
+    val cache = remember { EarthTextureCache.shared }
+    val detail by produceState<MapDetail?>(null, state.mapStyle, cache) {
+        value = null
+        val opened = withContext(Dispatchers.IO) { cache.regionDecoder(state.mapStyle) }?.let(::MapDetail)
+        value = opened
+        awaitDispose { opened?.release() }
+    }
+
     val image = remember(texture.image) { texture.image?.asImageBitmap() }
     val reliefImage = remember(relief) { relief?.asImageBitmap() }
     WorldMap(
@@ -403,6 +456,7 @@ private fun BoxScope.MapBody(data: HomeData?, scene: WorldScene?, state: VoyageS
         scene = scene,
         projection = projection,
         texture = image,
+        detail = detail,
         relief = reliefImage,
     )
 }

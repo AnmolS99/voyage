@@ -27,6 +27,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
+import com.anmol.voyage.data.CompressedEarthTexture
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
@@ -75,6 +76,8 @@ internal class GlobeDotStyle(
  * @param colorFor a country's fill, or null to leave it undrawn over the texture.
  * @param earthTexture the image the ocean sphere is painted with. Null paints it
  *   flat [oceanColor] instead, and then every fill should be painted.
+ * @param earthDetail the same image at full size, once it has been compressed
+ *   for the GPU; painted instead of [earthTexture], which may then be null.
  * @param reliefTexture the shaded-relief layer the ocean and the fills are
  *   hard-lit with, as the flat map draws it. Null shades nothing.
  * @param dotStyles how each microstate's dot is currently painted. The dots
@@ -106,6 +109,7 @@ internal fun GlobeSurface(
     microstateDots: List<MicrostateDot>,
     colorFor: (String) -> GlobeFill?,
     earthTexture: Bitmap?,
+    earthDetail: CompressedEarthTexture? = null,
     reliefTexture: Bitmap?,
     oceanColor: androidx.compose.ui.graphics.Color,
     hitTester: CountryHitTester,
@@ -141,8 +145,8 @@ internal fun GlobeSurface(
 
     // A texture upload, so only when the image changes rather than on every
     // recolor. After the geometry, whose ocean it is bound to.
-    DisposableEffect(host, earthTexture, oceanColor) {
-        host.setEarthTexture(earthTexture, oceanColor)
+    DisposableEffect(host, earthTexture, earthDetail, oceanColor) {
+        host.setEarthTexture(earthTexture, earthDetail, oceanColor)
         onDispose { }
     }
 
@@ -672,8 +676,11 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
         )
     }
 
-    fun setEarthTexture(image: Bitmap?, fallback: androidx.compose.ui.graphics.Color) {
-        if (!destroyed) renderer.setEarthTexture(image, fallback)
+    /** See [GlobeRenderer.maxCompressedTextureWidth]. */
+    val maxCompressedTextureWidth: Int get() = renderer.maxCompressedTextureWidth
+
+    fun setEarthTexture(image: Bitmap?, detail: CompressedEarthTexture?, fallback: androidx.compose.ui.graphics.Color) {
+        if (!destroyed) renderer.setEarthTexture(image, detail, fallback)
     }
 
     fun setReliefTexture(image: Bitmap?) {
