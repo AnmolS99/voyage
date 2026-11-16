@@ -9,6 +9,9 @@ struct MapView: View {
     @State private var lastOffset: CGSize = .zero
     @State private var pathCache = PathCache()
     @State private var touches = TouchTracker()
+    /// Whether the map has been shown, and so is drawn — see `MapCanvas.isDrawn`.
+    @State private var isDrawn = false
+    @Environment(\.scenePhase) private var scenePhase
 
     /// What the touch in progress is doing. The map follows every touch through one
     /// zero-distance drag, which tells a tap, a pan and a zoom drag apart itself:
@@ -167,15 +170,28 @@ struct MapView: View {
     /// a frame's time.
     ///
     /// The texture is kept at its full size — at minimum zoom the map is
-    /// already wider in pixels than half of it — which is about 134 MB decoded,
-    /// so only the style in use is held: choosing another lets the last one go.
+    /// already wider in pixels than half of it — which is about 134 MB decoded
+    /// (Core Graphics can't draw the globe's compressed copy, see
+    /// `EarthTexture`). So only the style in use is held — choosing another
+    /// lets the last one go — and none while the app is in the background,
+    /// where memory held is what gets an app ended: the next frame drawn
+    /// decodes it again.
     private enum MapImage {
         static let relief: UIImage? = decoded(TerrainRelief.imageName)
 
         private static var texture: (name: String, image: UIImage)?
         private static let lock = NSLock()
 
+        private static let backgroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil
+        ) { _ in
+            lock.lock()
+            texture = nil
+            lock.unlock()
+        }
+
         static func texture(named name: String) -> UIImage? {
+            _ = backgroundObserver
             lock.lock()
             defer { lock.unlock() }
             if let texture, texture.name == name { return texture.image }
@@ -185,8 +201,11 @@ struct MapView: View {
             return image
         }
 
+        /// Read from the file rather than `UIImage(named:)`, whose system cache
+        /// would keep the image after it is let go here.
         private static func decoded(_ name: String) -> UIImage? {
-            guard let source = UIImage(named: name) else { return nil }
+            guard let path = EarthTexture.url(named: name)?.path,
+                  let source = UIImage(contentsOfFile: path) else { return nil }
             return source.preparingForDisplay() ?? source
         }
     }
@@ -209,9 +228,15 @@ struct MapView: View {
         let visited: Set<String>
         let wishlist: Set<String>
         let selected: String?
+        /// False while the map has yet to be shown: it is mounted under the
+        /// globe from launch, and drawing it there would decode the texture
+        /// for a map nobody may ever open.
+        let isDrawn: Bool
 
         var body: some View {
             Canvas(rendersAsynchronously: true) { context, size in
+                guard isDrawn else { return }
+
                 // Draw ocean background (fallback under texture)
                 let oceanColor = isDarkMode ? AppColors.oceanDark : AppColors.oceanMap
                 context.fill(
@@ -380,7 +405,8 @@ struct MapView: View {
                       showsTerrain: globeState.showsTerrain,
                       visited: globeState.visitedCountries,
                       wishlist: globeState.wishlistCountries,
-                      selected: globeState.selectedCountry)
+                      selected: globeState.selectedCountry,
+                      isDrawn: isDrawn)
             .gesture(
                 MagnifyGesture()
                     .onChanged { value in
@@ -409,11 +435,20 @@ struct MapView: View {
             .onChange(of: geometry.size) { _, size in resetZoom(viewSize: size) }
             // Coming from the globe, the map always opens filling the screen.
             .onChange(of: globeState.viewMode) { _, mode in
-                if mode == .map { resetZoom(viewSize: geometry.size) }
+                if mode == .map {
+                    isDrawn = true
+                    resetZoom(viewSize: geometry.size)
+                }
+            }
+            // `MapImage` lets the texture go in the background; behind the globe,
+            // stop drawing too, or the next redraw would decode it again unseen.
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background, globeState.viewMode != .map { isDrawn = false }
             }
         }
         .onAppear {
             countries = CountryDataCache.shared.countries
+            if globeState.viewMode == .map { isDrawn = true }
         }
     }
 
