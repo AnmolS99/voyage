@@ -5,6 +5,7 @@ import java.io.InputStream
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -35,8 +36,15 @@ object Daylight {
     fun location(zone: ZoneId, locations: Map<String, List<Double>>): LatLon? =
         locations[zone.id]?.let { LatLon(lat = it[0], lon = it[1]) }
 
-    /** A zone with no city falls back to 07:00–19:00 on its clock. */
+    /**
+     * A zone with no city falls back to 07:00–19:00 on its clock.
+     *
+     * Asks at the start of [now]'s minute, so the theme turns over on a whole
+     * minute — the one [sunTimes] names — rather than seconds into the minute
+     * before, while the clock still shows a time before the sunset it says.
+     */
     fun isNight(now: Instant, zone: ZoneId, locations: Map<String, List<Double>>): Boolean {
+        val now = now.truncatedTo(ChronoUnit.MINUTES)
         val location = location(zone, locations) ?: return now.atZone(zone).hour !in 7..18
         return isNight(now, latitude = location.lat, longitude = location.lon)
     }

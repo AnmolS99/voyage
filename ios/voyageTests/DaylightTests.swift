@@ -52,6 +52,18 @@ final class DaylightTests: XCTestCase {
         XCTAssertEqual(noCity.sunset, formatter.date(from: "2026-01-01T19:00:00Z"))
     }
 
+    func testTheThemeTurnsOverOnTheMinuteSettingsNames() {
+        // Oslo's sun reaches the horizon at 15:46:03 on 16 November 2026, and
+        // Settings says "dark from 15:47": still light at 15:46:30, dark at 15:47.
+        let formatter = ISO8601DateFormatter()
+        let oslo = TimeZone(identifier: "Europe/Oslo")!
+        let sunset = Daylight.sunTimes(on: formatter.date(from: "2026-11-16T12:00:00Z")!, in: oslo).sunset
+        XCTAssertEqual(sunset, formatter.date(from: "2026-11-16T14:47:00Z")) // 15:47 in Oslo
+        XCTAssertFalse(isNight("2026-11-16T14:46:30Z", "Europe/Oslo"))
+        XCTAssertFalse(isNight("2026-11-16T14:46:59Z", "Europe/Oslo"))
+        XCTAssertTrue(isNight("2026-11-16T14:47:00Z", "Europe/Oslo"))
+    }
+
     func testAZonesCityIsNamedByItsIdentifier() {
         XCTAssertEqual(Daylight.cityName(of: TimeZone(identifier: "Europe/Oslo")!), "Oslo")
         XCTAssertEqual(Daylight.cityName(of: TimeZone(identifier: "America/New_York")!), "New York")

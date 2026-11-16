@@ -59,6 +59,17 @@ class DaylightTest {
     }
 
     @Test
+    fun `the theme turns over on the minute settings names`() {
+        // Oslo's sun reaches the horizon at 15:46:03 on 16 November 2026, and
+        // Settings says "dark from 15:47": still light at 15:46:30, dark at 15:47.
+        val sunset = Daylight.sunTimes(Instant.parse("2026-11-16T12:00:00Z"), ZoneId.of("Europe/Oslo"), locations).sunset
+        assertEquals(LocalTime.of(15, 47), sunset)
+        assertEquals(false, isNight("2026-11-16T14:46:30Z", "Europe/Oslo"))
+        assertEquals(false, isNight("2026-11-16T14:46:59Z", "Europe/Oslo"))
+        assertEquals(true, isNight("2026-11-16T14:47:00Z", "Europe/Oslo"))
+    }
+
+    @Test
     fun `a zone's city is named by its ID`() {
         assertEquals("Oslo", Daylight.cityName(ZoneId.of("Europe/Oslo"), locations))
         assertEquals("New York", Daylight.cityName(ZoneId.of("America/New_York"), locations))

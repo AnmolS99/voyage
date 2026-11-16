@@ -26,7 +26,12 @@ enum Daylight {
     }
 
     /// A zone with no city falls back to 07:00–19:00 on its clock.
+    ///
+    /// Asks at the start of `now`'s minute, so the theme turns over on a whole
+    /// minute — the one `sunTimes` names — rather than seconds into the minute
+    /// before, while the clock still shows a time before the sunset it says.
     static func isNight(at now: Date = Date(), in timeZone: TimeZone = .current) -> Bool {
+        let now = Date(timeIntervalSince1970: (now.timeIntervalSince1970 / 60).rounded(.down) * 60)
         guard let location = location(of: timeZone) else {
             var calendar = Calendar(identifier: .gregorian)
             calendar.timeZone = timeZone
