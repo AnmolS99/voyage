@@ -523,7 +523,10 @@ Painted header art for the country sheet (the "Journey" design), one day (light
 mode) and one night (dark mode) image per country: iOS `CountryExploreView`
 (`JourneyHeader`) and Android `CountryDetailSheet` (`ui/country/JourneyHeader.kt`)
 show it full-bleed with the flag and name over its top-left, fading into the
-sheet at the bottom. A country without art keeps the plain header, so art can be
+sheet at the bottom. The name is one line at 40 pt, shrunk to fit down to 30 pt;
+a longer one ("Democratic Republic of the Congo") goes on two balanced lines
+at 30 pt or less (`JourneyTitle` on each, pinned by `JourneyTitleTest` and
+`testJourneyTitleFitsLongNamesOnTwoLines`). A country without art keeps the plain header, so art can be
 added one country at a time. The images are `shared/data/journey/<ISO>_day.webp`
 and `<ISO>_night.webp` (1170×720, the 390×240 banner at 3×). iOS bundles the
 folder through a folder reference, and Android packages it with the rest of

@@ -64,9 +64,10 @@ extension View {
     /// Centres this Newsreader text in an `HStack` on the middle of its
     /// capitals rather than its line box, whose room below the baseline
     /// otherwise lifts it above a flag beside it — Android `DisplayCapitalsCentre`.
-    func centredOnDisplayCapitals() -> some View {
+    /// Text set on several `lines` centres on its first line's capitals.
+    func centredOnDisplayCapitals(lines: Int = 1) -> some View {
         alignmentGuide(VerticalAlignment.center) { d in
-            d[.firstTextBaseline] - d.height * AppFonts.displayCapHeightOfLine / 2
+            d[.firstTextBaseline] - d.height / CGFloat(max(lines, 1)) * AppFonts.displayCapHeightOfLine / 2
         }
     }
 }
