@@ -725,3 +725,23 @@ final class GlobeStateSyncTests: XCTestCase {
         XCTAssertTrue(first.writesCloud)
     }
 }
+
+/// The map's one-finger zoom drag — mirrors Android's `MapProjectionTest`, with
+/// the direction flipped: dragging up zooms in on iOS, down on Android.
+final class MapZoomDragTests: XCTestCase {
+
+    func testZoomDoublesEveryHundredPointsDraggingUp() {
+        XCTAssertEqual(MapView.zoomDragScale(from: 1, travel: -100), 2, accuracy: 1e-6)
+        XCTAssertEqual(MapView.zoomDragScale(from: 2, travel: -100), 4, accuracy: 1e-6)
+        XCTAssertEqual(MapView.zoomDragScale(from: 2, travel: 100), 1, accuracy: 1e-6)
+    }
+
+    func testZoomIsMeasuredFromTheStartOfTheDrag() {
+        XCTAssertEqual(MapView.zoomDragScale(from: 3, travel: 0), 3, accuracy: 1e-6)
+    }
+
+    func testZoomStopsAtTheLimits() {
+        XCTAssertEqual(MapView.zoomDragScale(from: 1, travel: -10_000), 10, accuracy: 1e-6)
+        XCTAssertEqual(MapView.zoomDragScale(from: 5, travel: 10_000), 1, accuracy: 1e-6)
+    }
+}

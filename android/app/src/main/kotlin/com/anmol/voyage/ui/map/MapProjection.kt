@@ -2,6 +2,8 @@ package com.anmol.voyage.ui.map
 
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
+import kotlin.math.exp
+import kotlin.math.ln
 
 /**
  * Equirectangular projection for the flat map, matching iOS `MapView` exactly.
@@ -90,6 +92,26 @@ class MapProjection(val viewWidth: Float, val viewHeight: Float) {
         clampOffset(viewWidth / 2f - viewX(point.lon), viewHeight / 2f - viewY(point.lat), MIN_SCALE)
 
     /**
+     * The pan that keeps view point ([anchorX], [anchorY]) still while the zoom
+     * goes from [fromScale] to [toScale], starting from ([offsetX], [offsetY]) and
+     * clamped as any pan is. How a zoom drag zooms about where it pressed, as a
+     * pinch zooms about its centroid. iOS `MapView.zoomedOffset(about:)`.
+     */
+    fun offsetZoomingAbout(
+        anchorX: Float,
+        anchorY: Float,
+        offsetX: Float,
+        offsetY: Float,
+        fromScale: Float,
+        toScale: Float,
+    ): Pair<Float, Float> {
+        val change = toScale / fromScale
+        val fromCentreX = anchorX - viewWidth / 2f - offsetX
+        val fromCentreY = anchorY - viewHeight / 2f - offsetY
+        return clampOffset(offsetX + fromCentreX * (1f - change), offsetY + fromCentreY * (1f - change), toScale)
+    }
+
+    /**
      * A microstate dot's on-screen radius at [scale]: [CountryHitTester.POINT_HIT_RADIUS]
      * of the map, so it grows with the land when zooming in and what is drawn is
      * what is tappable — the globe's rule (`GlobeCamera.dotRadiusInWorld`) — but
@@ -102,5 +124,28 @@ class MapProjection(val viewWidth: Float, val viewHeight: Float) {
         /** Zoom limits, as on iOS. */
         const val MIN_SCALE = 1f
         const val MAX_SCALE = 10f
+
+        /**
+         * Finger travel, in dp, that doubles (or halves) the map's zoom in a
+         * one-finger zoom drag. Per dp for the reason `GlobeCamera.degreesPerDp`
+         * gives: a dp and an iOS point are the same physical size, so iOS
+         * `MapFit.zoomDragDoublingDistance` is the same number.
+         */
+        const val ZOOM_DRAG_DOUBLING_DP = 100f
+
+        /**
+         * Applies a one-finger zoom drag: [dragDp] of vertical finger travel since
+         * a drag that began at [startScale].
+         *
+         * Exponential, so every dp is the same *ratio* of zoom at both ends of
+         * the 1…10 range, and measured from where the drag began, so dragging
+         * back to the start puts the zoom back exactly — as
+         * `GlobeCamera.zoomDraggedBy` does for the globe.
+         *
+         * Dragging **down** zooms in, as on the globe and in Google Maps; iOS
+         * zooms the other way, Apple's convention.
+         */
+        fun zoomDragScale(startScale: Float, dragDp: Float): Float =
+            (startScale * exp(dragDp / ZOOM_DRAG_DOUBLING_DP * ln(2f))).coerceIn(MIN_SCALE, MAX_SCALE)
     }
 }
