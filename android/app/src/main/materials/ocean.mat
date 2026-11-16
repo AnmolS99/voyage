@@ -1,0 +1,36 @@
+// The ocean sphere, painted with the Earth texture.
+//
+// The sphere's UVs are already geographic (see UvSphere), so this is a plain
+// lookup. The texture is uploaded as RGBA8, not SRGB8_A8: like the palette
+// colors (see toFilamentColor), its sRGB values must reach the framebuffer
+// untouched, which holds only while post-processing is off. A flat ocean is a
+// 1 × 1 texture of the palette color, so there is one ocean material rather
+// than two.
+//
+// The relief image shares the sphere's geographic UVs, so it needs none of the
+// fills' position-to-UV work; reliefAt is compiled in only because it sits
+// beside hardLight.
+material {
+    name : ocean,
+    shadingModel : unlit,
+    requires : [ uv0 ],
+    // Filament flips V by default, for glTF-style UVs. The sphere's are
+    // already top-left like the image's rows, so flipping them painted the
+    // world upside down.
+    flipUV : false,
+    parameters : [
+        { type : sampler2d, name : earth },
+        { type : sampler2d, name : relief }
+    ]
+}
+
+fragment {
+    #include "relief.glsl"
+
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        vec4 earth = texture(materialParams_earth, getUV0());
+        float shade = texture(materialParams_relief, getUV0()).r;
+        material.baseColor = vec4(hardLight(earth.rgb, shade), earth.a);
+    }
+}

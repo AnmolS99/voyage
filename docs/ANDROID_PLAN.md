@@ -65,8 +65,9 @@ tests run locally, not in CI — 34, green on the Pixel 9 API 36 emulator.
 | 2026-08-09 | Search is a sheet behind an icon, not a docked `SearchBar` | A docked bar permanently owns the top of the screen, and the map *is* the screen. |
 | 2026-08-09 | Search folds accents and ranks prefix matches first | iOS's `contains` buries `India` under `Indonesia`. Ordering is not a cross-platform invariant. |
 | 2026-08-11 | The globe draws into a `TextureView`, not a `SurfaceView` | A SurfaceView shows black until its first buffer composites. No measured cost. |
-| 2026-08-11 | Geometry and compiled material bytes cached per process | Pure functions of files that never change at runtime; rebuilding cost ~500 ms per navigation. |
+| 2026-08-11 | Geometry and material bytes cached per process | Pure functions of files that never change at runtime; rebuilding cost ~500 ms per navigation. |
 | 2026-08-11 | Materials compiled on device with `filamat`, not `matc` | `matc` is a native binary that would land in the build and on CI runners. |
+| 2026-11-16 | Materials compiled by the build with `matc`, superseding the row above | Filament now publishes `matc` to Maven Central per platform at the engine's version, so it is a Gradle dependency and nothing lands on a runner. `filamat` was a 9 MB library per ABI (3 MB of the download) and ~190 ms of first launch; `filamat-android-lite` stopped at 1.44 (issue #163). |
 | 2026-08-11 | Globe materials are **unlit**, post-processing disabled | Both shift palette colors. Coupled: no post-processing also disables the linear→sRGB encode. |
 | 2026-08-11 | The far hemisphere is hidden by the opaque ocean, not backface culling | The depth buffer already does it, so winding never has to be reasoned about. |
 | 2026-08-11 | The globe camera is owned by the render loop, not Compose state | A drag changes it once per frame; as state it would re-resolve 181 country colors each time. |

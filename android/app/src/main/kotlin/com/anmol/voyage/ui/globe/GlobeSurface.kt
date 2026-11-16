@@ -1,5 +1,6 @@
 package com.anmol.voyage.ui.globe
 
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.view.Choreographer
 import android.view.Surface
@@ -20,6 +21,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -229,12 +231,14 @@ internal fun GlobeSurface(
  * Built with the screen rather than with the globe, so it is ready before the
  * geometry is and a session that starts on the flat map pays for it too. That is
  * the cheap half of the engine — `Engine.create()` and three materials whose
- * shaders were compiled once for the process — while the expensive half, the
+ * shaders were compiled by the build — while the expensive half, the
  * meshes and the Earth texture, is uploaded only when something asks to draw.
  */
 @Composable
 internal fun rememberGlobeSurfaceHost(): GlobeSurfaceHost {
-    val host = remember { GlobeSurfaceHost() }
+    // The application's assets: the host outlives nothing they could leak.
+    val assets = LocalContext.current.applicationContext.assets
+    val host = remember { GlobeSurfaceHost(assets) }
     DisposableEffect(host) {
         onDispose { host.destroy() }
     }
@@ -307,9 +311,9 @@ private fun Modifier.globeGestures(
  * where it is owned, [attach] for what a new `TextureView` costs, and
  * [setGeometry] for what it does not.
  */
-internal class GlobeSurfaceHost {
+internal class GlobeSurfaceHost(assets: AssetManager) {
 
-    private val renderer = GlobeRenderer()
+    private val renderer = GlobeRenderer(assets)
     private val uiHelper = UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK)
     private val choreographer: Choreographer = Choreographer.getInstance()
     private var destroyed = false

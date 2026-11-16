@@ -136,6 +136,76 @@ abstract class GenerateWorldCache : JavaExec() {
     }
 }
 
+/**
+ * Compiles the globe's materials, the .mat files in src/main/materials, into the .filamat
+ * files `GlobeMaterials` loads — at build time, so the app ships neither a
+ * shader compiler nor the ~190 ms it took to run one on first launch.
+ */
+abstract class CompileMaterials : DefaultTask() {
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sources: DirectoryProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val compiler: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    @TaskAction
+    fun compile() {
+        val output = outputDirectory.get().asFile
+        output.deleteRecursively()
+        val compiled = File(output, "materials").apply { mkdirs() }
+        // Maven artifacts carry no executable bit. The name is kept because
+        // Windows goes by its .exe.
+        val matc = compiler.singleFile.copyTo(File(temporaryDir, compiler.singleFile.name), overwrite = true)
+        matc.setExecutable(true)
+        sources.asFileTree.matching { include("*.mat") }.forEach { material ->
+            execOperations.exec {
+                // What GlobeMaterials asked filamat for: GLES shaders for phones.
+                commandLine(
+                    matc.path,
+                    "--platform", "mobile",
+                    "--api", "opengl",
+                    "--output", File(compiled, "${material.nameWithoutExtension}.filamat").path,
+                    material.path,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Filament's material compiler for this machine, at the engine's version — a
+ * material is only loadable by the Filament release that compiled it, so the
+ * two must never be versioned apart. Published to Maven Central as one
+ * executable per platform, the way protoc is.
+ */
+val matc: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isTransitive = false
+    defaultDependencies {
+        val os = System.getProperty("os.name").lowercase()
+        val arm = System.getProperty("os.arch") in setOf("aarch64", "arm64")
+        val platform = when {
+            os.contains("mac") && arm -> "osx-aarch_64"
+            os.contains("linux") && !arm -> "linux-x86_64"
+            os.contains("windows") && !arm -> "windows-x86_64"
+            else -> throw GradleException(
+                "Filament publishes no matc for ${System.getProperty("os.name")} " +
+                    "${System.getProperty("os.arch")}; build on Apple silicon, x86-64 Linux or x86-64 Windows",
+            )
+        }
+        add(project.dependencies.create("com.google.android.filament:matc:${libs.versions.filament.get()}:$platform@exe"))
+    }
+}
+
 /** tools/world-cache and its runtime dependencies, for GenerateWorldCache to run. */
 val worldCacheTool: Configuration by configurations.creating {
     isCanBeConsumed = false
@@ -157,6 +227,14 @@ androidComponents {
         }
         // AGP chooses the directory, and packages whatever lands in it as assets.
         variant.sources.assets?.addGeneratedSourceDirectory(generate, GenerateWorldCache::outputDirectory)
+
+        val compileMaterials = tasks.register<CompileMaterials>(
+            "compile${variant.name.replaceFirstChar { it.uppercase() }}Materials",
+        ) {
+            sources = layout.projectDirectory.dir("src/main/materials")
+            compiler.from(matc)
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(compileMaterials, CompileMaterials::outputDirectory)
     }
 }
 
@@ -177,7 +255,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.filament.android)
-    implementation(libs.filamat.android)
 
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)

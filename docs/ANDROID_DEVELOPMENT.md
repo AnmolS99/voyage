@@ -338,6 +338,28 @@ read the generated files themselves: `SharedFiles.countryDataCache()` parses the
 GeoJSON, and `GlobeGeometryCache` triangulates until `install` points it at the
 asset.
 
+## Materials
+
+The globe's three Filament materials are compiled by the build, not on the
+device. Their sources are `app/src/main/materials/` — one `.mat` each for the
+country fills, the ocean and the outlines, and `relief.glsl`, which the first
+two include — and `compile<Variant>Materials` (`CompileMaterials` in
+`app/build.gradle.kts`) runs Filament's `matc` over them and adds the
+`.filamat` files as generated assets under `materials/`, where `GlobeMaterials`
+reads them.
+
+`matc` needs no installing: Filament publishes it to Maven Central as one
+executable per platform, and the build resolves the one for this machine at
+the version of `filament` in `gradle/libs.versions.toml`. Keep it that way — a
+material loads only in the Filament release that compiled it, so bumping
+Filament recompiles them, and a `matc` from anywhere else would not. It exists
+for Apple silicon macOS, x86-64 Linux and x86-64 Windows; the build fails with
+a message saying so anywhere else.
+
+A shader that does not compile fails the build with `matc`'s error. What the
+JVM cannot check is a number the GLSL shares with Kotlin, so
+`GlobeMaterialSourcesTest` holds those together.
+
 ## What is tested where
 
 JVM unit tests (`src/test`) cover everything that is pure logic — the GeoJSON

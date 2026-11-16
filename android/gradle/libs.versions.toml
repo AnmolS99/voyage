@@ -37,10 +37,10 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 
 # Filament: Google's real-time renderer, the Android analogue of SceneKit
-# (see the Android plan's decision log). filamat compiles the globe's materials
-# at runtime, which keeps matc — a native toolchain — out of the build and CI.
+# (see the Android plan's decision log). Its materials are compiled by the
+# build, with the matc of this same version — see CompileMaterials in
+# app/build.gradle.kts.
 filament-android = { group = "com.google.android.filament", name = "filament-android", version.ref = "filament" }
-filamat-android = { group = "com.google.android.filament", name = "filamat-android", version.ref = "filament" }
 
 # Versions of every compose artifact below come from the BOM.
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

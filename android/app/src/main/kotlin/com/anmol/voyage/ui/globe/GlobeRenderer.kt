@@ -1,5 +1,6 @@
 package com.anmol.voyage.ui.globe
 
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.view.Surface
 import androidx.compose.ui.graphics.Color
@@ -50,7 +51,7 @@ import kotlin.math.abs
  * painted with the Earth texture, and a country with nothing to show leaves the
  * scene so the texture shows through it.
  */
-internal class GlobeRenderer {
+internal class GlobeRenderer(assets: AssetManager) {
 
     private val engine: Engine = Engine.create().also { enginesCreated++ }
     private val renderer: Renderer = engine.createRenderer()
@@ -58,7 +59,7 @@ internal class GlobeRenderer {
     private val view: View = engine.createView()
     private val cameraEntity: Int = EntityManager.get().create()
     private val camera: Camera = engine.createCamera(cameraEntity)
-    private val materials: GlobeMaterials = GlobeMaterials.build(engine)
+    private val materials: GlobeMaterials = GlobeMaterials.build(engine, assets)
 
     private var swapChain: SwapChain? = null
     private var viewportWidth = 0
