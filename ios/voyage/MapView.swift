@@ -233,6 +233,30 @@ struct MapView: View {
         /// for a map nobody may ever open.
         let isDrawn: Bool
 
+        /// What the canvas fills or strokes with for `paint` — the globe's
+        /// colors for the same `CountryStyle`. `plain` is what an unpainted fill
+        /// or border takes; the visited-and-wishlist gradient runs from the
+        /// bottom-left of `rect` to its top-right.
+        private static func shading(_ paint: CountryStyle.Paint,
+                                    plain: GraphicsContext.Shading,
+                                    gradientAcross rect: CGRect) -> GraphicsContext.Shading {
+            switch paint {
+            case .plain:
+                return plain
+            case .visited:
+                return .color(AppColors.visited)
+            case .wishlist:
+                return .color(AppColors.wishlist)
+            case .visitedAndWishlist:
+                return .linearGradient(
+                    Gradient(colors: [AppColors.visited, AppColors.wishlist]),
+                    startPoint: CGPoint(x: rect.minX, y: rect.maxY),
+                    endPoint: CGPoint(x: rect.maxX, y: rect.minY))
+            case .custom(let color):
+                return .color(Color(color))
+            }
+        }
+
         var body: some View {
             Canvas(rendersAsynchronously: true) { context, size in
                 guard isDrawn else { return }
@@ -268,6 +292,9 @@ struct MapView: View {
                     hasTexture = true
                 }
 
+                // Plain land is left unpainted over a texture, as on the globe
+                let plainFill: GraphicsContext.Shading = hasTexture ? .color(.clear) : .color(AppColors.land)
+
                 // Draw polygon countries from the path cache through a canvas-level
                 // transform (pan/zoom), so paths are built once instead of per frame.
 
@@ -279,35 +306,15 @@ struct MapView: View {
 
                 var borders: [(paths: [Path], shading: GraphicsContext.Shading, width: CGFloat)] = []
                 for entry in entries {
-                    let isVisited = visited.contains(entry.name)
-                    let isWishlist = wishlist.contains(entry.name)
-                    let isSelected = selected == entry.name
+                    let style = CountryStyle(isVisited: visited.contains(entry.name),
+                                             isWishlist: wishlist.contains(entry.name),
+                                             isSelected: selected == entry.name)
                     // Divide by scale: the canvas transform magnifies strokes, border width stays constant on screen
-                    let borderWidth: CGFloat = (isSelected ? 1.5 : 0.5) / scale
-                    let isBoth = isVisited && isWishlist
+                    let borderWidth: CGFloat = (style.isSelected ? 1.5 : 0.5) / scale
 
-                    let fillShading: GraphicsContext.Shading
-                    let borderShading: GraphicsContext.Shading
-
-                    // Gradient shading from the cached base-space bounding box when both visited+wishlist
-                    let gradientShading: GraphicsContext.Shading = .linearGradient(
-                        Gradient(colors: [AppColors.visited, AppColors.wishlist]),
-                        startPoint: CGPoint(x: entry.bounds.minX, y: entry.bounds.maxY),
-                        endPoint: CGPoint(x: entry.bounds.maxX, y: entry.bounds.minY))
-
-                    if isSelected {
-                        fillShading = hasTexture ? .color(.clear) : .color(AppColors.land)
-                        if isBoth { borderShading = gradientShading }
-                        else if isVisited { borderShading = .color(AppColors.visited) }
-                        else if isWishlist { borderShading = .color(AppColors.wishlist) }
-                        else { borderShading = .color(.black) }
-                    } else {
-                        borderShading = .color(.black)
-                        if isBoth { fillShading = gradientShading }
-                        else if isVisited { fillShading = .color(AppColors.visited) }
-                        else if isWishlist { fillShading = .color(AppColors.wishlist) }
-                        else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
-                    }
+                    // The gradient runs across the cached base-space bounding box
+                    let fillShading = Self.shading(style.fill, plain: plainFill, gradientAcross: entry.bounds)
+                    let borderShading = Self.shading(style.border, plain: .color(.black), gradientAcross: entry.bounds)
 
                     // Even-odd fill: hole sub-paths toggle the winding count, leaving
                     // enclave areas (Lesotho) transparent so the underlying country shows through.
@@ -336,39 +343,18 @@ struct MapView: View {
                 // on the map with a screen-space floor, so they stay visible and tappable at any zoom.
                 let dotRadius = fit.dotRadius(scale: scale)
                 for country in countries where country.isPointCountry {
-                    let isVisited = visited.contains(country.name)
-                    let isWishlist = wishlist.contains(country.name)
-                    let isSelected = selected == country.name
-                    let borderWidth: CGFloat = isSelected ? 1.5 : 0.5
-                    let isBoth = isVisited && isWishlist
-
-                    // Determine fill and border shading
-                    let fillShading: GraphicsContext.Shading
-                    let borderShading: GraphicsContext.Shading
+                    let style = CountryStyle(isVisited: visited.contains(country.name),
+                                             isWishlist: wishlist.contains(country.name),
+                                             isSelected: selected == country.name)
+                    let borderWidth: CGFloat = style.isSelected ? 1.5 : 0.5
 
                     guard let coord = country.pointCoordinate else { continue }
                     let center = fit.point(lat: coord.lat, lon: coord.lon).applying(transform)
                     let dotRect = CGRect(x: center.x - dotRadius, y: center.y - dotRadius,
                                          width: dotRadius * 2, height: dotRadius * 2)
 
-                    let gradientShading: GraphicsContext.Shading = .linearGradient(
-                        Gradient(colors: [AppColors.visited, AppColors.wishlist]),
-                        startPoint: CGPoint(x: dotRect.minX, y: dotRect.maxY),
-                        endPoint: CGPoint(x: dotRect.maxX, y: dotRect.minY))
-
-                    if isSelected {
-                        fillShading = hasTexture ? .color(.clear) : .color(AppColors.land)
-                        if isBoth { borderShading = gradientShading }
-                        else if isVisited { borderShading = .color(AppColors.visited) }
-                        else if isWishlist { borderShading = .color(AppColors.wishlist) }
-                        else { borderShading = .color(.black) }
-                    } else {
-                        borderShading = .color(.black)
-                        if isBoth { fillShading = gradientShading }
-                        else if isVisited { fillShading = .color(AppColors.visited) }
-                        else if isWishlist { fillShading = .color(AppColors.wishlist) }
-                        else { fillShading = hasTexture ? .color(.clear) : .color(AppColors.land) }
-                    }
+                    let fillShading = Self.shading(style.fill, plain: plainFill, gradientAcross: dotRect)
+                    let borderShading = Self.shading(style.border, plain: .color(.black), gradientAcross: dotRect)
 
                     let dotPath = Path(ellipseIn: dotRect)
                     context.fill(dotPath, with: fillShading)
@@ -566,21 +552,12 @@ struct MapView: View {
         let lat = 90 - (mapY - fit.verticalOffset) / fit.mapHeight * 180
 
         // Find country at this location
-        if let countryName = findCountryAt(lat: lat, lon: lon) {
-            let center = getCountryCenter(name: countryName)
-            globeState.selectCountry(countryName, center: center)
+        if let countryName = CountryHitTester.shared.findCountry(lat: lat, lon: lon) {
+            globeState.selectCountry(countryName, center: CountryHitTester.shared.center(of: countryName))
         } else if globeState.selectedCountry != nil {
             // Ocean: dismiss the country card, as GlobeView does
             globeState.deselectCountry()
         }
-    }
-
-    private func findCountryAt(lat: Double, lon: Double) -> String? {
-        CountryHitTester.shared.findCountry(lat: lat, lon: lon)
-    }
-
-    private func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
-        CountryHitTester.shared.center(of: name)
     }
 
     // Clamp offset so no edge of the map can be dragged into view

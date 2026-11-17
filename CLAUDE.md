@@ -271,6 +271,7 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 | `Earcut.swift`              | Ear-clipping triangulation (port of mapbox/earcut) |
 | `GeoJSONParser.swift`       | Parses world.geojson into country data            |
 | `CountryHitTester.swift`    | Shared tap-to-country lookup (globe + map)        |
+| `CountryStyle.swift`        | Shared fill/border priority rules (globe + map)   |
 | `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights; `countryNamed` / `countryWithIsoCode` lookups |
 | `GlobeCamera.swift`         | Camera limits and `distanceToFit` (Android `GlobeCamera`) |
 | `MapView.swift`             | 2D flat map view alternative                      |
@@ -331,6 +332,14 @@ The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain 
   into view; zoom resets on rotation and on entering map mode, centred on the
   selected country as far as that clamp allows. Both orientations
   are supported for globe and map (`MapView.MapFit` / Android `MapProjection`)
+
+The priority rules are written once, in `ios/voyage/CountryStyle.swift` (Android
+`ui/map/CountryStyle.kt`): both iOS renderers ask it for a country's fill and
+border paint and only map that paint to their own colors. The globe also keeps
+the style it last applied to each country and restyles only those that changed
+(`GlobeView.Coordinator.updateHighlights`), so anything new that affects a
+country's look has to be part of `CountryStyle`, or the globe will skip it.
+`CountryStyleTests` pins the rules.
 
 When modifying colors or selection logic, always update both files together.
 

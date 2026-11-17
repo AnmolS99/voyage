@@ -19,6 +19,8 @@
 		E812345600F7 /* TerrainRelief.swift in Sources */ = {isa = PBXBuildFile; fileRef = E812345500F7 /* TerrainRelief.swift */; };
 		E81234560153 /* EarthTexture.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550153 /* EarthTexture.swift */; };
 		E81234560154 /* EarthTextureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550154 /* EarthTextureTests.swift */; };
+		E81234560162 /* CountryStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550162 /* CountryStyle.swift */; };
+		E81234560163 /* CountryStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550163 /* CountryStyleTests.swift */; };
 		E81234560001 /* voyageApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550001 /* voyageApp.swift */; };
 		E81234560002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550002 /* ContentView.swift */; };
 		E81234560003 /* GlobeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550003 /* GlobeView.swift */; };
@@ -117,6 +119,8 @@
 		E812345500F7 /* TerrainRelief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerrainRelief.swift; sourceTree = "<group>"; };
 		E81234550153 /* EarthTexture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EarthTexture.swift; sourceTree = "<group>"; };
 		E81234550154 /* EarthTextureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EarthTextureTests.swift; sourceTree = "<group>"; };
+		E81234550162 /* CountryStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryStyle.swift; sourceTree = "<group>"; };
+		E81234550163 /* CountryStyleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryStyleTests.swift; sourceTree = "<group>"; };
 		B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryDataCache.swift; sourceTree = "<group>"; };
 		E81234540001 /* voyage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voyage.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E81234540002 /* voyageTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = voyageTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -263,6 +267,7 @@
 				E812345500F6 /* Typography.swift */,
 				E812345500F7 /* TerrainRelief.swift */,
 				E81234550153 /* EarthTexture.swift */,
+				E81234550162 /* CountryStyle.swift */,
 				E81234550022 /* ContinentData.swift */,
 				E81234520005 /* DailyChallenge */,
 				E81234520006 /* Challenges */,
@@ -312,6 +317,7 @@
 				E81234550107 /* CountrySearchIndexTests.swift */,
 				E81234550152 /* DaylightTests.swift */,
 				E81234550154 /* EarthTextureTests.swift */,
+				E81234550163 /* CountryStyleTests.swift */,
 				E81234550081 /* GeoJSONFixtureTests.swift */,
 				E81234550082 /* OutlineSectorCullingTests.swift */,
 				E81234550080 /* expected_countries.json */,
@@ -521,6 +527,7 @@
 				E812345600F6 /* Typography.swift in Sources */,
 				E812345600F7 /* TerrainRelief.swift in Sources */,
 				E81234560153 /* EarthTexture.swift in Sources */,
+				E81234560162 /* CountryStyle.swift in Sources */,
 				E81234560022 /* ContinentData.swift in Sources */,
 				E81234560026 /* TipJarManager.swift in Sources */,
 				E81234560031 /* CountryListView.swift in Sources */,
@@ -566,6 +573,7 @@
 				E81234560107 /* CountrySearchIndexTests.swift in Sources */,
 				E81234560152 /* DaylightTests.swift in Sources */,
 				E81234560154 /* EarthTextureTests.swift in Sources */,
+				E81234560163 /* CountryStyleTests.swift in Sources */,
 				E81234560081 /* GeoJSONFixtureTests.swift in Sources */,
 				E81234560082 /* OutlineSectorCullingTests.swift in Sources */,
 				E81234560066 /* ChallengeStoreMergeTests.swift in Sources */,
