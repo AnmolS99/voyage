@@ -55,12 +55,13 @@ struct GlobeView: UIViewRepresentable {
              globeState.pendingCameraTarget, globeState.homeRequest,
              globeState.isAutoRotating, globeState.visitedCountries,
              globeState.wishlistCountries, globeState.countryHighlightColors,
-             globeState.globeStyle, globeState.showsTerrain)
+             globeState.globeStyle, globeState.showsTerrain, globeState.viewMode)
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {
         observeState()
         context.coordinator.onCountryTapped = onCountryTapped
+        context.coordinator.updateVisibility()
         context.coordinator.updateGlobeStyle()
         context.coordinator.updateTerrain()
         context.coordinator.updateHighlights()
@@ -338,6 +339,40 @@ struct GlobeView: UIViewRepresentable {
             }
         }
 
+        /// Whether the globe is the renderer on screen, rather than behind the map.
+        private var isShown = true
+        private var pendingPause: DispatchWorkItem?
+
+        /// Pauses the scene while the map is shown. The view stays in the
+        /// hierarchy at opacity 0 so the switch is an instant crossfade, and an
+        /// `SCNView` there keeps rendering for as long as something animates —
+        /// the idle spin, most of the time — at the display's full rate, unseen.
+        ///
+        /// It pauses only once the crossfade has run, so the globe fades out
+        /// still turning, and resumes the moment it is asked back, so it fades in
+        /// live.
+        func updateVisibility() {
+            let shown = globeState.viewMode == .globe
+            guard shown != isShown else { return }
+            isShown = shown
+            pendingPause?.cancel()
+            pendingPause = nil
+
+            if shown {
+                sceneView?.scene?.isPaused = false
+                return
+            }
+
+            // A coasting flick would keep the view rendering continuously
+            stopInertia()
+            let pause = DispatchWorkItem { [weak self] in
+                guard let self, !self.isShown else { return }
+                self.sceneView?.scene?.isPaused = true
+            }
+            pendingPause = pause
+            DispatchQueue.main.asyncAfter(deadline: .now() + HomeView.modeSwitchDuration + 0.1, execute: pause)
+        }
+
         func updateAutoRotation() {
             guard let globeNode else { return }
 
@@ -467,7 +502,10 @@ struct GlobeView: UIViewRepresentable {
             let generation = flightGeneration
 
             SCNTransaction.begin()
-            SCNTransaction.animationDuration = duration
+            // Behind the map nobody watches the flight, and the paused scene would
+            // only play it once the globe is back: land at once, so the globe
+            // already faces a country selected on the map when it fades in.
+            SCNTransaction.animationDuration = isShown ? duration : 0
             SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             if let completion {
                 SCNTransaction.completionBlock = {
