@@ -46,7 +46,7 @@ class GlobeScene {
             scene.rootNode.addChildNode(bundledGlobe)
             coordinator.globeNode = bundledGlobe
 
-            // Rebuild the countryNodes and originalColors dictionaries from cached nodes
+            // Rebuild the coordinator's node dictionaries from cached nodes
             rebuildCoordinatorData(from: bundledGlobe, coordinator: coordinator)
 
             bundledGlobe.eulerAngles.y = homeRotationY
@@ -72,6 +72,7 @@ class GlobeScene {
         cameraNode.camera?.zFar = 100
         cameraNode.position = SCNVector3(0, 0, homeCameraDistance)
         scene.rootNode.addChildNode(cameraNode)
+        coordinator.cameraNode = cameraNode
 
         // Main light (sun-like). A child of the camera, so it keeps shining from the
         // viewer's upper right as the camera orbits in latitude — fixed in world space,
@@ -117,6 +118,7 @@ class GlobeScene {
         let oceanNode = SCNNode(geometry: oceanSphere)
         oceanNode.name = "ocean"
         globeNode.addChildNode(oceanNode)
+        coordinator.oceanNode = oceanNode
 
         // Add countries from GeoJSON
         addCountriesFromGeoJSON(to: globeNode, coordinator: coordinator)
@@ -131,8 +133,6 @@ class GlobeScene {
     }
 
     private static func rebuildCoordinatorData(from globeNode: SCNNode, coordinator: GlobeView.Coordinator) {
-        let landColor = AppColors.landUI
-
         // Country nodes are direct children of the globe (see addCountriesFromGeoJSON
         // and GlobeCacheGenerator), so one pass finds them all — rather than a
         // recursive name search of the whole tree per country.
@@ -140,10 +140,13 @@ class GlobeScene {
         for node in globeNode.childNodes {
             if let name = node.name, nodesByName[name] == nil { nodesByName[name] = node }
         }
+        coordinator.oceanNode = nodesByName["ocean"]
         for country in CountryDataCache.shared.countries {
             if let node = nodesByName[country.name] {
                 coordinator.countryNodes[country.name] = node
-                coordinator.originalColors[country.name] = landColor
+            }
+            if country.isPointCountry, let outline = nodesByName["\(country.name)_outline"] {
+                coordinator.dotOutlineNodes[country.name] = outline
             }
         }
 
@@ -248,7 +251,7 @@ class GlobeScene {
                 globeNode.addChildNode(node)
 
                 coordinator.countryNodes[country.name] = node
-                coordinator.originalColors[country.name] = landColor
+                coordinator.dotOutlineNodes[country.name] = outlineNode
             } else {
                 // Render as polygon (regular countries)
                 if let geometry = PolygonTriangulator.createCountryGeometry(polygons: country.polygons, holes: country.holes) {
@@ -264,7 +267,6 @@ class GlobeScene {
                     node.name = country.name
                     globeNode.addChildNode(node)
                     coordinator.countryNodes[country.name] = node
-                    coordinator.originalColors[country.name] = landColor
 
                     allOutlinePolygons.append(contentsOf: country.polygons)
                 }
