@@ -46,6 +46,12 @@ struct HomeView: View {
     @State private var showingCountryList = false
     @State private var showingExplore = false
 
+    /// How long the crossfade between globe and map takes. Both renderers stay
+    /// in the hierarchy so the switch starts at once; the one faded out stops
+    /// working when this has run (`GlobeView.Coordinator.updateVisibility`, and
+    /// `MapView.lookToDraw` for the map).
+    static let modeSwitchDuration: TimeInterval = 0.3
+
     var body: some View {
         ZStack {
             // Background - starry or warm gradient based on dark mode (only for globe)
@@ -78,7 +84,7 @@ struct HomeView: View {
                 )
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
+        .animation(.easeInOut(duration: Self.modeSwitchDuration), value: globeState.viewMode)
         .sheet(isPresented: $showingCountryList) {
             CountryListView(globeState: globeState)
         }

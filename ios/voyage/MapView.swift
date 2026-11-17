@@ -9,6 +9,7 @@ struct MapView: View {
     @State private var lastOffset: CGSize = .zero
     @State private var pathCache = PathCache()
     @State private var touches = TouchTracker()
+    @State private var shownLook = ShownLook()
     /// Whether the map has been shown, and so is drawn — see `MapCanvas.isDrawn`.
     @State private var isDrawn = false
     @Environment(\.scenePhase) private var scenePhase
@@ -77,17 +78,22 @@ struct MapView: View {
         struct Entry {
             let name: String
             let fillPath: Path      // outer rings + hole rings combined for even-odd fill
-            let outerPaths: [Path]  // outer rings only (stroked borders)
-            let bounds: CGRect      // base-space bounding box (gradient shading)
+            let borderPath: Path    // outer rings only, as one path: one stroke per country
+            let bounds: CGRect      // base-space bounding box (culling, gradient shading)
         }
 
         private(set) var mapWidth: CGFloat = 0
         private(set) var entries: [Entry] = []
+        /// How many countries `entries` was built from.
+        private var countryCount = 0
 
         func rebuildIfNeeded(countries: [GeoJSONCountry], mapWidth: CGFloat) {
-            let polygonCountries = countries.filter { !$0.isPointCountry }
-            guard mapWidth != self.mapWidth || polygonCountries.count != entries.count else { return }
+            // Checked on every evaluation of the map's body, so nothing is
+            // allocated until there is something to rebuild.
+            guard mapWidth != self.mapWidth || countries.count != countryCount else { return }
             self.mapWidth = mapWidth
+            countryCount = countries.count
+            let polygonCountries = countries.filter { !$0.isPointCountry }
             let mapHeight = mapWidth / 2
 
             func project(_ coord: LonLat) -> CGPoint {
@@ -112,19 +118,17 @@ struct MapView: View {
             }
 
             entries = polygonCountries.map { country in
-                var fillPath = Path()
-                var outerPaths: [Path] = []
+                var borderPath = Path()
                 for polygon in country.polygons {
-                    let path = ringPath(polygon)
-                    outerPaths.append(path)
-                    fillPath.addPath(path)
+                    borderPath.addPath(ringPath(polygon))
                 }
+                var fillPath = borderPath
                 for hole in country.holes {
                     fillPath.addPath(ringPath(hole))
                 }
                 return Entry(name: country.name,
                              fillPath: fillPath,
-                             outerPaths: outerPaths,
+                             borderPath: borderPath,
                              bounds: fillPath.boundingRect)
             }
         }
@@ -136,6 +140,7 @@ struct MapView: View {
     /// so no empty space ever shows beside or above the map. Mirrors Android's
     /// `MapProjection`.
     private struct MapFit {
+        let viewSize: CGSize
         let mapWidth: CGFloat
         let mapHeight: CGFloat
         /// Centres the map in the view; zero or negative, as the map overhangs.
@@ -143,6 +148,7 @@ struct MapView: View {
         let verticalOffset: CGFloat
 
         init(viewSize: CGSize) {
+            self.viewSize = viewSize
             mapHeight = max(viewSize.height, viewSize.width / 2)
             mapWidth = mapHeight * 2
             horizontalOffset = (viewSize.width - mapWidth) / 2
@@ -153,6 +159,35 @@ struct MapView: View {
         func point(lat: Double, lon: Double) -> CGPoint {
             CGPoint(x: (lon + 180) / 360 * mapWidth + horizontalOffset,
                     y: (90 - lat) / 180 * mapHeight + verticalOffset)
+        }
+
+        /// The lat/lon under view point `location` once the map is zoomed by
+        /// `scale` and panned by `offset`. Android `MapProjection.viewToLatLon`.
+        func latLon(at location: CGPoint, scale: CGFloat, offset: CGSize) -> (lat: Double, lon: Double) {
+            // Undo the pan and zoom, which act about the view's centre
+            let x = (location.x - viewSize.width / 2 - offset.width) / scale + viewSize.width / 2
+            let y = (location.y - viewSize.height / 2 - offset.height) / scale + viewSize.height / 2
+            return (lat: 90 - (y - verticalOffset) / mapHeight * 180,
+                    lon: (x - horizontalOffset) / mapWidth * 360 - 180)
+        }
+
+        /// `offset` held to where no edge of the map comes into view at `scale`.
+        func clamped(_ offset: CGSize, scale: CGFloat) -> CGSize {
+            // Half of what the zoomed map extends beyond the view (never negative
+            // thanks to the fill; max() only absorbs float rounding)
+            let maxOffsetX = max(0, (mapWidth * scale - viewSize.width) / 2)
+            let maxOffsetY = max(0, (mapHeight * scale - viewSize.height) / 2)
+            return CGSize(width: min(max(offset.width, -maxOffsetX), maxOffsetX),
+                          height: min(max(offset.height, -maxOffsetY), maxOffsetY))
+        }
+
+        /// The part of the map in view, in the base map space `PathCache` builds
+        /// its paths in (map at scale 1, origin at its top-left).
+        func visibleMapRect(scale: CGFloat, offset: CGSize) -> CGRect {
+            CGRect(x: (-viewSize.width / 2 - offset.width) / scale + viewSize.width / 2 - horizontalOffset,
+                   y: (-viewSize.height / 2 - offset.height) / scale + viewSize.height / 2 - verticalOffset,
+                   width: viewSize.width / scale,
+                   height: viewSize.height / scale)
         }
 
         /// A microstate dot's on-screen radius at `scale`: the hit tester's 0.8° point
@@ -208,6 +243,43 @@ struct MapView: View {
                   let source = UIImage(contentsOfFile: path) else { return nil }
             return source.preparingForDisplay() ?? source
         }
+    }
+
+    /// What the map draws of `GlobeState`.
+    private struct Look {
+        let isDarkMode: Bool
+        let textureName: String
+        let showsTerrain: Bool
+        let visited: Set<String>
+        let wishlist: Set<String>
+        let selected: String?
+
+        init(_ globeState: GlobeState) {
+            isDarkMode = globeState.isDarkMode
+            textureName = globeState.mapStyle.textureName
+            showsTerrain = globeState.showsTerrain
+            visited = globeState.visitedCountries
+            wishlist = globeState.wishlistCountries
+            selected = globeState.selectedCountry
+        }
+    }
+
+    /// The `Look` the map last drew, kept while it is behind the globe. A
+    /// reference type, like `PathCache`: keeping it must not invalidate the view.
+    private final class ShownLook {
+        var look: Look?
+    }
+
+    /// The look to draw. Behind the globe the map stays in the hierarchy, so
+    /// switching to it is an instant crossfade, but it holds the look it last
+    /// drew: `body` then reads nothing of `GlobeState` but the view mode, so a
+    /// selection or a visit made on the globe neither re-evaluates the map nor
+    /// redraws its Canvas unseen. It catches up in the update that shows it.
+    private func lookToDraw() -> Look {
+        if globeState.viewMode != .map, let look = shownLook.look { return look }
+        let look = Look(globeState)
+        shownLook.look = look
+        return look
     }
 
     /// The map's drawing, as a view of its own holding plain values. Its Canvas
@@ -304,22 +376,27 @@ struct MapView: View {
                 mapContext.translateBy(x: -size.width / 2, y: -size.height / 2)
                 mapContext.translateBy(x: fit.horizontalOffset, y: fit.verticalOffset)
 
-                var borders: [(paths: [Path], shading: GraphicsContext.Shading, width: CGFloat)] = []
-                for entry in entries {
+                // Only what is in view: zoomed in on Europe, most of the world's
+                // 171k points would be tessellated just to be clipped away. The
+                // margin covers a border's width.
+                let visibleRect = fit.visibleMapRect(scale: scale, offset: offset).insetBy(dx: -2 / scale, dy: -2 / scale)
+
+                var selectedBorder: (path: Path, shading: GraphicsContext.Shading)?
+                for entry in entries where entry.bounds.intersects(visibleRect) {
                     let style = CountryStyle(isVisited: visited.contains(entry.name),
                                              isWishlist: wishlist.contains(entry.name),
                                              isSelected: selected == entry.name)
-                    // Divide by scale: the canvas transform magnifies strokes, border width stays constant on screen
-                    let borderWidth: CGFloat = (style.isSelected ? 1.5 : 0.5) / scale
 
                     // The gradient runs across the cached base-space bounding box
                     let fillShading = Self.shading(style.fill, plain: plainFill, gradientAcross: entry.bounds)
-                    let borderShading = Self.shading(style.border, plain: .color(.black), gradientAcross: entry.bounds)
+                    if style.isSelected {
+                        selectedBorder = (entry.borderPath,
+                                          Self.shading(style.border, plain: .color(.black), gradientAcross: entry.bounds))
+                    }
 
                     // Even-odd fill: hole sub-paths toggle the winding count, leaving
                     // enclave areas (Lesotho) transparent so the underlying country shows through.
                     mapContext.fill(entry.fillPath, with: fillShading, style: FillStyle(eoFill: true))
-                    borders.append((entry.outerPaths, borderShading, borderWidth))
                 }
 
                 // Hard light, the blend the globe's shader modifier applies: neutral
@@ -333,10 +410,15 @@ struct MapView: View {
                 }
 
                 // Only stroke outer country borders; enclave borders belong to the enclave country.
-                for (paths, shading, width) in borders {
-                    for path in paths {
-                        mapContext.stroke(path, with: shading, lineWidth: width)
-                    }
+                // Divide by scale: the canvas transform magnifies strokes, border width stays constant on screen.
+                // Every border but the selected country's is the same thin black line, one stroke per country.
+                for entry in entries where entry.name != selected && entry.bounds.intersects(visibleRect) {
+                    mapContext.stroke(entry.borderPath, with: .color(.black), lineWidth: 0.5 / scale)
+                }
+                // The selected country's goes on last, over its neighbours' — as
+                // the globe raises its selected outline above the others.
+                if let selectedBorder {
+                    mapContext.stroke(selectedBorder.path, with: selectedBorder.shading, lineWidth: 1.5 / scale)
                 }
 
                 // Draw point countries (small island nations and microstates) as dots sized
@@ -384,14 +466,16 @@ struct MapView: View {
             // Rebuilt here, not while drawing: the Canvas draws off the main thread.
             let _ = pathCache.rebuildIfNeeded(countries: countries, mapWidth: fit.mapWidth)
 
+            let look = lookToDraw()
+
             MapCanvas(fit: fit, scale: scale, offset: offset,
                       countries: countries, entries: pathCache.entries,
-                      isDarkMode: globeState.isDarkMode,
-                      textureName: globeState.mapStyle.textureName,
-                      showsTerrain: globeState.showsTerrain,
-                      visited: globeState.visitedCountries,
-                      wishlist: globeState.wishlistCountries,
-                      selected: globeState.selectedCountry,
+                      isDarkMode: look.isDarkMode,
+                      textureName: look.textureName,
+                      showsTerrain: look.showsTerrain,
+                      visited: look.visited,
+                      wishlist: look.wishlist,
+                      selected: look.selected,
                       isDrawn: isDrawn)
             .gesture(
                 MagnifyGesture()
@@ -538,18 +622,7 @@ struct MapView: View {
     }
 
     private func handleTap(at location: CGPoint, in size: CGSize) {
-        let fit = MapFit(viewSize: size)
-
-        // Reverse the transformation to get map coordinates
-        let centerX = size.width / 2 + offset.width
-        let centerY = size.height / 2 + offset.height
-
-        let mapX = (location.x - centerX) / scale + size.width / 2
-        let mapY = (location.y - centerY) / scale + size.height / 2
-
-        // Undo the centring to get lat/lon
-        let lon = (mapX - fit.horizontalOffset) / fit.mapWidth * 360 - 180
-        let lat = 90 - (mapY - fit.verticalOffset) / fit.mapHeight * 180
+        let (lat, lon) = MapFit(viewSize: size).latLon(at: location, scale: scale, offset: offset)
 
         // Find country at this location
         if let countryName = CountryHitTester.shared.findCountry(lat: lat, lon: lon) {
@@ -562,21 +635,7 @@ struct MapView: View {
 
     // Clamp offset so no edge of the map can be dragged into view
     private func clampOffset(_ offset: CGSize, scale: CGFloat, viewSize: CGSize) -> CGSize {
-        let fit = MapFit(viewSize: viewSize)
-
-        // Calculate how much the scaled map extends beyond the view
-        let scaledMapWidth = fit.mapWidth * scale
-        let scaledMapHeight = fit.mapHeight * scale
-
-        // Maximum offset is half the difference between scaled map and view
-        // (never negative thanks to the fill; max() only absorbs float rounding)
-        let maxOffsetX = max(0, (scaledMapWidth - viewSize.width) / 2)
-        let maxOffsetY = max(0, (scaledMapHeight - viewSize.height) / 2)
-
-        return CGSize(
-            width: min(max(offset.width, -maxOffsetX), maxOffsetX),
-            height: min(max(offset.height, -maxOffsetY), maxOffsetY)
-        )
+        MapFit(viewSize: viewSize).clamped(offset, scale: scale)
     }
 
 }

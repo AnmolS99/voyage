@@ -341,6 +341,16 @@ the style it last applied to each country and restyles only those that changed
 country's look has to be part of `CountryStyle`, or the globe will skip it.
 `CountryStyleTests` pins the rules.
 
+Home keeps both renderers in the hierarchy and crossfades between them
+(`HomeView.modeSwitchDuration`), so the switch is instant — never replace that
+with an `if`. The one faded out stops working instead: the globe pauses its
+scene once the crossfade has run and resumes the moment it is asked back
+(`GlobeView.Coordinator.updateVisibility`; a flight requested meanwhile lands at
+once), and the map holds the look it last drew and reads nothing of `GlobeState`
+but the view mode until it is shown again (`MapView.lookToDraw`). The map draws
+only the countries in view, one border stroke per country, with the selected
+country's border last so it lies over its neighbours'.
+
 When modifying colors or selection logic, always update both files together.
 
 ## Daily Challenge
