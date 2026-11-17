@@ -555,14 +555,20 @@ internal class GlobeRenderer {
         setParameter("gradient", if (fill.gradient) 1.0f else 0.0f)
     }
 
-    /** Renders one frame. Returns false when the surface is not ready. */
+    /**
+     * Renders one frame.
+     *
+     * Returns false when Filament skipped it to keep pace with the display: the
+     * globe draws on demand, so that frame is still owed and the caller has to
+     * ask again. With no surface to draw to there is nothing owed — a new
+     * surface asks for its own first frame — and this returns true.
+     */
     fun render(frameTimeNanos: Long): Boolean {
-        val chain = swapChain ?: return false
-        if (viewportWidth == 0 || viewportHeight == 0) return false
-        if (renderer.beginFrame(chain, frameTimeNanos)) {
-            renderer.render(view)
-            renderer.endFrame()
-        }
+        val chain = swapChain ?: return true
+        if (viewportWidth == 0 || viewportHeight == 0) return true
+        if (!renderer.beginFrame(chain, frameTimeNanos)) return false
+        renderer.render(view)
+        renderer.endFrame()
         return true
     }
 
