@@ -54,6 +54,7 @@ import com.anmol.voyage.state.GlobeStyle
 import com.anmol.voyage.state.ViewMode
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.country.CountryDetailSheet
+import com.anmol.voyage.ui.country.CountryListFilter
 import com.anmol.voyage.ui.country.CountrySearchSheet
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFill
 import com.anmol.voyage.ui.globe.GlobeCountryFills.toGlobeFillOrNull
@@ -161,6 +162,12 @@ fun HomeScreen(
     }
 
     var showingSearch by rememberSaveable { mutableStateOf(false) }
+    // What the country list opens on: All from the dock's +, Visited from its count.
+    var searchFilter by rememberSaveable { mutableStateOf(CountryListFilter.ALL) }
+    val openSearch = { filter: CountryListFilter ->
+        searchFilter = filter
+        showingSearch = true
+    }
     var showingDetails by rememberSaveable { mutableStateOf(false) }
 
     val selectedCountry = state.selectedCountry
@@ -219,7 +226,7 @@ fun HomeScreen(
                         Modifier.worldSemantics(
                             description = worldDescription(isGlobe, visited = state.visitedCountries.size),
                             searchLabel = stringResource(R.string.map_search_countries),
-                            onSearch = { showingSearch = true },
+                            onSearch = { openSearch(CountryListFilter.ALL) },
                         )
                     } else {
                         Modifier
@@ -262,7 +269,8 @@ fun HomeScreen(
                 countryNamed = cache::countryNamed,
                 // A phone on its side: Material's compact height class.
                 compact = maxHeight < COMPACT_HEIGHT,
-                onAddCountry = { if (loaded != null) showingSearch = true },
+                onAddCountry = { if (loaded != null) openSearch(CountryListFilter.ALL) },
+                onShowVisited = { if (loaded != null) openSearch(CountryListFilter.VISITED) },
                 onExplore = { showingDetails = true },
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
@@ -280,6 +288,7 @@ fun HomeScreen(
                 showingSearch = false
             },
             onDismiss = { showingSearch = false },
+            initialFilter = searchFilter,
         )
     }
 

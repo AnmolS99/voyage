@@ -55,7 +55,13 @@ Home's bottom chrome, `ui/home/CountriesDock.kt`, ports
 `ios/voyage/CountriesDock.swift` — the progress dock that morphs into the
 selected country's card — with iOS's springs, metrics and button colors
 (`StatusButtons` in `ui/map/CountryStyle.kt`), so changing either is a
-two-platform change.
+two-platform change. The dock's + opens the country list (iOS
+`CountryListView`, Android `CountrySearchSheet`) on All, and tapping its
+progress row opens it on Visited. The list's All · Visited · Wishlist chips are
+`CountryListFilter` on each, same cases and rules, pinned by
+`CountryListFilterTests` and `CountryListFilterTest`: a search looks only within
+the chosen filter, and a country unmarked from a filtered list stays listed,
+unmarked, until another filter is chosen or the list closes.
 `HomeScreen` also owns the globe's **Filament engine — one per Activity** — and
 `VoyageApp` composes it outside the `NavHost` and *under* it, hidden rather than
 removed on a tab switch: a detached `TextureView` loses its surface, and a

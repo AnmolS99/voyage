@@ -10,6 +10,8 @@ import SwiftUI
 struct CountriesDock: View {
     let globeState: GlobeState
     let onAddCountry: () -> Void
+    /// Tapping the progress opens the country list on the visited countries.
+    let onShowVisited: () -> Void
     let onExplore: () -> Void
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -120,6 +122,12 @@ struct CountriesDock: View {
     /// spacing interpolate — so it shrinks and grows rather than crossfading
     /// between a large and a small copy.
     private var progress: some View {
+        Button(action: onShowVisited) { progressContent }
+            .buttonStyle(.plain)
+            .accessibilityHint("Shows the countries you've visited")
+    }
+
+    private var progressContent: some View {
         HStack(spacing: isOpen ? 9 : 12) {
             (Text("\(visitedCount)")
                 .fontWeight(.semibold)
@@ -144,6 +152,8 @@ struct CountriesDock: View {
                 .contentTransition(.numericText(value: Double(percent)))
                 .fixedSize()
         }
+        // The whole row is the target, gaps included, not just the count.
+        .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(visitedCount) of \(total) countries visited, \(percent) percent")
     }

@@ -54,6 +54,18 @@
     <string name="search_includes">Includes %1$s</string>
     <string name="search_country_code">Country code %1$s</string>
     <string name="search_no_results">No countries match “%1$s”.</string>
+    <string name="search_no_visited_results">No visited countries match “%1$s”.</string>
+    <string name="search_no_wishlist_results">No wishlisted countries match “%1$s”.</string>
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_visited">Visited %1$d</string>
+    <string name="search_filter_wishlist">Wishlist %1$d</string>
+    <string name="search_no_visited_title">No visited countries yet</string>
+    <string name="search_no_visited_body">Tap the check beside a country you’ve been to.</string>
+    <string name="search_no_wishlist_title">Your wishlist is empty</string>
+    <string name="search_no_wishlist_body">Tap the heart beside a country you’d like to see.</string>
+    <string name="search_show_all">Show all countries</string>
+    <string name="search_all_countries">Search all countries</string>
+    <string name="dock_progress_action">Show visited countries</string>
 
     <!-- Achievements -->
     <string name="achievements_unlocked">%1$d of %2$d</string>
