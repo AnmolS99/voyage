@@ -76,7 +76,7 @@ struct CountryListView: View {
             .overlay {
                 if shown.isEmpty { emptyState }
             }
-            .safeAreaInset(edge: .top, spacing: 0) {
+            .countryFilterBar(background: AppColors.pageBackground(isDarkMode: globeState.isDarkMode)) {
                 CountryFilterBar(
                     selection: filter,
                     visitedCount: globeState.visitedCountries.count,
@@ -84,7 +84,6 @@ struct CountryListView: View {
                     isDarkMode: globeState.isDarkMode,
                     onSelect: choose
                 )
-                .background(AppColors.pageBackground(isDarkMode: globeState.isDarkMode))
             }
             .searchable(text: $searchText, prompt: "Search countries")
             .scrollContentBackground(.hidden)
@@ -172,9 +171,25 @@ struct CountryListView: View {
     }
 }
 
-/// All · Visited · Wishlist, pinned under the title. Each chip carries its
-/// count and, as on the rows, its status's icon and color: the visited check
-/// in green, the wishlist heart in purple. The chosen one fills with that color.
+private extension View {
+    /// Where the filter chips sit. On iOS 26 the search field is at the bottom,
+    /// so the chips float just above it as Liquid Glass, in a `safeAreaBar` so
+    /// the list fades under them as it does under the search field, and the
+    /// top keeps the plain title over the fading list. Before iOS 26 the search
+    /// field is at the top, so the chips sit under it, on the page's color.
+    @ViewBuilder
+    func countryFilterBar<Bar: View>(background: Color, @ViewBuilder bar: () -> Bar) -> some View {
+        if #available(iOS 26, *) {
+            safeAreaBar(edge: .bottom) { bar() }
+        } else {
+            safeAreaInset(edge: .top, spacing: 0) { bar().background(background) }
+        }
+    }
+}
+
+/// All · Visited · Wishlist. Each chip carries its count and, as on the rows,
+/// its status's icon and color: the visited check in green, the wishlist heart
+/// in purple. The chosen one is tinted that color.
 private struct CountryFilterBar: View {
     let selection: CountryListFilter
     let visitedCount: Int
@@ -183,6 +198,21 @@ private struct CountryFilterBar: View {
     let onSelect: (CountryListFilter) -> Void
 
     var body: some View {
+        if #available(iOS 26, *) {
+            // One container, so the capsules render as one glass layer and
+            // blend where they meet, as grouped system glass controls do.
+            GlassEffectContainer(spacing: 8) { chips }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 2)
+        } else {
+            chips
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+                .padding(.bottom, 8)
+        }
+    }
+
+    private var chips: some View {
         HStack(spacing: 8) {
             chip(.all, title: "All", symbol: nil, count: nil, tint: AppColors.buttonColor)
             chip(.visited, title: "Visited", symbol: "checkmark.circle.fill", count: visitedCount,
@@ -191,9 +221,6 @@ private struct CountryFilterBar: View {
                  tint: AppColors.wishlist)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 4)
-        .padding(.bottom, 8)
     }
 
     private func chip(_ filter: CountryListFilter, title: String, symbol: String?, count: Int?, tint: Color) -> some View {
@@ -216,15 +243,34 @@ private struct CountryFilterBar: View {
                 }
             }
             .foregroundStyle(isSelected ? Color.white : AppColors.textPrimary(isDarkMode: isDarkMode))
-            .padding(.horizontal, 13)
-            .frame(height: 34)
-            .background(Capsule().fill(isSelected ? tint : Color.primary.opacity(0.08)))
+            .padding(.horizontal, 14)
+            .frame(height: 36)
+            .modifier(ChipSurface(isSelected: isSelected, tint: tint))
             .contentShape(Capsule())
             .animation(.snappy(duration: 0.2), value: count)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// A filter chip's capsule: interactive Liquid Glass on iOS 26 — clear when
+/// off, tinted with its status color when chosen, as a selected glass control
+/// is — and a plain fill before it.
+private struct ChipSurface: ViewModifier {
+    let isSelected: Bool
+    let tint: Color
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.glassEffect(
+                isSelected ? .regular.tint(tint).interactive() : .regular.interactive(),
+                in: .capsule
+            )
+        } else {
+            content.background(Capsule().fill(isSelected ? tint : Color.primary.opacity(0.08)))
+        }
     }
 }
 
