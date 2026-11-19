@@ -57,7 +57,7 @@ selected country's card — with iOS's springs, metrics and button colors
 (`StatusButtons` in `ui/map/CountryStyle.kt`), so changing either is a
 two-platform change. The dock's + opens the country list (iOS
 `CountryListView`, Android `CountrySearchSheet`) on All, and tapping its
-progress row opens it on Visited. The list's All · Visited · Wishlist chips are
+visited count ("24/195") opens it on Visited. The list's All · Visited · Wishlist chips are
 `CountryListFilter` on each, same cases and rules, pinned by
 `CountryListFilterTests` and `CountryListFilterTest`: a search looks only within
 the chosen filter, and a country unmarked from a filtered list stays listed,

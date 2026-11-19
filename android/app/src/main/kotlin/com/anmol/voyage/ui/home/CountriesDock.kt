@@ -393,18 +393,8 @@ private fun ProgressRow(
     val pressed by interaction.collectIsPressedAsState()
 
     Row(
+        // One node for TalkBack, which can still open the list from it.
         modifier = modifier
-            // The whole row is the target, gaps included, not just the count.
-            // Dimmed while pressed, as iOS's plain button is: a ripple would
-            // need an edge the row does not have.
-            .graphicsLayer { alpha = if (pressed) 0.55f else 1f }
-            .clickable(
-                interactionSource = interaction,
-                indication = null,
-                onClickLabel = action,
-                role = Role.Button,
-                onClick = onShowVisited,
-            )
             .clearAndSetSemantics {
                 contentDescription = description
                 role = Role.Button
@@ -416,7 +406,22 @@ private fun ProgressRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // Only the count opens the visited list. Compose widens a clickable
+        // this small to the minimum touch target, so it is easy to hit without
+        // growing the dock. Dimmed while pressed, as iOS's plain button is: a
+        // ripple would need an edge the count does not have.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .graphicsLayer { alpha = if (pressed) 0.55f else 1f }
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    onClickLabel = action,
+                    role = Role.Button,
+                    onClick = onShowVisited,
+                ),
+        ) {
             RollingNumber(
                 value = progress.visited,
                 text = { "$it" },

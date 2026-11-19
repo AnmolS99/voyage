@@ -122,22 +122,27 @@ struct CountriesDock: View {
     /// spacing interpolate — so it shrinks and grows rather than crossfading
     /// between a large and a small copy.
     private var progress: some View {
-        Button(action: onShowVisited) { progressContent }
-            .buttonStyle(.plain)
-            .accessibilityHint("Shows the countries you've visited")
-    }
-
-    private var progressContent: some View {
         HStack(spacing: isOpen ? 9 : 12) {
-            (Text("\(visitedCount)")
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-             + Text("/\(total)")
-                .foregroundColor(.secondary))
-                .animatableFont(size: isOpen ? 12 : 15)
-                .monospacedDigit()
-                .contentTransition(.numericText(value: Double(visitedCount)))
-                .fixedSize()
+            // Only the count opens the visited list. Its touch area reaches
+            // past the text — the dock's full height, a little either side —
+            // without moving anything, since "24/195" alone is a small target.
+            Button(action: onShowVisited) {
+                (Text("\(visitedCount)")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                 + Text("/\(total)")
+                    .foregroundColor(.secondary))
+                    .animatableFont(size: isOpen ? 12 : 15)
+                    .monospacedDigit()
+                    .contentTransition(.numericText(value: Double(visitedCount)))
+                    .fixedSize()
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 14)
+                    .contentShape(Rectangle())
+                    .padding(.horizontal, -6)
+                    .padding(.vertical, -14)
+            }
+            .buttonStyle(.plain)
 
             DockProgressBar(
                 fraction: Double(visitedCount) / Double(total),
@@ -152,10 +157,12 @@ struct CountriesDock: View {
                 .contentTransition(.numericText(value: Double(percent)))
                 .fixedSize()
         }
-        // The whole row is the target, gaps included, not just the count.
-        .contentShape(Rectangle())
+        // One element for VoiceOver, which can still open the list from it.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(visitedCount) of \(total) countries visited, \(percent) percent")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Shows the countries you've visited")
+        .accessibilityAction { onShowVisited() }
     }
 
     /// The card previews what Visit would add: a +1 ghost segment after the fill.
