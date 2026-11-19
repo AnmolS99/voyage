@@ -215,22 +215,32 @@ private struct CountryFilterBar: View {
     private var chips: some View {
         HStack(spacing: 8) {
             chip(.all, title: "All", symbol: nil, count: nil, tint: AppColors.buttonColor)
+            // Visited is the globe's yellow, as everywhere a country is marked
+            // visited; dark ink keeps the chosen chip's label readable on it.
             chip(.visited, title: "Visited", symbol: "checkmark.circle.fill", count: visitedCount,
-                 tint: AppColors.buttonVisited)
+                 tint: AppColors.visited, onTint: .black)
             chip(.wishlist, title: "Wishlist", symbol: "heart.fill", count: wishlistCount,
                  tint: AppColors.wishlist)
             Spacer(minLength: 0)
         }
     }
 
-    private func chip(_ filter: CountryListFilter, title: String, symbol: String?, count: Int?, tint: Color) -> some View {
+    private func chip(_ filter: CountryListFilter, title: String, symbol: String?, count: Int?,
+                      tint: Color, onTint: Color = .white) -> some View {
         let isSelected = selection == filter
         return Button { onSelect(filter) } label: {
             HStack(spacing: 5) {
                 if let symbol {
-                    Image(systemName: symbol)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.white : tint)
+                    Group {
+                        if isSelected {
+                            Image(systemName: symbol).foregroundStyle(onTint)
+                        } else if filter == .visited {
+                            VisitedCheckmark()
+                        } else {
+                            Image(systemName: symbol).foregroundStyle(tint)
+                        }
+                    }
+                    .font(.system(size: 13, weight: .semibold))
                 }
                 Text(title)
                     .font(.voyageText(14, weight: .semibold))
@@ -242,7 +252,7 @@ private struct CountryFilterBar: View {
                         .contentTransition(.numericText(value: Double(count)))
                 }
             }
-            .foregroundStyle(isSelected ? Color.white : AppColors.textPrimary(isDarkMode: isDarkMode))
+            .foregroundStyle(isSelected ? onTint : AppColors.textPrimary(isDarkMode: isDarkMode))
             .padding(.horizontal, 14)
             .frame(height: 36)
             .modifier(ChipSurface(isSelected: isSelected, tint: tint))
@@ -252,6 +262,18 @@ private struct CountryFilterBar: View {
         .buttonStyle(.plain)
         .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// The mark for a visited country: a yellow disc, the globe's visited color,
+/// with a dark check. Yellow alone is lost on a light background, so the check
+/// carries the shape, as the dock card's yellow Visited button carries black
+/// text. Sized by the surrounding font.
+struct VisitedCheckmark: View {
+    var body: some View {
+        Image(systemName: "checkmark.circle.fill")
+            .symbolRenderingMode(.palette)
+            .foregroundStyle(Color.black, AppColors.visited)
     }
 }
 
@@ -307,9 +329,15 @@ struct CountryRow: View {
 
             HStack(spacing: 4) {
                 Button(action: toggleVisited) {
-                    Image(systemName: isVisited ? "checkmark.circle.fill" : "plus.circle")
-                        .font(.system(size: 20))
-                        .foregroundColor(isVisited ? AppColors.buttonVisited : AppColors.buttonColor)
+                    Group {
+                        if isVisited {
+                            VisitedCheckmark()
+                        } else {
+                            Image(systemName: "plus.circle")
+                                .foregroundColor(AppColors.buttonColor)
+                        }
+                    }
+                    .font(.system(size: 20))
                 }
                 .buttonStyle(.plain)
 

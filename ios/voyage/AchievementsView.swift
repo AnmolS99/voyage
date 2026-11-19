@@ -285,7 +285,8 @@ struct AchievementDetailSection: View {
                     count: achievement.visitedCountries.count,
                     countries: achievement.visitedCountries,
                     icon: "checkmark.circle.fill",
-                    iconColor: AppColors.buttonVisited,
+                    iconColor: AppColors.visited,
+                    iconInk: .black,
                     isDarkMode: isDarkMode
                 )
             }
@@ -311,14 +312,24 @@ struct CountryListSection: View {
     let countries: [String]
     let icon: String
     let iconColor: Color
+    /// The symbol's foreground over `iconColor`, for a filled symbol in a color
+    /// too light to carry it alone (the visited yellow). Nil draws it in one color.
+    var iconInk: Color? = nil
     let isDarkMode: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundColor(iconColor)
+                Group {
+                    if let iconInk {
+                        Image(systemName: icon)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(iconInk, iconColor)
+                    } else {
+                        Image(systemName: icon).foregroundColor(iconColor)
+                    }
+                }
+                .font(.system(size: 12))
 
                 Text("\(title) (\(count))")
                     .font(.voyageText(13, weight: .semibold))

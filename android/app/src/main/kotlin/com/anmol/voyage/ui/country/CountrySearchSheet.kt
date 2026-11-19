@@ -3,6 +3,7 @@ package com.anmol.voyage.ui.country
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +52,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
@@ -227,7 +230,9 @@ private fun FilterChips(
         ListFilterChip(
             label = stringResource(R.string.search_filter_visited, visitedCount),
             icon = Icons.Rounded.Check,
-            tint = VoyagePalette.buttonVisited,
+            // The globe's yellow, as everywhere a country is marked visited.
+            tint = VoyagePalette.visited,
+            unselectedIcon = { VisitedMark(size = FilterChipDefaults.IconSize) },
             selected = selection == CountryListFilter.VISITED,
             onClick = { onSelect(CountryListFilter.VISITED) },
         )
@@ -248,6 +253,8 @@ private fun ListFilterChip(
     tint: Color,
     selected: Boolean,
     onClick: () -> Unit,
+    /** Drawn in place of [icon] while not selected, for a tint too light to carry it. */
+    unselectedIcon: (@Composable () -> Unit)? = null,
 ) {
     val onTint = readableContentColor(tint)
     FilterChip(
@@ -256,11 +263,15 @@ private fun ListFilterChip(
         label = { Text(label) },
         leadingIcon = icon?.let {
             {
-                Icon(
-                    imageVector = it,
-                    contentDescription = null,
-                    modifier = Modifier.size(FilterChipDefaults.IconSize),
-                )
+                if (!selected && unselectedIcon != null) {
+                    unselectedIcon()
+                } else {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null,
+                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+                    )
+                }
             }
         },
         colors = FilterChipDefaults.filterChipColors(
@@ -349,7 +360,8 @@ private fun CountryRow(
                 StatusToggle(
                     icon = Icons.Rounded.Check,
                     checked = state.isVisited(country.name),
-                    checkedTint = VoyagePalette.buttonVisited,
+                    checkedTint = VoyagePalette.visited,
+                    checkedIcon = { VisitedMark(size = 20.dp) },
                     contentDescription = stringResource(
                         R.string.country_toggle_visited,
                         country.name,
@@ -405,13 +417,21 @@ private fun StatusToggle(
     checkedTint: Color,
     contentDescription: String,
     onToggle: () -> Unit,
+    /** Drawn in place of [icon] while checked, for a tint too light to carry it. */
+    checkedIcon: (@Composable () -> Unit)? = null,
 ) {
     IconToggleButton(checked = checked, onCheckedChange = { onToggle() }) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = if (checked) checkedTint else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
-        )
+        if (checked && checkedIcon != null) {
+            Box(modifier = Modifier.semantics { this.contentDescription = contentDescription }) {
+                checkedIcon()
+            }
+        } else {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = if (checked) checkedTint else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
