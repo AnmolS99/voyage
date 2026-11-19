@@ -201,8 +201,10 @@ private struct CountryFilterBar: View {
         if #available(iOS 26, *) {
             // One container, so the capsules render as one glass layer and
             // blend where they meet, as grouped system glass controls do.
+            // Inset to line up with the search field below: the bottom
+            // toolbar's field starts 28 pt in from the sheet's edge.
             GlassEffectContainer(spacing: 8) { chips }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 28)
                 .padding(.bottom, 2)
         } else {
             chips
