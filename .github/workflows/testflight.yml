@@ -13,9 +13,6 @@ defaults:
 
 jobs:
   build:
-    # App Store Connect requires the iOS 27 SDK (Xcode 27) from April 2027
-    # (ITMS-90725). GitHub ships Xcode 27 only on its own image, not on
-    # macos-15 or macos-26, which top out at Xcode 26.
     runs-on: xcode-27
     timeout-minutes: 60
     steps:
