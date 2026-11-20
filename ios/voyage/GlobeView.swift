@@ -508,7 +508,7 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.animationDuration = isShown ? duration : 0
             SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             if let completion {
-                SCNTransaction.completionBlock = {
+                SCNTransaction.completionBlock = { [weak self] in
                     DispatchQueue.main.async { [weak self] in
                         guard let self, self.flightGeneration == generation else { return }
                         completion()
