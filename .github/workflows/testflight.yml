@@ -13,7 +13,10 @@ defaults:
 
 jobs:
   build:
-    runs-on: macos-15
+    # App Store Connect requires the iOS 27 SDK (Xcode 27) from April 2027
+    # (ITMS-90725). GitHub ships Xcode 27 only on its own image, not on
+    # macos-15 or macos-26, which top out at Xcode 26.
+    runs-on: xcode-27
     timeout-minutes: 60
     steps:
       - name: Checkout
@@ -22,7 +25,17 @@ jobs:
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: '27'
+
+      - name: Check iOS SDK
+        run: |
+          xcodebuild -version
+          SDK=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iOS SDK $SDK"
+          if [ "${SDK%%.*}" -lt 27 ]; then
+            echo "::error::Built with the iOS $SDK SDK; App Store Connect requires iOS 27 or later (ITMS-90725)"
+            exit 1
+          fi
 
       - name: Install Ruby gems
         run: bundle install
