@@ -25,7 +25,7 @@ import com.anmol.voyage.ui.theme.readableContentColor
  * sheet so a country is marked the same way wherever it is reached.
  *
  * Selected chips take their color from [VoyagePalette] rather than the Material
- * scheme: green for visited and purple for wishlist are the same status colors
+ * scheme: yellow for visited and purple for wishlist are the same status colors
  * the map paints countries with, and they are what iOS shows on its capsule
  * buttons. Their labels are black or white by contrast, not always white as
  * on iOS, so they stay legible — see [readableContentColor].
@@ -37,7 +37,7 @@ internal fun VisitedChip(state: VoyageState, country: String, modifier: Modifier
         label = stringResource(R.string.country_visited),
         icon = if (selected) Icons.Rounded.Check else Icons.Rounded.Add,
         selected = selected,
-        selectedColor = VoyagePalette.buttonVisited,
+        selectedColor = VoyagePalette.visited,
         onClick = { state.toggleVisited(country) },
         modifier = modifier,
     )

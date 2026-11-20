@@ -23,6 +23,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -88,6 +90,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -135,6 +139,7 @@ import kotlin.math.roundToInt
  * @param countryNamed the parsed country behind a name, for its flag and capital.
  * @param compact a phone on its side: a lower dock, and a card whose header,
  *   buttons and close button share one row.
+ * @param onShowVisited tapping the progress: the country list, on the visited countries.
  */
 @Composable
 internal fun CountriesDock(
@@ -142,6 +147,7 @@ internal fun CountriesDock(
     countryNamed: (String) -> GeoJsonCountry?,
     compact: Boolean,
     onAddCountry: () -> Unit,
+    onShowVisited: () -> Unit,
     onExplore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -248,6 +254,7 @@ internal fun CountriesDock(
                     previewsVisit = previewsVisit,
                     open = isOpen,
                     reduceMotion = reduceMotion,
+                    onShowVisited = onShowVisited,
                     modifier = Modifier.weight(1f),
                 )
                 AddButton(visible = !isOpen, metrics = metrics, reduceMotion = reduceMotion, onClick = onAddCountry)
@@ -373,6 +380,7 @@ private fun ProgressRow(
     previewsVisit: Boolean,
     open: Boolean,
     reduceMotion: Boolean,
+    onShowVisited: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val countSize by animateFloatAsState(if (open) 12f else 15f, morph(open, reduceMotion))
@@ -380,13 +388,40 @@ private fun ProgressRow(
     val barHeight by animateDpAsState(if (open) 4.dp else 6.dp, morph(open, reduceMotion))
     val spacing by animateDpAsState(if (open) 9.dp else 12.dp, morph(open, reduceMotion))
     val description = stringResource(R.string.dock_progress, progress.visited, progress.total, progress.percent)
+    val action = stringResource(R.string.dock_progress_action)
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
 
     Row(
-        modifier = modifier.clearAndSetSemantics { contentDescription = description },
+        // One node for TalkBack, which can still open the list from it.
+        modifier = modifier
+            .clearAndSetSemantics {
+                contentDescription = description
+                role = Role.Button
+                onClick(label = action) {
+                    onShowVisited()
+                    true
+                }
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // Only the count opens the visited list. Compose widens a clickable
+        // this small to the minimum touch target, so it is easy to hit without
+        // growing the dock. Dimmed while pressed, as iOS's plain button is: a
+        // ripple would need an edge the count does not have.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .graphicsLayer { alpha = if (pressed) 0.55f else 1f }
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    onClickLabel = action,
+                    role = Role.Button,
+                    onClick = onShowVisited,
+                ),
+        ) {
             RollingNumber(
                 value = progress.visited,
                 text = { "$it" },

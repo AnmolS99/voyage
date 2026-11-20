@@ -391,7 +391,7 @@ internal class GlobeSurfaceHost {
     private var uploadedOutlines: List<OutlineMesh>? = null
     private var uploadedDots: List<MicrostateDot>? = null
 
-    private val frameCallback = object : Choreographer.FrameCallback {
+    private val frameCallback: Choreographer.FrameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (destroyed) return
             frames.frame { afterPause ->
@@ -414,7 +414,7 @@ internal class GlobeSurfaceHost {
      * the loop going through [isAnimating]. With none of them, nothing is drawn:
      * the surface keeps showing the last frame, as iOS's SceneKit view does.
      */
-    private val frames = FrameDemand(
+    private val frames: FrameDemand = FrameDemand(
         post = { choreographer.postFrameCallback(frameCallback) },
         cancel = { choreographer.removeFrameCallback(frameCallback) },
     )

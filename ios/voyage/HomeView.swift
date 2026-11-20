@@ -43,7 +43,9 @@ struct GlobeBackdrop: View {
 
 struct HomeView: View {
     let globeState: GlobeState
-    @State private var showingCountryList = false
+    /// The country list, open on this filter: All from the dock's +, Visited
+    /// from its count.
+    @State private var countryList: CountryListFilter?
     @State private var showingExplore = false
 
     /// How long the crossfade between globe and map takes. Both renderers stay
@@ -79,14 +81,15 @@ struct HomeView: View {
 
                 CountriesDock(
                     globeState: globeState,
-                    onAddCountry: { showingCountryList = true },
+                    onAddCountry: { countryList = .all },
+                    onShowVisited: { countryList = .visited },
                     onExplore: { showingExplore = true }
                 )
             }
         }
         .animation(.easeInOut(duration: Self.modeSwitchDuration), value: globeState.viewMode)
-        .sheet(isPresented: $showingCountryList) {
-            CountryListView(globeState: globeState)
+        .sheet(item: $countryList) { filter in
+            CountryListView(globeState: globeState, filter: filter)
         }
         .sheet(isPresented: $showingExplore) {
             if let country = globeState.selectedCountry {
