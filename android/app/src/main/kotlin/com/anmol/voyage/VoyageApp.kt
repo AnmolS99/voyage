@@ -62,8 +62,7 @@ import com.anmol.voyage.ui.settings.SettingsScreen
 
 /**
  * App shell: a Material 3 [NavigationBar] — or, in a wide window, a
- * [NavigationRail] — beside a [NavHost], one entry per top-level destination. Later phases replace the remaining placeholder bodies
- * with real screens.
+ * [NavigationRail] — beside a [NavHost], one entry per top-level destination.
  *
  * [VoyageState] is owned by the activity and passed in from there — it decides
  * the theme, which wraps this shell — and handed to every tab, so they share one
@@ -223,7 +222,7 @@ private fun VoyageContent(
                             state = state,
                             onSelectMode = { navController.navigate(ChallengeRoutes.regionSelect(it)) },
                         )
-                        // Destinations a later phase still owns.
+                        // Destinations without a real screen yet.
                         subtitleRes != null -> PlaceholderScreen(
                             title = stringResource(destination.titleRes),
                             subtitle = stringResource(subtitleRes),

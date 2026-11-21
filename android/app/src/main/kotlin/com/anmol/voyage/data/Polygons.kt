@@ -1,8 +1,7 @@
 package com.anmol.voyage.data
 
 /**
- * Ring geometry shared by hit-testing (Phase 4) and, later, triangulation
- * (Phase 7) — the Kotlin home of the iOS helpers that live in
+ * Ring geometry shared by hit-testing and triangulation — the Kotlin home of the iOS helpers that live in
  * `PolygonTriangulator.swift`.
  */
 object Polygons {

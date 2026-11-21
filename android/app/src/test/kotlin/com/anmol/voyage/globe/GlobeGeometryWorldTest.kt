@@ -78,7 +78,7 @@ class GlobeGeometryWorldTest {
         val mesh = PolygonTriangulator.createCountryGeometry(southAfrica.polygons, southAfrica.holes)!!
 
         // Deep inside Lesotho, far from the enclave boundary — the same class of
-        // check the Phase 4 map verified with taps. If the hole were filled,
+        // check the map's hit-testing makes. If the hole were filled,
         // some South African triangle would cover this point.
         val lat = -29.5
         val lon = 28.25

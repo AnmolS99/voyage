@@ -6,8 +6,7 @@ import kotlinx.serialization.Serializable
 /**
  * Which rendering of the world the Home tab shows — the iOS `ViewMode`.
  *
- * The default is [Map] until the Filament globe lands in Phase 7, at which point
- * it becomes [Globe] to match iOS. Unlike iOS, which starts every launch on the
+ * The default is [Globe], to match iOS. Unlike iOS, which starts every launch on the
  * globe, the choice is persisted here: on Android the process can be killed and
  * restored at any moment, and coming back to a different view than the one left
  * behind reads as a bug rather than a reset.

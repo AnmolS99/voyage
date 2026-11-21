@@ -38,7 +38,7 @@ android {
         // The Play internal testing workflow passes the next free code as
         // -Pvoyage.versionCode (android/fastlane/Fastfile); local builds keep this.
         versionCode = providers.gradleProperty("voyage.versionCode").orNull?.toInt() ?: 2
-        // Aligned with the iOS MARKETING_VERSION at release time (Phase 11);
+        // Aligned with the iOS MARKETING_VERSION at release time;
         // pre-parity scaffold builds stay on 0.x.
         versionName = "1.13.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

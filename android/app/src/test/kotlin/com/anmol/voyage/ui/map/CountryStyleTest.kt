@@ -9,7 +9,7 @@ import org.junit.Test
 /**
  * The map's color rules, pinned against `ios/voyage/MapView.swift`.
  *
- * The globe has to reach the same conclusions in Phase 7, and CLAUDE.md makes
+ * The globe has to reach the same conclusions, and CLAUDE.md makes
  * "globe and map look identical" a rule rather than an aspiration — so the rules
  * are asserted here, once, instead of being eyeballed in two renderers.
  */

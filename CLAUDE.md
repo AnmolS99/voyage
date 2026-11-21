@@ -1,628 +1,122 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+voyage: an interactive 3D globe for tracking countries you've visited, as
+native iOS (SwiftUI + SceneKit) and Android (Kotlin/Compose + Filament) apps.
 
-# voyage
+## Editing this file
 
-An app that displays an interactive 3D globe where users can explore and track
-countries they've visited. iOS ships today; a native Android version is being
-built — see [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) for the phased plan and
-current progress.
+This file is loaded into every session, so keep it short. Add something only
+when it is **strictly necessary**: a command, a rule, or a trap that can't be
+learned by reading the code and that would cause a real mistake if missed.
+Feature descriptions, file tours and design rationale belong in code comments,
+tests or `docs/`, not here.
 
-## Repository Layout
+## Layout
 
 ```
-voyage/
-├── ios/        # iOS app: voyage.xcodeproj, voyage/, voyageTests/,
-│               # GlobeCacheGenerator/, fastlane/, Gemfile, Secrets.xcconfig
-├── android/    # Android app: Kotlin/Compose Gradle project (app/, gradle/, tools/)
-├── shared/
-│   ├── data/       # world.geojson, country_highlights.json, textures/, journey/ — consumed by BOTH apps
-│   ├── fixtures/   # expected_countries.json — parser contract for BOTH apps
-│   └── supabase/   # schemas/, migrations/, seed.sql
-├── web/        # Marketing site + /privacy (rendered from PRIVACY.md), Cloudflare Workers — see web/README.md
-├── scripts/    # update_geometry.sh, merge_geometry.py, generate_country_fixture.py, generate_timezone_locations.py, journey_art.py
-├── journey-art/ # gitignored workspace for Journey Art (photos, attempts, exports)
-└── docs/       # ANDROID_PLAN.md, ANDROID_DEVELOPMENT.md
+ios/       Xcode project (voyage/, voyageTests/, GlobeCacheGenerator/, fastlane/)
+android/   Gradle project (app/, tools/world-cache)
+shared/    data/ (geojson, highlights, aliases, textures, fonts, journey/),
+           fixtures/expected_countries.json, supabase/
+web/       Marketing site + /privacy (see web/README.md)
+scripts/   Data generation scripts
+docs/      ANDROID_DEVELOPMENT.md, DATA.md
 ```
 
-**All iOS commands below run from the `ios/` directory.** The data files under
-`shared/data/` are referenced by the Xcode project in place (not copied) — edit
-them there, never duplicate them per platform.
+`shared/data/` is used in place by both apps — edit it there, never copy it per
+platform.
 
-**Android:** build/run/test instructions live in
-[docs/ANDROID_DEVELOPMENT.md](docs/ANDROID_DEVELOPMENT.md); all Android commands
-run from `android/`. Android has no PR CI: builds for testers come only from the
-manually dispatched `.github/workflows/play-internal.yml`, which runs the unit
-tests and lint, then signs and uploads to Play internal testing — never upload
-locally. The Android color palette
-(`android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt`) mirrors
-`ios/voyage/ColorPalette.swift` — see [Color Palette](#color-palette) — so a
-color change must land on both platforms in the same PR. Both apps parse the
-same `shared/data/` files and both assert the same parser fixture — see
-[Shared Country Fixture](#shared-country-fixture). Android parses at **build
-time**, not on the device: `android/tools/world-cache` runs the app's own parser
-and triangulator and packages `countries.bin` and `world_meshes.bin` as assets —
-generated per build, never checked in, and held bit for bit to a fresh parse by
-`CountriesFileTest` and `WorldMeshesFileTest`. `ui/map/WorldMap.kt` is a port
-of `ios/voyage/MapView.swift`, so the consistency rule in
-[Globe and Map Consistency](#globe-and-map-consistency) covers four renderers, not
-two; on Android the shared decisions live in `ui/map/CountryStyle.kt`,
-`ui/map/CapitalMarker.kt`, `ui/map/MapProjection.kt`, and
-`globe/GlobeCamera.kt` rather than in the renderer, and
-`ui/home/HomeScreen.kt` holds the chrome both Android renderers share.
-Home's bottom chrome, `ui/home/CountriesDock.kt`, ports
-`ios/voyage/CountriesDock.swift` — the progress dock that morphs into the
-selected country's card — with iOS's springs, metrics and button colors
-(`StatusButtons` in `ui/map/CountryStyle.kt`), so changing either is a
-two-platform change. The dock's + opens the country list (iOS
-`CountryListView`, Android `CountrySearchSheet`) on All, and tapping its
-visited count ("24/195") opens it on Visited. The list's All · Visited · Wishlist chips are
-`CountryListFilter` on each, same cases and rules, pinned by
-`CountryListFilterTests` and `CountryListFilterTest`: a search looks only within
-the chosen filter, and a country unmarked from a filtered list stays listed,
-unmarked, until another filter is chosen or the list closes.
-`HomeScreen` also owns the globe's **Filament engine — one per Activity** — and
-`VoyageApp` composes it outside the `NavHost` and *under* it, hidden rather than
-removed on a tab switch: a detached `TextureView` loses its surface, and a
-hidden full-screen one left on top swallows the taps meant for the tab below.
-Moving Home back inside the `NavHost` undoes all of it; ANDROID_DEVELOPMENT.md
-has the three rules that come with the arrangement.
-The globe's **spin physics are shared with iOS, not reinvented**:
-`globe/GlobeInertia.kt` ports `ios/voyage/GlobeInertia.swift` (same damping, in
-degrees per second rather than radians), and `GlobeCamera.degreesPerDp` ports
-`GlobeView.Coordinator.panRotationSpeed` — measured per **dp**, since a dp and an
-iOS point are the same physical size. The idle spin an untouched globe
-does — one turn a minute, ended by a drag or a selection and resumed only by
-deselecting — is `VoyageState.isAutoRotating` driving
-`GlobeCamera.autoRotated`, where iOS runs an `SCNAction` off
-`GlobeState.isAutoRotating`. Re-selecting the Home tab on the globe sends it
-home: it deselects and flies, at the launch distance, to where the user is
-taken to be — their time zone's city, `Daylight.location` on each, which asks
-for no location (see [Theme](#theme)); a zone with no city gets the launch
-pose — over 1.2 s
-(`GlobeFlight.RETURN_HOME_SECONDS`, iOS `GlobeCamera.returnHomeDuration`),
-where the idle spin carries on — `returnHome` and `homeRequest` on each
-platform's state. Selecting a country flies the camera to it via
-`globe/GlobeFlight.kt`, a port of `GlobeView.Coordinator.flyTo` down to its
-easing curve. How far back that flight settles is fitted to the country: `CountryFocus` (the smallest cap around its main landmass, in each platform's `CountryHitTester`) and `distanceToFit` (`GlobeCamera` on both) size it to the view's narrower axis, so Luxembourg fills the screen and Russia fits in it — same algorithm, margin and clamps on both, pinned by `CountryFocusTests` and `CountryHitTesterTest`/`GlobeCameraTest`. Both platforms integrate one step per rendered frame — on Android a
-flight, a coasting flick and the idle spin are three cases of one `advance()`
-step, so exactly one of them writes the camera per frame — and the decay curve,
-pan speed, idle rate and flight timing are pinned by tests on each; retuning any
-of them is a two-platform change.
-The capital seal and microstate dots are **meshes in the globe's scene**
-(`globe/MarkerMesh.kt`), not a Compose overlay above it: an overlay draws from
-its own copy of the camera and visibly trails the globe by a frame while
-dragging. The two renderers share the shape and its proportions
-(`ui/map/CapitalMarker.kt`), the colors (`ui/map/CountryStyle.kt`,
-`VoyagePalette`) and the sizes (`ui/map/CountryMarkers.kt`) — but not the
-drawing. The capital seal — a terracotta disc with an ink rim and a cream star,
-iOS `CapitalMarker` — is three flat layers lying on the sphere's tangent plane,
-north up, on both platforms (iOS draws it once into a texture on an `SCNPlane`).
-The map draws it at a fixed 6 dp; the globe sizes it on the sphere, gently
-compensated for zoom (`GlobeCamera.capitalMarkerRadius`, iOS
-`capitalMarkerScale`: radius 0.015 × `screenScale^0.85`, pinned by
-`GlobeCameraTest`), so retuning it is a two-platform change. Microstate dots
-use the displace-by-a-uniform trick the border outlines use, but on the globe
-their size is fixed **on the sphere** — 0.8° of arc,
-the `CountryHitTester.POINT_HIT_RADIUS` taps already use, as iOS's
-`SCNCylinder(radius: 0.014)` is — so they grow with the land when zooming in and
-what is drawn is what is tappable. They never drop below 5 dp when
-zoomed out (`GlobeCamera.dotRadiusInWorld`). The map follows the same rule —
-0.8° of map with a 5 dp floor (`MapProjection.dotRadius`, iOS
-`MapView.MapFit.dotRadius`) — so a dot grows with the land on both renderers.
+## Commands
 
-The Android globe renders with **Filament** (`ui/globe/`), not SceneKit. Two
-constraints there are easy to break: its materials are **unlit** and its view
-has **post-processing disabled**, which together are what put exact palette
-colors on screen — enabling either one shifts every country color, and
-`GlobeCountryFill.kt` documents the coupling. The Earth texture obeys the same
-rule: it is uploaded as `RGBA8`, not sRGB, and the ocean material sets
-`flipUV(false)` because `UvSphere`'s UVs are already top-left like the image.
-Over a texture, plain land is `MapShading.None` in `CountryStyles` — iOS's
-`hasTexture ? .clear : land` — so the globe drops those countries from the scene
-and the map leaves them unpainted.
-The globe has **no skybox**: it clears to transparent on a transparent swap
-chain, and `ui/home/GlobeBackdrop.kt` — a port of iOS's `GlobeBackdrop`, the
-starry sky in dark mode — is drawn in Compose behind it. Home runs under the
-status bar, as iOS's globe ignores the safe area; only its controls are inset.
-
-Border outlines work as they do on iOS — zero-width strips widened at render
-time so they keep a constant on-screen width — but the pieces sit elsewhere:
-the miter direction is a `CUSTOM0` vertex attribute widened by
-`GlobeMaterials.outline` instead of a SceneKit shader modifier, and the zoom
-scaling is `GlobeCamera.screenScale` rather than renderer code. The outline
-sector grid and the 6.0 zoom-out limit are decisions Android made first and iOS
-adopted — see [Globe Rendering](#globe-rendering) — so changing either is a
-two-platform change;
-"Pinned invariants" in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md) has the
-measurement.
-
-The Achievements tab (`ui/achievements/`) ports `ios/voyage/AchievementsView.swift`,
-but only its presentation lives there: which medals exist and what counts toward
-each is `data/AchievementCatalog.kt`, so both platforms assert the same rules
-against the same shared data — `AchievementTest` and `AchievementCompletionTests`,
-pinned in [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md). Each achievement is held at
-bronze, silver or gold (`MedalTier` on both), at limits chosen per achievement in
-each platform's `AchievementCatalog` — gold is always the whole total. Short of
-bronze its medal is a dark coin with a "?" where the emoji goes; earned, it
-shines beams in its own color in the full-screen view — from the start of an
-unlock celebration, and once the coin reaches full size when opened from the
-tab (`MedalRays` on each, same count, width and pace). Changing a limit is a two-platform change. The medal coin is drawn
-rather than rendered by a 3D engine — as a cylinder in projection, so it keeps
-the thickness of iOS's `SCNCylinder` as it turns — and it spins on the globe's
-decay curve (`GlobeInertia.decayed`), exactly as iOS's coin borrows
-`GlobeInertia` — so retuning that curve moves the globe *and* the medal, on both
-platforms. Earning a medal — any tier, from any tab — opens it with confetti and
-a haptic on both (`AchievementUnlockCelebration` on each); which medals count as
-newly earned is `newlyUnlocked` on both, pinned by tests on each.
-
-The Challenges tab ports `ios/voyage/Challenges/` the same way: the rules — modes,
-regions, trophies, the sweep engine, best-result comparison — live in
-`challenges/` and are pinned by `RegionSweepGameTest` and `ChallengeStatsTest`
-against iOS's `ClickCountryGameTests`, `NameCapitalGameTests` and
-`NameFlagGameTests`, so a rule change is a two-platform change. A game is played
-on **Home's globe, not one of its own** — a second globe would be a second Filament
-engine. Both renderers read a `WorldScene` (`ui/map/WorldScene.kt`) instead of
-`VoyageState`, and a game hands Home its own `ChallengeWorldScene`, the Android
-`GlobeState(inMemory: true)`. The game's green and red are a status in
-`CountryStyles`, so they obey the same selection rules as visited and wishlist.
-After a wrong guess the sweep pauses on the answer (2.2 s for Click the Country,
-2.6 s for the naming modes, with the clock running) but its banner stays up for
-6 s, or until the next guess, so it can still be read. A tap (the pill ends in a small ×) or a downward swipe
-dismisses any feedback banner and ends a running pause early. This is iOS
-`SweepFeedbackBanner` and Android `ChallengeSession` with `FeedbackBanner`, so
-retiming it is a two-platform change.
-
-## Git Conventions
-
-Use conventional commits and conventional branch naming.
-
-**Commit format:** `<type>: <description>`
-
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
-
-**Branch format:** `<type>/<short-description>`
-
-Examples:
-
-- `feat/dark-mode-toggle`
-- `fix/globe-rotation-reset`
-- `refactor/country-data-parsing`
-
-## Build, Run & Test (iOS)
-
-**Always build and run the simulator after making larger changes to verify the implementation works correctly.**
-
-All commands in this section run from `ios/`:
+iOS, from `ios/`:
 
 ```bash
-cd ios
-
-# Build
-xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' -configuration Debug build
-
-# Run in simulator
-xcrun simctl install "iPhone 17 Pro" ~/Library/Developer/Xcode/DerivedData/voyage-*/Build/Products/Debug-iphonesimulator/voyage.app
-xcrun simctl launch "iPhone 17 Pro" com.anmol.voyage
-
-# Run the full test suite (voyageTests target)
+xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
 xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test
-
-# Run a single test class or method
-xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test \
-  -only-testing:voyageTests/AchievementCompletionTests
-xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test \
-  -only-testing:voyageTests/voyageTests/testGlobeAndMapCountryConsistency
+xcodebuild -scheme voyage -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test -only-testing:voyageTests/<Class>[/<method>]
 ```
 
-`voyageTests/testGlobeAndMapCountryConsistency` specifically guards the invariant described in [Globe and Map Consistency](#globe-and-map-consistency) — run it after touching either rendering path.
-
-### TestFlight Builds
-
-TestFlight builds are created with the existing GitHub Actions workflow (`.github/workflows/testflight.yml`) — never by archiving/uploading locally, since code signing (fastlane match) and `Secrets.xcconfig` live in CI secrets:
-
-```bash
-gh workflow run testflight.yml --ref <branch>   # branch is chosen via the dispatch ref
-gh run watch                                    # monitor the build
-```
-
-### Store Listings
-
-Store screenshots and listing text are uploaded by
-`.github/workflows/store-listing.yml` (the `store-listing` skill), never
-locally: it exports the version's screenshots from Figma (`FIGMA_TOKEN` secret,
-`scripts/export_store_screenshots.py`) and runs the `listing` lane on each
-platform. What's New, promotional text, description and keywords live in
-`ios/fastlane/metadata/en-GB/` (the App Store's primary language) and Play's
-What's New in `android/fastlane/metadata/android/en-US/changelogs/`. The App
-Store's header and search results images can't be uploaded by API: the
-workflow exports them as the `creative-ios` artifact for the Asset Library. It
-never submits for review.
-
-## Setup
-
-Supabase credentials are stored in `ios/Secrets.xcconfig` (gitignored). To set up:
-
-```bash
-cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig
-# Edit ios/Secrets.xcconfig with your Supabase URL and publishable key
-```
-
-## Architecture
-
-- **SwiftUI** for UI
-- **SceneKit** for 3D globe rendering
-- **GeoJSON** for country boundary data
-- **Supabase** for daily challenge backend
-
-The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `@Observable` class passed to every tab (so a view is re-evaluated only when a property it reads changes — `GlobeView.observeState` names the globe's, since `updateUIView` returns early past some) that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: daylight/system/light/dark, as on Android — see [Theme](#theme)). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
-
-### Data persistence
-
-`GlobeState` persists to both `UserDefaults` (local) and `NSUbiquitousKeyValueStore` (iCloud KV store), and observes `NSUbiquitousKeyValueStore.didChangeExternallyNotification` to pick up remote changes live. For the synced sets (visited, wishlist, checked cities and attractions) **the cloud wins** whenever it holds the key, on launch and on an external change, so a removal or a reset on one device reaches the others — a union could only add (issue #152). The only union is a device's first sync (`hasSyncedWithICloud` unset), so a new device keeps what it had; a key iCloud has never had is filled from local unless local is empty. The rule is `GlobeState.resolveSynced`, pinned by `GlobeStateSyncTests`. Each mutation writes only the keys it changed (`persist`), never every key, so a device can't push stale copies of the others over newer iCloud values. Android has no live sync (Auto Backup restores its DataStore file whole), so this is iOS-only. The Daily Challenge feature persists separately via `ChallengeStore` (UserDefaults only, keyed by date).
-
-### Country data loading
-
-`CountryDataCache` (singleton) parses `world.geojson` (via `GeoJSONParser`) once on first access of `.shared` (thread-safe) and is prewarmed on a background queue from `voyageApp.init` so parsing overlaps globe.scn loading; `country_highlights.json` stays lazy. Call sites should go through `CountryDataCache.shared` rather than re-parsing.
-
-## Key Files
-
-| File (under `ios/voyage/`)  | Purpose                                           |
-| --------------------------- | ------------------------------------------------- |
-| `ContentView.swift`         | Tab container + `GlobeState` (shared app state)   |
-| `GlobeView.swift`           | Main 3D globe view with SceneKit integration      |
-| `GlobeScene.swift`          | Creates the 3D scene (globe, countries, lighting) |
-| `PolygonTriangulator.swift` | Converts GeoJSON polygons to 3D geometry          |
-| `Earcut.swift`              | Ear-clipping triangulation (port of mapbox/earcut) |
-| `GeoJSONParser.swift`       | Parses world.geojson into country data            |
-| `CountryHitTester.swift`    | Shared tap-to-country lookup (globe + map)        |
-| `CountryStyle.swift`        | Shared fill/border priority rules (globe + map)   |
-| `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights; `countryNamed` / `countryWithIsoCode` lookups |
-| `GlobeCamera.swift`         | Camera limits and `distanceToFit` (Android `GlobeCamera`) |
-| `MapView.swift`             | 2D flat map view alternative                      |
-| `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
-| `Typography.swift`          | `Font.voyageDisplay` / `.voyageText` (see Typography below) |
-| `Achievement.swift` / `ContinentData.swift` | Achievement progress model + continent groupings |
-| `MedalOverlayView.swift`    | Tap a card's 3D medal → full-screen blur overlay with a Y-axis-spinnable coin; `MedalArtwork` holds each tier's colors |
-| `DailyChallenge/`           | Daily geography quiz feature (see below)          |
-
-## Globe Rendering
-
-Countries are rendered by:
-
-1. Parsing GeoJSON polygon coordinates (lon/lat)
-2. Triangulating each polygon (with enclave holes) via earcut in lon/lat space
-3. Subdividing triangles/border segments longer than ~2.5° so they follow sphere curvature
-4. Converting to 3D sphere vertices via `latLonToSphere()`
-5. Creating SceneKit geometry with materials
-
-A legacy grid-based fill remains in `PolygonTriangulator` as an automatic fallback for
-rings earcut cannot triangulate (the current dataset needs no fallbacks).
-
-Border outlines keep a constant on-screen width across zoom levels: outline vertices sit
-on the border centerline with their miter direction stored in the normal attribute, and a
-geometry shader modifier (`PolygonTriangulator.outlineShaderModifier`) widens them by the
-`outlineThickness` uniform. Zoom code (`GlobeView.Coordinator.updateOutlineThickness`)
-scales that uniform with camera distance — no geometry is rebuilt when zooming or when
-selection thickens/raises a country's outline.
-
-All black borders are merged into lon x lat sector nodes (`outline_sector_N`)
-sharing one material/uniform. The outline mesh dominates the scene's vertex count, so
-`GlobeView.Coordinator.renderer(_:updateAtTime:)` hides sectors beyond the globe's
-horizon each frame (frustum culling alone never removes the far side). The sector grid
-is 12 longitude x 4 latitude on **both** platforms, and the latitude split is load-bearing:
-longitude-only wedges run pole to pole and never fall entirely behind the horizon, so they
-cull 0% — see `PolygonTriangulator.createSectoredOutlineGeometries` and
-`OutlineSectorCullingTests`, which pin the measurement on each platform. Fills and
-outlines are single-sided — winding faces outward so the GPU backface-culls the far
-hemisphere. The selected country's outline is a separate overlay node
-(`selected_outline`, managed by `GlobeView.Coordinator.updateSelectedOutline`) drawn
-thicker, status-colored, and raised above the sector outlines.
-
-The globe has layers: ocean sphere (base, Earth-textured) → country polygons → border outlines
-
-## Globe and Map Consistency
-
-The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain identical appearance and behavior. The only difference should be the rendering perspective (3D sphere vs 2D flat projection). This includes:
-
-- Country colors and selection highlighting
-- Color priority logic (visited/wishlist status takes precedence over selection)
-- Border/outline colors and styles
-- Capital star markers
-- Gestures: pinch, pan, tap and the one-finger zoom (tap, then press and drag
-  vertically — `handleDoubleTapDrag` on the globe, `MapView`'s `TouchTracker` on the
-  map; Android's `detectZoomDrags` serves both renderers)
-- Map framing: at minimum zoom the 2:1 map *fills* the view (full height in
-  portrait, full width in landscape) and pan is clamped so no map edge ever comes
-  into view; zoom resets on rotation and on entering map mode, centred on the
-  selected country as far as that clamp allows. Both orientations
-  are supported for globe and map (`MapView.MapFit` / Android `MapProjection`)
-
-The priority rules are written once, in `ios/voyage/CountryStyle.swift` (Android
-`ui/map/CountryStyle.kt`): both iOS renderers ask it for a country's fill and
-border paint and only map that paint to their own colors. The globe also keeps
-the style it last applied to each country and restyles only those that changed
-(`GlobeView.Coordinator.updateHighlights`), so anything new that affects a
-country's look has to be part of `CountryStyle`, or the globe will skip it.
-`CountryStyleTests` pins the rules.
-
-Home keeps both renderers in the hierarchy and crossfades between them
-(`HomeView.modeSwitchDuration`), so the switch is instant — never replace that
-with an `if`. The one faded out stops working instead: the globe pauses its
-scene once the crossfade has run and resumes the moment it is asked back
-(`GlobeView.Coordinator.updateVisibility`; a flight requested meanwhile lands at
-once), and the map holds the look it last drew and reads nothing of `GlobeState`
-but the view mode until it is shown again (`MapView.lookToDraw`). The map draws
-only the countries in view, one border stroke per country, with the selected
-country's border last so it lies over its neighbours'.
-
-When modifying colors or selection logic, always update both files together.
-
-## Daily Challenge
-
-A daily geography quiz feature powered by Supabase. The `daily_challenges` table holds 365 pre-seeded questions.
-
-### Challenge Types
-
-| Type              | Clue shown                    | User guesses | Answer validated against         |
-| ----------------- | ----------------------------- | ------------ | -------------------------------- |
-| `is_guess_country` | Country silhouette (outline) | Country name | `GeoJSONCountry.name` via ISO code |
-| `is_guess_capital` | Country name + flag          | Capital city | `GeoJSONCountry.capital.name`    |
-| `is_guess_flag`    | Flag emoji                   | Country name | `GeoJSONCountry.name` via ISO code |
-
-### Flow
-
-1. User opens the **Daily** tab → `ChallengeCalendarView` shows a month grid.
-2. Available challenge dates are fetched from Supabase on appear and cached.
-3. Past and today's dates are tappable; future dates are locked (dimmed + lock icon).
-4. Tapping a date opens `ChallengePlayView` as a sheet.
-5. The view model fetches the challenge from Supabase by date, resolves the `answer` ISO code to a `GeoJSONCountry` via `CountryDataCache`.
-6. User types guesses into `ChallengeSearchField` (filtered dropdown of all country names or capitals).
-7. Each guess is validated case-insensitively. Wrong guesses show red; correct shows green.
-8. Max 5 attempts. Game ends on correct guess or 5 failures → `ChallengeResultView`.
-9. Progress is saved to `ChallengeStore` (UserDefaults) after every guess, so mid-game state persists if the user leaves.
-10. Completed challenges show a green checkmark (solved) or red X (failed) on the calendar.
-
-### Key Files
-
-| File                              | Purpose                                      |
-| --------------------------------- | --------------------------------------------- |
-| `DailyChallenge.swift`            | Models: `DailyChallenge`, `QuestionType`, `ChallengeResult` |
-| `SupabaseClient.swift`            | Network layer (reads credentials from `Secrets.xcconfig` via Info.plist) |
-| `ChallengeStore.swift`            | Local persistence (UserDefaults)             |
-| `DailyChallengeViewModel.swift`   | State management for the quiz flow           |
-| `ChallengeCalendarView.swift`     | Month grid calendar (main tab view)          |
-| `ChallengePlayView.swift`         | Quiz UI with clue, search, and guess list    |
-| `ChallengeSearchField.swift`      | TextField with filtered dropdown suggestions |
-| `CountrySilhouetteView.swift`     | Canvas-based country outline renderer        |
-| `ConfettiView.swift`              | Success celebration animation                |
-| `ChallengeResultView.swift`       | Post-completion result card                  |
-
-### Supabase Schema
-
-The `daily_challenges` table has columns: `id` (uuid), `date` (date), `is_guess_country` (bool), `is_guess_capital` (bool), `is_guess_flag` (bool), `answer` (text — ISO 3166-1 alpha-2 code), `created_at`, `updated_at`. Only one boolean is true per row.
-
-Schema and migrations live in `shared/supabase/schemas/` and `shared/supabase/migrations/`; `shared/supabase/seed.sql` seeds the 365 daily challenges.
-
-## Color Palette
-
-| Element              | Hex     | RGB                   |
-| -------------------- | ------- | --------------------- |
-| Ocean                | #2F86A6 | (0.184, 0.525, 0.651) |
-| Land (unvisited)     | #34BE82 | (0.204, 0.745, 0.510) |
-| Selected (unvisited) | -       | (0.45, 0.85, 0.60)    |
-| Visited              | #F2F013 | (0.949, 0.941, 0.075) |
-| Visited + selected   | -       | (1.0, 1.0, 0.3)       |
-| Wishlist             | -       | (0.6, 0.4, 0.8)       |
-| Wishlist + selected  | -       | (0.75, 0.55, 0.95)    |
-| Buttons (light mode) | #D98C59 | (0.85, 0.55, 0.35)    |
-
-All colors are defined once per platform — `ios/voyage/ColorPalette.swift` (`AppColors`) and `android/app/src/main/kotlin/com/anmol/voyage/ui/theme/ColorPalette.kt` (`VoyagePalette`) — and referenced throughout; don't hardcode hex/RGB values elsewhere. The two files hold the same values, and `ColorPaletteTest` on Android pins the table above, so palette changes ship to both platforms together.
-
-## Theme
-
-Settings → Theme has four choices on both platforms (`ThemeMode`, same cases and
-raw values, in this order): **Daylight** (the default for a new install), which
-is light while the sun is up and dark while it is down, whatever the system is
-set to, then **System**, **Light** and **Dark**. Settings is the only place the
-theme is chosen: Home has no light/dark button on either platform.
-
-Daylight asks for no location. "Here" is the reference city of the device's
-time zone — `shared/data/timezone_locations.json`, zone ID → `[lat, lon]` — so
-it is right to within the zone's width (everyone on `Europe/Oslo` gets Oslo's
-sun) and follows the user when they travel. `Daylight.isNight` on each platform
-(`ios/voyage/Daylight.swift`, Android `state/Daylight.kt`) works out the sun's
-height there from the Astronomical Almanac's low-precision formulas and calls it
-night below −0.833°; asking for the height rather than sunrise and sunset times
-means polar night and the midnight sun need no special case. A zone with no
-city (`UTC`, `GMT+2`) is dark from 19:00 to 07:00 on its own clock. Both apps
-ask again at the top of every minute (iOS `GlobeState.refreshDaylight` off a
-`.task` loop in `ContentView`, Android `ThemeMode.isDarkNow`), which is what
-flips the theme at sunrise and sunset; `isNight` for a zone asks at the start
-of the minute, so it flips on the whole minute Settings names, not seconds into
-the minute before. The picker is a row of Home in miniature, one per mode
-(`ThemeOption` and `ThemePreview` on each: iOS in `SettingsView.swift`, Android
-`ui/settings/ThemeSetting.kt`, same proportions): the globe rising into the
-day's warm sky or the night's starry one. System and Daylight are day on the
-left and night on the right, Daylight with the sun and the moon. One line under
-the row says what the chosen theme does (`ThemeMode.summary` on each); for
-Daylight that is when the theme turns light and dark today and whose sun that
-is, e.g. "Light from 08:10 and dark from 15:40, following the sun in Oslo."
-Those times are `Daylight.sunTimes`,
-which asks `isNight` for each minute of the day so they are exactly when the
-theme flips, and the city is the zone ID's last part (`Daylight.cityName`). `DaylightTests` and `DaylightTest` pin the same cases, so a
-change to the rule is a two-platform change. The iOS App Icon picker reuses
-`ThemeMode` but offers only `ThemeMode.appIcons` — an icon has no Daylight.
-
-Regenerate the table from the IANA time zone database (`zone.tab`, plus older
-zone names from `tzdata.zi`) with `python3 scripts/generate_timezone_locations.py`.
-
-## Typography
-
-Two bundled typefaces (SIL OFL), shared by both apps from `shared/data/fonts/`:
-**Newsreader** for titles, country names, prompts and celebrations, and
-**Schibsted Grotesk** for everything else — buttons, labels, numbers and body
-copy. iOS sets them with `Font.voyageDisplay(_:weight:)` /
-`Font.voyageText(_:weight:)` (`ios/voyage/Typography.swift`, fixed sizes like
-the `.system(size:)` fonts they replaced); Android maps Material's type scale
-onto them in `ui/theme/Typography.kt` — display, headline and `titleLarge` are
-Newsreader — and text that needs the other family passes
-`fontFamily = LocalVoyageFonts.current.text` (or `.display`). Never set numbers
-or buttons in Newsreader. SF Symbols, Material icons and emoji stay on the
-system font. The files are static instances (Newsreader at opsz 24) cut from
-the Google Fonts variable fonts; iOS lists them in `Info.plist` `UIAppFonts`.
-
-## Data Files
-
-- `shared/data/world.geojson` - Country boundaries. Each feature's `id` is the ISO 3166-1 alpha-2 country code (e.g., `"US"`, `"AF"`), which doubles as the flag emoji code.
-  `capital` is the capital a country is best known by; countries with several official capitals list the rest in `otherCapitals` (`[{name, lat, lon}]` — Sucre for Bolivia, Cape Town and Bloemfontein for South Africa). Both apps treat every capital alike: each is a right answer in Name the Capital and the Daily Challenge, gets a seal on the globe and map, is badged in Top Cities and counts toward Capital Collector — so adding one is a data-only change.
-- `shared/data/country_highlights.json` - Top cities and attractions for each country, keyed by ISO code. See [Country Highlights Data](#country-highlights-data) for methodology.
-- `shared/data/country_aliases.json` - Other names each country is searched by, keyed by ISO code and grouped by what they are to it, so a match is worded right: `names` (UK, UAE, Deutschland — "Also known as"), `formerly` (Burma, Swaziland — "Formerly") and `includes` (England, Hawaii — "Includes"); the ISO code shows as "Country code". Both apps' `CountrySearchIndex` match it, with the ISO code, in the same five ranking tiers — pinned by `CountrySearchIndexTest` (Android) and `CountrySearchIndexTests` (iOS), which also check that no alias names another country or belongs to two — so a matching or ranking change is a two-platform change. iOS bundles it in place, like the highlights.
-- `shared/data/timezone_locations.json` - Latitude and longitude of each time zone's reference city, keyed by zone ID, for the Daylight theme (see [Theme](#theme)). iOS bundles it in place, like the highlights.
-- `shared/fixtures/expected_countries.json` - Parser contract asserted by both platforms. See [Shared Country Fixture](#shared-country-fixture).
-- `shared/data/fonts/` - The bundled typefaces and their OFL licences (see [Typography](#typography)). Android reads them as assets, iOS bundles them in place.
-- `shared/data/textures/` - The three equirectangular Earth textures, one per `GlobeStyle` (`earth_texture.jpg` realistic, `natural_earth_texture.jpg`, `stylized_earth_texture.jpg`). iOS bundles them from here, not from its asset catalog; Android shows them at most 4096 px wide, so its build packages copies downsampled to that (`EarthTextureGenerator` in `android/tools/world-cache`, under `earth/`) and leaves this directory out of the app.
-  The iOS globe shows them at full size but ASTC-compressed (`ios/voyage/EarthTexture.swift`): 45 MB on the GPU with mipmaps for an 8192 px texture, where RGBA is 179 MB. The app compresses a style the first time it is shown (ImageIO, a fraction of a second, a 1024 px preview meanwhile) and caches it in Caches — only the style in use — so the bundle carries just the JPEGs; never go back to `UIImage(named:)`, whose cache keeps a second decoded copy. The iOS map draws with Core Graphics, which can't read ASTC, so it decodes the JPEG at full size (134 MB) — only once the map is first shown, and not while the app is in the background (`MapView.MapImage`, `MapCanvas.isDrawn`). `EarthTextureTests` pins the layout and that all three styles compress.
-  `relief.png` beside them is a shaded-relief layer (Natural Earth SR_LR, re-centred so flat ground and the ocean are exactly 128) that both platforms' globes and maps hard-light over every fill and texture, under the borders and markers — Android in `GlobeMaterials` and `WorldMap`, iOS in `TerrainRelief` (a fragment shader modifier on the ocean and fills, and a `.hardLight` draw in `MapView`). The Terrain setting (`showsTerrain`, on by default) turns it off for both views at once, on both platforms. Regenerate it with `python3 scripts/generate_relief_texture.py`; `ReliefTextureTest` pins its layout.
-- App icon: `ios/voyage/Assets.xcassets/AppIcon.appiconset/` holds the light icon and its dark appearance (`voyage_icon_dark.png`, rendered from `shared/store/logo_dark.svg`), which iOS shows when Home Screen icons are Dark. Settings → App Icon offers System/Light/Dark on iOS (`AppIcon-Light`/`AppIcon-Dark` alternate icons, symlinks into the main set) and Light/Dark on Android, whose launchers have no dark mode: two `activity-alias` launcher entries of `VoyageActivity`, the light one still named `.MainActivity` so existing home-screen icons survive (`ui/settings/AppIconSetting.kt`). `android/tools/generate_launcher_icons.py` builds both adaptive icons from the iOS PNGs, and the website swaps to the dark icon in dark mode.
-- `ios/voyage/globe.scn` - Pre-built 3D globe cache, iOS-only (regenerate with GlobeCacheGenerator)
-
-### Shared Country Fixture
-
-`shared/fixtures/expected_countries.json` pins what parsing `world.geojson` must
-produce: 207 countries in feature order, their ISO codes, names, continents,
-capitals, per-ring point counts (171,005 coordinates total) and bounding boxes.
-`voyageTests/GeoJSONFixtureTests` and the Android `GeoJsonParserTest` both assert
-it, so neither hand-written parser can drift from the other or from the data.
-
-It is derived from `world.geojson` by `scripts/generate_country_fixture.py`,
-which `update_geometry.sh` runs automatically; the Play internal testing
-workflow fails if it is stale:
-
-```bash
-python3 scripts/generate_country_fixture.py          # rewrite after a data change
-python3 scripts/generate_country_fixture.py --check  # what the Play internal testing workflow runs
-```
-
-Review the fixture's diff after regenerating it — an unexpected change there is
-an unexpected change to what both apps render.
-
-### Boundary Data Provenance
-
-Country geometry comes from **Natural Earth 1:10m admin-0 map units**, simplified with
-mapshaper (weighted Visvalingam, ~30% retention, islands < 10 km² dropped, 4-decimal
-coordinates) to ~170k boundary points world-wide. To regenerate or change the detail
-budget, run:
-
-```bash
-./scripts/update_geometry.sh   # downloads NE data, simplifies, merges into shared/data/world.geojson
-```
-
-Map units splitting one country into several features (GB = England + Scotland + Wales +
-N. Ireland, BE = Flanders + Wallonia + Brussels, PT = mainland + Madeira + Azores, ...)
-are dissolved by ISO code in mapshaper (`-dissolve2`) so countries render as single
-shapes without internal unit borders.
-
-Crimea belongs to Ukraine (UA), not Russia: Natural Earth's default view folds it into
-Russia's unit, so `update_geometry.sh` erases it from the map units using NE's
-disputed-areas layer (`BRK_A3 == "B89"`) and merges it back as a UA unit before the
-dissolve.
-
-The merge (`scripts/merge_geometry.py`) replaces only feature geometry, matched by ISO
-code; all custom properties (name, continent, capital, `renderAs`) are preserved. Larger
-microstates (CY, LU, WS, CV, KM, MU, ST) are real polygons; the remaining 25 microstates
-stay `Point` features rendered as dots. After regenerating world.geojson, always
-regenerate `globe.scn` (see [Globe Cache Generation](#globe-cache-generation)).
-
-## Country Highlights Data
-
-`shared/data/country_highlights.json` contains 1-5 top cities and 1-5 top attractions for all 207 countries/territories. The data was compiled by cross-referencing at least 3 sources per country to ensure accuracy and reduce bias.
-
-**Sources used:** Lonely Planet, TripAdvisor, Touropia, PlanetWare, Atlas Obscura, Culture Trip, Rough Guides, Wikipedia (tourism pages), official national tourism boards, and regional travel blogs.
-
-**Selection criteria:**
-- **Cities** were chosen by tourist relevance, not population size (e.g., Livingstone over Lusaka for Zambia, Siem Reap over Phnom Penh for Cambodia).
-- **Attractions** prioritize landmarks, natural wonders, national parks, historical sites, and cultural sites that tourists actually visit.
-- **Major destinations** (e.g., France, Japan, USA) have the full 5 cities + 5 attractions.
-- **Small/less-visited countries** (e.g., Nauru, Tuvalu, Falkland Islands) have appropriately reduced entries (1-2 per list).
-- **Conflict zones** (e.g., Syria, Yemen) include historically significant sites known pre-conflict.
-- The data was reviewed continent by continent before finalizing.
-
-## Journey Art
-
-Painted header art for the country sheet (the "Journey" design), one day (light
-mode) and one night (dark mode) image per country: iOS `CountryExploreView`
-(`JourneyHeader`) and Android `CountryDetailSheet` (`ui/country/JourneyHeader.kt`)
-show it full-bleed with the flag and name over its top-left, fading into the
-sheet at the bottom. The name is one line at 40 pt, shrunk to fit down to 30 pt;
-a longer one ("Democratic Republic of the Congo") goes on two balanced lines
-at 30 pt or less (`JourneyTitle` on each, pinned by `JourneyTitleTest` and
-`testJourneyTitleFitsLongNamesOnTwoLines`). A country without art keeps the plain header, so art can be
-added one country at a time. The images are `shared/data/journey/<ISO>_day.webp`
-and `<ISO>_night.webp` (1170×720, the 390×240 banner at 3×). iOS bundles the
-folder through a folder reference, and Android packages it with the rest of
-`shared/data/`, so dropping in a pair is all either app needs.
-`shared/data/journey/places.json` names what each painting shows, keyed by ISO
-code; both headers show it behind a small pin in the art's bottom-right
-(`JourneyPlaceButton` on each, colors `journeyChip*` in both palettes), and
-`JourneyArtTest` (Android) and `testJourneyArtNamesItsPlace` (iOS) fail if a
-painting has no place.
-
-The art is made from a real photo by `scripts/journey_art.py`, which has a Gemini
-image model repaint the photo as an expert painter's gouache/oil landscape:
-visible brushwork, deliberately not anime. The night version is generated from
-the chosen day version, not the photo, so both share one composition. The top
-third stays open sky edge to edge — a long name like "United Kingdom" runs
-three-quarters across, and the Done button sits top-right — so the scene starts
-a third of the way down and the night moon sits low above the skyline, right of
-centre. Every prompt shares that rule (`SKY_BAND`) and the instruction to keep
-every vehicle, person and animal (`KEEP_EVERYTHING`), and every night shares one
-moon (`MOON`, modelled on Hungary's: silver, low and right of centre in clear
-sky, apart from the landmark); change them there.
-
-```bash
-python3 scripts/journey_art.py day JP ~/Photos/fuji.jpg -n 2   # day attempts from the photo
-python3 scripts/journey_art.py night JP 4                      # nights from day-4
-python3 scripts/journey_art.py export JP 4 3 --place "Chureito Pagoda and Mount Fuji"  # → shared/data/journey/
-python3 scripts/journey_art.py reframe NO 2 4                  # pair lower in the frame, more sky above
-```
-
-The model tends to keep a photo's framing over the prompt's sky rule, so for a
-photo whose landmark sits near its top edge pass `day --shrink 0.66`: it paints
-from the photo set small along the bottom of a grey 16:9 canvas, leaving the
-top third to sky from the start. If the title covers the landmark, `reframe` shrinks the picked pair to the
-bottom of the frame (`--scale`, default 0.78) and has Gemini paint only the
-new sky around it, so the painting stays as picked and day and night still
-line up.
-
-Attempts go under the gitignored `journey-art/<ISO>/`: the photo, every attempt
-with the prompt that made it, and an `index.html` that previews each one as the
-banner in both themes. `day` takes its mood and palette from Norway's day art
-(`shared/data/journey/NO_day.webp`), so new countries match the set. Needs
-`GEMINI_API_KEY` on a **paid** tier, since the free tier allows no image
-generation, and Pillow (`pillow-heif` too for iPhone HEIC photos). It shells
-out to nothing, so it runs on Linux as well — in a cloud session, set
-`GEMINI_API_KEY` in the environment's variables, attach the photo, and review
-attempts as images rather than through `index.html`.
-Change the look in the script's shared `STYLE` prompt, not per
-country; country-specific direction goes in `--hint`. The banner's shape, the
-title's place and the fade are the same on both platforms, so changing one is a
-two-platform change. The `journey-header` skill runs the whole loop for a
-country — two days, the user's pick, two nights, the pick, export, commit and
-the batch PR's table — and checks each attempt against the top third with its
-`scripts/sheet.py`.
-
-## Globe Cache Generation
-
-The `ios/voyage/globe.scn` file is a pre-built SceneKit scene for fast app startup. To regenerate after modifying `shared/data/world.geojson`:
-
-```bash
-# From Xcode: Select GlobeCacheGenerator scheme and Run (⌘R)
-# Or from command line:
-cd ios
-xcodebuild -scheme GlobeCacheGenerator -destination 'platform=macOS' build
-./DerivedData/voyage/Build/Products/Debug/GlobeCacheGenerator
-```
-
-The generator reads `shared/data/world.geojson` and outputs to `ios/voyage/globe.scn`.
+Build and run the simulator after larger changes. Run
+`voyageTests/testGlobeAndMapCountryConsistency` after touching either renderer.
+Setup: `cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig` and fill in the
+Supabase URL and key.
+
+Android, from `android/`: see [docs/ANDROID_DEVELOPMENT.md](docs/ANDROID_DEVELOPMENT.md).
+
+**Never sign, archive or upload locally.** Builds and store listings go through
+GitHub Actions only: `testflight.yml`, `play-internal.yml` (Android has no PR
+CI — this runs its tests and lint), `store-listing.yml`. Use the matching skills.
+
+## Git
+
+Conventional commits (`feat|fix|docs|style|refactor|test|chore: …`) and branches
+(`<type>/<short-description>`).
+
+## Two-platform rule
+
+The two apps behave the same, and both sides pin it with matching
+tests. **A change to any shared behavior lands on both platforms in the same
+PR**, including colors, country styling and selection priority, globe camera,
+spin/inertia and flight timing, marker sizes, outline sector grid and zoom
+limits, achievements and medal tiers, challenge rules and timings, search
+ranking, theme/Daylight rules, the country dock and list filters, and the
+Journey header layout. When you change one side, find the port on the other
+(usually the same type name) and its test.
+
+- Colors live only in `ios/voyage/ColorPalette.swift` and
+  `android/.../ui/theme/ColorPalette.kt`. Never hardcode them elsewhere.
+- Fonts: Newsreader for titles, country names and prompts. Schibsted Grotesk
+  for everything else. Never put numbers or buttons in Newsreader.
+
+## Globe and map consistency
+
+Globe and map must look and behave the same (colors, priority, borders, capital
+markers, gestures), on both platforms, so that's four renderers. Fill and border
+rules are written once in `CountryStyle` (iOS `CountryStyle.swift`, Android
+`ui/map/CountryStyle.kt`). Anything that changes how a country looks has to go
+through `CountryStyle`, because the iOS globe restyles only the countries whose
+style changed.
+
+Home keeps both renderers mounted and crossfades between them. Never swap them
+with an `if`.
+
+## Traps
+
+- **iOS state:** `GlobeState` (in `ContentView.swift`) is the single source of
+  truth. Mutate it through its methods. For synced sets, iCloud wins (except on
+  a device's first sync), and each mutation persists only the keys it changed
+  (`resolveSynced`, `GlobeStateSyncTests`).
+- **iOS data:** go through `CountryDataCache.shared`, never re-parse the GeoJSON.
+- **iOS textures:** never load Earth textures with `UIImage(named:)`. See
+  `EarthTexture.swift`.
+- **Android Filament:** materials are unlit and post-processing is off. That is
+  what puts exact palette colors on screen, so enabling either shifts every
+  color. Earth textures are `RGBA8`, not sRGB. There is no skybox (the backdrop
+  is Compose).
+- **Android engine:** one Filament engine per Activity, owned by `HomeScreen`
+  and composed *under* the `NavHost`, hidden rather than removed. Don't move
+  Home back into the `NavHost`. Challenges reuse Home's globe through
+  `WorldScene`, never a second one.
+- **Android markers** are meshes in the globe scene, not a Compose overlay,
+  because an overlay lags a frame behind.
+- **Android parses at build time** (`tools/world-cache`), so generated
+  `countries.bin` and `world_meshes.bin` are never checked in.
+
+## Data changes
+
+- After changing `world.geojson`, regenerate the fixture and review its diff
+  (an unexpected change there is an unexpected render change), then regenerate
+  `ios/voyage/globe.scn`:
+  ```bash
+  python3 scripts/generate_country_fixture.py          # --check is what CI runs
+  ```
+  ```bash
+  cd ios && xcodebuild -scheme GlobeCacheGenerator -destination 'platform=macOS' build && ./DerivedData/voyage/Build/Products/Debug/GlobeCacheGenerator
+  ```
+- Geometry comes from `./scripts/update_geometry.sh`. See
+  [docs/DATA.md](docs/DATA.md) for provenance (dissolves, Crimea as UA,
+  microstates).
+- A country's extra capitals go in `otherCapitals`. The apps treat every
+  capital alike, so adding one is a data-only change.
+- Journey art: `scripts/journey_art.py` (its docstring) and the `journey-header`
+  skill. Change the look in its shared prompts, not per country.

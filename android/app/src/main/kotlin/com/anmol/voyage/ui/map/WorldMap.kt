@@ -32,7 +32,7 @@ private val HAIRLINE = Stroke(width = 0f)
 /**
  * The flat world map: an equirectangular Compose `Canvas` port of iOS `MapView`.
  *
- * The globe (Phase 7) and this map have to look and behave identically apart from
+ * The globe and this map have to look and behave identically apart from
  * the projection, so everything that decides *appearance* lives outside this
  * composable — [CountryStyles] for colors, [CapitalMarker] for the capital seal,
  * [MapProjection] for the geometry — leaving drawing and gestures here.

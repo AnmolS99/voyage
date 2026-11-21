@@ -6,7 +6,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * Tap-to-country lookup for the map (Phase 4) and later the globe (Phase 7) —
+ * Tap-to-country lookup for the map and the globe —
  * the Kotlin port of iOS `CountryHitTester`. Both views must resolve a tap to
  * the same country, so the search strategy lives here rather than in either view.
  *

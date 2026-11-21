@@ -58,7 +58,7 @@ class CountryDataCache(
     /** Countries grouped by continent. */
     val continents: ContinentIndex by lazy { ContinentIndex(countries) }
 
-    /** Tap-to-country lookup, shared by the map and (from Phase 7) the globe. */
+    /** Tap-to-country lookup, shared by the map and the globe. */
     val hitTester: CountryHitTester by lazy { CountryHitTester(countries) }
 
     private val countriesByName: Map<String, GeoJsonCountry> by lazy {
