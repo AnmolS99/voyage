@@ -1,8 +1,7 @@
 # Android Development
 
 Everything needed to build, run, and test the Android app. This is the Android
-counterpart of the iOS instructions in [CLAUDE.md](../CLAUDE.md); the phased port
-plan lives in [ANDROID_PLAN.md](ANDROID_PLAN.md).
+counterpart of the iOS instructions in [CLAUDE.md](../CLAUDE.md).
 
 **All commands below run from the `android/` directory.**
 
@@ -148,7 +147,7 @@ android/
 │       │   │       ├── globe/               # Filament renderer, materials, surface + gestures
 │       │   │       ├── home/                # HomeScreen: chrome shared by globe and map
 │       │   │       ├── map/                 # flat map: projection, paths, styles, Canvas
-│       │   │       ├── screens/             # placeholders for unbuilt phases
+│       │   │       ├── screens/             # placeholder for the Daily tab
 │       │   │       └── theme/               # ColorPalette.kt, Theme.kt
 │       │   ├── res/                         # strings, themes, launcher icon
 │       │   └── AndroidManifest.xml
@@ -215,7 +214,7 @@ android/
   Play + 1) — never bump it by hand;
   `versionName` mirrors the iOS `MARKETING_VERSION` at release time and is
   user-controlled — never bump it unasked.
-- **Secrets** (Phase 9): Supabase credentials go in a gitignored
+- **Secrets**: Supabase credentials go in a gitignored
   `android/secrets.properties` surfaced through `BuildConfig` — the Android
   analogue of `ios/Secrets.xcconfig`.
 

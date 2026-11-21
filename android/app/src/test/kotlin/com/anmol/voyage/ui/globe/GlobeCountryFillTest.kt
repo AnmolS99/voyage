@@ -11,10 +11,8 @@ import org.junit.Test
 /**
  * The globe's colors, against the same rules `CountryStyleTest` pins for the map.
  *
- * CLAUDE.md makes "globe and map look identical" a rule, and until Phase 7.5 the
- * globe genuinely broke it — with no borders to move a status onto, selection had
- * to brighten the fill instead. Now that both renderers go through
- * `CountryStyles`, this asserts the translation from a shading to Filament
+ * CLAUDE.md makes "globe and map look identical" a rule. Both renderers go
+ * through `CountryStyles`, so this asserts the translation from a shading to Filament
  * uniforms rather than a second set of rules.
  */
 class GlobeCountryFillTest {

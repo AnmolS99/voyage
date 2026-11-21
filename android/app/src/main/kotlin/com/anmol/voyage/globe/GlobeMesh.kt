@@ -5,7 +5,7 @@ package com.anmol.voyage.globe
  *
  * On iOS the triangulator returns `SCNGeometry` directly; here the meshes stay
  * renderer-agnostic so the pipeline is unit-testable on the JVM and Filament
- * (Phase 7.4/7.5) merely wraps the arrays in vertex/index buffers.
+ * merely wraps the arrays in vertex/index buffers.
  */
 
 /** A point on (or direction from the center of) the globe, single precision. */

@@ -16,8 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 /**
- * Stand-in for a destination that a later phase fills in. One composable serves
- * every tab, so the shell has no per-screen boilerplate to delete later.
+ * Stand-in for a destination without its real screen yet (the Daily tab).
  */
 @Composable
 fun PlaceholderScreen(

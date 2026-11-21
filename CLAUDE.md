@@ -1,8 +1,7 @@
 # CLAUDE.md
 
-voyage: an interactive 3D globe for tracking countries you've visited. iOS
-(SwiftUI + SceneKit) ships; a native Android port (Kotlin/Compose + Filament) is
-in progress — [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md).
+voyage: an interactive 3D globe for tracking countries you've visited, as
+native iOS (SwiftUI + SceneKit) and Android (Kotlin/Compose + Filament) apps.
 
 ## Editing this file
 
@@ -21,7 +20,7 @@ shared/    data/ (geojson, highlights, aliases, textures, fonts, journey/),
            fixtures/expected_countries.json, supabase/
 web/       Marketing site + /privacy (see web/README.md)
 scripts/   Data generation scripts
-docs/      ANDROID_PLAN.md, ANDROID_DEVELOPMENT.md, DATA.md
+docs/      ANDROID_DEVELOPMENT.md, DATA.md
 ```
 
 `shared/data/` is used in place by both apps — edit it there, never copy it per
@@ -55,7 +54,7 @@ Conventional commits (`feat|fix|docs|style|refactor|test|chore: …`) and branch
 
 ## Two-platform rule
 
-Android ports iOS behavior one-to-one, and both sides pin it with matching
+The two apps behave the same, and both sides pin it with matching
 tests. **A change to any shared behavior lands on both platforms in the same
 PR**, including colors, country styling and selection priority, globe camera,
 spin/inertia and flight timing, marker sizes, outline sector grid and zoom

@@ -58,8 +58,7 @@ data class CountryStyle(
  * The map's country styling rules, ported 1:1 from iOS `MapView`.
  *
  * Three things are easy to get wrong and are therefore spelled out here rather
- * than inline in the renderer, where the globe (Phase 7) would end up restating
- * them:
+ * than inline in the renderer, where the globe would end up restating them:
  *
  *  - **Status outranks selection.** A selected country's *fill* always drops to
  *    plain land; its visited/wishlist status moves to the border. That is what

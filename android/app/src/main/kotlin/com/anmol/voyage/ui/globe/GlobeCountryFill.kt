@@ -28,10 +28,8 @@ internal data class GlobeFill(
  * visited/wishlist status moves to a thickened border. This file only translates
  * a [MapShading] into the uniforms the Filament materials take.
  *
- * (Until Phase 7.5 the globe had no borders and had to state a second set of
- * rules here — selection shown with the palette's brighter `…Selected` variants.
- * Now that the outlines exist, those variants are unused on Android, exactly as
- * they are on iOS.)
+ * The palette's brighter `…Selected` variants are unused on Android, exactly as
+ * they are on iOS: selection shows on the border, not the fill.
  */
 internal object GlobeCountryFills {
 

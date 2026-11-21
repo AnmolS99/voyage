@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
  * A closed ring of geographic coordinates, flattened to
  * `[lon0, lat0, lon1, lat1, …]`.
  *
- * The flat layout is deliberate: it is what both the Compose map (Phase 4) and
- * Filament (Phase 7) want to consume, and it avoids one object per coordinate
+ * The flat layout is deliberate: it is what both the Compose map and
+ * Filament want to consume, and it avoids one object per coordinate
  * for the ~171k points in `world.geojson`.
  */
 class Ring(val lonLat: DoubleArray) {
