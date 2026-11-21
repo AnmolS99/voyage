@@ -31,6 +31,7 @@ import com.anmol.voyage.data.CompressedEarthTexture
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.LatLon
+import com.anmol.voyage.globe.FrameDemand
 import com.anmol.voyage.globe.GlobeCamera
 import com.anmol.voyage.globe.GlobeFlight
 import com.anmol.voyage.globe.GlobeInertia
@@ -71,7 +72,8 @@ internal class GlobeDotStyle(
  *
  * The render loop is driven by [Choreographer] rather than a background thread,
  * which is what Filament's own Android samples do: it keeps every Engine call
- * on one thread and paces frames to the display's vsync for free.
+ * on one thread and paces frames to the display's vsync for free. It runs only
+ * while the picture is changing ([FrameDemand]): a still globe draws nothing.
  *
  * @param colorFor a country's fill, or null to leave it undrawn over the texture.
  * @param earthTexture the image the ocean sphere is painted with. Null paints it
@@ -132,6 +134,8 @@ internal fun GlobeSurface(
     // Nobody looking, nobody paying: a globe behind another tab, or in an app
     // that has gone to the background, stops posting frames. Everything the
     // frames draw stays uploaded, so showing it again costs the next vsync.
+    // A globe that is being looked at but is not changing posts none either —
+    // see `FrameDemand`.
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     SideEffect {
         host.rendering = visible && lifecycleState.isAtLeast(Lifecycle.State.STARTED)
@@ -358,26 +362,25 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
 
     /** Whether to keep turning the globe when nothing else is moving it. */
     var autoRotating: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            if (value) frames.request()
+        }
 
     /**
-     * Whether frames are being drawn.
+     * Whether frames may be drawn.
      *
      * Turning it off leaves the engine, its geometry and its surface exactly
      * where they are and only stops asking the [Choreographer] for frames —
      * which is what lets the globe be left behind another tab for free and come
-     * back on the next vsync. The frame clock resets with it, so the first frame
-     * after a pause does not hand [advance] a step measured from before it.
+     * back on the next vsync. Turning it on draws one frame; whether more
+     * follow is [frames]' call.
      */
-    var rendering: Boolean = false
+    var rendering: Boolean
+        get() = frames.enabled
         set(value) {
-            if (field == value || destroyed) return
-            field = value
-            if (value) {
-                lastFrameNanos = 0L
-                choreographer.postFrameCallback(frameCallback)
-            } else {
-                choreographer.removeFrameCallback(frameCallback)
-            }
+            if (!destroyed) frames.enabled = value
         }
 
     /** The view currently bound to the engine's swap chain, or null. */
@@ -396,15 +399,37 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
     private var uploadedOutlines: List<OutlineMesh>? = null
     private var uploadedDots: List<MicrostateDot>? = null
 
-    private val frameCallback = object : Choreographer.FrameCallback {
+    private val frameCallback: Choreographer.FrameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (destroyed) return
-            choreographer.postFrameCallback(this)
-            advance(frameTimeNanos)
-            renderer.setCamera(camera)
-            renderer.render(frameTimeNanos)
+            frames.frame { afterPause ->
+                // The loop had stopped, so the time since the last frame is not
+                // a step: start the clock again rather than jump the globe.
+                if (afterPause) lastFrameNanos = 0L
+                advance(frameTimeNanos)
+                renderer.setCamera(camera)
+                // A frame Filament skipped is still owed.
+                if (!renderer.render(frameTimeNanos)) frames.request()
+                isAnimating
+            }
         }
     }
+
+    /**
+     * Posts a frame only while the picture is changing. Everything that changes
+     * it without going through [advance] — a finger, an upload, a recolor, a new
+     * surface — asks for a frame here; a flight, a coast and the idle spin keep
+     * the loop going through [isAnimating]. With none of them, nothing is drawn:
+     * the surface keeps showing the last frame, as iOS's SceneKit view does.
+     */
+    private val frames: FrameDemand = FrameDemand(
+        post = { choreographer.postFrameCallback(frameCallback) },
+        cancel = { choreographer.removeFrameCallback(frameCallback) },
+    )
+
+    /** Whether [advance] will move the camera next frame. */
+    private val isAnimating: Boolean
+        get() = flight != null || inertia.isActive || autoRotating
 
     /**
      * Moves the globe by everything that is not a finger: one frame of coasting
@@ -460,6 +485,7 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
             longitude = target.lon,
             distance = distance ?: camera.distance,
         )
+        frames.request()
     }
 
     /**
@@ -493,6 +519,7 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
             distance = GlobeCamera.HOME.distance,
             duration = GlobeFlight.RETURN_HOME_SECONDS,
         )
+        frames.request()
     }
 
     /**
@@ -538,6 +565,7 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
         val degreesPerDp = camera.degreesPerDp
         inertia.latitude = (velocity.y * degreesPerDp).toFloat()
         inertia.longitude = (-velocity.x * degreesPerDp).toFloat()
+        frames.request()
     }
 
     /**
@@ -565,6 +593,7 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
     private fun updateCamera(transform: (GlobeCamera) -> GlobeCamera) {
         camera = transform(camera)
         onCameraChange(camera)
+        frames.request()
     }
 
     /**
@@ -594,7 +623,9 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
         attachedView = view
         uiHelper.renderCallback = object : UiHelper.RendererCallback {
             override fun onNativeWindowChanged(surface: Surface) {
-                if (!destroyed) renderer.onNativeWindowChanged(surface)
+                if (destroyed) return
+                renderer.onNativeWindowChanged(surface)
+                frames.request()
             }
 
             override fun onDetachedFromSurface() {
@@ -606,6 +637,7 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
                 renderer.onResized(width, height)
                 viewportWidth = width.toFloat()
                 viewportHeight = height.toFloat()
+                frames.request()
             }
         }
         // A TextureView, not a SurfaceView. A SurfaceView is its own window
@@ -643,10 +675,13 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
         uploadedOutlines = outlines
         uploadedDots = microstateDots
         renderer.setGeometry(ocean, countries, outlines, microstateDots)
+        frames.request()
     }
 
     fun setSelectedOutline(outline: OutlineMesh?, color: GlobeFill?) {
-        if (!destroyed) renderer.setSelectedOutline(outline, color)
+        if (destroyed) return
+        renderer.setSelectedOutline(outline, color)
+        frames.request()
     }
 
     /**
@@ -674,17 +709,22 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
                 )
             },
         )
+        frames.request()
     }
 
     /** See [GlobeRenderer.maxCompressedTextureWidth]. */
     val maxCompressedTextureWidth: Int get() = renderer.maxCompressedTextureWidth
 
     fun setEarthTexture(image: Bitmap?, detail: CompressedEarthTexture?, fallback: androidx.compose.ui.graphics.Color) {
-        if (!destroyed) renderer.setEarthTexture(image, detail, fallback)
+        if (destroyed) return
+        renderer.setEarthTexture(image, detail, fallback)
+        frames.request()
     }
 
     fun setReliefTexture(image: Bitmap?) {
-        if (!destroyed) renderer.setReliefTexture(image)
+        if (destroyed) return
+        renderer.setReliefTexture(image)
+        frames.request()
     }
 
     fun applyColors(
@@ -707,6 +747,7 @@ internal class GlobeSurfaceHost(assets: AssetManager) {
                 isSelected = dot.isSelected,
             )
         }
+        frames.request()
     }
 
     /** Runs exactly once, on the main thread — the one that created the engine. */

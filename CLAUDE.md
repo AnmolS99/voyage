@@ -55,7 +55,13 @@ Home's bottom chrome, `ui/home/CountriesDock.kt`, ports
 `ios/voyage/CountriesDock.swift` — the progress dock that morphs into the
 selected country's card — with iOS's springs, metrics and button colors
 (`StatusButtons` in `ui/map/CountryStyle.kt`), so changing either is a
-two-platform change.
+two-platform change. The dock's + opens the country list (iOS
+`CountryListView`, Android `CountrySearchSheet`) on All, and tapping its
+visited count ("24/195") opens it on Visited. The list's All · Visited · Wishlist chips are
+`CountryListFilter` on each, same cases and rules, pinned by
+`CountryListFilterTests` and `CountryListFilterTest`: a search looks only within
+the chosen filter, and a country unmarked from a filtered list stays listed,
+unmarked, until another filter is chosen or the list closes.
 `HomeScreen` also owns the globe's **Filament engine — one per Activity** — and
 `VoyageApp` composes it outside the `NavHost` and *under* it, hidden rather than
 removed on a tab switch: a detached `TextureView` loses its surface, and a
@@ -75,11 +81,11 @@ home: it deselects and flies, at the launch distance, to where the user is
 taken to be — their time zone's city, `Daylight.location` on each, which asks
 for no location (see [Theme](#theme)); a zone with no city gets the launch
 pose — over 1.2 s
-(`GlobeFlight.RETURN_HOME_SECONDS`, iOS `GlobeState.returnHomeDuration`),
+(`GlobeFlight.RETURN_HOME_SECONDS`, iOS `GlobeCamera.returnHomeDuration`),
 where the idle spin carries on — `returnHome` and `homeRequest` on each
 platform's state. Selecting a country flies the camera to it via
 `globe/GlobeFlight.kt`, a port of `GlobeView.Coordinator.flyTo` down to its
-easing curve. How far back that flight settles is fitted to the country: `CountryFocus` (the smallest cap around its main landmass, in each platform's `CountryHitTester`) and `distanceToFit` (iOS `GlobeState`, Android `GlobeCamera`) size it to the view's narrower axis, so Luxembourg fills the screen and Russia fits in it — same algorithm, margin and clamps on both, pinned by `CountryFocusTests` and `CountryHitTesterTest`/`GlobeCameraTest`. Both platforms integrate one step per rendered frame — on Android a
+easing curve. How far back that flight settles is fitted to the country: `CountryFocus` (the smallest cap around its main landmass, in each platform's `CountryHitTester`) and `distanceToFit` (`GlobeCamera` on both) size it to the view's narrower axis, so Luxembourg fills the screen and Russia fits in it — same algorithm, margin and clamps on both, pinned by `CountryFocusTests` and `CountryHitTesterTest`/`GlobeCameraTest`. Both platforms integrate one step per rendered frame — on Android a
 flight, a coasting flick and the idle spin are three cases of one `advance()`
 step, so exactly one of them writes the camera per frame — and the decay curve,
 pan speed, idle rate and flight timing are pinned by tests on each; retuning any
@@ -250,7 +256,7 @@ cp ios/Secrets.xcconfig.example ios/Secrets.xcconfig
 - **GeoJSON** for country boundary data
 - **Supabase** for daily challenge backend
 
-The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `ObservableObject` injected into every tab that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: daylight/system/light/dark, as on Android — see [Theme](#theme)). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
+The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/map), Daily (challenge calendar), Achievements, Settings. All tabs share one `GlobeState` (`ContentView.swift`), an `@Observable` class passed to every tab (so a view is re-evaluated only when a property it reads changes — `GlobeView.observeState` names the globe's, since `updateUIView` returns early past some) that holds visited/wishlist countries, checked cities/attractions, view mode (globe vs map), style preferences, and the theme (`ThemeMode`: daylight/system/light/dark, as on Android — see [Theme](#theme)). `GlobeState` is the single source of truth — mutate it through its methods (`addVisit`, `toggleCheckedCity`, etc.) rather than duplicating state locally in views.
 
 ### Data persistence
 
@@ -271,7 +277,9 @@ The app is a single `TabView` (`ContentView.swift`) with four tabs: Home (globe/
 | `Earcut.swift`              | Ear-clipping triangulation (port of mapbox/earcut) |
 | `GeoJSONParser.swift`       | Parses world.geojson into country data            |
 | `CountryHitTester.swift`    | Shared tap-to-country lookup (globe + map)        |
-| `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights   |
+| `CountryStyle.swift`        | Shared fill/border priority rules (globe + map)   |
+| `CountryDataCache.swift`    | Singleton cache for parsed GeoJSON + highlights; `countryNamed` / `countryWithIsoCode` lookups |
+| `GlobeCamera.swift`         | Camera limits and `distanceToFit` (Android `GlobeCamera`) |
 | `MapView.swift`             | 2D flat map view alternative                      |
 | `ColorPalette.swift`        | Centralized `AppColors` (see Color Palette below) |
 | `Typography.swift`          | `Font.voyageDisplay` / `.voyageText` (see Typography below) |
@@ -330,6 +338,24 @@ The globe view (`GlobeView.swift`) and map view (`MapView.swift`) must maintain 
   into view; zoom resets on rotation and on entering map mode, centred on the
   selected country as far as that clamp allows. Both orientations
   are supported for globe and map (`MapView.MapFit` / Android `MapProjection`)
+
+The priority rules are written once, in `ios/voyage/CountryStyle.swift` (Android
+`ui/map/CountryStyle.kt`): both iOS renderers ask it for a country's fill and
+border paint and only map that paint to their own colors. The globe also keeps
+the style it last applied to each country and restyles only those that changed
+(`GlobeView.Coordinator.updateHighlights`), so anything new that affects a
+country's look has to be part of `CountryStyle`, or the globe will skip it.
+`CountryStyleTests` pins the rules.
+
+Home keeps both renderers in the hierarchy and crossfades between them
+(`HomeView.modeSwitchDuration`), so the switch is instant — never replace that
+with an `if`. The one faded out stops working instead: the globe pauses its
+scene once the crossfade has run and resumes the moment it is asked back
+(`GlobeView.Coordinator.updateVisibility`; a flight requested meanwhile lands at
+once), and the map holds the look it last drew and reads nothing of `GlobeState`
+but the view mode until it is shown again (`MapView.lookToDraw`). The map draws
+only the countries in view, one border stroke per country, with the selected
+country's border last so it lies over its neighbours'.
 
 When modifying colors or selection logic, always update both files together.
 

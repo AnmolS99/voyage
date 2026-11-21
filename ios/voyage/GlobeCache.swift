@@ -16,7 +16,7 @@ class GlobeCache {
 
         do {
             let scene = try SCNScene(url: url, options: nil)
-            return scene.rootNode.childNode(withName: "globe", recursively: true)?.clone()
+            return scene.rootNode.childNode(withName: "globe", recursively: true)
         } catch {
             print("Failed to load bundled globe: \(error)")
             return nil

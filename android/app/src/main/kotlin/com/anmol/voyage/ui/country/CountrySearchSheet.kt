@@ -1,7 +1,9 @@
 package com.anmol.voyage.ui.country
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
@@ -19,6 +22,8 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
@@ -28,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,12 +42,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anmol.voyage.R
@@ -53,6 +65,7 @@ import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.data.capitalsLine
 import com.anmol.voyage.state.VoyageState
 import com.anmol.voyage.ui.theme.VoyagePalette
+import com.anmol.voyage.ui.theme.readableContentColor
 
 /**
  * Find a country by name — the Android analogue of the iOS `CountryListView`
@@ -66,6 +79,12 @@ import com.anmol.voyage.ui.theme.VoyagePalette
  * `Türkiye` is reachable from an English keyboard, and finds countries by their
  * other names too — "uk", "england", "burma". A country found only by one of
  * those shows it under its name, so it is clear why it is listed.
+ *
+ * Chips under the field narrow the list to the visited or wishlisted
+ * countries, and a search then looks only among them — see [CountryListFilter].
+ *
+ * @param initialFilter what the list opens on: All from the dock's +, Visited
+ *   from its count. Only All opens the keyboard: the others are for browsing.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,6 +95,7 @@ fun CountrySearchSheet(
     onSelect: (GeoJsonCountry) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    initialFilter: CountryListFilter = CountryListFilter.ALL,
 ) {
     // Held here rather than as a defaulted parameter: a default argument is
     // evaluated at the call site, so an experimental one would force every
@@ -84,8 +104,23 @@ fun CountrySearchSheet(
 
     var query by rememberSaveable { mutableStateOf("") }
     val index = remember(countries, cache) { CountrySearchIndex.ofCountries(countries, cache) }
-    val results = remember(index, query) { index.search(query) }
+    val matches = remember(index, query) { index.search(query) }
     val focusRequester = remember { FocusRequester() }
+    val haptics = LocalHapticFeedback.current
+
+    var filter by rememberSaveable { mutableStateOf(initialFilter) }
+    // See CountryListFilter.includes.
+    var kept by remember { mutableStateOf(initialFilter.members(state.visitedCountries, state.wishlistCountries)) }
+    val choose = { chosen: CountryListFilter ->
+        if (chosen != filter) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        filter = chosen
+        kept = chosen.members(state.visitedCountries, state.wishlistCountries)
+    }
+    val visited = state.visitedCountries
+    val wishlist = state.wishlistCountries
+    val results = remember(matches, filter, visited, wishlist, kept) {
+        matches.filter { filter.includes(it.item.name, visited, wishlist, kept.orEmpty()) }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -93,9 +128,10 @@ fun CountrySearchSheet(
         modifier = modifier,
     ) {
         LaunchedEffect(Unit) {
-            // The field is the point of the sheet, so open the keyboard with it.
+            // The field is the point of the sheet, so open the keyboard with it —
+            // unless it opened on a filter, to browse rather than to search.
             // Guarded because the request races the sheet's entry animation.
-            runCatching { focusRequester.requestFocus() }
+            if (initialFilter == CountryListFilter.ALL) runCatching { focusRequester.requestFocus() }
         }
 
         Column(
@@ -130,12 +166,18 @@ fun CountrySearchSheet(
                     .focusRequester(focusRequester),
             )
 
+            FilterChips(
+                selection = filter,
+                visitedCount = visited.size,
+                wishlistCount = wishlist.size,
+                onSelect = choose,
+            )
+
             if (results.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.search_no_results, query),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+                EmptyList(
+                    filter = filter,
+                    query = query.trim(),
+                    onShowAll = { choose(CountryListFilter.ALL) },
                 )
             } else {
                 LazyColumn(
@@ -153,6 +195,141 @@ fun CountrySearchSheet(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * All · Visited · Wishlist. Each chip carries its count and, as on the rows,
+ * its status's icon and color: the visited check in green, the wishlist heart in
+ * purple. The chosen one fills with that color, as [VisitedChip] does.
+ */
+@Composable
+private fun FilterChips(
+    selection: CountryListFilter,
+    visitedCount: Int,
+    wishlistCount: Int,
+    onSelect: (CountryListFilter) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .padding(top = 8.dp),
+    ) {
+        ListFilterChip(
+            label = stringResource(R.string.search_filter_all),
+            icon = null,
+            tint = VoyagePalette.buttonColor,
+            selected = selection == CountryListFilter.ALL,
+            onClick = { onSelect(CountryListFilter.ALL) },
+        )
+        ListFilterChip(
+            label = stringResource(R.string.search_filter_visited, visitedCount),
+            icon = Icons.Rounded.Check,
+            // The globe's yellow, as everywhere a country is marked visited.
+            tint = VoyagePalette.visited,
+            unselectedIcon = { VisitedMark(size = FilterChipDefaults.IconSize) },
+            selected = selection == CountryListFilter.VISITED,
+            onClick = { onSelect(CountryListFilter.VISITED) },
+        )
+        ListFilterChip(
+            label = stringResource(R.string.search_filter_wishlist, wishlistCount),
+            icon = Icons.Rounded.Favorite,
+            tint = VoyagePalette.wishlist,
+            selected = selection == CountryListFilter.WISHLIST,
+            onClick = { onSelect(CountryListFilter.WISHLIST) },
+        )
+    }
+}
+
+@Composable
+private fun ListFilterChip(
+    label: String,
+    icon: ImageVector?,
+    tint: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
+    /** Drawn in place of [icon] while not selected, for a tint too light to carry it. */
+    unselectedIcon: (@Composable () -> Unit)? = null,
+) {
+    val onTint = readableContentColor(tint)
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = icon?.let {
+            {
+                if (!selected && unselectedIcon != null) {
+                    unselectedIcon()
+                } else {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null,
+                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+                    )
+                }
+            }
+        },
+        colors = FilterChipDefaults.filterChipColors(
+            iconColor = tint,
+            selectedContainerColor = tint,
+            selectedLabelColor = onTint,
+            selectedLeadingIconColor = onTint,
+        ),
+    )
+}
+
+/**
+ * Nothing listed: a search that found nothing, or a filter with nothing in it
+ * yet. Either way a filtered list offers the way back to every country.
+ */
+@Composable
+private fun EmptyList(filter: CountryListFilter, query: String, onShowAll: () -> Unit) {
+    val (title, body) = when {
+        query.isNotEmpty() -> null to stringResource(
+            when (filter) {
+                CountryListFilter.ALL -> R.string.search_no_results
+                CountryListFilter.VISITED -> R.string.search_no_visited_results
+                CountryListFilter.WISHLIST -> R.string.search_no_wishlist_results
+            },
+            query,
+        )
+        filter == CountryListFilter.VISITED ->
+            stringResource(R.string.search_no_visited_title) to stringResource(R.string.search_no_visited_body)
+        else ->
+            stringResource(R.string.search_no_wishlist_title) to stringResource(R.string.search_no_wishlist_body)
+    }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 32.dp),
+    ) {
+        if (title != null) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        if (filter != CountryListFilter.ALL) {
+            TextButton(onClick = onShowAll, modifier = Modifier.padding(top = 8.dp)) {
+                Text(
+                    stringResource(
+                        if (query.isNotEmpty()) R.string.search_all_countries else R.string.search_show_all,
+                    ),
+                )
             }
         }
     }
@@ -183,7 +360,8 @@ private fun CountryRow(
                 StatusToggle(
                     icon = Icons.Rounded.Check,
                     checked = state.isVisited(country.name),
-                    checkedTint = VoyagePalette.buttonVisited,
+                    checkedTint = VoyagePalette.visited,
+                    checkedIcon = { VisitedMark(size = 20.dp) },
                     contentDescription = stringResource(
                         R.string.country_toggle_visited,
                         country.name,
@@ -239,13 +417,21 @@ private fun StatusToggle(
     checkedTint: Color,
     contentDescription: String,
     onToggle: () -> Unit,
+    /** Drawn in place of [icon] while checked, for a tint too light to carry it. */
+    checkedIcon: (@Composable () -> Unit)? = null,
 ) {
     IconToggleButton(checked = checked, onCheckedChange = { onToggle() }) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = if (checked) checkedTint else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
-        )
+        if (checked && checkedIcon != null) {
+            Box(modifier = Modifier.semantics { this.contentDescription = contentDescription }) {
+                checkedIcon()
+            }
+        } else {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = if (checked) checkedTint else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }

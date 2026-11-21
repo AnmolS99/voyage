@@ -58,6 +58,7 @@ import com.anmol.voyage.data.AchievementCatalog
 import com.anmol.voyage.data.CountryDataCache
 import com.anmol.voyage.data.MedalTier
 import com.anmol.voyage.state.VoyageState
+import com.anmol.voyage.ui.country.VisitedMark
 import com.anmol.voyage.ui.theme.LocalVoyageFonts
 import com.anmol.voyage.ui.theme.VoyagePalette
 import com.anmol.voyage.ui.theme.readableWidth
@@ -412,7 +413,8 @@ private fun ItemLists(achievement: Achievement) {
                 title = stringResource(R.string.achievement_earned),
                 items = achievement.earned,
                 icon = Icons.Rounded.CheckCircle,
-                iconTint = VoyagePalette.buttonVisited,
+                iconTint = VoyagePalette.visited,
+                marker = { VisitedMark(size = 14.dp) },
             )
         }
         if (achievement.remaining.isNotEmpty()) {
@@ -432,6 +434,8 @@ private fun ItemList(
     items: List<String>,
     icon: ImageVector,
     iconTint: Color,
+    /** Drawn in place of [icon], for a tint too light to carry it alone. */
+    marker: (@Composable () -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
@@ -439,12 +443,16 @@ private fun ItemList(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(14.dp),
-            )
+            if (marker != null) {
+                marker()
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
             Text(
                 text = stringResource(R.string.achievement_section, title, items.size),
                 style = MaterialTheme.typography.labelLarge,

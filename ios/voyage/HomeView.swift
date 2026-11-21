@@ -42,9 +42,17 @@ struct GlobeBackdrop: View {
 }
 
 struct HomeView: View {
-    @ObservedObject var globeState: GlobeState
-    @State private var showingCountryList = false
+    let globeState: GlobeState
+    /// The country list, open on this filter: All from the dock's +, Visited
+    /// from its count.
+    @State private var countryList: CountryListFilter?
     @State private var showingExplore = false
+
+    /// How long the crossfade between globe and map takes. Both renderers stay
+    /// in the hierarchy so the switch starts at once; the one faded out stops
+    /// working when this has run (`GlobeView.Coordinator.updateVisibility`, and
+    /// `MapView.lookToDraw` for the map).
+    static let modeSwitchDuration: TimeInterval = 0.3
 
     var body: some View {
         ZStack {
@@ -73,14 +81,15 @@ struct HomeView: View {
 
                 CountriesDock(
                     globeState: globeState,
-                    onAddCountry: { showingCountryList = true },
+                    onAddCountry: { countryList = .all },
+                    onShowVisited: { countryList = .visited },
                     onExplore: { showingExplore = true }
                 )
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: globeState.viewMode)
-        .sheet(isPresented: $showingCountryList) {
-            CountryListView(globeState: globeState)
+        .animation(.easeInOut(duration: Self.modeSwitchDuration), value: globeState.viewMode)
+        .sheet(item: $countryList) { filter in
+            CountryListView(globeState: globeState, filter: filter)
         }
         .sheet(isPresented: $showingExplore) {
             if let country = globeState.selectedCountry {

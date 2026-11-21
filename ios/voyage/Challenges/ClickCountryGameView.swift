@@ -10,7 +10,7 @@ struct ClickCountryGameView: View {
     let onDismiss: () -> Void
 
     @StateObject private var viewModel: ClickCountryGameViewModel
-    @StateObject private var gameGlobe: GlobeState
+    @State private var gameGlobe: GlobeState
     @State private var feedback: Feedback?
     @State private var feedbackToken = 0
     /// Bumped by each reveal and by whatever ends one, so a reveal's timer
@@ -30,13 +30,7 @@ struct ClickCountryGameView: View {
         self.isDarkMode = mainState.isDarkMode
         _viewModel = StateObject(wrappedValue: ClickCountryGameViewModel(region: region))
 
-        let globe = GlobeState(inMemory: true)
-        globe.globeStyle = mainState.globeStyle
-        globe.showsTerrain = mainState.showsTerrain
-        globe.isDarkMode = mainState.isDarkMode
-        globe.isAutoRotating = false
-        globe.showsCapitalMarker = false
-        _gameGlobe = StateObject(wrappedValue: globe)
+        _gameGlobe = State(initialValue: .forGame(matching: mainState))
     }
 
     private enum Feedback: Equatable {

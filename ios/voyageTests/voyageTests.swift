@@ -1,5 +1,6 @@
 import XCTest
 import SceneKit
+import SwiftUI
 import simd
 @testable import voyage
 
@@ -253,7 +254,7 @@ final class voyageTests: XCTestCase {
     func testTapRayRecoversExactSurfacePoint() {
         // Camera at the closest allowed zoom on the +X axis, which in the
         // latLonToSphere convention looks straight at lat/lon (0°, 0°)
-        let cameraDistance = Double(GlobeState.minCameraDistance)
+        let cameraDistance = Double(GlobeCamera.minCameraDistance)
         let origin = simd_double3(cameraDistance, 0, 0)
 
         // Sample of surface targets from dead center out to very oblique
@@ -329,19 +330,19 @@ final class voyageTests: XCTestCase {
 
         XCTAssertEqual(GlobeScene.homeLongitude, 15, accuracy: 1e-4,
                        "The globe opens facing Europe/Africa, ~15°E")
-        XCTAssertEqual(GlobeState.returnHomeDuration, 1.2, accuracy: 0,
+        XCTAssertEqual(GlobeCamera.returnHomeDuration, 1.2, accuracy: 0,
                        "Android's GlobeFlight.RETURN_HOME_SECONDS is the same")
     }
 
     func testZoomRangeMatchesAndroid() {
-        XCTAssertEqual(GlobeState.maxCameraDistance, 6.0, accuracy: 0,
+        XCTAssertEqual(GlobeCamera.maxCameraDistance, 6.0, accuracy: 0,
                        "Zoom-out limit changed; Android clamps to the same value")
-        XCTAssertEqual(GlobeState.minCameraDistance, 1.1, accuracy: 0,
+        XCTAssertEqual(GlobeCamera.minCameraDistance, 1.1, accuracy: 0,
                        "Zoom-in floor changed; Android clamps to the same value")
 
         // Far enough out that the whole globe is still comfortably in frame: its
         // silhouette spans about 40% of a 45-degree viewport at the limit.
-        let globeDegrees = 2 * asin(1.0 / Double(GlobeState.maxCameraDistance)) * 180 / .pi
+        let globeDegrees = 2 * asin(1.0 / Double(GlobeCamera.maxCameraDistance)) * 180 / .pi
         XCTAssertGreaterThan(globeDegrees / 45.0, 0.35,
                              "At the zoom-out limit the globe should still fill much of the screen")
     }
@@ -403,7 +404,7 @@ final class GlobeLayersTests: XCTestCase {
 
     /// Screen drift at the closest zoom, as a fraction of distance from the centre.
     private func drift(_ radius: Float) -> Float {
-        (radius - oceanFloor) / (GlobeState.minCameraDistance - 1)
+        (radius - oceanFloor) / (GlobeCamera.minCameraDistance - 1)
     }
 
     func testFillsAndBordersStayOnTheTextureAtTheClosestZoom() {
@@ -555,32 +556,32 @@ final class CountryFocusTests: XCTestCase {
     }
 
     func testSelectionPullsBackToFitLargeCountries() {
-        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 35.859, latitude: 65.677, aspect: portrait),
+        XCTAssertEqual(GlobeCamera.distanceToFit(radiusDegrees: 35.859, latitude: 65.677, aspect: portrait),
                        4.427, accuracy: 0.002)
-        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 4.882, latitude: 46.585, aspect: portrait),
+        XCTAssertEqual(GlobeCamera.distanceToFit(radiusDegrees: 4.882, latitude: 46.585, aspect: portrait),
                        1.522, accuracy: 0.002)
     }
 
     func testLandscapeFitsToTheHeight() {
-        let square = GlobeState.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: 1)
-        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: 2.17), square)
-        XCTAssertGreaterThan(GlobeState.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: portrait), square)
+        let square = GlobeCamera.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: 1)
+        XCTAssertEqual(GlobeCamera.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: 2.17), square)
+        XCTAssertGreaterThan(GlobeCamera.distanceToFit(radiusDegrees: 20, latitude: 0, aspect: portrait), square)
     }
 
     func testFittedDistancesStayInTheSelectionRange() {
-        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 0, latitude: 41.9, aspect: portrait),
-                       GlobeState.minFitDistance)
-        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 80, latitude: 0, aspect: portrait),
-                       GlobeState.maxFitDistance)
-        XCTAssertGreaterThan(GlobeState.minFitDistance, GlobeState.minCameraDistance)
-        XCTAssertLessThan(GlobeState.maxFitDistance, GlobeState.maxCameraDistance)
+        XCTAssertEqual(GlobeCamera.distanceToFit(radiusDegrees: 0, latitude: 41.9, aspect: portrait),
+                       GlobeCamera.minFitDistance)
+        XCTAssertEqual(GlobeCamera.distanceToFit(radiusDegrees: 80, latitude: 0, aspect: portrait),
+                       GlobeCamera.maxFitDistance)
+        XCTAssertGreaterThan(GlobeCamera.minFitDistance, GlobeCamera.minCameraDistance)
+        XCTAssertLessThan(GlobeCamera.maxFitDistance, GlobeCamera.maxCameraDistance)
     }
 
     func testCapPastTheTiltLimitIsWidenedByTheShortfall() {
-        let atLimit = GlobeState.distanceToFit(radiusDegrees: 10, latitude: 72, aspect: portrait)
-        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 5, latitude: 77, aspect: portrait), atLimit,
+        let atLimit = GlobeCamera.distanceToFit(radiusDegrees: 10, latitude: 72, aspect: portrait)
+        XCTAssertEqual(GlobeCamera.distanceToFit(radiusDegrees: 5, latitude: 77, aspect: portrait), atLimit,
                        accuracy: 1e-5)
-        XCTAssertEqual(GlobeState.distanceToFit(radiusDegrees: 5, latitude: -77, aspect: portrait), atLimit,
+        XCTAssertEqual(GlobeCamera.distanceToFit(radiusDegrees: 5, latitude: -77, aspect: portrait), atLimit,
                        accuracy: 1e-5)
     }
 }
@@ -743,5 +744,48 @@ final class MapZoomDragTests: XCTestCase {
     func testZoomStopsAtTheLimits() {
         XCTAssertEqual(MapView.zoomDragScale(from: 1, travel: -10_000), 10, accuracy: 1e-6)
         XCTAssertEqual(MapView.zoomDragScale(from: 5, travel: 10_000), 1, accuracy: 1e-6)
+    }
+}
+
+/// `GlobeState` is `@Observable`: a view hears only about the properties it
+/// reads (issue #161). The globe is a `UIViewRepresentable`, so this pins that
+/// SwiftUI tracks the reads made in `updateUIView` too — what
+/// `GlobeView.observeState` relies on.
+@MainActor
+final class GlobeStateObservationTests: XCTestCase {
+    private struct Probe: UIViewRepresentable {
+        let state: GlobeState
+        let onUpdate: () -> Void
+
+        func makeUIView(context: Context) -> UIView { UIView() }
+
+        func updateUIView(_ uiView: UIView, context: Context) {
+            _ = state.selectedCountry
+            onUpdate()
+        }
+    }
+
+    func testOnlyAPropertyTheViewReadsUpdatesIt() throws {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let state = GlobeState(inMemory: true)
+        var updates = 0
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: Probe(state: state) { updates += 1 })
+        window.isHidden = false
+        defer { window.isHidden = true }
+
+        func settle() { RunLoop.main.run(until: Date().addingTimeInterval(0.3)) }
+        settle()
+        let initial = updates
+        XCTAssertGreaterThan(initial, 0)
+
+        state.addVisit("Norway")
+        state.isAutoRotating = false
+        settle()
+        XCTAssertEqual(updates, initial, "A property the view never read must not update it")
+
+        state.selectCountry("Norway")
+        settle()
+        XCTAssertGreaterThan(updates, initial, "A property read in updateUIView must update it")
     }
 }

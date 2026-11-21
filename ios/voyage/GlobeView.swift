@@ -5,7 +5,7 @@ import UIKit
 import simd
 
 struct GlobeView: UIViewRepresentable {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     /// When set, tapping a country calls this instead of selecting it —
     /// used by challenge games to treat taps as guesses.
     var onCountryTapped: ((String) -> Void)? = nil
@@ -45,8 +45,23 @@ struct GlobeView: UIViewRepresentable {
         return sceneView
     }
 
+    /// Reads everything the globe draws from. `GlobeState` is `@Observable`, so
+    /// SwiftUI calls `updateUIView` again only for properties read during it, and
+    /// the coordinator's updates below return early — before the scene has
+    /// loaded, say — without reaching some of them. Reading them all here keeps
+    /// the globe subscribed whichever path an update takes.
+    private func observeState() {
+        _ = (globeState.selectedCountry, globeState.targetCountryCenter,
+             globeState.pendingCameraTarget, globeState.homeRequest,
+             globeState.isAutoRotating, globeState.visitedCountries,
+             globeState.wishlistCountries, globeState.countryHighlightColors,
+             globeState.globeStyle, globeState.showsTerrain, globeState.viewMode)
+    }
+
     func updateUIView(_ uiView: SCNView, context: Context) {
+        observeState()
         context.coordinator.onCountryTapped = onCountryTapped
+        context.coordinator.updateVisibility()
         context.coordinator.updateGlobeStyle()
         context.coordinator.updateTerrain()
         context.coordinator.updateHighlights()
@@ -64,15 +79,22 @@ struct GlobeView: UIViewRepresentable {
         var globeState: GlobeState
         var onCountryTapped: ((String) -> Void)?
         weak var sceneView: SCNView?
+        // The scene's nodes, stored once by `GlobeScene` when it builds the scene
+        // so nothing here searches the node tree by name.
         var globeNode: SCNNode?
+        var cameraNode: SCNNode?
+        var oceanNode: SCNNode?
+        /// Each country's fill: a polygon mesh, or a microstate's disc.
         var countryNodes: [String: SCNNode] = [:]
-        var originalColors: [String: UIColor] = [:]
-        var cachedCountries: [GeoJSONCountry] = []
+        /// The ring or disc behind each microstate's dot, by country name.
+        var dotOutlineNodes: [String: SCNNode] = [:]
         /// Material shared by all outline sector nodes (one uniform update per zoom change)
         var sharedOutlineMaterial: SCNMaterial?
         /// Overlay node drawing the selected country's outline (thicker, colored, raised)
         private var selectedOutlineNode: SCNNode?
         private var selectedOutlineGeometries: [String: SCNGeometry] = [:]
+        /// The selection `selectedOutlineNode` was last updated for.
+        private var selectedOutlineCountry: String?
 
         /// Outline sector nodes with precomputed bounding spheres, culled per frame
         /// when beyond the globe's horizon (see renderer(_:updateAtTime:))
@@ -172,7 +194,7 @@ struct GlobeView: UIViewRepresentable {
             let quadratic = basePanRotationSpeed * distanceRatio * distanceRatio
             guard cameraDistance < referenceCameraDistance else { return quadratic }
 
-            let zoomOutProgress = (cameraDistance - GlobeState.minCameraDistance) / (referenceCameraDistance - GlobeState.minCameraDistance)
+            let zoomOutProgress = (cameraDistance - GlobeCamera.minCameraDistance) / (referenceCameraDistance - GlobeCamera.minCameraDistance)
             let tracking = fullZoomTrackingFactor
                 + (1 - fullZoomTrackingFactor) * max(0, min(1, zoomOutProgress))
             return min(quadratic, basePanRotationSpeed * tracking * screenScale(cameraDistance: cameraDistance))
@@ -184,14 +206,65 @@ struct GlobeView: UIViewRepresentable {
         private var currentZoomScale: Float = 1.0
 
         private var lastPanLocation: CGPoint = .zero
-        private var currentRotationX: Float = 0
-        private var currentRotationY: Float = GlobeScene.homeRotationY
+        // The camera's tilt and the globe's turn, in radians. Written by the render
+        // thread (`applyInteractiveSpin`) and by main-thread gestures and flights,
+        // so the stored values are guarded by `motionLock`; everything but
+        // `applyInteractiveSpin`, which already holds the lock, goes through
+        // `currentRotationX` / `currentRotationY`.
+        private var rotationX: Float = 0
+        private var rotationY: Float = GlobeScene.homeRotationY
+        private var currentRotationX: Float {
+            get { motionLock.lock(); defer { motionLock.unlock() }; return rotationX }
+            set { motionLock.lock(); rotationX = newValue; motionLock.unlock() }
+        }
+        private var currentRotationY: Float {
+            get { motionLock.lock(); defer { motionLock.unlock() }; return rotationY }
+            set { motionLock.lock(); rotationY = newValue; motionLock.unlock() }
+        }
         private var currentScale: Float = 1.0
         private var lastAutoRotatingState: Bool = true
         private var hasAnimatedToCountry: Bool = false
         private var lastAnimatedCountry: String?
         /// One seal per capital of the selected country (Bolivia has two).
         private var capitalStarNodes: [SCNNode] = []
+        /// The country `capitalStarNodes` were built for: nil before the first
+        /// update, `.some(nil)` when no seal is shown.
+        private var capitalStarCountry: String??
+        /// The plane every seal draws, built once (see `createStarNode`).
+        private lazy var capitalMarkerGeometry: SCNPlane = {
+            // A unit plane scaled down by the node, so the seal's radius is
+            // `capitalMarkerRadius` in world units.
+            let plane = SCNPlane(width: 2, height: 2)
+
+            // `.constant` already ignores scene lighting, so the seal keeps the exact
+            // theme colors on the night side without an emission wash over it.
+            let material = SCNMaterial()
+            material.diffuse.contents = CapitalMarker.image
+            material.lightingModel = .constant
+            plane.materials = [material]
+            return plane
+        }()
+
+        /// The style last applied to each country's nodes, so an update touches
+        /// only the countries whose style changed (see `updateHighlights`).
+        private var appliedStyles: [String: CountryStyle] = [:]
+
+        // The three shapes a microstate's outline node takes, shared by all 25
+        // dots: a black ring around an unpainted dot, a black disc behind a
+        // painted one, and the thicker ring of the selected dot. Only one dot is
+        // selected at a time, so the selected ring's one material carries its color.
+        private lazy var dotRingGeometry: SCNGeometry = Coordinator.makeDotOutline(SCNTube(innerRadius: 0.012, outerRadius: 0.014, height: 0.0005))
+        private lazy var dotDiscGeometry: SCNGeometry = Coordinator.makeDotOutline(SCNCylinder(radius: 0.014, height: 0.0005))
+        private lazy var selectedDotRingGeometry: SCNGeometry = Coordinator.makeDotOutline(SCNTube(innerRadius: 0.012, outerRadius: 0.0155, height: 0.0005))
+
+        private static func makeDotOutline(_ geometry: SCNGeometry) -> SCNGeometry {
+            let material = SCNMaterial()
+            material.lightingModel = .constant
+            material.isDoubleSided = true
+            material.diffuse.contents = UIColor.black
+            geometry.materials = [material]
+            return geometry
+        }
         private var doubleTapDragStartY: CGFloat = 0
         private var doubleTapDragStartDistance: Float = 0
         private var lastGlobeStyle: GlobeStyle?
@@ -219,12 +292,6 @@ struct GlobeView: UIViewRepresentable {
             self.onCountryTapped = onCountryTapped
             self.lastHomeRequest = globeState.homeRequest
             super.init()
-            // Cache countries data once
-            self.cachedCountries = CountryDataCache.shared.countries
-        }
-
-        deinit {
-            stopInertia()
         }
 
         /// Points the camera at the globe's center with zero roll.
@@ -250,7 +317,7 @@ struct GlobeView: UIViewRepresentable {
         /// outlines fattening once past the old 1/6 floor. Runs inside the caller's
         /// SCNTransaction, so animated zooms animate the sizing too.
         func updateZoomDependentSizing(cameraDistance: Float) {
-            let minScale = Self.screenScale(cameraDistance: GlobeState.minCameraDistance)
+            let minScale = Self.screenScale(cameraDistance: GlobeCamera.minCameraDistance)
             let scale = max(minScale, min(1.0, Self.screenScale(cameraDistance: cameraDistance)))
 
             // Cheap and needed on every call: the marker node is rebuilt whenever the
@@ -272,8 +339,42 @@ struct GlobeView: UIViewRepresentable {
             }
         }
 
+        /// Whether the globe is the renderer on screen, rather than behind the map.
+        private var isShown = true
+        private var pendingPause: DispatchWorkItem?
+
+        /// Pauses the scene while the map is shown. The view stays in the
+        /// hierarchy at opacity 0 so the switch is an instant crossfade, and an
+        /// `SCNView` there keeps rendering for as long as something animates —
+        /// the idle spin, most of the time — at the display's full rate, unseen.
+        ///
+        /// It pauses only once the crossfade has run, so the globe fades out
+        /// still turning, and resumes the moment it is asked back, so it fades in
+        /// live.
+        func updateVisibility() {
+            let shown = globeState.viewMode == .globe
+            guard shown != isShown else { return }
+            isShown = shown
+            pendingPause?.cancel()
+            pendingPause = nil
+
+            if shown {
+                sceneView?.scene?.isPaused = false
+                return
+            }
+
+            // A coasting flick would keep the view rendering continuously
+            stopInertia()
+            let pause = DispatchWorkItem { [weak self] in
+                guard let self, !self.isShown else { return }
+                self.sceneView?.scene?.isPaused = true
+            }
+            pendingPause = pause
+            DispatchQueue.main.asyncAfter(deadline: .now() + HomeView.modeSwitchDuration + 0.1, execute: pause)
+        }
+
         func updateAutoRotation() {
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+            guard let globeNode else { return }
 
             if globeState.isAutoRotating != lastAutoRotatingState {
                 lastAutoRotatingState = globeState.isAutoRotating
@@ -320,7 +421,7 @@ struct GlobeView: UIViewRepresentable {
             }
             let bounds = sceneView?.bounds ?? .zero
             let aspect = bounds.height > 0 ? Double(bounds.width / bounds.height) : 1
-            let distance = GlobeState.distanceToFit(radiusDegrees: focus.radiusDegrees,
+            let distance = GlobeCamera.distanceToFit(radiusDegrees: focus.radiusDegrees,
                                                     latitude: focus.lat, aspect: aspect)
             flyTo(lat: focus.lat, lon: focus.lon, distance: distance)
         }
@@ -346,15 +447,11 @@ struct GlobeView: UIViewRepresentable {
             // Re-selecting the country just left flies to it again.
             hasAnimatedToCountry = false
 
-            // A flick still coasting would fight the flight for the rotation.
-            stopInertia()
-            sceneView?.rendersContinuously = false
-
             let home = Daylight.location()
             flyTo(lat: home?.latitude ?? 0,
                   lon: home?.longitude ?? GlobeScene.homeLongitude,
                   distance: GlobeScene.homeCameraDistance,
-                  duration: GlobeState.returnHomeDuration) { [weak self] in
+                  duration: GlobeCamera.returnHomeDuration) { [weak self] in
                 guard let self, self.globeState.selectedCountry == nil else { return }
                 self.globeState.isAutoRotating = true
             }
@@ -370,8 +467,11 @@ struct GlobeView: UIViewRepresentable {
                    distance: Float?,
                    duration: TimeInterval = 0.8,
                    completion: (() -> Void)? = nil) {
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+            guard let globeNode, let cameraNode else { return }
+
+            // A flick still coasting would write its next step over the flight's
+            // target from the render thread.
+            stopInertia()
 
             let position = cameraNode.position
             let distance = distance ?? sqrt(position.x * position.x + position.y * position.y + position.z * position.z)
@@ -402,10 +502,13 @@ struct GlobeView: UIViewRepresentable {
             let generation = flightGeneration
 
             SCNTransaction.begin()
-            SCNTransaction.animationDuration = duration
+            // Behind the map nobody watches the flight, and the paused scene would
+            // only play it once the globe is back: land at once, so the globe
+            // already faces a country selected on the map when it fades in.
+            SCNTransaction.animationDuration = isShown ? duration : 0
             SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             if let completion {
-                SCNTransaction.completionBlock = {
+                SCNTransaction.completionBlock = { [weak self] in
                     DispatchQueue.main.async { [weak self] in
                         guard let self, self.flightGeneration == generation else { return }
                         completion()
@@ -415,17 +518,17 @@ struct GlobeView: UIViewRepresentable {
 
             // Rotate globe to center the location horizontally
             currentRotationY = targetRotationY
-            globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
+            globeNode.eulerAngles = SCNVector3(0, targetRotationY, 0)
 
             // Move camera to appropriate latitude
             // Positive lat (North) = camera moves up to look down at it
-            let targetCameraX = Float(lat) * .pi / 180.0
-            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, targetCameraX))
+            let targetCameraX = max(-.pi / 2.5, min(.pi / 2.5, Float(lat) * .pi / 180.0))
+            currentRotationX = targetCameraX
 
             cameraNode.position = SCNVector3(
                 0,
-                distance * sin(currentRotationX),
-                distance * cos(currentRotationX)
+                distance * sin(targetCameraX),
+                distance * cos(targetCameraX)
             )
             aimCameraAtGlobeCenter(cameraNode)
             updateZoomDependentSizing(cameraDistance: distance)
@@ -433,13 +536,8 @@ struct GlobeView: UIViewRepresentable {
             SCNTransaction.commit()
         }
 
-        func getCountryCenter(name: String) -> (lat: Double, lon: Double)? {
-            CountryHitTester.shared.center(of: name)
-        }
-
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+            guard let globeNode, let cameraNode else { return }
 
             // Scale rotation speed based on camera distance (zoom level)
             let cameraDistance = sqrt(cameraNode.position.x * cameraNode.position.x +
@@ -483,17 +581,24 @@ struct GlobeView: UIViewRepresentable {
             }
         }
 
+        /// Drops a coasting flick and any drag not yet applied. Main thread only.
         private func stopInertia() {
             motionLock.lock()
+            let wasCoasting = inertia.isActive
             inertia.reset()
             pendingDragX = 0
             pendingDragY = 0
             motionLock.unlock()
+
+            // The render thread turns continuous rendering off when a coast runs
+            // out by itself; one cut short here never gets there.
+            if wasCoasting {
+                sceneView?.rendersContinuously = false
+            }
         }
 
         @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+            guard let globeNode, let cameraNode else { return }
 
             if gesture.state == .began {
                 // Sync rotation state with actual visual position before stopping auto-rotation
@@ -514,7 +619,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = currentDistance - Float(gesture.scale - 1) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(GlobeState.minCameraDistance, min(GlobeState.maxCameraDistance, newDistance))
+                newDistance = max(GlobeCamera.minCameraDistance, min(GlobeCamera.maxCameraDistance, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,
@@ -529,8 +634,7 @@ struct GlobeView: UIViewRepresentable {
         }
 
         @objc func handleDoubleTapDrag(_ gesture: UILongPressGestureRecognizer) {
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                  let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: true) else { return }
+            guard let globeNode, let cameraNode else { return }
 
             let location = gesture.location(in: sceneView)
 
@@ -560,7 +664,7 @@ struct GlobeView: UIViewRepresentable {
                 var newDistance = doubleTapDragStartDistance + Float(deltaY) * zoomSpeed
 
                 // Clamp zoom level
-                newDistance = max(GlobeState.minCameraDistance, min(GlobeState.maxCameraDistance, newDistance))
+                newDistance = max(GlobeCamera.minCameraDistance, min(GlobeCamera.maxCameraDistance, newDistance))
 
                 cameraNode.position = SCNVector3(
                     0,
@@ -583,14 +687,13 @@ struct GlobeView: UIViewRepresentable {
 
             let location = gesture.location(in: sceneView)
             let countryName = Self.surfaceLatLon(at: location, in: sceneView, globeNode: globeNode)
-                .flatMap { findCountryAt(lat: $0.lat, lon: $0.lon) }
+                .flatMap { CountryHitTester.shared.findCountry(lat: $0.lat, lon: $0.lon) }
 
             if let onCountryTapped = onCountryTapped {
                 if let countryName { onCountryTapped(countryName) }
             } else if let countryName {
-                let center = getCountryCenter(name: countryName)
-                self.globeState.selectCountry(countryName, center: center)
-                self.updateHighlights()
+                // The state change brings `updateUIView`, which restyles the globe.
+                self.globeState.selectCountry(countryName, center: CountryHitTester.shared.center(of: countryName))
             } else if globeState.selectedCountry != nil {
                 // Ocean or space: dismiss the country card, as MapView does
                 self.globeState.deselectCountry()
@@ -623,18 +726,11 @@ struct GlobeView: UIViewRepresentable {
             return PolygonTriangulator.sphereToLatLon(surface)
         }
 
-        func findCountryAt(lat: Double, lon: Double) -> String? {
-            CountryHitTester.shared.findCountry(lat: lat, lon: lon)
-        }
-
         func updateGlobeStyle() {
             guard globeState.globeStyle != lastGlobeStyle else { return }
             lastGlobeStyle = globeState.globeStyle
 
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                  let oceanNode = globeNode.childNode(withName: "ocean", recursively: false),
-                  let oceanGeometry = oceanNode.geometry,
-                  let oceanMaterial = oceanGeometry.materials.first else { return }
+            guard let oceanMaterial = oceanNode?.geometry?.materials.first else { return }
 
             // Compressed and at full size if it is ready (see `EarthTexture`);
             // otherwise a small copy now, and the real one once it is made.
@@ -672,16 +768,15 @@ struct GlobeView: UIViewRepresentable {
         /// does (see `TerrainRelief`). Microstate dots are markers and stay unshaded.
         func updateTerrain() {
             guard globeState.showsTerrain != lastShowsTerrain,
-                  let sceneView,
-                  let globeNode = sceneView.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+                  let sceneView, globeNode != nil else { return }
             lastShowsTerrain = globeState.showsTerrain
 
             if reliefTexture == nil, globeState.showsTerrain, let device = sceneView.device {
                 reliefTexture = TerrainRelief.texture(device: device)
             }
 
-            var materials = globeNode.childNode(withName: "ocean", recursively: false)?.geometry?.materials ?? []
-            for node in countryNodes.values where !(node.geometry is SCNCylinder) {
+            var materials = oceanNode?.geometry?.materials ?? []
+            for (name, node) in countryNodes where dotOutlineNodes[name] == nil {
                 materials += node.geometry?.materials ?? []
             }
             for material in materials {
@@ -689,110 +784,111 @@ struct GlobeView: UIViewRepresentable {
             }
         }
 
+        /// Restyles the countries whose `CountryStyle` differs from the one last
+        /// applied. This runs on every state change the globe observes, most of
+        /// which change no country at all; a selection changes two.
         func updateHighlights() {
+            let visited = globeState.visitedCountries
+            let wishlist = globeState.wishlistCountries
+            let overrides = globeState.countryHighlightColors
+            let selected = globeState.selectedCountry
+
+            var selectedStyleChanged = false
             for (name, node) in countryNodes {
-                guard let geometry = node.geometry else { continue }
+                let style = CountryStyle(isVisited: visited.contains(name),
+                                         isWishlist: wishlist.contains(name),
+                                         isSelected: selected == name,
+                                         override: overrides[name])
+                guard appliedStyles[name] != style else { continue }
+                appliedStyles[name] = style
+                if style.isSelected { selectedStyleChanged = true }
 
-                let isVisited = globeState.visitedCountries.contains(name)
-                let isWishlist = globeState.wishlistCountries.contains(name)
-                let highlightOverride = globeState.countryHighlightColors[name]
-                let hasStatus = isVisited || isWishlist || highlightOverride != nil
-                let isSelected = globeState.selectedCountry == name
-                let isPointCountry = geometry is SCNCylinder
-
-                // Overlay: visible only when has status AND not selected
-                if hasStatus && !isSelected {
-                    node.isHidden = false
-                    for material in geometry.materials {
-                        material.transparency = 1.0
-                        if let highlightOverride = highlightOverride {
-                            material.lightingModel = .blinn
-                            material.diffuse.contents = highlightOverride
-                            material.emission.contents = highlightOverride.withAlphaComponent(0.15)
-                        } else if isVisited && isWishlist {
-                            material.lightingModel = .constant
-                            material.diffuse.contents = AppColors.visitedWishlistGradient
-                            material.emission.contents = UIColor.black
-                        } else if isVisited {
-                            material.lightingModel = .blinn
-                            material.diffuse.contents = AppColors.visitedUI
-                            material.emission.contents = AppColors.visitedUI.withAlphaComponent(0.15)
-                        } else {
-                            material.lightingModel = .blinn
-                            material.diffuse.contents = AppColors.wishlistUI
-                            material.emission.contents = AppColors.wishlistUI.withAlphaComponent(0.15)
-                        }
-                    }
-                } else {
-                    node.isHidden = true
-                }
+                applyFill(style.fill, to: node)
 
                 // Point countries have their own outline node (dot ring/disc); polygon
                 // countries share one merged outline node, with the selected country's
                 // outline drawn by a separate overlay node (see updateSelectedOutline)
-                if isPointCountry,
-                   let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true),
-                   let outlineNode = globeNode.childNode(withName: "\(name)_outline", recursively: false) {
-                    outlineNode.isHidden = false
-
-                    // Swap outline geometry based on status and selection
-                    if isSelected || !hasStatus {
-                        // Ring (border only) — fill is hidden
-                        let outerRadius: CGFloat = isSelected ? 0.0155 : 0.014
-                        let ring = SCNTube(innerRadius: 0.012, outerRadius: outerRadius, height: 0.0005)
-                        let material = SCNMaterial()
-                        material.lightingModel = .constant
-                        material.isDoubleSided = true
-                        ring.materials = [material]
-                        outlineNode.geometry = ring
-                    } else {
-                        // Disc (behind visible fill overlay)
-                        let disc = SCNCylinder(radius: 0.014, height: 0.0005)
-                        let material = SCNMaterial()
-                        material.lightingModel = .constant
-                        material.isDoubleSided = true
-                        disc.materials = [material]
-                        outlineNode.geometry = disc
-                    }
-
-                    // Border color: status color when selected, black otherwise
-                    if let outlineGeometry = outlineNode.geometry {
-                        for material in outlineGeometry.materials {
-                            material.diffuse.contents = borderColor(isSelected: isSelected, isVisited: isVisited, isWishlist: isWishlist, highlightOverride: highlightOverride)
-                        }
-                    }
+                if let outlineNode = dotOutlineNodes[name] {
+                    applyDotOutline(style, to: outlineNode)
                 }
             }
 
-            updateSelectedOutline()
-
-            // Update capital star
+            // The overlay follows the selection, and its color the selected
+            // country's style.
+            if selectedStyleChanged || selected != selectedOutlineCountry {
+                updateSelectedOutline()
+            }
             updateCapitalStar()
         }
 
-        private func borderColor(isSelected: Bool, isVisited: Bool, isWishlist: Bool, highlightOverride: UIColor? = nil) -> Any {
-            if isSelected {
-                if let highlightOverride = highlightOverride {
-                    return highlightOverride
-                }
-                if isVisited && isWishlist {
-                    return AppColors.visitedWishlistGradient
-                } else if isVisited {
-                    return AppColors.visitedUI
-                } else if isWishlist {
-                    return AppColors.wishlistUI
-                }
+        /// A country's fill node is an overlay on the Earth texture: shown only
+        /// while it has a paint to show.
+        private func applyFill(_ paint: CountryStyle.Paint, to node: SCNNode) {
+            guard paint != .plain, let geometry = node.geometry else {
+                node.isHidden = true
+                return
             }
-            return UIColor.black
+            node.isHidden = false
+
+            let color: UIColor
+            switch paint {
+            case .plain:
+                return
+            case .visitedAndWishlist:
+                // The gradient is its own light and shade
+                for material in geometry.materials {
+                    material.transparency = 1.0
+                    material.lightingModel = .constant
+                    material.diffuse.contents = AppColors.visitedWishlistGradient
+                    material.emission.contents = UIColor.black
+                }
+                return
+            case .visited: color = AppColors.visitedUI
+            case .wishlist: color = AppColors.wishlistUI
+            case .custom(let custom): color = custom
+            }
+            for material in geometry.materials {
+                material.transparency = 1.0
+                material.lightingModel = .blinn
+                material.diffuse.contents = color
+                material.emission.contents = color.withAlphaComponent(0.15)
+            }
+        }
+
+        /// A dot's outline is a ring while its fill is hidden (selected, or nothing
+        /// to paint) and a disc behind the fill otherwise. The shapes are shared
+        /// (see `dotRingGeometry`), so this only swaps which one the node draws.
+        private func applyDotOutline(_ style: CountryStyle, to outlineNode: SCNNode) {
+            outlineNode.isHidden = false
+            if style.isSelected {
+                selectedDotRingGeometry.firstMaterial?.diffuse.contents = borderContents(style.border)
+                outlineNode.geometry = selectedDotRingGeometry
+            } else if style.fill == .plain {
+                outlineNode.geometry = dotRingGeometry
+            } else {
+                outlineNode.geometry = dotDiscGeometry
+            }
+        }
+
+        /// What a border material's diffuse takes for `paint`.
+        private func borderContents(_ paint: CountryStyle.Paint) -> Any {
+            switch paint {
+            case .plain: return UIColor.black
+            case .visited: return AppColors.visitedUI
+            case .wishlist: return AppColors.wishlistUI
+            case .visitedAndWishlist: return AppColors.visitedWishlistGradient
+            case .custom(let color): return color
+            }
         }
 
         /// Shows the selected polygon country's outline as an overlay node: thicker,
         /// status-colored, and raised above the merged black outlines.
         private func updateSelectedOutline() {
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+            guard let globeNode else { return }
+            selectedOutlineCountry = globeState.selectedCountry
 
             guard let name = globeState.selectedCountry,
-                  let country = cachedCountries.first(where: { $0.name == name }),
+                  let country = CountryDataCache.shared.countryNamed(name),
                   !country.isPointCountry else {
                 selectedOutlineNode?.isHidden = true
                 return
@@ -823,27 +919,31 @@ struct GlobeView: UIViewRepresentable {
             node.geometry = geometry
             node.isHidden = false
 
-            let isVisited = globeState.visitedCountries.contains(name)
-            let isWishlist = globeState.wishlistCountries.contains(name)
+            let style = CountryStyle(isVisited: globeState.visitedCountries.contains(name),
+                                     isWishlist: globeState.wishlistCountries.contains(name),
+                                     isSelected: true,
+                                     override: globeState.countryHighlightColors[name])
             for material in geometry.materials {
-                material.diffuse.contents = borderColor(isSelected: true, isVisited: isVisited, isWishlist: isWishlist, highlightOverride: globeState.countryHighlightColors[name])
+                material.diffuse.contents = borderContents(style.border)
                 material.setValue(Self.baseOutlineThickness * currentOutlineScale * Self.selectedOutlineFactor, forKey: "outlineThickness")
                 material.setValue(Self.selectedOutlineRaise, forKey: "outlineRaise")
             }
         }
 
+        /// Rebuilds the seals only when the country they mark changes.
         func updateCapitalStar() {
-            guard let globeNode = sceneView?.scene?.rootNode.childNode(withName: "globe", recursively: true) else { return }
+            guard let globeNode else { return }
+
+            let marked = globeState.showsCapitalMarker ? globeState.selectedCountry : nil
+            guard capitalStarCountry != .some(marked) else { return }
+            capitalStarCountry = .some(marked)
 
             // Remove existing stars
             capitalStarNodes.forEach { $0.removeFromParentNode() }
             capitalStarNodes = []
 
-            guard globeState.showsCapitalMarker else { return }
-
             // If a country is selected, show a star at each of its capitals
-            guard let selectedCountry = globeState.selectedCountry,
-                  let country = cachedCountries.first(where: { $0.name == selectedCountry }) else { return }
+            guard let marked, let country = CountryDataCache.shared.countryNamed(marked) else { return }
 
             for capital in country.capitals {
                 let holder = createCapitalHolder(at: capital)
@@ -889,19 +989,7 @@ struct GlobeView: UIViewRepresentable {
             // The star seal, drawn by `CapitalMarker` into a texture on a flat
             // plane. The holder lays it on the surface facing outward, so only the
             // front face is ever seen.
-            //
-            // A unit plane scaled down by the node, so the seal's radius is
-            // `capitalMarkerRadius` in world units.
-            let plane = SCNPlane(width: 2, height: 2)
-
-            // `.constant` already ignores scene lighting, so the seal keeps the exact
-            // theme colors on the night side without an emission wash over it.
-            let material = SCNMaterial()
-            material.diffuse.contents = CapitalMarker.image
-            material.lightingModel = .constant
-            plane.materials = [material]
-
-            let starNode = SCNNode(geometry: plane)
+            let starNode = SCNNode(geometry: capitalMarkerGeometry)
             starNode.name = "capitalMarker"
             let radius = Self.capitalMarkerRadius
             starNode.scale = SCNVector3(radius, radius, radius)
@@ -941,19 +1029,23 @@ extension GlobeView.Coordinator: SCNSceneRendererDelegate {
             dy += step.dy
         }
         let coastingEnded = coasting && !inertia.isActive
+        // Stepped under the lock, so a flight starting on the main thread either
+        // lands before this step or replaces it — never half of each.
+        let moved = dx != 0 || dy != 0
+        if moved {
+            rotationY += dy
+            rotationX = max(-.pi / 2.5, min(.pi / 2.5, rotationX + dx))
+        }
+        let turn = rotationY
+        let tilt = rotationX
         motionLock.unlock()
 
-        if dx != 0 || dy != 0,
-           let globeNode = globeNode,
-           let cameraNode = sceneView?.scene?.rootNode.childNode(withName: "camera", recursively: false) {
-            currentRotationY += dy
-            currentRotationX = max(-.pi / 2.5, min(.pi / 2.5, currentRotationX + dx))
-
-            globeNode.eulerAngles = SCNVector3(0, currentRotationY, 0)
+        if moved, let globeNode, let cameraNode {
+            globeNode.eulerAngles = SCNVector3(0, turn, 0)
 
             let position = cameraNode.position
             let distance = sqrt(position.x * position.x + position.y * position.y + position.z * position.z)
-            cameraNode.position = SCNVector3(0, distance * sin(currentRotationX), distance * cos(currentRotationX))
+            cameraNode.position = SCNVector3(0, distance * sin(tilt), distance * cos(tilt))
             aimCameraAtGlobeCenter(cameraNode)
         }
 

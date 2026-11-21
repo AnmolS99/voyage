@@ -51,12 +51,12 @@ enum JourneyArt {
 }
 
 struct CountryExploreView: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     let countryName: String
     @Environment(\.dismiss) private var dismiss
 
     private var country: GeoJSONCountry? {
-        CountryDataCache.shared.countries.first { $0.name == countryName }
+        CountryDataCache.shared.countryNamed(countryName)
     }
 
     private var highlights: CountryHighlights? {

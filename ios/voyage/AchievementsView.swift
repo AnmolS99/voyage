@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AchievementsView: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     @State private var expandedAchievementID: String? = nil
     @State private var medalAchievement: Achievement? = nil
     @State private var medalSourceFrames: [String: CGRect] = [:]
@@ -14,22 +14,15 @@ struct AchievementsView: View {
         )
     }
 
-    /// Achievements holding any medal, bronze or better.
-    private var unlockedCount: Int {
-        achievements.filter { $0.tier != nil }.count
-    }
-
-    private func count(at tier: MedalTier) -> Int {
-        achievements.filter { $0.tier == tier }.count
-    }
-
     var body: some View {
+        // Built once per evaluation: every read of `achievements` rebuilds all ten.
+        let achievements = self.achievements
         ZStack {
             NavigationStack {
                 ScrollView {
                     VStack(spacing: 16) {
                         // Summary header
-                        summaryCard
+                        summaryCard(achievements)
 
                         // Achievements list
                         VStack(spacing: 12) {
@@ -78,8 +71,10 @@ struct AchievementsView: View {
     }
 
     /// "7 of 10 Achievements Unlocked", then how many are held at each medal.
-    private var summaryCard: some View {
-        VStack(spacing: 8) {
+    private func summaryCard(_ achievements: [Achievement]) -> some View {
+        // Achievements holding any medal, bronze or better.
+        let unlockedCount = achievements.filter { $0.tier != nil }.count
+        return VStack(spacing: 8) {
             Text("\(unlockedCount) of \(achievements.count)")
                 .font(.voyageText(32, weight: .bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: globeState.isDarkMode))
@@ -90,7 +85,7 @@ struct AchievementsView: View {
 
             HStack(spacing: 28) {
                 ForEach(MedalTier.allCases, id: \.self) { tier in
-                    TierCount(tier: tier, count: count(at: tier), isDarkMode: globeState.isDarkMode)
+                    TierCount(tier: tier, count: achievements.filter { $0.tier == tier }.count, isDarkMode: globeState.isDarkMode)
                 }
             }
             .padding(.top, 8)
@@ -290,7 +285,8 @@ struct AchievementDetailSection: View {
                     count: achievement.visitedCountries.count,
                     countries: achievement.visitedCountries,
                     icon: "checkmark.circle.fill",
-                    iconColor: AppColors.buttonVisited,
+                    iconColor: AppColors.visited,
+                    iconInk: .black,
                     isDarkMode: isDarkMode
                 )
             }
@@ -316,14 +312,24 @@ struct CountryListSection: View {
     let countries: [String]
     let icon: String
     let iconColor: Color
+    /// The symbol's foreground over `iconColor`, for a filled symbol in a color
+    /// too light to carry it alone (the visited yellow). Nil draws it in one color.
+    var iconInk: Color? = nil
     let isDarkMode: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundColor(iconColor)
+                Group {
+                    if let iconInk {
+                        Image(systemName: icon)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(iconInk, iconColor)
+                    } else {
+                        Image(systemName: icon).foregroundColor(iconColor)
+                    }
+                }
+                .font(.system(size: 12))
 
                 Text("\(title) (\(count))")
                     .font(.voyageText(13, weight: .semibold))
@@ -352,7 +358,7 @@ struct CountryListSection: View {
 /// (`CelebrationWindow`), not in this view: most medals are earned from the
 /// country list, a sheet, and a sheet covers anything drawn in the `TabView`.
 struct AchievementUnlockCelebration: View {
-    @ObservedObject var globeState: GlobeState
+    let globeState: GlobeState
     @State private var unlocked: [MedalUnlock]?
     @State private var waiting: [MedalUnlock] = []
     @State private var window = CelebrationWindow()

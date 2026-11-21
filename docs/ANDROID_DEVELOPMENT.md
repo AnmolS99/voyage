@@ -446,6 +446,13 @@ stack and the bar behave as they read. Three rules come with that arrangement:
   Choreographer loop on being visible and on the lifecycle being at least
   `STARTED`. Before the engine was resident this took care of itself, because
   leaving Home destroyed the loop along with it.
+- **A globe that is not changing stops rendering too.** The loop re-posts
+  itself only during a flight, a coast or the idle spin; otherwise it stops and
+  the surface keeps its last frame, as SceneKit does on iOS. Anything else that
+  changes the picture — a drag, an upload, a recolor, a resize, a new surface —
+  must call `frames.request()` in `GlobeSurfaceHost`, or it will not show until
+  something else draws. The rule is `globe/FrameDemand.kt`, pinned by
+  `FrameDemandTest`.
 
 `GlobeEngineLifetimeTest` pins all of this: the engine count across tab and
 view-mode switches, and a tap on the screen beneath a hidden Home.

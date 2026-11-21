@@ -28,7 +28,7 @@ extension Array where Element == LonLat {
 /// A layer raised above the ocean is seen along a slightly different ray than the
 /// texture under it, so it slides off the coastline it was drawn for — by its height
 /// over the camera's height above the surface, times its distance from the screen
-/// centre. At `GlobeState.minCameraDistance` the camera is only 0.1 above the surface:
+/// centre. At `GlobeCamera.minCameraDistance` the camera is only 0.1 above the surface:
 /// with fills at 1.003, borders at 1.005 and a 64-segment ocean whose flat facets dipped
 /// 0.001 between vertices, countries floated up to ~5% of their distance from the
 /// centre off the Earth texture. So every layer sits as close to the ocean as depth

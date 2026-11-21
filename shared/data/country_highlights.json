@@ -110,7 +110,7 @@
   "CF": {
     "cities": [
       "Bangui",
-      "Berberati"
+      "Bayanga"
     ],
     "attractions": [
       "Dzanga-Sangha Reserve",
@@ -306,7 +306,8 @@
   "GW": {
     "cities": [
       "Bissau",
-      "Bolama"
+      "Bolama",
+      "Bubaque"
     ],
     "attractions": [
       "Bijagos Archipelago",
@@ -388,7 +389,9 @@
     "cities": [
       "Lilongwe",
       "Blantyre",
-      "Zomba"
+      "Zomba",
+      "Cape Maclear",
+      "Nkhata Bay"
     ],
     "attractions": [
       "Lake Malawi",
@@ -459,7 +462,8 @@
       "Maputo",
       "Vilanculos",
       "Inhambane",
-      "Pemba"
+      "Pemba",
+      "Ilha de Mocambique"
     ],
     "attractions": [
       "Bazaruto Archipelago",
@@ -472,7 +476,8 @@
     "cities": [
       "Windhoek",
       "Swakopmund",
-      "Walvis Bay"
+      "Walvis Bay",
+      "Luderitz"
     ],
     "attractions": [
       "Sossusvlei",
@@ -526,7 +531,8 @@
     "cities": [
       "Kigali",
       "Rubavu",
-      "Huye"
+      "Huye",
+      "Musanze"
     ],
     "attractions": [
       "Volcanoes National Park",
@@ -538,7 +544,8 @@
   },
   "ST": {
     "cities": [
-      "Sao Tome"
+      "Sao Tome",
+      "Santo Antonio"
     ],
     "attractions": [
       "Pico Cao Grande",
@@ -918,7 +925,6 @@
       "Jakarta",
       "Bali",
       "Yogyakarta",
-      "Ubud",
       "Labuan Bajo"
     ],
     "attractions": [
@@ -996,7 +1002,8 @@
       "Amman",
       "Aqaba",
       "Madaba",
-      "Jerash"
+      "Jerash",
+      "Wadi Musa"
     ],
     "attractions": [
       "Petra",
@@ -1037,7 +1044,8 @@
     "cities": [
       "Bishkek",
       "Karakol",
-      "Osh"
+      "Osh",
+      "Cholpon-Ata"
     ],
     "attractions": [
       "Issyk-Kul Lake",
@@ -1109,7 +1117,8 @@
   "MN": {
     "cities": [
       "Ulaanbaatar",
-      "Karakorum"
+      "Karakorum",
+      "Olgii"
     ],
     "attractions": [
       "Gobi Desert",
@@ -1216,7 +1225,8 @@
       "Manila",
       "Cebu City",
       "Puerto Princesa",
-      "Boracay"
+      "Boracay",
+      "El Nido"
     ],
     "attractions": [
       "El Nido",
@@ -1288,7 +1298,7 @@
       "Busan",
       "Gyeongju",
       "Jeju",
-      "Incheon"
+      "Jeonju"
     ],
     "attractions": [
       "Gyeongbokgung Palace",
@@ -1348,7 +1358,9 @@
   "TJ": {
     "cities": [
       "Dushanbe",
-      "Khujand"
+      "Khujand",
+      "Khorog",
+      "Penjikent"
     ],
     "attractions": [
       "Pamir Highway",
@@ -1435,7 +1447,8 @@
       "Tashkent",
       "Samarkand",
       "Bukhara",
-      "Khiva"
+      "Khiva",
+      "Shakhrisabz"
     ],
     "attractions": [
       "Registan Square",
@@ -1481,7 +1494,7 @@
       "Berat",
       "Gjirokaster",
       "Saranda",
-      "Vlora"
+      "Shkoder"
     ],
     "attractions": [
       "Butrint National Park",
@@ -1550,7 +1563,9 @@
     "cities": [
       "Sarajevo",
       "Mostar",
-      "Banja Luka"
+      "Banja Luka",
+      "Jajce",
+      "Trebinje"
     ],
     "attractions": [
       "Stari Most",
@@ -1566,7 +1581,7 @@
       "Plovdiv",
       "Veliko Tarnovo",
       "Varna",
-      "Burgas"
+      "Nessebar"
     ],
     "attractions": [
       "Alexander Nevsky Cathedral",
@@ -1688,7 +1703,7 @@
       "Munich",
       "Hamburg",
       "Cologne",
-      "Frankfurt"
+      "Heidelberg"
     ],
     "attractions": [
       "Brandenburg Gate",
@@ -1733,7 +1748,8 @@
     "cities": [
       "Reykjavik",
       "Akureyri",
-      "Vik"
+      "Vik",
+      "Husavik"
     ],
     "attractions": [
       "Blue Lagoon",
@@ -1749,7 +1765,7 @@
       "Galway",
       "Cork",
       "Killarney",
-      "Limerick"
+      "Kilkenny"
     ],
     "attractions": [
       "Cliffs of Moher",
@@ -1792,7 +1808,9 @@
     "cities": [
       "Riga",
       "Jurmala",
-      "Sigulda"
+      "Sigulda",
+      "Cesis",
+      "Kuldiga"
     ],
     "attractions": [
       "Riga Old Town",
@@ -1844,7 +1862,9 @@
     "cities": [
       "Valletta",
       "Mdina",
-      "Sliema"
+      "Sliema",
+      "Victoria (Gozo)",
+      "Birgu"
     ],
     "attractions": [
       "St. John's Co-Cathedral",
@@ -1857,7 +1877,7 @@
   "MD": {
     "cities": [
       "Chisinau",
-      "Orheiul Vechi"
+      "Soroca"
     ],
     "attractions": [
       "Orheiul Vechi Monastery",
@@ -1975,7 +1995,7 @@
       "Brasov",
       "Sibiu",
       "Cluj-Napoca",
-      "Timisoara"
+      "Sighisoara"
     ],
     "attractions": [
       "Bran Castle",
@@ -2013,8 +2033,8 @@
     "cities": [
       "Bratislava",
       "Kosice",
-      "Banska Bystrica",
-      "Trnava"
+      "Banska Stiavnica",
+      "Bardejov"
     ],
     "attractions": [
       "Bratislava Castle",
@@ -2060,7 +2080,8 @@
       "Stockholm",
       "Gothenburg",
       "Malmo",
-      "Uppsala"
+      "Uppsala",
+      "Visby"
     ],
     "attractions": [
       "Vasa Museum",
@@ -2232,7 +2253,8 @@
   },
   "DM": {
     "cities": [
-      "Roseau"
+      "Roseau",
+      "Portsmouth"
     ],
     "attractions": [
       "Morne Trois Pitons National Park",
@@ -2329,7 +2351,7 @@
   "HN": {
     "cities": [
       "Tegucigalpa",
-      "San Pedro Sula",
+      "Copan Ruinas",
       "Roatan",
       "La Ceiba"
     ],
@@ -2433,7 +2455,8 @@
   "LC": {
     "cities": [
       "Castries",
-      "Soufriere"
+      "Soufriere",
+      "Gros Islet"
     ],
     "attractions": [
       "The Pitons",
@@ -2520,7 +2543,8 @@
       "La Paz",
       "Sucre",
       "Uyuni",
-      "Potosi"
+      "Potosi",
+      "Copacabana"
     ],
     "attractions": [
       "Salar de Uyuni",
@@ -2550,7 +2574,7 @@
       "Santiago",
       "Valparaiso",
       "San Pedro de Atacama",
-      "Punta Arenas",
+      "Puerto Natales",
       "Puerto Varas"
     ],
     "attractions": [
@@ -2567,7 +2591,7 @@
       "Cartagena",
       "Medellin",
       "Santa Marta",
-      "Cali"
+      "Salento"
     ],
     "attractions": [
       "Tayrona National Park",
@@ -2581,7 +2605,7 @@
     "cities": [
       "Quito",
       "Cuenca",
-      "Guayaquil",
+      "Puerto Ayora",
       "Banos",
       "Otavalo"
     ],
@@ -2605,7 +2629,8 @@
   "GF": {
     "cities": [
       "Cayenne",
-      "Kourou"
+      "Kourou",
+      "Saint-Laurent-du-Maroni"
     ],
     "attractions": [
       "Guiana Space Centre",
@@ -2653,8 +2678,7 @@
   },
   "SR": {
     "cities": [
-      "Paramaribo",
-      "Brownsberg"
+      "Paramaribo"
     ],
     "attractions": [
       "Central Suriname Nature Reserve",
@@ -2816,7 +2840,8 @@
   "FM": {
     "cities": [
       "Palikir",
-      "Kolonia"
+      "Kolonia",
+      "Weno"
     ],
     "attractions": [
       "Nan Madol Ruins",
@@ -2862,7 +2887,7 @@
   },
   "AQ": {
     "cities": [
-      "McMurdo Station"
+      "Port Lockroy"
     ],
     "attractions": [
       "Ross Ice Shelf",

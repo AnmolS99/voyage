@@ -17,7 +17,7 @@ struct NameFlagGameView: View {
     let onDismiss: () -> Void
 
     @StateObject private var viewModel: RegionSweepGameViewModel
-    @StateObject private var gameGlobe: GlobeState
+    @State private var gameGlobe: GlobeState
     @State private var searchText = ""
     @State private var feedback: Feedback?
     @State private var feedbackToken = 0
@@ -47,13 +47,7 @@ struct NameFlagGameView: View {
         self.isDarkMode = mainState.isDarkMode
         _viewModel = StateObject(wrappedValue: RegionSweepGameViewModel(mode: .nameFlag, region: region))
 
-        let globe = GlobeState(inMemory: true)
-        globe.globeStyle = mainState.globeStyle
-        globe.showsTerrain = mainState.showsTerrain
-        globe.isDarkMode = mainState.isDarkMode
-        globe.isAutoRotating = false
-        globe.showsCapitalMarker = false
-        _gameGlobe = StateObject(wrappedValue: globe)
+        _gameGlobe = State(initialValue: .forGame(matching: mainState))
 
         countrySuggestions = .countryNames()
     }
