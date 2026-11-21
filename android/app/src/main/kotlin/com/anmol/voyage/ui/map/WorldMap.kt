@@ -36,6 +36,12 @@ import kotlinx.coroutines.flow.collectLatest
 /** How long the view must hold still before the map decodes detail for it. */
 private const val DETAIL_SETTLE_MILLIS = 80L
 
+/** The widest border, in device pixels, still drawn as a hairline — see the border loop. */
+private const val HAIRLINE_MAX_PX = 2f
+
+/** A zero-width stroke, which Android draws one device pixel wide whatever the matrix. */
+private val HAIRLINE = Stroke(width = 0f)
+
 /**
  * The flat world map: an equirectangular Compose `Canvas` port of iOS `MapView`.
  *
@@ -234,12 +240,21 @@ fun WorldMap(
             }
 
             for ((country, style) in paths.zip(styles)) {
-                // The matrix magnifies strokes, so divide out the scale to keep
-                // borders a constant width on screen.
-                val strokeWidth = style.borderWidth.toPx() / scale
+                val width = style.borderWidth.toPx()
+                // A border no wider than a couple of pixels is drawn as a
+                // hairline: one device pixel at any zoom. A stroke of real
+                // width is outlined on the CPU every frame the map moves, and
+                // with every country on screen that was 75 ms a frame on a
+                // Galaxy A55 — 13 fps while dragging the zoomed-out map. A
+                // hairline is drawn by the GPU directly: 19 ms, and a 1.4 px
+                // border becomes a 1 px one. The selected country's thicker
+                // border keeps its width; it is one country.
+                // Otherwise the matrix magnifies strokes, so the scale is
+                // divided out to keep borders a constant width on screen.
+                val stroke = if (width <= HAIRLINE_MAX_PX) HAIRLINE else Stroke(width = width / scale)
                 val borderBrush = style.border.brush(country.bounds)
                 for (outline in country.outlines) {
-                    drawPath(outline, borderBrush, style = Stroke(width = strokeWidth))
+                    drawPath(outline, borderBrush, style = stroke)
                 }
             }
         }
