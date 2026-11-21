@@ -83,15 +83,17 @@ android {
     }
 
     sourceSets {
-        // country_highlights.json and the Earth textures are shared with iOS and
-        // are read from shared/data in place — never copied into android/.
+        // country_highlights.json, the fonts and the journey art are shared with
+        // iOS and are read from shared/data in place — never copied into android/.
         getByName("main").assets.srcDirs("../../shared/data")
     }
 
     androidResources {
         // The app reads countries.bin, which the build writes from world.geojson
-        // (GenerateWorldCache, below), so the GeoJSON itself does not ship.
+        // (GenerateAssets, below), so the GeoJSON itself does not ship.
         ignoreAssetsPatterns += "!world.geojson"
+        // The app packages 4096 px copies of these instead (EarthTextureGenerator).
+        ignoreAssetsPatterns += "!<dir>textures"
     }
 
     compileOptions {
@@ -112,17 +114,12 @@ kotlin {
     jvmToolchain(17)
 }
 
-/**
- * Writes countries.bin and world_meshes.bin from world.geojson by running
- * tools/world-cache — the app's own parser and triangulator, compiled for the
- * build machine. The app loads them instead of doing that work on the device,
- * where it cost ~1.85 s on a Galaxy A55 (Phase 7.8 in docs/ANDROID_PLAN.md).
- */
-abstract class GenerateWorldCache : JavaExec() {
+/** Writes assets from shared/data by running a program in tools/world-cache. */
+abstract class GenerateAssets : JavaExec() {
 
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
-    abstract val geoJson: RegularFileProperty
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val source: ConfigurableFileCollection
 
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
@@ -131,12 +128,70 @@ abstract class GenerateWorldCache : JavaExec() {
         val output = outputDirectory.get().asFile
         // Only what this run writes — never a file an older generator left behind.
         output.deleteRecursively()
-        setArgs(listOf(geoJson.get().asFile.path, output.path))
+        setArgs(listOf(source.singleFile.path, output.path))
         super.exec()
     }
 }
 
-/** tools/world-cache and its runtime dependencies, for GenerateWorldCache to run. */
+abstract class CompileMaterials : DefaultTask() {
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sources: DirectoryProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val compiler: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    @TaskAction
+    fun compile() {
+        val output = outputDirectory.get().asFile
+        output.deleteRecursively()
+        val compiled = File(output, "materials").apply { mkdirs() }
+        // Maven artifacts carry no executable bit.
+        val matc = compiler.singleFile.copyTo(File(temporaryDir, compiler.singleFile.name), overwrite = true)
+        matc.setExecutable(true)
+        sources.asFileTree.matching { include("*.mat") }.forEach { material ->
+            execOperations.exec {
+                commandLine(
+                    matc.path,
+                    "--platform", "mobile",
+                    "--api", "opengl",
+                    "--output", File(compiled, "${material.nameWithoutExtension}.filamat").path,
+                    material.path,
+                )
+            }
+        }
+    }
+}
+
+// A material only loads in the Filament release whose matc compiled it.
+val matc: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isTransitive = false
+    defaultDependencies {
+        val os = System.getProperty("os.name").lowercase()
+        val arm = System.getProperty("os.arch") in setOf("aarch64", "arm64")
+        val platform = when {
+            os.contains("mac") && arm -> "osx-aarch_64"
+            os.contains("linux") && !arm -> "linux-x86_64"
+            os.contains("windows") && !arm -> "windows-x86_64"
+            else -> throw GradleException(
+                "Filament publishes no matc for ${System.getProperty("os.name")} " +
+                    "${System.getProperty("os.arch")}; build on Apple silicon, x86-64 Linux or x86-64 Windows",
+            )
+        }
+        add(project.dependencies.create("com.google.android.filament:matc:${libs.versions.filament.get()}:$platform@exe"))
+    }
+}
+
+/** tools/world-cache and its runtime dependencies, for GenerateAssets to run. */
 val worldCacheTool: Configuration by configurations.creating {
     isCanBeConsumed = false
     attributes {
@@ -148,15 +203,28 @@ val worldCacheTool: Configuration by configurations.creating {
 
 androidComponents {
     onVariants { variant ->
-        val generate = tasks.register<GenerateWorldCache>(
-            "generate${variant.name.replaceFirstChar { it.uppercase() }}WorldCache",
-        ) {
-            classpath = worldCacheTool
-            mainClass = "com.anmol.voyage.tools.WorldCacheGeneratorKt"
-            geoJson = layout.projectDirectory.file("../../shared/data/world.geojson")
+        val shared = layout.projectDirectory.dir("../../shared/data")
+        fun generate(name: String, main: String, from: FileSystemLocation) {
+            val task = tasks.register<GenerateAssets>(
+                "generate${variant.name.replaceFirstChar { it.uppercase() }}$name",
+            ) {
+                classpath = worldCacheTool
+                mainClass = "com.anmol.voyage.tools.$main"
+                source.from(from)
+            }
+            // AGP chooses the directory, and packages whatever lands in it as assets.
+            variant.sources.assets?.addGeneratedSourceDirectory(task, GenerateAssets::outputDirectory)
         }
-        // AGP chooses the directory, and packages whatever lands in it as assets.
-        variant.sources.assets?.addGeneratedSourceDirectory(generate, GenerateWorldCache::outputDirectory)
+        generate("WorldCache", "WorldCacheGeneratorKt", shared.file("world.geojson"))
+        generate("EarthTextures", "EarthTextureGenerator", shared.dir("textures"))
+
+        val compileMaterials = tasks.register<CompileMaterials>(
+            "compile${variant.name.replaceFirstChar { it.uppercase() }}Materials",
+        ) {
+            sources = layout.projectDirectory.dir("src/main/materials")
+            compiler.from(matc)
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(compileMaterials, CompileMaterials::outputDirectory)
     }
 }
 
@@ -177,7 +245,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.filament.android)
-    implementation(libs.filamat.android)
 
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)

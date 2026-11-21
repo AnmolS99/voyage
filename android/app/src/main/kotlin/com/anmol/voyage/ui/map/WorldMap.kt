@@ -25,6 +25,10 @@ import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.ui.theme.VoyagePalette
 import kotlin.math.roundToInt
 
+private const val HAIRLINE_MAX_PX = 2f
+
+private val HAIRLINE = Stroke(width = 0f)
+
 /**
  * The flat world map: an equirectangular Compose `Canvas` port of iOS `MapView`.
  *
@@ -177,12 +181,13 @@ fun WorldMap(
             }
 
             for ((country, style) in paths.zip(styles)) {
-                // The matrix magnifies strokes, so divide out the scale to keep
-                // borders a constant width on screen.
-                val strokeWidth = style.borderWidth.toPx() / scale
+                val width = style.borderWidth.toPx()
+                // Thin borders are hairlines: a stroked path is outlined on the CPU every
+                // frame, which made dragging the zoomed-out map lag (#187).
+                val stroke = if (width <= HAIRLINE_MAX_PX) HAIRLINE else Stroke(width = width / scale)
                 val borderBrush = style.border.brush(country.bounds)
                 for (outline in country.outlines) {
-                    drawPath(outline, borderBrush, style = Stroke(width = strokeWidth))
+                    drawPath(outline, borderBrush, style = stroke)
                 }
             }
         }

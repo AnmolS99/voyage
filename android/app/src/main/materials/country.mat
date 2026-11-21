@@ -1,0 +1,44 @@
+// The country fill.
+//
+// colorA/colorB and gradient exist to reproduce the map's visited+wishlist
+// treatment: when a country is on both lists it is painted with a
+// yellow→purple diagonal, and everywhere else colorA is used flat. The UVs
+// span the country's own lon/lat bounding box (see
+// PolygonTriangulator.computeTexCoords), so u + v runs bottom-left → top-right
+// across the country and matches the direction CountryStyles documents for the
+// flat map.
+material {
+    name : country,
+    shadingModel : unlit,
+    requires : [ uv0 ],
+    variables : [ spherePosition ],
+    parameters : [
+        { type : float4, name : colorA },
+        { type : float4, name : colorB },
+        { type : float, name : gradient },
+        { type : sampler2d, name : relief }
+    ]
+}
+
+// Hands the fill's model-space position to the fragment stage, where it
+// becomes a latitude and longitude for the relief lookup. A fill's own UVs
+// span its country's bounding box (they draw the visited+wishlist diagonal),
+// so they cannot address a world-wide image.
+vertex {
+    void materialVertex(inout MaterialVertexInputs material) {
+        material.spherePosition = getPosition();
+    }
+}
+
+fragment {
+    #include "relief.glsl"
+
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        vec2 uv = getUV0();
+        float t = clamp((uv.x + uv.y) * 0.5, 0.0, 1.0);
+        vec4 gradientColor = mix(materialParams.colorA, materialParams.colorB, t);
+        vec4 color = mix(materialParams.colorA, gradientColor, materialParams.gradient);
+        material.baseColor = vec4(hardLight(color.rgb, reliefAt(variable_spherePosition.xyz)), color.a);
+    }
+}

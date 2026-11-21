@@ -195,10 +195,16 @@ android/
   `assets.srcDirs` in `app/build.gradle.kts` — never copied into `android/`.
   The app reads it through `AssetManager`; JVM unit tests read the same files
   straight off disk (`SharedFiles`), so they need no emulator or Robolectric.
-  That includes the Earth textures in `shared/data/textures/`, one per
-  `GlobeStyle` and bundled by iOS from the same place; `EarthTextureCache`
-  decodes them at most 4096 px wide, which is what both a `Canvas` and a GPU
-  texture will take.
+  The Earth textures in `shared/data/textures/`, one per `GlobeStyle` and
+  bundled by iOS from the same place, are the exception to "in place": two are
+  8192 px wide, and 4096 is what both a `Canvas` and a GPU texture will take.
+  So the build leaves that directory out and packages copies no wider than
+  that under `earth/` — `EarthTextureGenerator` in `tools/world-cache`, run by
+  `generate<Variant>EarthTextures` — about 9 MB less to download. Code still
+  names a texture by its path under `shared/data/` (`GlobeStyle.textureAsset`);
+  `EarthTextureFiles.packagedAsset` maps it. Showing them at 8192 px was built
+  and measured, then dropped (#186): the gain was slight next to the code it
+  took.
 - **Launcher icon** is generated from the iOS artwork; re-run after changing it:
 
   ```bash
@@ -308,7 +314,7 @@ run both test suites.
 The device neither parses `world.geojson` nor triangulates the globe. Both happen
 at build time: `tools/world-cache` is a small JVM program that compiles the app's
 own `GeoJsonParser`, `PolygonTriangulator` and file formats a second time, for
-the build machine, and `GenerateWorldCache` in `app/build.gradle.kts` runs it once
+the build machine, and `GenerateAssets` in `app/build.gradle.kts` runs it once
 per variant and adds what it writes as generated assets:
 
 | Asset | Holds | Compressed in the APK |
@@ -337,6 +343,28 @@ triangulator test keep speaking for what the app actually loads. JVM tests never
 read the generated files themselves: `SharedFiles.countryDataCache()` parses the
 GeoJSON, and `GlobeGeometryCache` triangulates until `install` points it at the
 asset.
+
+## Materials
+
+The globe's three Filament materials are compiled by the build, not on the
+device. Their sources are `app/src/main/materials/` — one `.mat` each for the
+country fills, the ocean and the outlines, and `relief.glsl`, which the first
+two include — and `compile<Variant>Materials` (`CompileMaterials` in
+`app/build.gradle.kts`) runs Filament's `matc` over them and adds the
+`.filamat` files as generated assets under `materials/`, where `GlobeMaterials`
+reads them.
+
+`matc` needs no installing: Filament publishes it to Maven Central as one
+executable per platform, and the build resolves the one for this machine at
+the version of `filament` in `gradle/libs.versions.toml`. Keep it that way — a
+material loads only in the Filament release that compiled it, so bumping
+Filament recompiles them, and a `matc` from anywhere else would not. It exists
+for Apple silicon macOS, x86-64 Linux and x86-64 Windows; the build fails with
+a message saying so anywhere else.
+
+A shader that does not compile fails the build with `matc`'s error. What the
+JVM cannot check is a number the GLSL shares with Kotlin, so
+`GlobeMaterialSourcesTest` holds those together.
 
 ## What is tested where
 

@@ -1,0 +1,59 @@
+material {
+    name : outline,
+    shadingModel : unlit,
+    // xyz is the miter direction, w the gradient parameter.
+    requires : [ custom0 ],
+    variables : [ gradientT ],
+    parameters : [
+        { type : float4, name : colorA },
+        { type : float4, name : colorB },
+        { type : float, name : gradient },
+        { type : float, name : thickness },
+        { type : float, name : band }
+    ],
+    // The strip's winding flips halfway around each ring, so either face can
+    // end up toward the camera. The ocean sphere hides the far hemisphere
+    // anyway (see GlobeRenderer).
+    culling : none
+}
+
+// Widens the border strip, and is the whole reason zooming does not rebuild
+// ~335k vertices.
+//
+// createBorderOutlineGeometry puts both vertices of every strip rung on the
+// border centerline, so the mesh has zero width until this runs; pushing each
+// one along its own miter (custom0.xyz) is what gives it one. Because
+// thickness is a uniform in world units, the renderer keeps borders a constant
+// width on screen by scaling that single float with camera distance — the
+// Filament analogue of the iOS outlineShaderModifier.
+//
+// worldPosition is camera-shifted for precision, which is fine here: this adds
+// a displacement, and a displacement is unaffected by where the origin sits.
+//
+// A microstate's ring is the one mesh with two edges that move apart: its
+// outer vertices carry RING_OUTER_TAG on top of their gradient parameter and
+// go a further band out (see MarkerMeshes.ring). No other mesh carries the
+// tag, so for them band is never read.
+vertex {
+    // Must equal MarkerMeshes.RING_OUTER_TAG (GlobeMaterialSourcesTest).
+    const float RING_OUTER_TAG = 2.0;
+
+    void materialVertex(inout MaterialVertexInputs material) {
+        vec4 custom = getCustom0();
+        float outer = step(RING_OUTER_TAG / 2.0 + 0.5, custom.w);
+        material.worldPosition.xyz += custom.xyz * (materialParams.thickness + outer * materialParams.band);
+        material.gradientT = vec4(custom.w - outer * RING_OUTER_TAG, 0.0, 0.0, 0.0);
+    }
+}
+
+// Paints the strip. Flat colorA for a plain black border or a single-status
+// one; the visited+wishlist diagonal when gradient is 1, using the parameter
+// the vertex stage forwarded from the miter's w.
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        float t = clamp(variable_gradientT.x, 0.0, 1.0);
+        vec4 gradientColor = mix(materialParams.colorA, materialParams.colorB, t);
+        material.baseColor = mix(materialParams.colorA, gradientColor, materialParams.gradient);
+    }
+}

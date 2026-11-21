@@ -13,11 +13,7 @@ import java.io.InputStream
  * The decoded Earth texture for each [GlobeStyle], shared by the globe and the
  * flat map and kept for the life of the process.
  *
- * The images live in `shared/data/textures/`, the same files iOS bundles. They
- * are decoded to at most [MAX_TEXTURE_WIDTH] pixels wide: two of the three are
- * 8192 × 4096, which is 128 MB as a bitmap — over the 100 MB a `Canvas` will
- * draw, and past the texture size a GPU is guaranteed to accept. Halved, they
- * are 32 MB and within both.
+ * The build packages them no wider than [EarthTextureFiles.MAX_WIDTH].
  *
  * Decoding costs hundreds of milliseconds, so callers must be off the main
  * thread the first time. At most [RETAINED_STYLES] are held — the globe's style
@@ -78,7 +74,7 @@ class EarthTextureCache(private val openAsset: (String) -> InputStream) {
         openAsset(asset).use { BitmapFactory.decodeStream(it, null, bounds) }
 
         val options = BitmapFactory.Options().apply {
-            inSampleSize = sampleSizeFor(bounds.outWidth)
+            inSampleSize = EarthTextureFiles.sampleSizeFor(bounds.outWidth)
             // Not HARDWARE, the platform's default choice for large images: the
             // globe copies these pixels into a Filament texture, and a hardware
             // bitmap's pixels cannot be read back.
@@ -101,9 +97,6 @@ class EarthTextureCache(private val openAsset: (String) -> InputStream) {
     }
 
     companion object {
-        /** See the class comment: the widest texture a GPU and a `Canvas` both take. */
-        const val MAX_TEXTURE_WIDTH = 4096
-
         private const val RETAINED_STYLES = 2
 
         /**
@@ -111,13 +104,6 @@ class EarthTextureCache(private val openAsset: (String) -> InputStream) {
          * away from a northwest light — `scripts/generate_relief_texture.py`.
          */
         internal const val RELIEF_ASSET = "textures/relief.png"
-
-        /** The power-of-two downsampling that brings [width] within [MAX_TEXTURE_WIDTH]. */
-        internal fun sampleSizeFor(width: Int): Int {
-            var sample = 1
-            while (width / sample > MAX_TEXTURE_WIDTH) sample *= 2
-            return sample
-        }
 
         @Volatile
         private var instance: EarthTextureCache? = null
@@ -128,7 +114,7 @@ class EarthTextureCache(private val openAsset: (String) -> InputStream) {
 
         fun install(context: Context) {
             val assets = context.applicationContext.assets
-            instance = EarthTextureCache { name -> assets.open(name) }
+            instance = EarthTextureCache { name -> assets.open(EarthTextureFiles.packagedAsset(name)) }
         }
 
         private const val TAG = "EarthTextureCache"

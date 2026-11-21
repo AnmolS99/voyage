@@ -1,6 +1,5 @@
 package com.anmol.voyage.data
 
-import com.anmol.voyage.data.EarthTextureCache.Companion.MAX_TEXTURE_WIDTH
 import com.anmol.voyage.data.EarthTextureCache.Companion.RELIEF_ASSET
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
@@ -30,7 +29,7 @@ class ReliefTextureTest {
     @Test
     fun `is a 2 to 1 world image the globe decodes at full size`() {
         assertEquals(image.width, image.height * 2)
-        assertTrue(image.width <= MAX_TEXTURE_WIDTH)
+        assertTrue(image.width <= EarthTextureFiles.MAX_WIDTH)
     }
 
     @Test
