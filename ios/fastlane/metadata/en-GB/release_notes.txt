@@ -1,11 +1,14 @@
-Earn bronze, silver and gold: every achievement now has three medal tiers to work towards.
+Every country now has its own painting: open a country and its card shows hand-painted art of the place, by day and by night.
 
-- A fresh look, with new typefaces throughout the app
-- Mountains and valleys now show on the globe and the map, with a Terrain setting to turn them off
-- Find countries by their other names: search for Burma, Holland or the UK
-- Capitals are marked with a new star seal on the globe and the map
-- Selecting a country zooms to fit it, so Luxembourg fills the screen and Russia fits on it
-- The Faroe Islands are now on the map, and Crimea is shown as part of Ukraine
-- Small countries' dots grow as you zoom in on the map
-- Clearer, higher-contrast text
-- Country colours and borders stay sharp on the textured globe up close
+- Daylight theme: the app turns light at sunrise and dark at sunset
+- A dark app icon, chosen automatically or in Settings
+- Filter the country list to show only places you've visited or want to visit
+- Zoom the map with one finger: tap, then press and drag
+- Tap Home again to turn the globe back to where it started
+- Ticking off a city or sight now marks its country visited
+- Challenge answers stay up longer, and a tap or swipe dismisses them
+- Press Enter to take the top suggestion when naming countries and capitals
+- Countries with more than one capital now accept them all
+- Top cities refreshed to favour the places travellers actually go
+- Removing countries or resetting now syncs across your devices
+- A smoother map, and less memory used after launch
