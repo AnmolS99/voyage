@@ -7,20 +7,9 @@ import javax.imageio.IIOImage
 import javax.imageio.ImageIO
 import javax.imageio.ImageWriteParam
 
-/**
- * Writes the Earth textures the app packages:
- * `EarthTextureGenerator <shared/data/textures> <output directory>`.
- *
- * Every image comes out under [EarthTextureFiles.PACKAGED_DIRECTORY] with its
- * own name. One within [EarthTextureFiles.MAX_WIDTH] is copied byte for byte;
- * a wider one is averaged down by the factor the app would otherwise decode it
- * at, so the app shows the same image without downloading the pixels it
- * dropped. Run by :app's `generate<Variant>EarthTextures` tasks — a build
- * product, never checked in.
- */
+/** Copies the Earth textures into the app's assets, downsampling any wider than [EarthTextureFiles.MAX_WIDTH]. */
 object EarthTextureGenerator {
 
-    /** High enough that the second encoding adds nothing visible to the first. */
     private const val JPEG_QUALITY = 0.92f
 
     @JvmStatic
@@ -44,15 +33,12 @@ object EarthTextureGenerator {
             source.copyTo(target, overwrite = true)
             return
         }
-        // Only the photographic textures are this large; a lossless one would
-        // need its own writer.
         require(source.extension.lowercase() in setOf("jpg", "jpeg")) {
             "${source.name} is ${width}px wide and not a JPEG — resize it, or teach EarthTextureGenerator its format"
         }
         writeJpeg(downsampled(ImageIO.read(source), sample), target)
     }
 
-    /** [image] with each [sample] × [sample] block averaged into one pixel. */
     private fun downsampled(image: BufferedImage, sample: Int): BufferedImage {
         val width = image.width / sample
         val height = image.height / sample
@@ -75,7 +61,6 @@ object EarthTextureGenerator {
                         blue += pixel and 0xFF
                     }
                 }
-                // Rounded, not truncated, so the average does not drift darker.
                 row[x] = ((red + count / 2) / count shl 16) or
                     ((green + count / 2) / count shl 8) or
                     ((blue + count / 2) / count)

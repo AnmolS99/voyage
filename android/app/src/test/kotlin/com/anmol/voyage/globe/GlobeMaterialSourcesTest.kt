@@ -5,11 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 
-/**
- * The material sources the build compiles. They are GLSL, so a number they
- * share with the Kotlin that builds the meshes is written twice; this holds
- * the two copies together.
- */
 class GlobeMaterialSourcesTest {
 
     @Test

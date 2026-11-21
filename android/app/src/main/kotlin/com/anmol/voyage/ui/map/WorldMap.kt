@@ -25,10 +25,8 @@ import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.ui.theme.VoyagePalette
 import kotlin.math.roundToInt
 
-/** The widest border, in device pixels, still drawn as a hairline — see the border loop. */
 private const val HAIRLINE_MAX_PX = 2f
 
-/** A zero-width stroke, which Android draws one device pixel wide whatever the matrix. */
 private val HAIRLINE = Stroke(width = 0f)
 
 /**
@@ -184,16 +182,8 @@ fun WorldMap(
 
             for ((country, style) in paths.zip(styles)) {
                 val width = style.borderWidth.toPx()
-                // A border no wider than a couple of pixels is drawn as a
-                // hairline: one device pixel at any zoom. A stroke of real
-                // width is outlined on the CPU every frame the map moves, and
-                // with every country on screen that was 75 ms a frame on a
-                // Galaxy A55 — 13 fps while dragging the zoomed-out map. A
-                // hairline is drawn by the GPU directly: 19 ms, and a 1.4 px
-                // border becomes a 1 px one. The selected country's thicker
-                // border keeps its width; it is one country.
-                // Otherwise the matrix magnifies strokes, so the scale is
-                // divided out to keep borders a constant width on screen.
+                // Thin borders are hairlines: a stroked path is outlined on the CPU every
+                // frame, which made dragging the zoomed-out map lag (#187).
                 val stroke = if (width <= HAIRLINE_MAX_PX) HAIRLINE else Stroke(width = width / scale)
                 val borderBrush = style.border.brush(country.bounds)
                 for (outline in country.outlines) {

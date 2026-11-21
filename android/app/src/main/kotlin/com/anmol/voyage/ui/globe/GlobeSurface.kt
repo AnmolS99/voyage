@@ -240,7 +240,6 @@ internal fun GlobeSurface(
  */
 @Composable
 internal fun rememberGlobeSurfaceHost(): GlobeSurfaceHost {
-    // The application's assets: the host outlives nothing they could leak.
     val assets = LocalContext.current.applicationContext.assets
     val host = remember { GlobeSurfaceHost(assets) }
     DisposableEffect(host) {

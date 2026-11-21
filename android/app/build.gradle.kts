@@ -92,9 +92,7 @@ android {
         // The app reads countries.bin, which the build writes from world.geojson
         // (GenerateAssets, below), so the GeoJSON itself does not ship.
         ignoreAssetsPatterns += "!world.geojson"
-        // Likewise the Earth textures: two are 8192 px wide and the app shows
-        // 4096, so it packages the copies GenerateAssets writes to earth/
-        // (EarthTextureFiles) rather than this directory.
+        // The app packages 4096 px copies of these instead (EarthTextureGenerator).
         ignoreAssetsPatterns += "!<dir>textures"
     }
 
@@ -116,18 +114,7 @@ kotlin {
     jvmToolchain(17)
 }
 
-/**
- * Writes assets from a file or directory under shared/data by running one of
- * the programs in tools/world-cache — the app's own code, compiled for the
- * build machine:
- *
- * - `WorldCacheGenerator` writes countries.bin and world_meshes.bin from
- *   world.geojson with the app's parser and triangulator. The app loads them
- *   instead of doing that work on the device, where it cost ~1.85 s on a
- *   Galaxy A55 (Phase 7.8 in docs/ANDROID_PLAN.md).
- * - `EarthTextureGenerator` writes the Earth textures no wider than the app
- *   shows them, which the 8192 px originals are twice over.
- */
+/** Writes assets from shared/data by running a program in tools/world-cache. */
 abstract class GenerateAssets : JavaExec() {
 
     @get:InputFiles
@@ -146,11 +133,6 @@ abstract class GenerateAssets : JavaExec() {
     }
 }
 
-/**
- * Compiles the globe's materials, the .mat files in src/main/materials, into the .filamat
- * files `GlobeMaterials` loads — at build time, so the app ships neither a
- * shader compiler nor the ~190 ms it took to run one on first launch.
- */
 abstract class CompileMaterials : DefaultTask() {
 
     @get:InputDirectory
@@ -172,13 +154,11 @@ abstract class CompileMaterials : DefaultTask() {
         val output = outputDirectory.get().asFile
         output.deleteRecursively()
         val compiled = File(output, "materials").apply { mkdirs() }
-        // Maven artifacts carry no executable bit. The name is kept because
-        // Windows goes by its .exe.
+        // Maven artifacts carry no executable bit.
         val matc = compiler.singleFile.copyTo(File(temporaryDir, compiler.singleFile.name), overwrite = true)
         matc.setExecutable(true)
         sources.asFileTree.matching { include("*.mat") }.forEach { material ->
             execOperations.exec {
-                // What GlobeMaterials asked filamat for: GLES shaders for phones.
                 commandLine(
                     matc.path,
                     "--platform", "mobile",
@@ -191,12 +171,7 @@ abstract class CompileMaterials : DefaultTask() {
     }
 }
 
-/**
- * Filament's material compiler for this machine, at the engine's version — a
- * material is only loadable by the Filament release that compiled it, so the
- * two must never be versioned apart. Published to Maven Central as one
- * executable per platform, the way protoc is.
- */
+// A material only loads in the Filament release whose matc compiled it.
 val matc: Configuration by configurations.creating {
     isCanBeConsumed = false
     isTransitive = false

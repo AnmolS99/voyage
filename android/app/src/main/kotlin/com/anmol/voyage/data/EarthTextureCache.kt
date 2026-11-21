@@ -13,20 +13,13 @@ import java.io.InputStream
  * The decoded Earth texture for each [GlobeStyle], shared by the globe and the
  * flat map and kept for the life of the process.
  *
- * The images live in `shared/data/textures/`, the same files iOS bundles, and
- * the build packages them no wider than [EarthTextureFiles.MAX_WIDTH] — see
- * [EarthTextureFiles]. Decoding still holds them to that width itself, so an
- * image that reached the app at full size would cost time, never a 128 MB
- * bitmap.
+ * The build packages them no wider than [EarthTextureFiles.MAX_WIDTH].
  *
  * Decoding costs hundreds of milliseconds, so callers must be off the main
  * thread the first time. At most [RETAINED_STYLES] are held — the globe's style
  * and the map's — so switching styles back and forth never grows the cache.
  */
-class EarthTextureCache(
-    /** Opens an image by its path under `shared/data/`, as [GlobeStyle.textureAsset] gives it. */
-    private val openAsset: (String) -> InputStream,
-) {
+class EarthTextureCache(private val openAsset: (String) -> InputStream) {
 
     private val decoded = object : LinkedHashMap<GlobeStyle, Bitmap>(RETAINED_STYLES, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<GlobeStyle, Bitmap>) =

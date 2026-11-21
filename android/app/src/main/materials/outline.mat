@@ -1,4 +1,3 @@
-// The border strips, the selected country's outline and the markers' rings.
 material {
     name : outline,
     shadingModel : unlit,
@@ -36,7 +35,7 @@ material {
 // go a further band out (see MarkerMeshes.ring). No other mesh carries the
 // tag, so for them band is never read.
 vertex {
-    // MarkerMeshes.RING_OUTER_TAG — GlobeMaterialSourcesTest holds the two together.
+    // Must equal MarkerMeshes.RING_OUTER_TAG (GlobeMaterialSourcesTest).
     const float RING_OUTER_TAG = 2.0;
 
     void materialVertex(inout MaterialVertexInputs material) {

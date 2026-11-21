@@ -6,15 +6,7 @@ import com.google.android.filament.Material
 import java.nio.ByteBuffer
 
 /**
- * The globe's materials, compiled by the build.
- *
- * Their sources are the `.mat` files in `app/src/main/materials/`, and `CompileMaterials` in
- * app/build.gradle.kts runs Filament's `matc` over them and packages the
- * results as assets. `matc` is a Gradle dependency like any other — Filament
- * publishes it to Maven Central per platform, at the engine's own version — so
- * nothing has to be installed, here or on CI. Compiling on the device instead
- * (`filamat`) put a 9 MB shader compiler in every install and ~190 ms in every
- * first launch, for three materials that never change after the build.
+ * The globe's materials, compiled at build time from `src/main/materials`.
  *
  * All three materials are **unlit** on purpose. CLAUDE.md requires the globe and the
  * map to show identical country colors, and a lit shading model would run every
@@ -41,14 +33,8 @@ internal class GlobeMaterials private constructor(
 
     companion object {
 
-        /** Where the build puts the compiled materials, under assets. */
         private const val DIRECTORY = "materials"
 
-        /**
-         * The compiled materials, kept for the life of the process: they are
-         * the same bytes for every engine, and the globe gets a new engine
-         * with each Activity.
-         */
         @Volatile
         private var payloads: Payloads? = null
 
@@ -58,7 +44,7 @@ internal class GlobeMaterials private constructor(
             val outline: ByteBuffer,
         )
 
-        /** Builds the materials for [engine]. Must run on the thread that owns it. */
+        /** Must run on the thread that owns [engine]. */
         fun build(engine: Engine, assets: AssetManager): GlobeMaterials {
             val compiled = payloads ?: Payloads(
                 country = assets.material("country"),
@@ -76,7 +62,6 @@ internal class GlobeMaterials private constructor(
 
         private fun AssetManager.material(name: String): ByteBuffer {
             val bytes = open("$DIRECTORY/$name.filamat").use { it.readBytes() }
-            // Direct, as Filament reads a payload from native memory.
             return ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
         }
 
