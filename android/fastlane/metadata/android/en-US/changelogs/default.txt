@@ -1,10 +1,10 @@
-Earn bronze, silver and gold: every achievement now has three medal tiers.
+Every country now has its own painting, by day and by night.
 
-• A fresh look, with new typefaces
-• Terrain shading on the globe and the map
-• Search countries by their other names, like Burma or the UK
-• A new progress dock that opens into the country card
-• Capitals marked with a new star seal
-• Selecting a country zooms to fit it
-• The Faroe Islands are now on the map, and Crimea is shown as part of Ukraine
-• Clearer, higher-contrast text
+• Daylight theme: light at sunrise, dark at sunset
+• A dark app icon
+• Filter the country list by visited and wishlist
+• One-finger zoom on the map
+• Ticking off a city or sight marks its country visited
+• Challenge answers stay up longer
+• Countries with several capitals accept them all
+• A smaller download and smoother map
