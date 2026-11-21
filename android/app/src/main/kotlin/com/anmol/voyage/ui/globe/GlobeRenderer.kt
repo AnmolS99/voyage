@@ -68,6 +68,10 @@ internal class GlobeRenderer(assets: AssetManager) {
      * none. ASTC is required from OpenGL ES 3.2 and has been in every phone
      * GPU since about 2015; a GPU without it, or one that stops short of the
      * image's width, keeps the 4096 px bitmap.
+     *
+     * Filament before 1.79 reported ASTC only on GPUs that also had its HDR
+     * profile, which ruled out GPUs like the Galaxy A55's Xclipse 530 that
+     * sample these LDR textures perfectly well — keep Filament at 1.79 or later.
      */
     val maxCompressedTextureWidth: Int = run {
         val astc = Texture.isTextureFormatSupported(engine, Texture.InternalFormat.RGBA_ASTC_4x4)
@@ -313,7 +317,7 @@ internal class GlobeRenderer(assets: AssetManager) {
             val visible = !globeCamera.isBeyondHorizon(sector.mesh.center, sector.mesh.boundingRadius)
             if (sector.visible == visible) continue
             sector.visible = visible
-            if (visible) scene.addEntity(sector.entity) else scene.removeEntity(sector.entity)
+            if (visible) scene.addEntity(sector.entity) else scene.remove(sector.entity)
         }
     }
 
@@ -470,7 +474,7 @@ internal class GlobeRenderer(assets: AssetManager) {
             texture.setImage(
                 engine,
                 level,
-                Texture.PixelBufferDescriptor(bytes, Texture.CompressedFormat.RGBA_ASTC_4x4, bytes.remaining()),
+                Texture.PixelBufferDescriptor(bytes, Texture.CompressedType.RGBA_ASTC_4x4, bytes.remaining()),
             )
         }
         return texture
@@ -585,7 +589,7 @@ internal class GlobeRenderer(assets: AssetManager) {
 
     /** A scene is a set, so adding a present entity or removing an absent one does nothing. */
     private fun setShown(entity: Int, shown: Boolean) {
-        if (shown) scene.addEntity(entity) else scene.removeEntity(entity)
+        if (shown) scene.addEntity(entity) else scene.remove(entity)
     }
 
     /**
@@ -736,7 +740,7 @@ internal class GlobeRenderer(assets: AssetManager) {
     }
 
     private fun destroy(renderable: Renderable) {
-        scene.removeEntity(renderable.entity)
+        scene.remove(renderable.entity)
         engine.destroyEntity(renderable.entity)
         EntityManager.get().destroy(renderable.entity)
         engine.destroyVertexBuffer(renderable.vertexBuffer)
@@ -754,7 +758,7 @@ internal class GlobeRenderer(assets: AssetManager) {
         releaseSelectedOutline()
         releaseCapitalSeal()
         for (entity in entities) {
-            scene.removeEntity(entity)
+            scene.remove(entity)
             engine.destroyEntity(entity)
             EntityManager.get().destroy(entity)
         }

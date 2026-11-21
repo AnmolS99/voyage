@@ -363,7 +363,9 @@ it in: 43 MB with its mipmaps, what the 4096 px bitmap costs uncompressed.
 - `GlobeRenderer.maxCompressedTextureWidth` is the guard: a GPU without ASTC
   or with a texture limit below the image's width keeps the bitmap. It logs
   what the GPU reported under the `GlobeRenderer` tag. **The emulator has no
-  ASTC**, so this path only runs on a device.
+  ASTC**, so this path only runs on a device. Keep Filament at 1.79 or later:
+  earlier releases reported ASTC only on GPUs with its HDR profile, so the
+  Galaxy A55 (Xclipse 530, LDR only) silently fell back to the bitmap.
 
 **The map** draws the bitmap and, wherever the bitmap is being magnified, the
 image itself on top, in 512 px tiles (`ui/map/MapDetail.kt`). `MapDetailGrid`
