@@ -83,15 +83,19 @@ android {
     }
 
     sourceSets {
-        // country_highlights.json and the Earth textures are shared with iOS and
-        // are read from shared/data in place — never copied into android/.
+        // country_highlights.json, the fonts and the journey art are shared with
+        // iOS and are read from shared/data in place — never copied into android/.
         getByName("main").assets.srcDirs("../../shared/data")
     }
 
     androidResources {
         // The app reads countries.bin, which the build writes from world.geojson
-        // (GenerateWorldCache, below), so the GeoJSON itself does not ship.
+        // (GenerateAssets, below), so the GeoJSON itself does not ship.
         ignoreAssetsPatterns += "!world.geojson"
+        // Likewise the Earth textures: two are 8192 px wide and the app shows
+        // 4096, so it packages the copies GenerateAssets writes to earth/
+        // (EarthTextureFiles) rather than this directory.
+        ignoreAssetsPatterns += "!<dir>textures"
     }
 
     compileOptions {
@@ -113,16 +117,22 @@ kotlin {
 }
 
 /**
- * Writes countries.bin and world_meshes.bin from world.geojson by running
- * tools/world-cache — the app's own parser and triangulator, compiled for the
- * build machine. The app loads them instead of doing that work on the device,
- * where it cost ~1.85 s on a Galaxy A55 (Phase 7.8 in docs/ANDROID_PLAN.md).
+ * Writes assets from a file or directory under shared/data by running one of
+ * the programs in tools/world-cache — the app's own code, compiled for the
+ * build machine:
+ *
+ * - `WorldCacheGenerator` writes countries.bin and world_meshes.bin from
+ *   world.geojson with the app's parser and triangulator. The app loads them
+ *   instead of doing that work on the device, where it cost ~1.85 s on a
+ *   Galaxy A55 (Phase 7.8 in docs/ANDROID_PLAN.md).
+ * - `EarthTextureGenerator` writes the Earth textures no wider than the app
+ *   shows them, which the 8192 px originals are twice over.
  */
-abstract class GenerateWorldCache : JavaExec() {
+abstract class GenerateAssets : JavaExec() {
 
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
-    abstract val geoJson: RegularFileProperty
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val source: ConfigurableFileCollection
 
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
@@ -131,7 +141,7 @@ abstract class GenerateWorldCache : JavaExec() {
         val output = outputDirectory.get().asFile
         // Only what this run writes — never a file an older generator left behind.
         output.deleteRecursively()
-        setArgs(listOf(geoJson.get().asFile.path, output.path))
+        setArgs(listOf(source.singleFile.path, output.path))
         super.exec()
     }
 }
@@ -206,7 +216,7 @@ val matc: Configuration by configurations.creating {
     }
 }
 
-/** tools/world-cache and its runtime dependencies, for GenerateWorldCache to run. */
+/** tools/world-cache and its runtime dependencies, for GenerateAssets to run. */
 val worldCacheTool: Configuration by configurations.creating {
     isCanBeConsumed = false
     attributes {
@@ -218,15 +228,20 @@ val worldCacheTool: Configuration by configurations.creating {
 
 androidComponents {
     onVariants { variant ->
-        val generate = tasks.register<GenerateWorldCache>(
-            "generate${variant.name.replaceFirstChar { it.uppercase() }}WorldCache",
-        ) {
-            classpath = worldCacheTool
-            mainClass = "com.anmol.voyage.tools.WorldCacheGeneratorKt"
-            geoJson = layout.projectDirectory.file("../../shared/data/world.geojson")
+        val shared = layout.projectDirectory.dir("../../shared/data")
+        fun generate(name: String, main: String, from: FileSystemLocation) {
+            val task = tasks.register<GenerateAssets>(
+                "generate${variant.name.replaceFirstChar { it.uppercase() }}$name",
+            ) {
+                classpath = worldCacheTool
+                mainClass = "com.anmol.voyage.tools.$main"
+                source.from(from)
+            }
+            // AGP chooses the directory, and packages whatever lands in it as assets.
+            variant.sources.assets?.addGeneratedSourceDirectory(task, GenerateAssets::outputDirectory)
         }
-        // AGP chooses the directory, and packages whatever lands in it as assets.
-        variant.sources.assets?.addGeneratedSourceDirectory(generate, GenerateWorldCache::outputDirectory)
+        generate("WorldCache", "WorldCacheGeneratorKt", shared.file("world.geojson"))
+        generate("EarthTextures", "EarthTextureGenerator", shared.dir("textures"))
 
         val compileMaterials = tasks.register<CompileMaterials>(
             "compile${variant.name.replaceFirstChar { it.uppercase() }}Materials",

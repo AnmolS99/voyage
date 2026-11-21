@@ -2,11 +2,9 @@ package com.anmol.voyage.ui.globe
 
 import android.content.res.AssetManager
 import android.graphics.Bitmap
-import android.util.Log
 import android.view.Surface
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import com.anmol.voyage.data.CompressedEarthTexture
 import com.anmol.voyage.globe.GlobeCamera
 import com.anmol.voyage.globe.MarkerMesh
 import com.anmol.voyage.globe.MicrostateDot
@@ -62,23 +60,6 @@ internal class GlobeRenderer(assets: AssetManager) {
     private val cameraEntity: Int = EntityManager.get().create()
     private val camera: Camera = engine.createCamera(cameraEntity)
     private val materials: GlobeMaterials = GlobeMaterials.build(engine, assets)
-
-    /**
-     * The widest [CompressedEarthTexture] this GPU takes, or 0 if it takes
-     * none. ASTC is required from OpenGL ES 3.2 and has been in every phone
-     * GPU since about 2015; a GPU without it, or one that stops short of the
-     * image's width, keeps the 4096 px bitmap.
-     *
-     * Filament before 1.79 reported ASTC only on GPUs that also had its HDR
-     * profile, which ruled out GPUs like the Galaxy A55's Xclipse 530 that
-     * sample these LDR textures perfectly well — keep Filament at 1.79 or later.
-     */
-    val maxCompressedTextureWidth: Int = run {
-        val astc = Texture.isTextureFormatSupported(engine, Texture.InternalFormat.RGBA_ASTC_4x4)
-        val widest = Texture.getMaxTextureSize(engine, Texture.Sampler.SAMPLER_2D)
-        Log.i(TAG, "GPU textures: up to $widest px, ASTC ${if (astc) "supported" else "unsupported"}")
-        if (astc) widest else 0
-    }
 
     private var swapChain: SwapChain? = null
     private var viewportWidth = 0
@@ -317,7 +298,7 @@ internal class GlobeRenderer(assets: AssetManager) {
             val visible = !globeCamera.isBeyondHorizon(sector.mesh.center, sector.mesh.boundingRadius)
             if (sector.visible == visible) continue
             sector.visible = visible
-            if (visible) scene.addEntity(sector.entity) else scene.remove(sector.entity)
+            if (visible) scene.addEntity(sector.entity) else scene.removeEntity(sector.entity)
         }
     }
 
@@ -410,23 +391,18 @@ internal class GlobeRenderer(assets: AssetManager) {
     }
 
     /**
-     * Paints the ocean sphere with [detail] — the image at full size — or with
-     * [image] until that exists, or flat [fallback] when there is neither — iOS
-     * keeps its plain ocean color when `UIImage(named:)` comes back empty.
+     * Paints the ocean sphere with [image], or flat [fallback] when there is none
+     * — iOS keeps its plain ocean color when `UIImage(named:)` comes back empty.
      *
      * An upload, so it returns early for the image already on the GPU.
      */
-    fun setEarthTexture(image: Bitmap?, detail: CompressedEarthTexture?, fallback: Color) {
-        val source: Any = detail ?: image ?: fallback
+    fun setEarthTexture(image: Bitmap?, fallback: Color) {
+        val source: Any = image ?: fallback
         if (source == earthSource) return
 
-        val texture = if (detail != null) {
-            uploadTexture(detail)
-        } else {
-            uploadTexture(
-                image ?: Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(fallback.toArgb()) },
-            )
-        }
+        val bitmap = image
+            ?: Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(fallback.toArgb()) }
+        val texture = uploadTexture(bitmap)
 
         oceanMaterial?.setParameter("earth", texture, earthSampler)
         // Only once nothing samples the old one.
@@ -453,32 +429,6 @@ internal class GlobeRenderer(assets: AssetManager) {
     /** Hard light's identity: 128 of 255, which shifts a color by under one 8-bit step. */
     private fun neutralRelief(): Bitmap =
         Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.rgb(128, 128, 128)) }
-
-    /**
-     * Uploads [detail], every level as it was compressed: the GPU cannot
-     * generate mipmaps for a compressed texture, so the file carries them.
-     */
-    private fun uploadTexture(detail: CompressedEarthTexture): Texture {
-        val texture = Texture.Builder()
-            .width(detail.width)
-            .height(detail.height)
-            .levels(detail.levels.size)
-            .sampler(Texture.Sampler.SAMPLER_2D)
-            // Not SRGB8_ALPHA8_ASTC_4x4 — see the ocean material.
-            .format(Texture.InternalFormat.RGBA_ASTC_4x4)
-            .build(engine)
-        detail.levels.forEachIndexed { level, data ->
-            // duplicate(): Filament consumes the buffer it is given, and these
-            // are shared with every engine this process creates.
-            val bytes = data.duplicate()
-            texture.setImage(
-                engine,
-                level,
-                Texture.PixelBufferDescriptor(bytes, Texture.CompressedType.RGBA_ASTC_4x4, bytes.remaining()),
-            )
-        }
-        return texture
-    }
 
     /** Uploads [bitmap] as a mipmapped texture owned by this engine. */
     private fun uploadTexture(bitmap: Bitmap): Texture {
@@ -589,7 +539,7 @@ internal class GlobeRenderer(assets: AssetManager) {
 
     /** A scene is a set, so adding a present entity or removing an absent one does nothing. */
     private fun setShown(entity: Int, shown: Boolean) {
-        if (shown) scene.addEntity(entity) else scene.remove(entity)
+        if (shown) scene.addEntity(entity) else scene.removeEntity(entity)
     }
 
     /**
@@ -740,7 +690,7 @@ internal class GlobeRenderer(assets: AssetManager) {
     }
 
     private fun destroy(renderable: Renderable) {
-        scene.remove(renderable.entity)
+        scene.removeEntity(renderable.entity)
         engine.destroyEntity(renderable.entity)
         EntityManager.get().destroy(renderable.entity)
         engine.destroyVertexBuffer(renderable.vertexBuffer)
@@ -758,7 +708,7 @@ internal class GlobeRenderer(assets: AssetManager) {
         releaseSelectedOutline()
         releaseCapitalSeal()
         for (entity in entities) {
-            scene.remove(entity)
+            scene.removeEntity(entity)
             engine.destroyEntity(entity)
             EntityManager.get().destroy(entity)
         }
@@ -779,8 +729,6 @@ internal class GlobeRenderer(assets: AssetManager) {
     }
 
     companion object {
-        private const val TAG = "GlobeRenderer"
-
         /** Well inside `GlobeCamera.MIN_DISTANCE - 1`, as iOS's zNear is. */
         private const val NEAR_PLANE = 0.01
         private const val FAR_PLANE = 100.0
@@ -807,7 +755,7 @@ internal class GlobeRenderer(assets: AssetManager) {
          * How many Filament engines this process has built.
          *
          * An engine is the globe's expensive possession — it carries the
-         * compiled materials, 182 uploaded meshes and an Earth
+         * compiled materials, 182 uploaded meshes and a 4096 x 2048 Earth
          * texture — and the Android plan's 7.11 says there is one per Activity.
          * That is not something a reader of [GlobeSurfaceHost] can check, so
          * `GlobeEngineLifetimeTest` counts them across tab and view-mode

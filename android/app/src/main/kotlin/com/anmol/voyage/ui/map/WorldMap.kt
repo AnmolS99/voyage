@@ -1,40 +1,29 @@
 package com.anmol.voyage.ui.map
 
-import android.graphics.Paint
-import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntSize
 import com.anmol.voyage.data.CountryHitTester
 import com.anmol.voyage.data.GeoJsonCountry
 import com.anmol.voyage.ui.theme.VoyagePalette
 import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-
-/** How long the view must hold still before the map decodes detail for it. */
-private const val DETAIL_SETTLE_MILLIS = 80L
 
 /** The widest border, in device pixels, still drawn as a hairline — see the border loop. */
 private const val HAIRLINE_MAX_PX = 2f
@@ -56,8 +45,6 @@ private val HAIRLINE = Stroke(width = 0f)
  *   are still being built, which draws the ocean alone.
  * @param texture the Earth image under the countries. Null draws a flat ocean and
  *   land-green countries instead — iOS's fallback when its image is missing.
- * @param detail the same image at full size, drawn over [texture] a tile at a
- *   time wherever the map magnifies it. Null when [texture] is the whole image.
  * @param relief the shaded-relief layer, hard-lit over the texture and the fills
  *   but under the borders and markers — what the globe's materials do. Null
  *   draws the world unshaded.
@@ -71,7 +58,6 @@ fun WorldMap(
     projection: MapProjection,
     texture: ImageBitmap?,
     modifier: Modifier = Modifier,
-    detail: MapDetail? = null,
     relief: ImageBitmap? = null,
     darkTheme: Boolean = isSystemInDarkTheme(),
 ) {
@@ -89,20 +75,6 @@ fun WorldMap(
     val hasTexture = texture != null
     val sizes = rememberMarkerSizes()
     val starPath = rememberCapitalStarPath()
-
-    if (detail != null && texture != null) {
-        LaunchedEffect(detail, projection, texture) {
-            snapshotFlow { detail.grid.visible(projection, scale, offset.x, offset.y, texture.width) }
-                .collectLatest { tiles ->
-                    // A pinch or a pan passes through tiles it will not stop
-                    // on; wait for it to settle on some before decoding them.
-                    delay(DETAIL_SETTLE_MILLIS)
-                    detail.show(tiles)
-                }
-        }
-    }
-    val detailPaint = remember { Paint().apply { isFilterBitmap = true } }
-    val detailRect = remember { RectF() }
 
     Canvas(
         modifier = modifier
@@ -191,35 +163,6 @@ fun WorldMap(
                     image = texture,
                     dstSize = IntSize(projection.mapWidth.roundToInt(), projection.mapHeight.roundToInt()),
                 )
-            }
-
-            // The image itself, where the bitmap above is being magnified.
-            // Each tile was decoded a pixel wider than it is, and is clipped
-            // back to itself — see MapDetailGrid.decodedBounds.
-            if (detail != null && texture != null) {
-                val perPixelX = projection.mapWidth / detail.grid.imageWidth
-                val perPixelY = projection.mapHeight / detail.grid.imageHeight
-                drawIntoCanvas { canvas ->
-                    for ((tile, bitmap) in detail.tiles) {
-                        val bounds = detail.grid.bounds(tile)
-                        val decoded = detail.grid.decodedBounds(tile)
-                        canvas.save()
-                        canvas.clipRect(
-                            bounds.left * perPixelX,
-                            bounds.top * perPixelY,
-                            bounds.right * perPixelX,
-                            bounds.bottom * perPixelY,
-                        )
-                        detailRect.set(
-                            decoded.left * perPixelX,
-                            decoded.top * perPixelY,
-                            decoded.right * perPixelX,
-                            decoded.bottom * perPixelY,
-                        )
-                        canvas.nativeCanvas.drawBitmap(bitmap, null, detailRect, detailPaint)
-                        canvas.restore()
-                    }
-                }
             }
 
             val styles = paths.map { scene.styleFor(it.name, hasTexture) }

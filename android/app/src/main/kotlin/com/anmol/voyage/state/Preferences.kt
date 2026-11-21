@@ -29,7 +29,8 @@ enum class ViewMode {
  * same documents.
  *
  * @property textureAsset the style's image under `shared/data/` — the same file
- *   iOS bundles as `GlobeStyle.textureName`.
+ *   iOS bundles as `GlobeStyle.textureName`. The app packages it at
+ *   `EarthTextureFiles.packagedAsset`, no wider than it is shown.
  */
 @Serializable
 enum class GlobeStyle(val textureAsset: String) {

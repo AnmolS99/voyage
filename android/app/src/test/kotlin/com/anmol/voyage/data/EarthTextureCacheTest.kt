@@ -1,7 +1,9 @@
 package com.anmol.voyage.data
 
-import com.anmol.voyage.data.EarthTextureCache.Companion.MAX_TEXTURE_WIDTH
-import com.anmol.voyage.data.EarthTextureCache.Companion.sampleSizeFor
+import com.anmol.voyage.data.EarthTextureFiles.MAX_WIDTH
+import com.anmol.voyage.data.EarthTextureFiles.packagedAsset
+import com.anmol.voyage.data.EarthTextureFiles.sampleSizeFor
+import com.anmol.voyage.state.GlobeStyle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,7 +31,17 @@ class EarthTextureCacheTest {
         for (width in listOf(4097, 10_000, 16_384, 20_000)) {
             val sample = sampleSizeFor(width)
             assertEquals("sample $sample is not a power of two", 0, sample and (sample - 1))
-            assertTrue("$width / $sample is still too wide", width / sample <= MAX_TEXTURE_WIDTH)
+            assertTrue("$width / $sample is still too wide", width / sample <= MAX_WIDTH)
+        }
+    }
+
+    @Test
+    fun `every texture is packaged under its own name, outside the directory the build leaves out`() {
+        val shared = GlobeStyle.entries.map { it.textureAsset } + EarthTextureCache.RELIEF_ASSET
+        for (asset in shared) {
+            val packaged = packagedAsset(asset)
+            assertEquals(asset.substringAfterLast('/'), packaged.substringAfterLast('/'))
+            assertEquals(EarthTextureFiles.PACKAGED_DIRECTORY, packaged.substringBeforeLast('/'))
         }
     }
 }
