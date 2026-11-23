@@ -76,6 +76,8 @@ Run `testGlobeAndMapCountryConsistency` to verify map and globe are in sync.
 
 Visited/wishlist countries, checked cities/attractions, and daily challenge results are stored in UserDefaults + iCloud (merged across devices). Challenge game statistics and trophies are stored locally only, since their counters can't be merged safely across devices. Data is independent of `globe.scn`.
 
+The daily games send results to Supabase under an anonymous identity that follows the player across their devices, with no account. See [docs/DEVICE_IDENTITY.md](docs/DEVICE_IDENTITY.md) for how it works.
+
 ### Country Highlights Data
 
 `country_highlights.json` contains 1-5 top cities and 1-5 top attractions for all 207 countries/territories. The data was compiled by cross-referencing at least 3 sources per country (Lonely Planet, TripAdvisor, Touropia, PlanetWare, Atlas Obscura, Culture Trip, Wikipedia tourism pages, official tourism boards, and regional travel blogs).

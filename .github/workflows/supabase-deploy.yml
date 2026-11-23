@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: List the migrations that would be applied, without applying them
+        description: List the migrations and config changes that would be applied, without applying them
         type: boolean
         default: true
 
@@ -47,4 +47,13 @@ jobs:
             supabase db push --dry-run --workdir shared
           else
             supabase db push --workdir shared
+          fi
+
+      # After the migrations, because auth hooks point at functions they create.
+      - name: Push config
+        run: |
+          changes=$(supabase config diff --workdir shared --output-format json)
+          echo "$changes" | jq -r '.changes[] | "\(.path | join(".")): \(.remote | tojson) -> \(.local | tojson)"'
+          if [ "$DRY_RUN" != "true" ] && [ "$(echo "$changes" | jq '.changes | length')" -gt 0 ]; then
+            supabase config push --workdir shared --yes
           fi
