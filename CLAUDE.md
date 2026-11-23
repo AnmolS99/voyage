@@ -43,6 +43,16 @@ Supabase URL and key.
 
 Android, from `android/`: see [docs/ANDROID_DEVELOPMENT.md](docs/ANDROID_DEVELOPMENT.md).
 
+Supabase pgTAP tests, from the repo root (`supabase-test.yml` runs them on PRs):
+
+```bash
+supabase db start --workdir shared && supabase test db --workdir shared
+```
+
+Every new table enables RLS in the migration that creates it, and client roles
+get only the grants it needs. **Never `supabase db push` locally**: migrations
+reach production through `supabase-deploy.yml` (dry run first).
+
 **Never sign, archive or upload locally.** Builds and store listings go through
 GitHub Actions only: `testflight.yml`, `play-internal.yml` (Android has no PR
 CI — this runs its tests and lint), `store-listing.yml`. Use the matching skills.
