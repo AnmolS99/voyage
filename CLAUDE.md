@@ -50,8 +50,10 @@ supabase db start --workdir shared && supabase test db --workdir shared
 ```
 
 Every new table enables RLS in the migration that creates it, and client roles
-get only the grants it needs. **Never `supabase db push` locally**: migrations
-reach production through `supabase-deploy.yml` (dry run first).
+get only the grants it needs. **Never `supabase db push` or `config push`
+locally**: migrations and `config.toml` reach production through
+`supabase-deploy.yml` (dry run first). The base config applies to production
+too, except keys overridden in `[remotes.production]`.
 
 **Never sign, archive or upload locally.** Builds and store listings go through
 GitHub Actions only: `testflight.yml`, `play-internal.yml` (Android has no PR
