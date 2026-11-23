@@ -10,24 +10,20 @@ that the app generates and the player never sees.
 ## The pieces
 
 ```mermaid
-flowchart LR
-  subgraph Phone["Each device"]
-    App["voyage app"]
-    Session["Supabase session<br/>(access + refresh token)<br/>stays on this device"]
-  end
-  subgraph Sync["iCloud Keychain / Google Block Store"]
-    Cred["Device credential<br/>email: #lt;uuid#gt;@device.voyage.invalid<br/>password: 64 random hex chars"]
+flowchart TB
+  Cred["Device credential<br/>#lt;uuid#gt;@device.voyage.invalid + random password"]
+  subgraph Device["Each device"]
+    App["voyage app"] --- Session["Own session<br/>access + refresh token"]
   end
   subgraph Supabase
-    Auth["Auth (GoTrue)<br/>auth.users · auth.sessions"]
+    Auth["Auth<br/>auth.users · auth.sessions"]
     Hook["hook_before_user_created"]
-    DB["public.profiles<br/>(later: results, friends)"]
+    DB["public.profiles"]
   end
-  App <--> Cred
-  App <--> Session
+  Cred <-- "synced by iCloud Keychain / Block Store" --> App
   App -- "sign up / sign in" --> Auth
-  Auth -- "check before creating a user" --> Hook
-  Auth -- "trigger on insert" --> DB
+  Auth -. "allowed?" .-> Hook
+  Auth -- "trigger" --> DB
 ```
 
 | Piece | What it is | Where |
