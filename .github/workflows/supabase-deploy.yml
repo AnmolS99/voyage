@@ -1,0 +1,50 @@
+name: Supabase Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List the migrations that would be applied, without applying them
+        type: boolean
+        default: true
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    uses: ./.github/workflows/supabase-test.yml
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: 2.120.0
+
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --workdir shared
+
+      - name: Push migrations
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            supabase db push --dry-run --workdir shared
+          else
+            supabase db push --workdir shared
+          fi
