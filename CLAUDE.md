@@ -20,7 +20,7 @@ shared/    data/ (geojson, highlights, aliases, textures, fonts, journey/),
            fixtures/expected_countries.json, supabase/
 web/       Marketing site + /privacy (see web/README.md)
 scripts/   Data generation scripts
-docs/      ANDROID_DEVELOPMENT.md, DATA.md
+docs/      ANDROID_DEVELOPMENT.md, DATA.md, DEVICE_IDENTITY.md
 ```
 
 `shared/data/` is used in place by both apps — edit it there, never copy it per
