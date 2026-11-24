@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Generate the shared country neighbour graph and border distances.
 
-Which countries border each other, and how far apart every pair of outlines
-is, from shared/data/world.geojson plus a short, hand-reviewed list of links
-(shared/data/neighbor_links.json). Both apps read the graph and the distances,
-and Postgres reads the graph (Travel is scored on the server; Heat scores only
+Which countries border each other, how many borders apart and how many km
+apart every pair is, from shared/data/world.geojson plus a short, hand-reviewed
+list of links (shared/data/neighbor_links.json). Both apps read all three, and
+Postgres reads the graph (Travel is scored on the server; Heat scores only
 count taps), so the daily Travel route and the Heat colour come out the same
 everywhere:
 
   shared/data/neighbors.json                  ISO -> sorted neighbour ISOs, and the graph version
+  shared/data/border_crossings.json           fewest borders crossed between every pair, upper triangle
   shared/data/border_distances.json           km between every pair, upper triangle
   shared/fixtures/daily/graph.json            test vectors for both apps and pgTAP
   shared/supabase/migrations/*_load_country_graph.sql
@@ -30,6 +31,12 @@ Rules (restated in docs/DATA.md):
   which the server never sees). The apps read it from neighbors.json and
   Postgres returns it from country_graph_version(), so a Travel answer made
   on an older app's graph can be told apart from one on the server's.
+* The **border crossings** between two countries are the fewest borders a
+  route over the graph crosses: 0 for the same country, 1 for neighbours, -1
+  when no route exists. Travel needs nothing else from routes: the shortest
+  one has crossings - 1 countries in between, and a country is on some
+  shortest route from A to B exactly when crossings(A, X) + crossings(X, B)
+  == crossings(A, B). So the routes are never searched for at runtime.
 * The **border distance** is the great-circle distance in km between the
   closest points of two outlines (a point country's outline is its point, and
   a point inside a polygon is 0 km from it), rounded to an integer. It is 0
@@ -66,6 +73,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SOURCE = REPO_ROOT / "shared/data/world.geojson"
 LINKS = REPO_ROOT / "shared/data/neighbor_links.json"
 NEIGHBORS = REPO_ROOT / "shared/data/neighbors.json"
+CROSSINGS = REPO_ROOT / "shared/data/border_crossings.json"
 DISTANCES = REPO_ROOT / "shared/data/border_distances.json"
 VECTORS = REPO_ROOT / "shared/fixtures/daily/graph.json"
 MIGRATIONS = REPO_ROOT / "shared/supabase/migrations"
@@ -82,11 +90,12 @@ CHUNK = 16
 TOUCHING_CHORD = 1e-9
 
 # What graph.json pins. Neighbour sets for a spread of countries (enclaves,
-# many neighbours, islands, curated links, point countries); shortest routes
-# that are unique, tied, long, through a link, impossible and trivial; and
-# distances across one border, one strait and half the world.
+# many neighbours, islands, curated links, point countries); crossings for
+# pairs that are neighbours, the same, far apart, joined through a link and
+# not joined at all; and distances across one border, one strait and half the
+# world.
 VECTOR_NEIGHBORS = ["FR", "DE", "CN", "LS", "VA", "GB", "AU", "SG"]
-VECTOR_ROUTES = [
+VECTOR_CROSSINGS = [
     ("FR", "DE"), ("FR", "FR"), ("PT", "DE"), ("ES", "PL"), ("NO", "IT"),
     ("GB", "IT"), ("DK", "AT"), ("FI", "TR"), ("MX", "AR"), ("ZA", "KE"),
     ("FR", "AU"), ("IS", "NO"),
@@ -354,44 +363,22 @@ def build_graph(countries: list[Country], raw_km: list[list[float]], links: list
     return codes, index, sorted_neighbors, km
 
 
-def shortest_routes(neighbors: dict[str, list[str]], start: str, goal: str) -> list[list[str]]:
-    """Every shortest route from start to goal, both ends included, sorted.
-
-    [start] alone when they are the same country; empty when no route exists
-    or a code is unknown.
-
-    Breadth-first from start, then the routes walk back through each
-    country's predecessors one step closer. The apps and Postgres implement
-    the same thing; graph.json pins them to this one.
-    """
-    if start not in neighbors or goal not in neighbors:
-        return []
-    if start == goal:
-        return [[start]]
-    depth = {start: 0}
-    queue = deque([start])
-    while queue:
-        current = queue.popleft()
-        if current == goal:
-            break
-        for next_code in neighbors[current]:
-            if next_code not in depth:
-                depth[next_code] = depth[current] + 1
-                queue.append(next_code)
-    if goal not in depth:
-        return []
-
-    def back(code: str) -> list[list[str]]:
-        if code == start:
-            return [[start]]
-        return [
-            route + [code]
-            for previous in neighbors[code]
-            if depth.get(previous) == depth[code] - 1
-            for route in back(previous)
-        ]
-
-    return sorted(back(goal))
+def border_crossings(codes: list[str], neighbors: dict[str, list[str]]) -> list[list[int]]:
+    """Fewest borders crossed between every pair, -1 when no route exists (breadth-first from each)."""
+    index = {code: i for i, code in enumerate(codes)}
+    crossings = []
+    for start in codes:
+        row = [-1] * len(codes)
+        row[index[start]] = 0
+        queue = deque([start])
+        while queue:
+            current = queue.popleft()
+            for next_code in neighbors[current]:
+                if row[index[next_code]] < 0:
+                    row[index[next_code]] = row[index[current]] + 1
+                    queue.append(next_code)
+        crossings.append(row)
+    return crossings
 
 
 def graph_version(neighbors: dict[str, list[str]]) -> str:
@@ -433,41 +420,35 @@ def render_neighbors(codes, neighbors, version) -> str:
     )
 
 
-def render_distances(codes, km) -> str:
-    """Upper triangle: row i holds the km from codes[i] to codes[i+1:], one row per line."""
+def render_triangle(codes, matrix, meaning) -> str:
+    """Upper triangle: row i holds matrix[i][j] for codes[i + 1:], one row per line."""
     rows = [
-        "    " + json.dumps(km[i][i + 1:], separators=(",", ":"))
+        "    " + json.dumps(matrix[i][i + 1:], separators=(",", ":"))
         for i in range(len(codes))
     ]
     return (
         "{\n"
         '  "_generatedBy": "scripts/generate_neighbors.py",\n'
-        '  "_format": "rows[i][k] is the km between codes[i] and codes[i + 1 + k]",\n'
+        f'  "_format": "rows[i][k] is {meaning} between codes[i] and codes[i + 1 + k]",\n'
         f'  "codes": {json.dumps(codes)},\n'
         '  "rows": [\n' + ",\n".join(rows) + "\n  ]\n}\n"
     )
 
 
-def build_vectors(codes, index, neighbors, km, version) -> dict:
-    routes = []
-    for start, goal in VECTOR_ROUTES:
-        found = shortest_routes(neighbors, start, goal)
-        routes.append({
-            "from": start,
-            "to": goal,
-            # Countries in between: 0 for neighbours, -1 when no route exists.
-            "between": len(found[0]) - 2 if found and start != goal else (-1 if not found else 0),
-            "routes": found,
-        })
+def build_vectors(codes, index, neighbors, crossings, km, version) -> dict:
+    def crossing(a, b):
+        found = crossings[index[a]][index[b]]
+        return None if found < 0 else found
+
     return {
         "_generatedBy": "scripts/generate_neighbors.py",
         "_about": (
             "Test vectors pinning the iOS, Android and Postgres graph lookups to the "
-            "generator. 'between' counts the countries strictly between from and to."
+            "generator. 'crossings' is null when no route exists."
         ),
         "version": version,
         "neighbors": {code: neighbors[code] for code in VECTOR_NEIGHBORS},
-        "routes": routes,
+        "crossings": [{"a": a, "b": b, "crossings": crossing(a, b)} for a, b in VECTOR_CROSSINGS],
         "distances": [
             {"a": a, "b": b, "km": km[index[a]][index[b]]} for a, b in VECTOR_DISTANCES
         ],
@@ -483,8 +464,8 @@ def render_vectors(vectors: dict) -> str:
         '  "neighbors": {',
         ",\n".join(f"    {json.dumps(k)}: {json.dumps(v)}" for k, v in vectors["neighbors"].items()),
         "  },",
-        '  "routes": [',
-        ",\n".join("    " + json.dumps(r, separators=(",", ":")) for r in vectors["routes"]),
+        '  "crossings": [',
+        ",\n".join("    " + json.dumps(c, separators=(",", ":")) for c in vectors["crossings"]),
         "  ],",
         '  "distances": [',
         ",\n".join("    " + json.dumps(d, separators=(",", ":")) for d in vectors["distances"]),
@@ -537,20 +518,10 @@ def render_pgtap(vectors: dict) -> str:
             f"  {sql_text_array(expected)},\n"
             f"  'neighbours of {code}'\n);"
         )
-    for route in vectors["routes"]:
-        expected = ", ".join(f"'{json.dumps(r)}'::jsonb" for r in route["routes"])
-        expected_array = f"array[{expected}]::jsonb[]" if route["routes"] else "'{}'::jsonb[]"
-        tests.append(
-            "select is(\n"
-            f"  (select coalesce(array_agg(to_jsonb(r.route) order by r.route), '{{}}')\n"
-            f"     from public.shortest_routes('{route['from']}', '{route['to']}') r),\n"
-            f"  {expected_array},\n"
-            f"  'shortest routes {route['from']} to {route['to']}'\n);"
-        )
     return (
         "-- Generated by scripts/generate_neighbors.py from shared/fixtures/daily/graph.json,\n"
-        "-- the vectors the iOS and Android graph tests read too (Postgres has no distances,\n"
-        "-- so only the graph ones). Do not edit: regenerate.\n"
+        "-- the vectors the iOS and Android graph tests read too (Postgres has the graph alone,\n"
+        "-- so only its version and neighbours). Do not edit: regenerate.\n"
         "begin;\n"
         f"select plan({len(tests)});\n\n"
         + "\n\n".join(tests)
@@ -602,12 +573,14 @@ def main() -> int:
     codes, index, neighbors, km = build_graph(countries, border_distances(countries), links)
     check_graph(codes, neighbors, km, links)
     version = graph_version(neighbors)
-    vectors = build_vectors(codes, index, neighbors, km, version)
+    crossings = border_crossings(codes, neighbors)
+    vectors = build_vectors(codes, index, neighbors, crossings, km, version)
 
     migration = render_migration(codes, neighbors, version)
     outputs = {
         NEIGHBORS: render_neighbors(codes, neighbors, version),
-        DISTANCES: render_distances(codes, km),
+        CROSSINGS: render_triangle(codes, crossings, "the fewest borders crossed (-1: no route)"),
+        DISTANCES: render_triangle(codes, km, "the km"),
         VECTORS: render_vectors(vectors),
         migration_path(migration, args.check): migration,
         PGTAP_VECTORS: render_pgtap(vectors),

@@ -1,6 +1,6 @@
 {
   "_generatedBy": "scripts/generate_neighbors.py",
-  "_about": "Test vectors pinning the iOS, Android and Postgres graph lookups to the generator. 'between' counts the countries strictly between from and to.",
+  "_about": "Test vectors pinning the iOS, Android and Postgres graph lookups to the generator. 'crossings' is null when no route exists.",
   "version": "ddaab188e9a4",
   "neighbors": {
     "FR": ["AD", "BE", "CH", "DE", "ES", "GB", "IT", "LU", "MC"],
@@ -12,19 +12,19 @@
     "AU": [],
     "SG": ["MY"]
   },
-  "routes": [
-    {"from":"FR","to":"DE","between":0,"routes":[["FR","DE"]]},
-    {"from":"FR","to":"FR","between":0,"routes":[["FR"]]},
-    {"from":"PT","to":"DE","between":2,"routes":[["PT","ES","FR","DE"]]},
-    {"from":"ES","to":"PL","between":2,"routes":[["ES","FR","DE","PL"]]},
-    {"from":"NO","to":"IT","between":4,"routes":[["NO","RU","PL","CZ","AT","IT"],["NO","RU","PL","DE","AT","IT"],["NO","RU","PL","DE","CH","IT"],["NO","RU","PL","DE","FR","IT"],["NO","RU","PL","SK","AT","IT"],["NO","RU","UA","HU","AT","IT"],["NO","RU","UA","HU","SI","IT"],["NO","RU","UA","SK","AT","IT"],["NO","SE","DK","DE","AT","IT"],["NO","SE","DK","DE","CH","IT"],["NO","SE","DK","DE","FR","IT"]]},
-    {"from":"GB","to":"IT","between":1,"routes":[["GB","FR","IT"]]},
-    {"from":"DK","to":"AT","between":1,"routes":[["DK","DE","AT"]]},
-    {"from":"FI","to":"TR","between":2,"routes":[["FI","RU","AZ","TR"],["FI","RU","GE","TR"]]},
-    {"from":"MX","to":"AR","between":7,"routes":[["MX","GT","HN","NI","CR","PA","CO","BR","AR"]]},
-    {"from":"ZA","to":"KE","between":2,"routes":[["ZA","MZ","TZ","KE"]]},
-    {"from":"FR","to":"AU","between":-1,"routes":[]},
-    {"from":"IS","to":"NO","between":-1,"routes":[]}
+  "crossings": [
+    {"a":"FR","b":"DE","crossings":1},
+    {"a":"FR","b":"FR","crossings":0},
+    {"a":"PT","b":"DE","crossings":3},
+    {"a":"ES","b":"PL","crossings":3},
+    {"a":"NO","b":"IT","crossings":5},
+    {"a":"GB","b":"IT","crossings":2},
+    {"a":"DK","b":"AT","crossings":2},
+    {"a":"FI","b":"TR","crossings":3},
+    {"a":"MX","b":"AR","crossings":8},
+    {"a":"ZA","b":"KE","crossings":3},
+    {"a":"FR","b":"AU","crossings":null},
+    {"a":"IS","b":"NO","crossings":null}
   ],
   "distances": [
     {"a":"FR","b":"DE","km":0},

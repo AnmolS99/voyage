@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -52,16 +53,32 @@ class CountryGraphTest {
     }
 
     @Test
-    fun `shortest routes match the vectors`() {
-        val expected = vectors.getValue("routes").jsonArray
+    fun `crossings match the vectors, in either order`() {
+        val expected = vectors.getValue("crossings").jsonArray
         assertTrue(expected.isNotEmpty())
         for (vector in expected.map { it.jsonObject }) {
-            val from = vector.getValue("from").jsonPrimitive.content
-            val to = vector.getValue("to").jsonPrimitive.content
-            val routes = graph.shortestRoutes(from, to)
-            assertEquals("$from-$to", vector.getValue("routes").jsonArray.map(::strings), routes)
-            val between = vector.getValue("between").jsonPrimitive.int
-            assertEquals("$from-$to", between, routes.firstOrNull()?.let { maxOf(it.size - 2, 0) } ?: -1)
+            val a = vector.getValue("a").jsonPrimitive.content
+            val b = vector.getValue("b").jsonPrimitive.content
+            val crossings = vector.getValue("crossings").jsonPrimitive.intOrNull
+            assertEquals("$a-$b", crossings, graph.borderCrossings(a, b))
+            assertEquals("$b-$a", crossings, graph.borderCrossings(b, a))
+        }
+    }
+
+    /**
+     * Every pair, not just the vectors: one crossing means neighbours, and each
+     * step of a shortest route brings a neighbour one crossing closer.
+     */
+    @Test
+    fun `crossings are shortest routes over the neighbours`() {
+        for (a in graph.codes) {
+            for (b in graph.codes) {
+                if (a == b) continue
+                val crossings = graph.borderCrossings(a, b)
+                assertEquals("$a-$b", b in graph.neighbors(a), crossings == 1)
+                val closest = graph.neighbors(a).mapNotNull { graph.borderCrossings(it, b) }.minOrNull()
+                assertEquals("$a-$b", closest?.plus(1), crossings)
+            }
         }
     }
 
@@ -96,12 +113,13 @@ class CountryGraphTest {
     }
 
     @Test
-    fun `unknown codes have no neighbours, distance or route`() {
+    fun `unknown codes have no neighbours, distance or crossings`() {
         assertEquals(emptyList<String>(), graph.neighbors("XX"))
         assertNull(graph.borderDistanceKm("FR", "XX"))
-        assertEquals(emptyList<List<String>>(), graph.shortestRoutes("FR", "XX"))
-        assertEquals(emptyList<List<String>>(), graph.shortestRoutes("XX", "XX"))
+        assertNull(graph.borderCrossings("FR", "XX"))
+        assertNull(graph.borderCrossings("XX", "XX"))
         assertEquals(0, graph.borderDistanceKm("FR", "FR"))
+        assertEquals(0, graph.borderCrossings("FR", "FR"))
     }
 
     @Test
@@ -109,6 +127,6 @@ class CountryGraphTest {
         val cache = SharedFiles.countryDataCache()
         assertEquals(graph.neighbors("DE"), cache.neighbors("DE"))
         assertEquals(graph.borderDistanceKm("GB", "IS"), cache.borderDistanceKm("GB", "IS"))
-        assertEquals(graph.shortestRoutes("PT", "PL"), cache.shortestRoutes("PT", "PL"))
+        assertEquals(graph.borderCrossings("PT", "PL"), cache.borderCrossings("PT", "PL"))
     }
 }

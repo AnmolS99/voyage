@@ -1,13 +1,11 @@
 begin;
-select plan(9);
+select plan(7);
 
 select table_privs_are('public', 'country_neighbors', 'anon', array['SELECT'],
   'anon can only read country_neighbors');
 select table_privs_are('public', 'country_neighbors', 'authenticated', array['SELECT'],
   'authenticated can only read country_neighbors');
 
-select function_privs_are('public', 'shortest_routes', array['text', 'text'], 'anon', array['EXECUTE'],
-  'anon can call shortest_routes');
 select function_privs_are('public', 'country_graph_version', array[]::text[], 'anon', array['EXECUTE'],
   'anon can read the graph version');
 
@@ -17,15 +15,14 @@ select is_empty(
   'the border graph is symmetric'
 );
 
-select is_empty($$ select * from public.shortest_routes('FR', 'AU') $$, 'no route to an island');
-select is_empty($$ select * from public.shortest_routes('FR', 'XX') $$, 'no route to an unknown code');
+select is_empty($$ select from public.country_neighbors where a = 'AU' $$, 'an island has no neighbours');
 
 set local role anon;
 select throws_ok($$ insert into public.country_neighbors (a, b) values ('FR', 'AU') $$,
   '42501', null, 'anon cannot add a border');
-select is(
-  (select count(*) from public.shortest_routes('PT', 'DE'))::int, 1,
-  'anon can find routes'
+select ok(
+  exists (select from public.country_neighbors where a = 'PT' and b = 'ES'),
+  'anon can read borders'
 );
 reset role;
 

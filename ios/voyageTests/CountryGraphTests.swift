@@ -7,11 +7,10 @@ import XCTest
 final class CountryGraphTests: XCTestCase {
 
     private struct Vectors: Decodable {
-        struct Route: Decodable {
-            let from: String
-            let to: String
-            let between: Int
-            let routes: [[String]]
+        struct Crossing: Decodable {
+            let a: String
+            let b: String
+            let crossings: Int?
         }
 
         struct Distance: Decodable {
@@ -22,7 +21,7 @@ final class CountryGraphTests: XCTestCase {
 
         let version: String
         let neighbors: [String: [String]]
-        let routes: [Route]
+        let crossings: [Crossing]
         let distances: [Distance]
     }
 
@@ -48,13 +47,25 @@ final class CountryGraphTests: XCTestCase {
         }
     }
 
-    func testShortestRoutesMatchTheVectors() {
-        XCTAssertFalse(Self.vectors.routes.isEmpty)
-        for vector in Self.vectors.routes {
-            let routes = cache.shortestRoutes(from: vector.from, to: vector.to)
-            XCTAssertEqual(routes, vector.routes, "\(vector.from)-\(vector.to)")
-            let between = routes.first.map { max($0.count - 2, 0) } ?? -1
-            XCTAssertEqual(between, vector.between, "\(vector.from)-\(vector.to)")
+    func testCrossingsMatchTheVectorsInEitherOrder() {
+        XCTAssertFalse(Self.vectors.crossings.isEmpty)
+        for vector in Self.vectors.crossings {
+            XCTAssertEqual(cache.borderCrossings(vector.a, vector.b), vector.crossings, "\(vector.a)-\(vector.b)")
+            XCTAssertEqual(cache.borderCrossings(vector.b, vector.a), vector.crossings, "\(vector.b)-\(vector.a)")
+        }
+    }
+
+    /// Every pair, not just the vectors: one crossing means neighbours, and
+    /// each step of a shortest route brings a neighbour one crossing closer.
+    func testCrossingsAreShortestRoutesOverTheNeighbours() {
+        let graph = cache.countryGraph
+        for a in graph.codes {
+            for b in graph.codes where b != a {
+                let crossings = graph.borderCrossings(a, b)
+                XCTAssertEqual(crossings == 1, graph.neighbors(of: a).contains(b), "\(a)-\(b)")
+                let closest = graph.neighbors(of: a).compactMap { graph.borderCrossings($0, b) }.min()
+                XCTAssertEqual(crossings, closest.map { $0 + 1 }, "\(a)-\(b)")
+            }
         }
     }
 
@@ -85,11 +96,12 @@ final class CountryGraphTests: XCTestCase {
         XCTAssertEqual(cache.countryGraph.codes, countries)
     }
 
-    func testUnknownCodesHaveNoNeighboursDistanceOrRoute() {
+    func testUnknownCodesHaveNoNeighboursDistanceOrCrossings() {
         XCTAssertEqual(cache.neighbors(of: "XX"), [])
         XCTAssertNil(cache.borderDistanceKm("FR", "XX"))
-        XCTAssertEqual(cache.shortestRoutes(from: "FR", to: "XX"), [])
-        XCTAssertEqual(cache.shortestRoutes(from: "XX", to: "XX"), [])
+        XCTAssertNil(cache.borderCrossings("FR", "XX"))
+        XCTAssertNil(cache.borderCrossings("XX", "XX"))
         XCTAssertEqual(cache.borderDistanceKm("FR", "FR"), 0)
+        XCTAssertEqual(cache.borderCrossings("FR", "FR"), 0)
     }
 }

@@ -25,6 +25,7 @@
 		E81234560210 /* CountryGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550210 /* CountryGraph.swift */; };
 		E81234560211 /* CountryGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550211 /* CountryGraphTests.swift */; };
 		E81234560212 /* neighbors.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550212 /* neighbors.json */; };
+		E81234560215 /* border_crossings.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550215 /* border_crossings.json */; };
 		E81234560213 /* border_distances.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550213 /* border_distances.json */; };
 		E81234560214 /* graph.json in Resources */ = {isa = PBXBuildFile; fileRef = E81234550214 /* graph.json */; };
 		E81234560001 /* voyageApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81234550001 /* voyageApp.swift */; };
@@ -131,6 +132,7 @@
 		E81234550210 /* CountryGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryGraph.swift; sourceTree = "<group>"; };
 		E81234550211 /* CountryGraphTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryGraphTests.swift; sourceTree = "<group>"; };
 		E81234550212 /* neighbors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = neighbors.json; path = "../../shared/data/neighbors.json"; sourceTree = "<group>"; };
+		E81234550215 /* border_crossings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = border_crossings.json; path = "../../shared/data/border_crossings.json"; sourceTree = "<group>"; };
 		E81234550213 /* border_distances.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = border_distances.json; path = "../../shared/data/border_distances.json"; sourceTree = "<group>"; };
 		E81234550214 /* graph.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = graph.json; path = "../../shared/fixtures/daily/graph.json"; sourceTree = "<group>"; };
 		B1E45CC8ADE549506CFBEC19 /* CountryDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryDataCache.swift; sourceTree = "<group>"; };
@@ -291,6 +293,7 @@
 				E81234550035 /* country_highlights.json */,
 				E81234550105 /* country_aliases.json */,
 				E81234550212 /* neighbors.json */,
+				E81234550215 /* border_crossings.json */,
 				E81234550213 /* border_distances.json */,
 				E81234550151 /* timezone_locations.json */,
 				E81234550108 /* journey */,
@@ -494,6 +497,7 @@
 				E81234560035 /* country_highlights.json in Resources */,
 				E81234560105 /* country_aliases.json in Resources */,
 				E81234560212 /* neighbors.json in Resources */,
+				E81234560215 /* border_crossings.json in Resources */,
 				E81234560213 /* border_distances.json in Resources */,
 				E81234560151 /* timezone_locations.json in Resources */,
 				E81234560108 /* journey in Resources */,
