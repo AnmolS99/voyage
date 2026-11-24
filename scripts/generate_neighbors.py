@@ -184,11 +184,15 @@ def contains(country: Country, lon: float, lat: float) -> bool:
 
 
 def segment_distances(p1, q1, p2, q2) -> np.ndarray:
-    """Closest distance between each pair of 3D segments (p1q1, p2q2), broadcast.
+    """Chord between the closest points of each pair of outline segments, broadcast.
 
-    Chords of the unit sphere: a crossing pair of outline segments comes out
-    as (nearly) 0, which a vertex-to-segment search would miss. Ericson,
-    Real-Time Collision Detection, 5.1.9, with every branch as a `where`.
+    The closest points are found between the segments as chords of the unit
+    sphere (Ericson, Real-Time Collision Detection, 5.1.9, with every branch as
+    a `where`), so a crossing pair comes out as (nearly) 0, which a
+    vertex-to-segment search would miss. They are then projected onto the
+    sphere, which puts them on the segments' great-circle arcs: chords dip
+    below the surface, and measuring between them would make far-apart
+    outlines come out too close (about 5 km under a 500 km segment).
     """
     d1 = q1 - p1
     d2 = q2 - p2
@@ -211,8 +215,10 @@ def segment_distances(p1, q1, p2, q2) -> np.ndarray:
     # Degenerate segments (points).
     s = np.where(a_zero, 0.0, np.where(e_zero, np.clip(-c / a_safe, 0, 1), s))
     t = np.where(e_zero, 0.0, np.where(a_zero, np.clip(f / e_safe, 0, 1), t))
-    closest = (p1 + d1 * s[..., None]) - (p2 + d2 * t[..., None])
-    return np.sqrt(np.einsum("...i,...i", closest, closest))
+    on_1 = p1 + d1 * s[..., None]
+    on_2 = p2 + d2 * t[..., None]
+    gap = on_1 / np.linalg.norm(on_1, axis=-1, keepdims=True) - on_2 / np.linalg.norm(on_2, axis=-1, keepdims=True)
+    return np.sqrt(np.einsum("...i,...i", gap, gap))
 
 
 def chord_to_km(chord: float) -> float:
@@ -221,7 +227,7 @@ def chord_to_km(chord: float) -> float:
 
 @dataclass
 class Chunks:
-    """CHUNK consecutive segments of one country, with a bounding sphere."""
+    """CHUNK consecutive segments of one country, with a sphere bounding their arcs."""
 
     starts: np.ndarray  # (k, CHUNK, 3), padded by repeating the last segment
     ends: np.ndarray
@@ -238,7 +244,11 @@ def chunks_of(country: Country) -> Chunks:
     e = ends[index].reshape(-1, CHUNK, 3)
     points = np.concatenate([s, e], axis=1)
     centers = points.mean(axis=1)
-    radii = np.linalg.norm(points - centers[:, None, :], axis=2).max(axis=1)
+    # Grown by the most any arc bulges out past its chord (its sag, at the
+    # middle), so each sphere holds the arcs that segment_distances measures on.
+    half_chords = np.linalg.norm(e - s, axis=2) / 2
+    sag = 1 - np.sqrt(1 - np.minimum(half_chords, 1.0) ** 2)
+    radii = np.linalg.norm(points - centers[:, None, :], axis=2).max(axis=1) + sag.max(axis=1)
     return Chunks(s, e, centers, radii)
 
 
