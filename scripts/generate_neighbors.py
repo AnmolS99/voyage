@@ -2,28 +2,30 @@
 """Generate the shared country neighbour graph and border distances.
 
 Which countries border each other, and how far apart every pair of outlines
-is, from shared/data/world.geojson plus a short, hand-reviewed list of fixed
-links (shared/data/neighbor_links.json). Both apps and Postgres read what this
-writes, so the daily Travel route and the Heat colour come out the same
+is, from shared/data/world.geojson plus a short, hand-reviewed list of links
+(shared/data/neighbor_links.json). Both apps read the graph and the distances,
+and Postgres reads the graph (Travel is scored on the server; Heat scores only
+count taps), so the daily Travel route and the Heat colour come out the same
 everywhere:
 
   shared/data/neighbors.json                  ISO -> sorted neighbour ISOs
   shared/data/border_distances.json           km between every pair, upper triangle
   shared/fixtures/daily/graph.json            test vectors for both apps and pgTAP
   shared/supabase/migrations/*_load_country_graph.sql
-                                              the same graph as Postgres rows
+                                              the graph as Postgres rows
   shared/supabase/tests/country_graph_vectors_test.sql
-                                              graph.json as a pgTAP test
+                                              graph.json's graph vectors as a pgTAP test
 
 Rules (restated in docs/DATA.md):
 
-* Two polygon countries are **land neighbours** when their outlines come within
-  TOLERANCE_KM of each other. Natural Earth borders are shared arcs, so real
-  neighbours meet at 0 km; the tolerance only absorbs simplification gaps.
+* Two polygon countries are **land neighbours** when their outlines share a
+  point. Natural Earth borders are shared arcs, and mapshaper simplifies them
+  as one topology, so neighbours share exact coordinates. A border the
+  simplification pulled apart goes in neighbor_links.json (IL-SY).
 * **Point countries** (the microstates drawn as dots) have no outline, so none
   of them borders anything by geometry. Their land borders are listed by hand
   in neighbor_links.json, like the bridges and tunnels.
-* A **curated link** counts as a border: neighbours both ways, 0 km apart.
+* A **link** counts as a border: neighbours both ways, 0 km apart.
 * The **border distance** is the great-circle distance in km between the
   closest points of two outlines (a point country's outline is its point, and
   a point inside a polygon is 0 km from it), rounded to an integer. It is 0
@@ -61,11 +63,6 @@ VECTORS = REPO_ROOT / "shared/fixtures/daily/graph.json"
 MIGRATIONS = REPO_ROOT / "shared/supabase/migrations"
 MIGRATION_SUFFIX = "_load_country_graph.sql"
 PGTAP_VECTORS = REPO_ROOT / "shared/supabase/tests/country_graph_vectors_test.sql"
-
-# Outlines closer than this are neighbours. Shared borders meet at 0 km; this
-# only absorbs simplification gaps (IL-SY, 0.64 km). The closest polygon pair
-# left out is MA-MR at 3.4 km (docs/DATA.md).
-TOLERANCE_KM = 1.0
 
 # Mean Earth radius (IUGG), the one both apps use for great-circle distances.
 EARTH_RADIUS_KM = 6371.0088
@@ -299,18 +296,25 @@ def load_links(path: Path, codes: set[str]) -> list[dict]:
     return links
 
 
+def land_neighbors(countries: list[Country]) -> dict[str, set[str]]:
+    """Polygon countries that share an outline coordinate (point countries never do)."""
+    owners: dict[tuple[float, float], set[str]] = {}
+    for country in countries:
+        for outer, holes in country.polygons:
+            for ring in [outer, *holes]:
+                for lon, lat in ring:
+                    owners.setdefault((lon, lat), set()).add(country.iso)
+    neighbors: dict[str, set[str]] = {c.iso: set() for c in countries}
+    for isos in owners.values():
+        for iso in isos:
+            neighbors[iso] |= isos - {iso}
+    return neighbors
+
+
 def build_graph(countries: list[Country], raw_km: list[list[float]], links: list[dict]):
     codes = [c.iso for c in countries]
     index = {code: i for i, code in enumerate(codes)}
-    neighbors: dict[str, set[str]] = {code: set() for code in codes}
-    for i, a in enumerate(countries):
-        for j in range(i + 1, len(countries)):
-            b = countries[j]
-            if a.is_point or b.is_point:
-                continue  # point countries border only through links
-            if raw_km[i][j] <= TOLERANCE_KM:
-                neighbors[a.iso].add(b.iso)
-                neighbors[b.iso].add(a.iso)
+    neighbors = land_neighbors(countries)
     for link in links:
         a, b = link["between"]
         if b in neighbors[a]:
@@ -459,31 +463,19 @@ def render_vectors(vectors: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def render_migration(codes, neighbors, km) -> str:
+def render_migration(codes, neighbors) -> str:
     edges = [(a, b) for a in codes for b in neighbors[a]]
-    pairs = [
-        (codes[i], codes[j], km[i][j])
-        for i in range(len(codes))
-        for j in range(i + 1, len(codes))
-    ]
     out = [
-        "-- Generated by scripts/generate_neighbors.py from shared/data/neighbors.json and",
-        "-- border_distances.json. Do not edit: regenerate (see docs/DATA.md).",
+        "-- Generated by scripts/generate_neighbors.py from shared/data/neighbors.json.",
+        "-- Do not edit: regenerate (see docs/DATA.md).",
         "--",
         "-- Replaces the whole graph, so the newest of these migrations is the graph.",
         "",
-        "truncate public.country_neighbors, public.country_border_distances;",
+        "truncate public.country_neighbors;",
         "",
         "insert into public.country_neighbors (a, b) values",
     ]
     out.append(",\n".join(f"  ('{a}', '{b}')" for a, b in edges) + ";")
-    out.append("")
-    out.append("insert into public.country_border_distances (a, b, km) values")
-    # Ten pairs per line keeps the file (and its diffs) a manageable height.
-    rows = [f"('{a}', '{b}', {d})" for a, b, d in pairs]
-    out.append(
-        ",\n".join("  " + ", ".join(rows[k:k + 10]) for k in range(0, len(rows), 10)) + ";"
-    )
     return "\n".join(out) + "\n"
 
 
@@ -510,16 +502,10 @@ def render_pgtap(vectors: dict) -> str:
             f"  {expected_array},\n"
             f"  'shortest routes {route['from']} to {route['to']}'\n);"
         )
-    for distance in vectors["distances"]:
-        tests.append(
-            "select is(\n"
-            f"  public.border_distance_km('{distance['a']}', '{distance['b']}'),\n"
-            f"  {distance['km']},\n"
-            f"  'border distance {distance['a']}-{distance['b']}'\n);"
-        )
     return (
         "-- Generated by scripts/generate_neighbors.py from shared/fixtures/daily/graph.json,\n"
-        "-- the vectors the iOS and Android graph tests read too. Do not edit: regenerate.\n"
+        "-- the vectors the iOS and Android graph tests read too (Postgres has no distances,\n"
+        "-- so only the graph ones). Do not edit: regenerate.\n"
         "begin;\n"
         f"select plan({len(tests)});\n\n"
         + "\n\n".join(tests)
@@ -553,7 +539,7 @@ def main() -> int:
         NEIGHBORS: render_neighbors(codes, neighbors),
         DISTANCES: render_distances(codes, km),
         VECTORS: render_vectors(vectors),
-        migration: render_migration(codes, neighbors, km),
+        migration: render_migration(codes, neighbors),
         PGTAP_VECTORS: render_pgtap(vectors),
     }
 

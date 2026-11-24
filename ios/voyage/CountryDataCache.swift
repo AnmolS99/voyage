@@ -59,8 +59,8 @@ final class CountryDataCache {
     }
 
     /// Which countries border each other and how far apart they are
-    /// (`neighbors.json` and `border_distances.json`, shared with Android and
-    /// Postgres). Parsed on first use. See `CountryGraph`.
+    /// (`neighbors.json` and `border_distances.json`, shared with Android).
+    /// Parsed on first use. See `CountryGraph`.
     private(set) lazy var countryGraph: CountryGraph = CountryGraph.load() ?? .empty
 
     /// The countries bordering `isoCode`, sorted. Android `neighbors`.

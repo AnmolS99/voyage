@@ -27,7 +27,7 @@ class CountryGraphTest {
         @BeforeClass
         @JvmStatic
         fun load() {
-            graph = SharedFiles.parseCountryGraph()
+            graph = SharedFiles.countryDataCache().countryGraph
             vectors = Json.parseToJsonElement(
                 SharedFiles.file("shared/fixtures/daily/graph.json").readText(),
             ).jsonObject
@@ -100,7 +100,7 @@ class CountryGraphTest {
     }
 
     @Test
-    fun `the data cache exposes the graph`() {
+    fun `the data cache answers from the graph`() {
         val cache = SharedFiles.countryDataCache()
         assertEquals(graph.neighbors("DE"), cache.neighbors("DE"))
         assertEquals(graph.borderDistanceKm("GB", "IS"), cache.borderDistanceKm("GB", "IS"))

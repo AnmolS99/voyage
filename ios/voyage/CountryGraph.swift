@@ -2,8 +2,8 @@ import Foundation
 
 /// Which countries border each other, and how far apart every pair of
 /// outlines is: the graph `scripts/generate_neighbors.py` writes to
-/// `neighbors.json` and `border_distances.json`, which Android and Postgres
-/// read too. The Android port is `CountryGraph` as well; `CountryGraphTests`
+/// `neighbors.json` and `border_distances.json`, which Android reads too
+/// (Postgres has the graph alone). The Android port is `CountryGraph` as well; `CountryGraphTests`
 /// and its Android twin hold both to `shared/fixtures/daily/graph.json`.
 ///
 /// Reach it through `CountryDataCache.shared` (`neighbors(of:)`,

@@ -1,7 +1,6 @@
 package com.anmol.voyage.data
 
 import java.io.InputStream
-import java.io.OutputStream
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -13,12 +12,13 @@ import kotlinx.serialization.json.decodeFromStream
 /**
  * Which countries border each other, and how far apart every pair of outlines
  * is: the graph `scripts/generate_neighbors.py` writes to `neighbors.json` and
- * `border_distances.json`, which iOS and Postgres read too. The iOS port is
+ * `border_distances.json`, which iOS reads too (Postgres has the graph
+ * alone). The iOS port is
  * `CountryGraph` as well; `CountryGraphTest` and its iOS twin hold both to
  * `shared/fixtures/daily/graph.json`.
  *
- * The app reads it from `country_graph.bin` ([CountryGraphFile]), which the
- * build writes from those two files, through [CountryDataCache.countryGraph].
+ * Reach it through [CountryDataCache.countryGraph], which parses those two
+ * files on first use.
  *
  * @param codes every country's ISO code, sorted.
  * @param neighbors each code's neighbours, sorted.
@@ -100,7 +100,7 @@ class CountryGraph(
 
     companion object {
         /** Where the km for `i < j` sits in [distances]. */
-        fun triangleIndex(i: Int, j: Int, count: Int): Int = i * (2 * count - i - 1) / 2 + (j - i - 1)
+        private fun triangleIndex(i: Int, j: Int, count: Int): Int = i * (2 * count - i - 1) / 2 + (j - i - 1)
 
         /** Element by element, as the generator sorts its route lists. */
         private val routeOrder = Comparator<List<String>> { a, b ->
@@ -110,11 +110,7 @@ class CountryGraph(
     }
 }
 
-/**
- * Reads `neighbors.json` and `border_distances.json` (shared with iOS) into a
- * [CountryGraph]. The build does this once and writes `country_graph.bin`;
- * tests do it to read the shared files directly.
- */
+/** Reads `neighbors.json` and `border_distances.json` (shared with iOS) into a [CountryGraph]. */
 object CountryGraphParser {
 
     const val NEIGHBORS = "neighbors.json"
@@ -138,51 +134,5 @@ object CountryGraphParser {
             neighbors = neighborLists,
             distances = distances.rows.flatten().toIntArray(),
         )
-    }
-}
-
-/**
- * `country_graph.bin`: the [CountryGraph] the build parsed from the shared
- * JSON, so the device reads ints instead of parsing ~120 KB of JSON.
- * `CountryGraphFileTest` holds the round trip to the parse.
- */
-object CountryGraphFile {
-
-    const val NAME = "country_graph.bin"
-
-    private const val MAGIC = 0x56594752 // "VYGR"
-
-    /** Bump when the layout below changes. The app and its assets are always built together. */
-    private const val VERSION = 1
-
-    fun write(graph: CountryGraph, output: OutputStream) {
-        BinaryWriter(output).run {
-            header(MAGIC, VERSION)
-            int(graph.codes.size)
-            graph.codes.forEach { string(it) }
-            val index = graph.codes.withIndex().associate { (i, code) -> code to i }
-            for (code in graph.codes) {
-                ints(graph.neighbors(code).map { index.getValue(it) }.toIntArray())
-            }
-            val count = graph.codes.size
-            val distances = IntArray(count * (count - 1) / 2)
-            for (i in 0 until count) {
-                for (j in i + 1 until count) {
-                    distances[CountryGraph.triangleIndex(i, j, count)] =
-                        checkNotNull(graph.borderDistanceKm(graph.codes[i], graph.codes[j]))
-                }
-            }
-            ints(distances)
-            flush()
-        }
-    }
-
-    fun read(input: InputStream): CountryGraph = BinaryReader(input).run {
-        header(MAGIC, VERSION)
-        val codes = List(size()) { string() }
-        val neighbors = codes.associateWith { ints().map { codes[it] } }
-        val distances = ints()
-        end()
-        CountryGraph(codes, neighbors, distances)
     }
 }

@@ -92,9 +92,7 @@ android {
         // The app reads countries.bin, which the build writes from world.geojson
         // (GenerateAssets, below), so the GeoJSON itself does not ship.
         ignoreAssetsPatterns += "!world.geojson"
-        // Likewise country_graph.bin replaces the border graph's JSON.
-        ignoreAssetsPatterns += "!neighbors.json"
-        ignoreAssetsPatterns += "!border_distances.json"
+        // Read only by scripts/generate_neighbors.py; the app reads its output.
         ignoreAssetsPatterns += "!neighbor_links.json"
         // The app packages 4096 px copies of these instead (EarthTextureGenerator).
         ignoreAssetsPatterns += "!<dir>textures"
@@ -132,8 +130,7 @@ abstract class GenerateAssets : JavaExec() {
         val output = outputDirectory.get().asFile
         // Only what this run writes — never a file an older generator left behind.
         output.deleteRecursively()
-        // The program's inputs in the order they were added, then where to write.
-        setArgs(source.files.map { it.path } + output.path)
+        setArgs(listOf(source.singleFile.path, output.path))
         super.exec()
     }
 }
@@ -209,25 +206,19 @@ val worldCacheTool: Configuration by configurations.creating {
 androidComponents {
     onVariants { variant ->
         val shared = layout.projectDirectory.dir("../../shared/data")
-        fun generate(name: String, main: String, vararg from: FileSystemLocation) {
+        fun generate(name: String, main: String, from: FileSystemLocation) {
             val task = tasks.register<GenerateAssets>(
                 "generate${variant.name.replaceFirstChar { it.uppercase() }}$name",
             ) {
                 classpath = worldCacheTool
                 mainClass = "com.anmol.voyage.tools.$main"
-                source.from(*from)
+                source.from(from)
             }
             // AGP chooses the directory, and packages whatever lands in it as assets.
             variant.sources.assets?.addGeneratedSourceDirectory(task, GenerateAssets::outputDirectory)
         }
         generate("WorldCache", "WorldCacheGeneratorKt", shared.file("world.geojson"))
         generate("EarthTextures", "EarthTextureGenerator", shared.dir("textures"))
-        generate(
-            "CountryGraph",
-            "CountryGraphGeneratorKt",
-            shared.file("neighbors.json"),
-            shared.file("border_distances.json"),
-        )
 
         val compileMaterials = tasks.register<CompileMaterials>(
             "compile${variant.name.replaceFirstChar { it.uppercase() }}Materials",

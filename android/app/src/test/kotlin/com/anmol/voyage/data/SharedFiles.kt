@@ -33,13 +33,6 @@ object SharedFiles {
     fun countryDataCache(): CountryDataCache = CountryDataCache(
         openAsset = { name -> open("shared/data/$name") },
         loadCountries = { parseCountries() },
-        loadCountryGraph = { parseCountryGraph() },
-    )
-
-    /** `neighbors.json` and `border_distances.json`, parsed — what the build writes into `country_graph.bin`. */
-    fun parseCountryGraph(): CountryGraph = CountryGraphParser.parse(
-        open("shared/data/${CountryGraphParser.NEIGHBORS}"),
-        open("shared/data/${CountryGraphParser.BORDER_DISTANCES}"),
     )
 
     fun openFixture(): InputStream = open("shared/fixtures/expected_countries.json")

@@ -35,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The graph tables are loaded from generated migrations, so a stale one
+      # The graph table is loaded from a generated migration, so a stale one
       # would ship stale borders. Also guards the JSON both apps read.
       - name: Check the country graph is current
         run: |
