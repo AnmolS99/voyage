@@ -55,9 +55,11 @@ Rules:
 
 - **Land neighbours:** two polygon countries whose outlines share a point. Natural
   Earth borders are shared arcs and mapshaper simplifies them as one topology, so
-  neighbours share exact coordinates. The one border simplification pulled apart,
-  IL–SY (0.6 km along the Golan line), is listed in `neighbor_links.json`. If it
-  ever comes back by geometry, the script fails until the link is removed.
+  neighbours share exact coordinates. Land borders the geometry loses are listed
+  in `neighbor_links.json`: IL–SY, which simplification pulls 0.6 km apart along
+  the Golan line, and CA–GL, whose only land border is on Hans Island, below the
+  10 km² island cut. If one ever comes back by geometry, the script fails until
+  the link is removed.
 - **Point countries** (the microstates drawn as dots) border nothing by geometry.
   Their land borders are listed in `neighbor_links.json` too.
 - **Fixed links** in `neighbor_links.json` count as borders: GB–FR (Channel
@@ -70,8 +72,7 @@ Rules:
   everything else.
 
 Known consequences of the geometry: ES–MA border by land through Ceuta and
-Melilla. CA–GL don't border, because Hans Island is below the 10 km² island cut.
-Any change to `neighbors.json` changes Travel answers, so review its diff by hand.
+Melilla. Any change to `neighbors.json` changes Travel answers, so review its diff by hand.
 
 ## Country Highlights Data
 
