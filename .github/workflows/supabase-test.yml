@@ -35,6 +35,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Any migration on master may already be deployed, and `supabase db push`
+      # never re-runs one, so an edit to it would silently never reach production.
+      # Change the schema with a new migration instead.
+      - name: Check no merged migration was edited
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          git fetch --quiet --depth=1 origin "$BASE"
+          changed=$(git diff --name-only --diff-filter=MDR "$BASE" HEAD -- shared/supabase/migrations/)
+          if [ -n "$changed" ]; then
+            echo "::error::These migrations are on master and must not change; write a new migration instead:"
+            echo "$changed"
+            exit 1
+          fi
+
       # The graph table is loaded from a generated migration, so a stale one
       # would ship stale borders. Also guards the JSON both apps read.
       - name: Check the country graph is current

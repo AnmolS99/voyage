@@ -33,12 +33,14 @@ Rules (restated in docs/DATA.md):
 
 Distances need numpy (`pip install numpy`); the rest is the standard library.
 
-Usage:  python3 scripts/generate_neighbors.py [--check] [--new-migration]
+Usage:  python3 scripts/generate_neighbors.py [--check]
 
-  --check          exit non-zero if any generated file on disk is stale (for CI)
-  --new-migration  write the Postgres rows as a new, timestamped migration
-                   instead of rewriting the newest one. Needed once the newest
-                   one has been deployed, since migrations never change after.
+  --check  exit non-zero if any generated file on disk is stale (for CI)
+
+When the graph changes, the newest load migration is rewritten while it exists
+only on your branch, and a new timestamped one is written once it is on
+origin/master: master's migrations may already be deployed, and `supabase db
+push` never re-runs one, so an edit there would never reach production.
 """
 
 from __future__ import annotations
@@ -47,6 +49,7 @@ import argparse
 import datetime as dt
 import json
 import math
+import subprocess
 import sys
 from collections import deque
 from dataclasses import dataclass, field
@@ -518,10 +521,38 @@ def newest_migration() -> Path | None:
     return found[-1] if found else None
 
 
+def on_master(path: Path) -> bool:
+    """Whether origin/master has this file, so it may be deployed and must not change.
+
+    True when there is no origin/master to ask, so the caller errs towards a new
+    migration.
+    """
+    def git(*args: str) -> bool:
+        return subprocess.run(["git", *args], cwd=REPO_ROOT, capture_output=True).returncode == 0
+
+    if not git("rev-parse", "--verify", "--quiet", "origin/master"):
+        print("no origin/master to compare with, so writing a new migration", file=sys.stderr)
+        return True
+    return git("cat-file", "-e", f"origin/master:{path.relative_to(REPO_ROOT).as_posix()}")
+
+
+def migration_path(content: str, check: bool) -> Path:
+    """Where the graph's load migration goes: the newest one, or a new one.
+
+    The newest one is kept when it already says this, or when it is not on
+    origin/master yet. --check never picks a new one, so a stale newest
+    migration fails it.
+    """
+    newest = newest_migration()
+    if newest is not None and (check or newest.read_text() == content or not on_master(newest)):
+        return newest
+    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
+    return MIGRATIONS / f"{stamp}{MIGRATION_SUFFIX}"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true", help="verify the generated files instead of writing them")
-    parser.add_argument("--new-migration", action="store_true", help="write the Postgres rows as a new migration")
     args = parser.parse_args()
 
     countries = load_countries(SOURCE)
@@ -530,16 +561,12 @@ def main() -> int:
     check_graph(codes, neighbors, km, links)
     vectors = build_vectors(codes, index, neighbors, km)
 
-    migration = newest_migration()
-    if args.new_migration or migration is None:
-        stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
-        migration = MIGRATIONS / f"{stamp}{MIGRATION_SUFFIX}"
-
+    migration = render_migration(codes, neighbors)
     outputs = {
         NEIGHBORS: render_neighbors(codes, neighbors),
         DISTANCES: render_distances(codes, km),
         VECTORS: render_vectors(vectors),
-        migration: render_migration(codes, neighbors),
+        migration_path(migration, args.check): migration,
         PGTAP_VECTORS: render_pgtap(vectors),
     }
 

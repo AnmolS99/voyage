@@ -42,10 +42,14 @@ Travel routes but Heat only by counting taps. The script also writes the test
 vectors (`shared/fixtures/daily/graph.json`) and the pgTAP test generated from them.
 
 ```bash
-pip install numpy                                       # for the distances
-python3 scripts/generate_neighbors.py                   # ~1 min; --check is what CI runs
-python3 scripts/generate_neighbors.py --new-migration   # once the newest load migration is deployed
+pip install numpy                       # for the distances
+python3 scripts/generate_neighbors.py   # ~1 min; --check is what CI runs
 ```
+
+A graph change rewrites the newest load migration while it is only on your
+branch, and writes a new one once that is on `origin/master` (fetch first), since
+master's migrations may be deployed and never re-run. CI fails any PR that edits
+a migration already on master.
 
 Rules:
 
