@@ -38,6 +38,11 @@ class CountryGraphTest {
     }
 
     @Test
+    fun `the graph version matches the vectors`() {
+        assertEquals(vectors.getValue("version").jsonPrimitive.content, graph.version)
+    }
+
+    @Test
     fun `neighbours match the vectors`() {
         val expected = vectors.getValue("neighbors").jsonObject
         assertTrue(expected.isNotEmpty())

@@ -658,3 +658,14 @@ insert into public.country_neighbors (a, b) values
   ('ZW', 'NA'),
   ('ZW', 'ZA'),
   ('ZW', 'ZM');
+
+-- The graph's version, as neighbors.json has it: what an app's Travel answer
+-- was made against.
+create or replace function public.country_graph_version()
+returns text
+language sql
+stable
+set search_path = ''
+as $$ select 'ddaab188e9a4' $$;
+
+grant execute on function public.country_graph_version() to anon, authenticated;

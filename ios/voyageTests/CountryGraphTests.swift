@@ -20,6 +20,7 @@ final class CountryGraphTests: XCTestCase {
             let km: Int
         }
 
+        let version: String
         let neighbors: [String: [String]]
         let routes: [Route]
         let distances: [Distance]
@@ -35,6 +36,10 @@ final class CountryGraphTests: XCTestCase {
     }()
 
     private let cache = CountryDataCache.shared
+
+    func testGraphVersionMatchesTheVectors() {
+        XCTAssertEqual(cache.countryGraph.version, Self.vectors.version)
+    }
 
     func testNeighboursMatchTheVectors() {
         XCTAssertFalse(Self.vectors.neighbors.isEmpty)

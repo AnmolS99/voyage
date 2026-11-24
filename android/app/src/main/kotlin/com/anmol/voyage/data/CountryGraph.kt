@@ -3,9 +3,6 @@ package com.anmol.voyage.data
 import java.io.InputStream
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 
@@ -20,12 +17,16 @@ import kotlinx.serialization.json.decodeFromStream
  * Reach it through [CountryDataCache.countryGraph], which parses those two
  * files on first use.
  *
+ * @param version a hash of the borders (`neighbors.json`'s `version`), which
+ *   Postgres's `country_graph_version()` returns too: send it with a Travel
+ *   answer so the server can tell an older app's graph from its own.
  * @param codes every country's ISO code, sorted.
  * @param neighbors each code's neighbours, sorted.
  * @param distances the upper triangle of the km matrix, row by row: for
  *   `i < j`, the km between `codes[i]` and `codes[j]`.
  */
 class CountryGraph(
+    val version: String,
     val codes: List<String>,
     private val neighbors: Map<String, List<String>>,
     private val distances: IntArray,
@@ -117,21 +118,24 @@ object CountryGraphParser {
     const val BORDER_DISTANCES = "border_distances.json"
 
     @Serializable
+    private class Neighbors(val version: String, val neighbors: Map<String, List<String>>)
+
+    @Serializable
     private class Distances(val codes: List<String>, val rows: List<List<Int>>)
 
     private val json = Json { ignoreUnknownKeys = true }
-    private val neighborsSerializer = MapSerializer(String.serializer(), ListSerializer(String.serializer()))
 
     @OptIn(ExperimentalSerializationApi::class)
     fun parse(neighbors: InputStream, borderDistances: InputStream): CountryGraph {
-        val neighborLists = neighbors.use { json.decodeFromStream(neighborsSerializer, it) }
+        val graph = neighbors.use { json.decodeFromStream(Neighbors.serializer(), it) }
         val distances = borderDistances.use { json.decodeFromStream(Distances.serializer(), it) }
         distances.rows.forEachIndexed { i, row ->
             require(row.size == distances.codes.size - 1 - i) { "row $i of $BORDER_DISTANCES has ${row.size} entries" }
         }
         return CountryGraph(
+            version = graph.version,
             codes = distances.codes,
-            neighbors = neighborLists,
+            neighbors = graph.neighbors,
             distances = distances.rows.flatten().toIntArray(),
         )
     }

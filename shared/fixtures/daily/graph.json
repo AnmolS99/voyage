@@ -1,6 +1,7 @@
 {
   "_generatedBy": "scripts/generate_neighbors.py",
   "_about": "Test vectors pinning the iOS, Android and Postgres graph lookups to the generator. 'between' counts the countries strictly between from and to.",
+  "version": "ddaab188e9a4",
   "neighbors": {
     "FR": ["AD", "BE", "CH", "DE", "ES", "GB", "IT", "LU", "MC"],
     "DE": ["AT", "BE", "CH", "CZ", "DK", "FR", "LU", "NL", "PL"],

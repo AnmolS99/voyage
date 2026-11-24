@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(9);
 
 select table_privs_are('public', 'country_neighbors', 'anon', array['SELECT'],
   'anon can only read country_neighbors');
@@ -8,6 +8,8 @@ select table_privs_are('public', 'country_neighbors', 'authenticated', array['SE
 
 select function_privs_are('public', 'shortest_routes', array['text', 'text'], 'anon', array['EXECUTE'],
   'anon can call shortest_routes');
+select function_privs_are('public', 'country_graph_version', array[]::text[], 'anon', array['EXECUTE'],
+  'anon can read the graph version');
 
 select is_empty(
   $$ select a, b from public.country_neighbors n

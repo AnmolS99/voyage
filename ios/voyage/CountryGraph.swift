@@ -11,6 +11,11 @@ import Foundation
 /// again.
 struct CountryGraph {
 
+    /// A hash of the borders (`neighbors.json`'s `version`), which Postgres's
+    /// `country_graph_version()` returns too: send it with a Travel answer so
+    /// the server can tell an older app's graph from its own.
+    let version: String
+
     /// Every country's ISO code, sorted.
     let codes: [String]
 
@@ -20,10 +25,11 @@ struct CountryGraph {
     private let distances: [Int]
     private let indexOf: [String: Int]
 
-    init(codes: [String], neighbors: [String: [String]], distances: [Int]) {
+    init(version: String, codes: [String], neighbors: [String: [String]], distances: [Int]) {
         precondition(zip(codes, codes.dropFirst()).allSatisfy { $0 < $1 }, "codes must be sorted and unique")
         precondition(distances.count == codes.count * (codes.count - 1) / 2, "one distance per pair")
         precondition(Set(neighbors.keys) == Set(codes), "neighbours must list every country")
+        self.version = version
         self.codes = codes
         self.neighborLists = neighbors
         self.distances = distances
@@ -89,6 +95,11 @@ struct CountryGraph {
 
 extension CountryGraph {
 
+    private struct Neighbors: Decodable {
+        let version: String
+        let neighbors: [String: [String]]
+    }
+
     private struct Distances: Decodable {
         let codes: [String]
         let rows: [[Int]]
@@ -115,12 +126,17 @@ extension CountryGraph {
     /// The graph in the contents of `neighbors.json` and `border_distances.json`.
     /// Throws when either is malformed JSON, and traps when they disagree.
     static func decode(neighbors neighborsData: Data, borderDistances distancesData: Data) throws -> CountryGraph {
-        let neighbors = try JSONDecoder().decode([String: [String]].self, from: neighborsData)
+        let graph = try JSONDecoder().decode(Neighbors.self, from: neighborsData)
         let distances = try JSONDecoder().decode(Distances.self, from: distancesData)
         let count = distances.codes.count
         for (i, row) in distances.rows.enumerated() {
             precondition(row.count == count - 1 - i, "row \(i) of border_distances.json has \(row.count) entries")
         }
-        return CountryGraph(codes: distances.codes, neighbors: neighbors, distances: distances.rows.flatMap { $0 })
+        return CountryGraph(
+            version: graph.version,
+            codes: distances.codes,
+            neighbors: graph.neighbors,
+            distances: distances.rows.flatMap { $0 }
+        )
     }
 }

@@ -70,9 +70,19 @@ Rules:
   (a point country's outline is its point, and a point inside a polygon is 0 km
   from it), rounded. It is 0 exactly for neighbours and links, and at least 1 for
   everything else.
+- **Graph version:** 12 hex digits of SHA-256 over the borders (not the
+  distances). It is `version` in `neighbors.json` (`CountryGraph.version` in both
+  apps) and `country_graph_version()` in Postgres.
 
 Known consequences of the geometry: ES–MA border by land through Ceuta and
 Melilla. Any change to `neighbors.json` changes Travel answers, so review its diff by hand.
+
+**Changing the graph after release:** every installed build keeps the
+`neighbors.json` it shipped with, while Postgres takes the new graph on the next
+deploy. From then on, older apps can disagree with the server about which routes
+are shortest. So a Travel answer should carry the app's graph version, and the
+server should handle a version that isn't `country_graph_version()` (for example,
+score it leniently or ask the player to update) rather than mark the answer wrong.
 
 ## Country Highlights Data
 

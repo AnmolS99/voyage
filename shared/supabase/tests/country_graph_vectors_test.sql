@@ -2,7 +2,9 @@
 -- the vectors the iOS and Android graph tests read too (Postgres has no distances,
 -- so only the graph ones). Do not edit: regenerate.
 begin;
-select plan(20);
+select plan(21);
+
+select is(public.country_graph_version(), 'ddaab188e9a4', 'the graph version');
 
 select is(
   (select coalesce(array_agg(b order by b), '{}') from public.country_neighbors where a = 'FR'),
