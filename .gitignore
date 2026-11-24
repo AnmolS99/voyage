@@ -46,3 +46,5 @@ ios/Secrets.xcconfig
 
 # Journey card art workspace: photos, style reference and attempts (scripts/journey_art.py)
 journey-art/
+
+__pycache__/
