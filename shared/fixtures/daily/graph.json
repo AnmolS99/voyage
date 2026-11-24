@@ -1,0 +1,39 @@
+{
+  "_generatedBy": "scripts/generate_neighbors.py",
+  "_about": "Test vectors pinning the iOS, Android and Postgres graph lookups to the generator. 'crossings' is null when no route exists.",
+  "version": "ddaab188e9a4",
+  "neighbors": {
+    "FR": ["AD", "BE", "CH", "DE", "ES", "GB", "IT", "LU", "MC"],
+    "DE": ["AT", "BE", "CH", "CZ", "DK", "FR", "LU", "NL", "PL"],
+    "CN": ["AF", "BT", "IN", "KG", "KP", "KZ", "LA", "MM", "MN", "NP", "PK", "RU", "TJ", "VN"],
+    "LS": ["ZA"],
+    "VA": ["IT"],
+    "GB": ["FR", "IE"],
+    "AU": [],
+    "SG": ["MY"]
+  },
+  "crossings": [
+    {"a":"FR","b":"DE","crossings":1},
+    {"a":"FR","b":"FR","crossings":0},
+    {"a":"PT","b":"DE","crossings":3},
+    {"a":"ES","b":"PL","crossings":3},
+    {"a":"NO","b":"IT","crossings":5},
+    {"a":"GB","b":"IT","crossings":2},
+    {"a":"DK","b":"AT","crossings":2},
+    {"a":"FI","b":"TR","crossings":3},
+    {"a":"MX","b":"AR","crossings":8},
+    {"a":"ZA","b":"KE","crossings":3},
+    {"a":"FR","b":"AU","crossings":null},
+    {"a":"IS","b":"NO","crossings":null}
+  ],
+  "distances": [
+    {"a":"FR","b":"DE","km":0},
+    {"a":"GB","b":"FR","km":0},
+    {"a":"IE","b":"IS","km":1075},
+    {"a":"ES","b":"MA","km":0},
+    {"a":"NZ","b":"ES","km":17174},
+    {"a":"VA","b":"SM","km":227},
+    {"a":"US","b":"RU","km":43},
+    {"a":"AR","b":"AU","km":7078}
+  ]
+}

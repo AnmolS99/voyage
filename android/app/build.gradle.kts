@@ -92,6 +92,8 @@ android {
         // The app reads countries.bin, which the build writes from world.geojson
         // (GenerateAssets, below), so the GeoJSON itself does not ship.
         ignoreAssetsPatterns += "!world.geojson"
+        // Read only by scripts/generate_neighbors.py; the app reads its output.
+        ignoreAssetsPatterns += "!neighbor_links.json"
         // The app packages 4096 px copies of these instead (EarthTextureGenerator).
         ignoreAssetsPatterns += "!<dir>textures"
     }

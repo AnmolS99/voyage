@@ -61,6 +61,28 @@ class CountryDataCache(
     /** Tap-to-country lookup, shared by the map and the globe. */
     val hitTester: CountryHitTester by lazy { CountryHitTester(countries) }
 
+    /**
+     * Which countries border each other, and how many borders and km apart they
+     * are (`neighbors.json`, `border_crossings.json` and `border_distances.json`,
+     * shared with iOS). Parsed on first use — see [CountryGraph].
+     */
+    val countryGraph: CountryGraph by lazy {
+        CountryGraphParser.parse(
+            openAsset(CountryGraphParser.NEIGHBORS),
+            openAsset(CountryGraphParser.BORDER_CROSSINGS),
+            openAsset(CountryGraphParser.BORDER_DISTANCES),
+        )
+    }
+
+    /** The countries bordering [isoCode], sorted. iOS `neighbors(of:)`. */
+    fun neighbors(isoCode: String): List<String> = countryGraph.neighbors(isoCode)
+
+    /** The fewest borders crossed between two countries, null with no route. iOS `borderCrossings(_:_:)`. */
+    fun borderCrossings(a: String, b: String): Int? = countryGraph.borderCrossings(a, b)
+
+    /** km between two countries' outlines, 0 for neighbours. iOS `borderDistanceKm(_:_:)`. */
+    fun borderDistanceKm(a: String, b: String): Int? = countryGraph.borderDistanceKm(a, b)
+
     private val countriesByName: Map<String, GeoJsonCountry> by lazy {
         countries.associateBy { it.name }
     }
