@@ -1,6 +1,6 @@
 /*
- * The build-time generators for the app's world caches, `countries.bin` and
- * `world_meshes.bin`, and for its Earth textures. :app runs each once per
+ * The build-time generators for the app's world caches, `countries.bin`,
+ * `world_meshes.bin` and `country_graph.bin`, and for its Earth textures. :app runs each once per
  * variant (`GenerateAssets` in app/build.gradle.kts) and packages what it
  * writes as assets, so the device neither parses world.geojson nor
  * triangulates the globe, and downloads no texture wider than it shows.
@@ -24,6 +24,7 @@ kotlin {
             "com/anmol/voyage/tools/**",
             "com/anmol/voyage/data/BinaryStreams.kt",
             "com/anmol/voyage/data/CountriesFile.kt",
+            "com/anmol/voyage/data/CountryGraph.kt",
             "com/anmol/voyage/data/EarthTextureFiles.kt",
             "com/anmol/voyage/data/GeoJsonCountry.kt",
             "com/anmol/voyage/data/GeoJsonParser.kt",

@@ -1,0 +1,16 @@
+{
+  "_about": "Hand-picked borders scripts/generate_neighbors.py adds to the land borders it finds in world.geojson. Point countries have no outline, so their land borders are listed here; the rest are fixed links (a bridge or tunnel you can drive or take a train through). Each counts as a border: neighbours both ways, 0 km apart. Keep this list short and reviewed — every entry changes Travel answers.",
+  "links": [
+    { "between": ["AD", "ES"], "kind": "land", "note": "Andorra is a point country" },
+    { "between": ["AD", "FR"], "kind": "land", "note": "Andorra is a point country" },
+    { "between": ["LI", "AT"], "kind": "land", "note": "Liechtenstein is a point country" },
+    { "between": ["LI", "CH"], "kind": "land", "note": "Liechtenstein is a point country" },
+    { "between": ["MC", "FR"], "kind": "land", "note": "Monaco is a point country" },
+    { "between": ["SM", "IT"], "kind": "land", "note": "San Marino is a point country, enclaved by Italy" },
+    { "between": ["VA", "IT"], "kind": "land", "note": "Vatican City is a point country, enclaved by Italy" },
+    { "between": ["GB", "FR"], "kind": "fixed link", "note": "Channel Tunnel" },
+    { "between": ["DK", "SE"], "kind": "fixed link", "note": "Øresund Bridge" },
+    { "between": ["SG", "MY"], "kind": "fixed link", "note": "Johor–Singapore Causeway and the Second Link; Singapore is a point country" },
+    { "between": ["BH", "SA"], "kind": "fixed link", "note": "King Fahd Causeway; Bahrain is a point country" }
+  ]
+}

@@ -20,11 +20,16 @@ import kotlin.concurrent.thread
  * exception: the app reads them from `countries.bin` ([CountriesFile]), which the
  * build generates from `world.geojson` rather than parsing it on the device, and
  * which is not a file tests can open — so they pass [loadCountries] instead.
+ * The border graph is the same: `country_graph.bin` in the app, the shared JSON
+ * in tests ([loadCountryGraph]).
  */
 class CountryDataCache(
     private val openAsset: (String) -> InputStream,
     loadCountries: () -> List<GeoJsonCountry> = {
         openAsset(CountriesFile.NAME).use(CountriesFile::read)
+    },
+    loadCountryGraph: () -> CountryGraph = {
+        openAsset(CountryGraphFile.NAME).use(CountryGraphFile::read)
     },
 ) {
 
@@ -60,6 +65,18 @@ class CountryDataCache(
 
     /** Tap-to-country lookup, shared by the map and the globe. */
     val hitTester: CountryHitTester by lazy { CountryHitTester(countries) }
+
+    /** Which countries border each other and how far apart they are — see [CountryGraph]. */
+    val countryGraph: CountryGraph by lazy(loadCountryGraph)
+
+    /** The countries bordering [isoCode], sorted. iOS `neighbors(of:)`. */
+    fun neighbors(isoCode: String): List<String> = countryGraph.neighbors(isoCode)
+
+    /** km between two countries' outlines, 0 for neighbours. iOS `borderDistanceKm(_:_:)`. */
+    fun borderDistanceKm(a: String, b: String): Int? = countryGraph.borderDistanceKm(a, b)
+
+    /** Every shortest route between two countries, ends included. iOS `shortestRoutes(from:to:)`. */
+    fun shortestRoutes(from: String, to: String): List<List<String>> = countryGraph.shortestRoutes(from, to)
 
     private val countriesByName: Map<String, GeoJsonCountry> by lazy {
         countries.associateBy { it.name }

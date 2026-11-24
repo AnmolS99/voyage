@@ -58,6 +58,26 @@ final class CountryDataCache {
         country.flagCode.flatMap { countryAliases[$0] } ?? []
     }
 
+    /// Which countries border each other and how far apart they are
+    /// (`neighbors.json` and `border_distances.json`, shared with Android and
+    /// Postgres). Parsed on first use. See `CountryGraph`.
+    private(set) lazy var countryGraph: CountryGraph = CountryGraph.load() ?? .empty
+
+    /// The countries bordering `isoCode`, sorted. Android `neighbors`.
+    func neighbors(of isoCode: String) -> [String] {
+        countryGraph.neighbors(of: isoCode)
+    }
+
+    /// km between two countries' outlines, 0 for neighbours. Android `borderDistanceKm`.
+    func borderDistanceKm(_ a: String, _ b: String) -> Int? {
+        countryGraph.borderDistanceKm(a, b)
+    }
+
+    /// Every shortest route between two countries, ends included. Android `shortestRoutes`.
+    func shortestRoutes(from start: String, to goal: String) -> [[String]] {
+        countryGraph.shortestRoutes(from: start, to: goal)
+    }
+
     /// Kicks off GeoJSON parsing (and hit-test index building) on a background
     /// queue so it overlaps the rest of app startup instead of blocking the
     /// first globe/map render.

@@ -1,0 +1,38 @@
+{
+  "_generatedBy": "scripts/generate_neighbors.py",
+  "_about": "Test vectors pinning the iOS, Android and Postgres graph lookups to the generator. 'between' counts the countries strictly between from and to.",
+  "neighbors": {
+    "FR": ["AD", "BE", "CH", "DE", "ES", "GB", "IT", "LU", "MC"],
+    "DE": ["AT", "BE", "CH", "CZ", "DK", "FR", "LU", "NL", "PL"],
+    "CN": ["AF", "BT", "IN", "KG", "KP", "KZ", "LA", "MM", "MN", "NP", "PK", "RU", "TJ", "VN"],
+    "LS": ["ZA"],
+    "VA": ["IT"],
+    "GB": ["FR", "IE"],
+    "AU": [],
+    "SG": ["MY"]
+  },
+  "routes": [
+    {"from":"FR","to":"DE","between":0,"routes":[["FR","DE"]]},
+    {"from":"FR","to":"FR","between":0,"routes":[["FR"]]},
+    {"from":"PT","to":"DE","between":2,"routes":[["PT","ES","FR","DE"]]},
+    {"from":"ES","to":"PL","between":2,"routes":[["ES","FR","DE","PL"]]},
+    {"from":"NO","to":"IT","between":4,"routes":[["NO","RU","PL","CZ","AT","IT"],["NO","RU","PL","DE","AT","IT"],["NO","RU","PL","DE","CH","IT"],["NO","RU","PL","DE","FR","IT"],["NO","RU","PL","SK","AT","IT"],["NO","RU","UA","HU","AT","IT"],["NO","RU","UA","HU","SI","IT"],["NO","RU","UA","SK","AT","IT"],["NO","SE","DK","DE","AT","IT"],["NO","SE","DK","DE","CH","IT"],["NO","SE","DK","DE","FR","IT"]]},
+    {"from":"GB","to":"IT","between":1,"routes":[["GB","FR","IT"]]},
+    {"from":"DK","to":"AT","between":1,"routes":[["DK","DE","AT"]]},
+    {"from":"FI","to":"TR","between":2,"routes":[["FI","RU","AZ","TR"],["FI","RU","GE","TR"]]},
+    {"from":"MX","to":"AR","between":7,"routes":[["MX","GT","HN","NI","CR","PA","CO","BR","AR"]]},
+    {"from":"ZA","to":"KE","between":2,"routes":[["ZA","MZ","TZ","KE"]]},
+    {"from":"FR","to":"AU","between":-1,"routes":[]},
+    {"from":"IS","to":"NO","between":-1,"routes":[]}
+  ],
+  "distances": [
+    {"a":"FR","b":"DE","km":0},
+    {"a":"GB","b":"FR","km":0},
+    {"a":"IE","b":"IS","km":1075},
+    {"a":"ES","b":"MA","km":0},
+    {"a":"NZ","b":"ES","km":17174},
+    {"a":"VA","b":"SM","km":227},
+    {"a":"US","b":"RU","km":43},
+    {"a":"AR","b":"AU","km":7078}
+  ]
+}
