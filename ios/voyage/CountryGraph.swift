@@ -20,11 +20,10 @@ struct CountryGraph {
     private let distances: [Int]
     private let indexOf: [String: Int]
 
-    static let empty = CountryGraph(codes: [], neighbors: [:], distances: [])
-
     init(codes: [String], neighbors: [String: [String]], distances: [Int]) {
         precondition(zip(codes, codes.dropFirst()).allSatisfy { $0 < $1 }, "codes must be sorted and unique")
-        precondition(distances.count == codes.count * max(codes.count - 1, 0) / 2, "one distance per pair")
+        precondition(distances.count == codes.count * (codes.count - 1) / 2, "one distance per pair")
+        precondition(Set(neighbors.keys) == Set(codes), "neighbours must list every country")
         self.codes = codes
         self.neighborLists = neighbors
         self.distances = distances
@@ -95,32 +94,32 @@ extension CountryGraph {
         let rows: [[Int]]
     }
 
-    /// Parses `neighbors.json` and `border_distances.json` from `bundle`, or
-    /// nil (logged) when either is missing or malformed.
-    static func load(from bundle: Bundle = .main) -> CountryGraph? {
-        guard let neighborsURL = bundle.url(forResource: "neighbors", withExtension: "json"),
-              let distancesURL = bundle.url(forResource: "border_distances", withExtension: "json"),
-              let neighbors = try? Data(contentsOf: neighborsURL),
-              let distances = try? Data(contentsOf: distancesURL) else {
-            print("Failed to load the country graph")
-            return nil
+    /// Parses `neighbors.json` and `border_distances.json` from `bundle`. Both
+    /// ship with the app, so a missing or malformed file is a build mistake and
+    /// crashes rather than leaving the games an empty graph, as on Android.
+    static func load(from bundle: Bundle = .main) -> CountryGraph {
+        func contents(of name: String) -> Data {
+            guard let url = bundle.url(forResource: name, withExtension: "json"),
+                  let data = try? Data(contentsOf: url) else {
+                fatalError("\(name).json is missing from the app bundle")
+            }
+            return data
         }
-        return decode(neighbors: neighbors, borderDistances: distances)
+        do {
+            return try decode(neighbors: contents(of: "neighbors"), borderDistances: contents(of: "border_distances"))
+        } catch {
+            fatalError("Failed to decode the country graph: \(error)")
+        }
     }
 
-    /// The graph in the contents of `neighbors.json` and `border_distances.json`,
-    /// or nil (logged) when they are malformed or disagree.
-    static func decode(neighbors neighborsData: Data, borderDistances distancesData: Data) -> CountryGraph? {
-        guard let neighbors = try? JSONDecoder().decode([String: [String]].self, from: neighborsData),
-              let distances = try? JSONDecoder().decode(Distances.self, from: distancesData) else {
-            print("Failed to decode the country graph")
-            return nil
-        }
+    /// The graph in the contents of `neighbors.json` and `border_distances.json`.
+    /// Throws when either is malformed JSON, and traps when they disagree.
+    static func decode(neighbors neighborsData: Data, borderDistances distancesData: Data) throws -> CountryGraph {
+        let neighbors = try JSONDecoder().decode([String: [String]].self, from: neighborsData)
+        let distances = try JSONDecoder().decode(Distances.self, from: distancesData)
         let count = distances.codes.count
-        guard distances.rows.enumerated().allSatisfy({ $1.count == count - 1 - $0 }),
-              Set(neighbors.keys) == Set(distances.codes) else {
-            print("The country graph files do not match")
-            return nil
+        for (i, row) in distances.rows.enumerated() {
+            precondition(row.count == count - 1 - i, "row \(i) of border_distances.json has \(row.count) entries")
         }
         return CountryGraph(codes: distances.codes, neighbors: neighbors, distances: distances.rows.flatMap { $0 })
     }

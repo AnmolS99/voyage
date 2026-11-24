@@ -60,8 +60,9 @@ final class CountryDataCache {
 
     /// Which countries border each other and how far apart they are
     /// (`neighbors.json` and `border_distances.json`, shared with Android).
-    /// Parsed on first use. See `CountryGraph`.
-    private(set) lazy var countryGraph: CountryGraph = CountryGraph.load() ?? .empty
+    /// Parsed on first use; crashes if the bundled files are missing or bad
+    /// (`CountryGraph.load`), as on Android.
+    private(set) lazy var countryGraph: CountryGraph = .load()
 
     /// The countries bordering `isoCode`, sorted. Android `neighbors`.
     func neighbors(of isoCode: String) -> [String] {
