@@ -18,7 +18,7 @@ import kotlinx.serialization.json.decodeFromStream
  * on first use.
  *
  * @param version a hash of the borders (`neighbors.json`'s `version`), which
- *   Postgres's `country_graph_version()` returns too: send it with a Travel
+ *   Postgres's `country_graph_version()` returns too: send it with a Shortest Route
  *   answer so the server can tell an older app's graph from its own.
  * @param codes every country's ISO code, sorted.
  * @param neighbors each code's neighbours, sorted.
@@ -54,7 +54,7 @@ class CountryGraph(
      * order: 0 for the same country, 1 for neighbours, null when no route
      * exists or a code is unknown. iOS `borderCrossings(_:_:)`.
      *
-     * This is all Travel needs from routes: the shortest one has
+     * This is all Shortest Route needs from routes: the shortest one has
      * `crossings - 1` countries in between, and `x` is on some shortest route
      * from `a` to `b` exactly when `crossings(a, x) + crossings(x, b) ==
      * crossings(a, b)`.

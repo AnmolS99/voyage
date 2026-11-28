@@ -13,7 +13,7 @@ import Foundation
 struct CountryGraph {
 
     /// A hash of the borders (`neighbors.json`'s `version`), which Postgres's
-    /// `country_graph_version()` returns too: send it with a Travel answer so
+    /// `country_graph_version()` returns too: send it with a Shortest Route answer so
     /// the server can tell an older app's graph from its own.
     let version: String
 
@@ -50,7 +50,7 @@ struct CountryGraph {
     /// order: 0 for the same country, 1 for neighbours, nil when no route
     /// exists or a code is unknown. Android `borderCrossings`.
     ///
-    /// This is all Travel needs from routes: the shortest one has
+    /// This is all Shortest Route needs from routes: the shortest one has
     /// `crossings - 1` countries in between, and `x` is on some shortest route
     /// from `a` to `b` exactly when `crossings(a, x) + crossings(x, b) ==
     /// crossings(a, b)`.
