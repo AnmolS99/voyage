@@ -127,7 +127,7 @@ with an `if`.
   ```
 - After changing `world.geojson` or `neighbor_links.json`, also run
   `python3 scripts/generate_neighbors.py` and review the `neighbors.json` diff
-  (it changes Travel answers).
+  (it changes Shortest Route answers).
 - Geometry comes from `./scripts/update_geometry.sh`. See
   [docs/DATA.md](docs/DATA.md) for provenance (dissolves, Crimea as UA,
   microstates).

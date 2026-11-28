@@ -4,8 +4,8 @@
 Which countries border each other, how many borders apart and how many km
 apart every pair is, from shared/data/world.geojson plus a short, hand-reviewed
 list of links (shared/data/neighbor_links.json). Both apps read all three, and
-Postgres reads the graph (Travel is scored on the server; Heat scores only
-count taps), so the daily Travel route and the Heat colour come out the same
+Postgres reads the graph (Shortest Route is scored on the server; Hot or Cold scores only
+count taps), so the daily Shortest Route puzzle and the Hot or Cold colour come out the same
 everywhere:
 
   shared/data/neighbors.json                  ISO -> sorted neighbour ISOs, and the graph version
@@ -29,11 +29,11 @@ Rules (restated in docs/DATA.md):
 * A **link** counts as a border: neighbours both ways, 0 km apart.
 * The **graph version** is a hash of the borders alone (not the distances,
   which the server never sees). The apps read it from neighbors.json and
-  Postgres returns it from country_graph_version(), so a Travel answer made
+  Postgres returns it from country_graph_version(), so a Shortest Route answer made
   on an older app's graph can be told apart from one on the server's.
 * The **border crossings** between two countries are the fewest borders a
   route over the graph crosses: 0 for the same country, 1 for neighbours, -1
-  when no route exists. Travel needs nothing else from routes: the shortest
+  when no route exists. Shortest Route needs nothing else from routes: the shortest
   one has crossings - 1 countries in between, and a country is on some
   shortest route from A to B exactly when crossings(A, X) + crossings(X, B)
   == crossings(A, B). So the routes are never searched for at runtime.

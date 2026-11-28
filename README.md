@@ -76,7 +76,7 @@ Run `testGlobeAndMapCountryConsistency` to verify map and globe are in sync.
 
 Visited/wishlist countries, checked cities/attractions, and daily challenge results are stored in UserDefaults + iCloud (merged across devices). Challenge game statistics and trophies are stored locally only, since their counters can't be merged safely across devices. Data is independent of `globe.scn`.
 
-The daily games send results to Supabase under an anonymous identity that follows the player across their devices, with no account. See [docs/DEVICE_IDENTITY.md](docs/DEVICE_IDENTITY.md) for how it works.
+The daily games send results to Supabase under an anonymous identity that follows the player across their devices, with no account. See [docs/DEVICE_IDENTITY.md](docs/DEVICE_IDENTITY.md) for how it works. The puzzles, scoring and world statistics are in [docs/DAILY_GAMES.md](docs/DAILY_GAMES.md).
 
 ### Country Highlights Data
 
